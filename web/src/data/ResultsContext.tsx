@@ -4,6 +4,45 @@ import { parseUploadedResults, UploadParseError } from './parseUpload';
 
 const STORAGE_KEY = 'bloodtests_upload_v1';
 
+// Dev-only seed: web/dev-data/*.json is served exclusively by vite.config.ts's
+// dev-only plugin (never present in a production build). It's a personal
+// export in a different shape than what uploadFile()/parseUpload.ts accept
+// (each item's value/unit live under `original`, not flat), so it's adapted
+// here rather than widening the real upload parser to a one-off shape. It's
+// only ever held in memory (never localStorage) — a real upload always wins.
+type DevRawItem = {
+  loinc?: string;
+  analysis?: string;
+  symbol?: string;
+  method?: string | null;
+  original?: { value: number | null; rawValue: string; unit: string; refMin?: number | null; refMax?: number | null; refText?: string };
+};
+type DevRawSession = { date: string; labName?: string; sourceFile?: string; items: DevRawItem[] };
+
+function adaptDevData(sessions: DevRawSession[]): ResultGroup[] {
+  return sessions
+    .map((s): ResultGroup => {
+      const items: Result[] = (s.items || [])
+        .filter((raw) => raw.loinc && raw.original)
+        .map((raw) => ({
+          loinc: raw.loinc!,
+          analysis: raw.analysis || '',
+          symbol: raw.symbol || '',
+          section: '',
+          value: raw.original!.value,
+          rawValue: raw.original!.rawValue || '',
+          valueQualifier: '',
+          unit: raw.original!.unit || '',
+          refText: raw.original!.refText || '',
+          refMin: raw.original!.refMin ?? null,
+          refMax: raw.original!.refMax ?? null,
+          method: raw.method || '',
+        }));
+      return { date: s.date, place: s.labName || '', file: `dev__${s.date}`, items, itemCount: items.length };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 interface ResultsContextType {
   sessions: ResultGroup[];
   hasData: boolean;
@@ -24,10 +63,28 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setSessions(JSON.parse(raw));
+      if (raw) {
+        setSessions(JSON.parse(raw));
+        setLoading(false);
+        return;
+      }
     } catch {
       // corrupt/incompatible local storage — ignore and start fresh
     }
+
+    if (import.meta.env.DEV) {
+      fetch('/dev-data/bloodtests.json')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: DevRawSession[] | null) => {
+          if (data) setSessions(adaptDevData(data));
+        })
+        .catch(() => {
+          // no dev-data file present — fine, just nothing to seed
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
+
     setLoading(false);
   }, []);
 

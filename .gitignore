@@ -27,3 +27,6 @@ out/
 
 # Claude Code local overrides
 .claude/settings.local.json
+
+# Real personal health data for local dev only — never committed, never served in a build
+web/dev-data/
