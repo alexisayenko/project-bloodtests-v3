@@ -63,6 +63,7 @@ Optional. Useful when the name is still in motion.
 | `in-vitro.cc` | candidate (2026-08-25) — lab-diagnostics term, hyphenated |
 | `invitro.im` | candidate (2026-08-25) — same, unhyphenated (note: clashes with Invitro, the large RU/CIS lab chain) |
 | `assay.guru` | candidate (2026-08-25) — playful, assay = lab test |
+| `bioanalysis.cc` | candidate (2026-08-25) — descriptive, generic |
 
 ## Open questions
 
