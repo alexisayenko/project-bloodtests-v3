@@ -10,6 +10,8 @@ jobs:
   test:
     name: typecheck + lint + build + sonar
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
@@ -33,7 +35,9 @@ jobs:
         working-directory: web
         run: npm run build
 
+      # Skips cleanly until the SONAR_TOKEN repo secret exists (create the
+      # project on sonarcloud.io, then add the token under repo Settings →
+      # Secrets and variables → Actions).
       - name: SonarCloud scan
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
