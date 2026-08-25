@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Common build artifacts
+node_modules/
+dist/
+build/
+out/
+.cache/
+
+# Claude Code local overrides
+.claude/settings.local.json

@@ -1,0 +1,6 @@
+# Force LF on checkout everywhere; git auto-detects text vs binary.
+* text=auto eol=lf
+
+# Windows shell scripts require CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
