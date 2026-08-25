@@ -14,3 +14,5 @@ events accumulate enough to warrant their own pages — see
   `blood.isayenko.org`.
 - 2026-08-25 — Computed indices (TC/HDL, HOMA-IR, calculated free
   testosterone, and 17 others) ported from `project-bloodtests-v2`.
+- 2026-08-25 — Added a persistent app-wide nav (Reference Book,
+  Monitoring Panels, Profile) and breadcrumb navigation.

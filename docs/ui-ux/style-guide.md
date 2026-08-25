@@ -44,20 +44,24 @@ rationale per rule so future-us can revisit.
 
 ### Numbers
 
-- **Prefer the lab's own printed value.** A result's `rawValue` (the
-  string exactly as the lab report shows it) is displayed as-is — no
-  rounding, no reformatting. It's the reconciliation surface against
-  the paper report; touching it defeats that purpose.
-- **Adaptive-precision fallback.** Only when there's no `rawValue`
-  (a value we computed, or one with no printed string) do we round,
-  by magnitude: `≥ 100` -> 0 decimals, `≥ 10` -> 1, `≥ 1` -> 2,
-  `< 1` -> 3. Trailing zeros are stripped. Locale-agnostic (`.` as
-  the decimal separator) — locale-aware formatting is a separate
-  render-time concern.
-- Ported from `project-bloodtests-v2`'s `engine/src/format.ts`
-  (`fmtNum`) and its use in `engine/src/matrix.ts`; see
+- **Adaptive-precision, by magnitude:** `≥ 100` -> 0 decimals,
+  `≥ 10` -> 1, `≥ 1` -> 2, `< 1` -> 3. Trailing zeros are stripped.
+  Locale-agnostic (`.` as the decimal separator) — locale-aware
+  formatting is a separate render-time concern. Ported from
+  `project-bloodtests-v2`'s `engine/src/format.ts` (`fmtNum`).
+- **Where each display mode applies:** the Analysis table (many
+  dates at once) always uses adaptive precision, for a readable,
+  consistent column — a lab's own printed digit count varies too
+  much draw to draw to scan well in bulk. The popup's single-value
+  reconciliation blocks ("Latest", "Lab reported") instead prefer
+  the result's `rawValue` — the string exactly as the lab report
+  shows it, no rounding — since that's the surface for checking a
+  value against the paper report; see
   [`../product/concepts/lab-report.md`](../product/concepts/lab-report.md)
   for the reported-value vs. computed-value distinction.
+- Computed indices are pre-quantized to 2dp before adaptive
+  precision is applied (matches `project-bloodtests-v2`'s
+  historical display, e.g. `0.4475` -> `0.45`, not `0.448`).
 
 ### Typography
 
@@ -70,10 +74,25 @@ rationale per rule so future-us can revisit.
   slow 400ms.]
 - [TODO: easing curves and when each is used.]
 
+### Navigation
+
+- **Top-level sections** (Reference Book, Monitoring Panels, Profile)
+  are a persistent top nav on every page, each section its own URL
+  hash (`#reference`, `#panels`, `#profile`) so browser back/forward
+  always works. Active section: bold + blue underline.
+- **Nested position** within a section (currently only Monitoring
+  Panels has one: panel detail) is a breadcrumb trail below the top
+  nav, e.g. `Monitoring Panels › Hypothyroidism › Analysis` — earlier
+  segments are clickable, the current one is plain text.
+- A popup is never part of the URL/history; navigating away always
+  closes it rather than leaving it open over the next page.
+
 ### Interaction
 
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
-- [TODO: tab placement — bottom (mobile), top (web), neither.]
+- **Tab placement:** top (web) — both the section nav and the
+  Analysis/What's-in-range tabs use the same top, underlined-active
+  style.
 - [TODO: gesture conventions — long-press, swipe-to-delete.]
 
 ### Voice & copy
