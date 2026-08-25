@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { fmtNum, formatResultReference, isOutOfRange } from '../../utils/format';
+import { INDEX_DEFS, MARKER_LOINC, computeIndex, zone, type IndexDef } from '../../data/computedIndices';
 import type { Panel, Result } from '../../types';
 
 type LoincRef = { label: string; loinc: string; longCommonName: string; unit: string };
@@ -69,7 +70,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2085-9': { short: 'HDL', unit: 'mg/dL' },
   '13457-7': { short: 'LDL', unit: 'mg/dL' },
   '2571-8': { short: 'TRIG', unit: 'mg/dL' },
-  '9830-1': { short: 'AI', unit: 'ratio' },
+  '9830-1': { short: 'TC/HDL', unit: 'ratio' },
   '1884-6': { short: 'ApoB', unit: 'mg/dL' },
   '1869-7': { short: 'ApoA1', unit: 'mg/dL' },
   '10835-7': { short: 'Lp(a)', unit: 'mg/dL' },
@@ -169,15 +170,27 @@ const ALSO_REFS: Record<string, LoincRef[]> = {
   '1848-1': [{ label: 'nmol/L unit', loinc: '15057-3', longCommonName: 'Androstanolone (Dihydrotestosterone) [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
 };
 
-// Computed/derived values (ratios, estimates) rather than direct measurements.
-const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3']); // Atherogenic Index, % Iron Saturation, eGFR
+// Computed/derived values (ratios, estimates) rather than direct measurements. TC/HDL
+// ratio and % Iron Saturation are also independently reportable by a lab (LOINCs
+// 9830-1, 2502-3) but are shown via COMPUTED_LOINCS's own formula instead once one
+// applies -- kept here only so they never show as raw badges in the grid. eGFR
+// (48642-3) has no computed twin (needs age, which v3 doesn't have) and stays
+// purely lab-reported.
+const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3']);
+
+// LOINCs that a computed index (see computedIndices.ts) can independently
+// duplicate from a lab report -- excluded from the raw-LOINC Indices table so
+// each one renders once, via its computed row, not twice.
+const COMPUTED_LOINCS = new Set(INDEX_DEFS.map((d) => d.loinc).filter((x): x is string => !!x));
 
 function getPanelLoincs(panel: Panel): string[] {
   if (panel.sections) return panel.sections.flatMap((section) => section.loincs);
   return panel.loincs ?? [];
 }
 
-type PopupState = { test: Observation; top: number; left: number };
+type PopupState =
+  | { kind: 'observation'; test: Observation; top: number; left: number }
+  | { kind: 'index'; def: IndexDef; top: number; left: number };
 
 const STATUS_STYLES = {
   'never': { border: '#ccc', background: '#f5f5f5', color: '#999' },
@@ -185,6 +198,11 @@ const STATUS_STYLES = {
   'out-of-range': { border: '#ea4335', background: '#fdecea', color: '#1a1a1a' },
   'unknown': { border: '#1971c2', background: 'transparent', color: '#1a1a1a' },
 } as const;
+
+// 3-zone coloring for computed indices (see data/computedIndices.ts's `zone()`).
+const ZONE_BG = { ok: '#e6f4ea', warn: '#fff4e0', bad: '#fdecea' } as const;
+// Selected-row variants, blended with the row-selection blue (#eaf3fb).
+const SELECTED_ZONE_BG = { ok: '#dbecf0', warn: '#e7ecea', bad: '#e6e8f0' } as const;
 
 const BADGE_WIDTH = 84;
 const BADGE_GAP = 12;
@@ -208,9 +226,11 @@ export function MedicalConditionsPage() {
   const [detailTab, setDetailTab] = useState<'analysis' | 'in-range'>('analysis');
   const [unitSystem, setUnitSystem] = useState<'si' | 'us'>('si');
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>('all');
+  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>('desc');
   const [allResults, setAllResults] = useState<{ loinc: string; date: string; result: Result }[]>([]);
 
   const POPUP_WIDTH = 260;
+  const INDEX_POPUP_WIDTH = 380;
 
   const conditions = useMemo(() => {
     return PANEL_DEFS.map((def) => {
@@ -292,11 +312,36 @@ export function MedicalConditionsPage() {
     return map;
   }, [allResults]);
 
-  const openPopup = (test: Observation, e: React.MouseEvent<HTMLDivElement>) => {
+  // Per-date lookup for computed indices: { date: { loinc: Result } }.
+  const resultsByDate = useMemo(() => {
+    const map: Record<string, Record<string, Result>> = {};
+    for (const { loinc, date, result } of allResults) {
+      (map[date] ??= {})[loinc] = result;
+    }
+    return map;
+  }, [allResults]);
+
+  const latestIndexValue = (def: IndexDef): { value: number; date: string } | null => {
+    const dates = Object.keys(resultsByDate).sort((a, b) => b.localeCompare(a));
+    for (const date of dates) {
+      const value = computeIndex(def, resultsByDate[date]!);
+      if (value != null) return { value, date };
+    }
+    return null;
+  };
+
+  const openPopup = (test: Observation, e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const center = rect.left + rect.width / 2;
     const left = Math.min(Math.max(center - POPUP_WIDTH / 2, 8), window.innerWidth - POPUP_WIDTH - 8);
-    setPopup({ test, top: rect.bottom + 8, left });
+    setPopup({ kind: 'observation', test, top: rect.bottom + 8, left });
+  };
+
+  const openIndexPopup = (def: IndexDef, e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const center = rect.left + rect.width / 2;
+    const left = Math.min(Math.max(center - INDEX_POPUP_WIDTH / 2, 8), window.innerWidth - INDEX_POPUP_WIDTH - 8);
+    setPopup({ kind: 'index', def, top: rect.bottom + 8, left });
   };
 
   const getLatest = (loincs: string[]): { result: Result; date: string } | null => {
@@ -354,42 +399,114 @@ export function MedicalConditionsPage() {
           border: '1.5px solid #1971c2',
           borderRadius: 12,
           padding: 18,
-          width: 260,
+          width: popup.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH,
+          maxHeight: popup.kind === 'index' ? '70vh' : undefined,
+          overflowY: popup.kind === 'index' ? 'auto' : undefined,
           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
           boxSizing: 'border-box',
           zIndex: 101,
         }}
       >
-        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
-          {popup.test.full}
-          {popup.test.full !== popup.test.short && ` (${popup.test.short})`}
-        </div>
-        <div style={{ fontSize: 13, color: '#555', marginBottom: popup.test.also ? 10 : 0 }}>
-          <a
-            href={`https://loinc.org/${popup.test.loinc}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ fontFamily: 'monospace', color: '#1971c2' }}
-          >
-            {popup.test.loinc}
-          </a>{' '}
-          {popup.test.longCommonName}
-          {popup.test.unit ? `, ${popup.test.unit}` : ''}
-        </div>
-        {popup.test.also?.map((ref) => (
-          <div key={ref.loinc} style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
-            <a
-              href={`https://loinc.org/${ref.loinc}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontFamily: 'monospace', color: '#1971c2' }}
-            >
-              {ref.loinc}
-            </a>{' '}
-            {ref.longCommonName}, {ref.unit}
-          </div>
-        ))}
-        {renderLatest([popup.test.loinc, ...(popup.test.also?.map((ref) => ref.loinc) ?? [])])}
+        {popup.kind === 'observation' ? (
+          <>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
+              {popup.test.full}
+              {popup.test.full !== popup.test.short && ` (${popup.test.short})`}
+            </div>
+            <div style={{ fontSize: 13, color: '#555', marginBottom: popup.test.also ? 10 : 0 }}>
+              <a
+                href={`https://loinc.org/${popup.test.loinc}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontFamily: 'monospace', color: '#1971c2' }}
+              >
+                {popup.test.loinc}
+              </a>{' '}
+              {popup.test.longCommonName}
+              {popup.test.unit ? `, ${popup.test.unit}` : ''}
+            </div>
+            {popup.test.also?.map((ref) => (
+              <div key={ref.loinc} style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
+                <a
+                  href={`https://loinc.org/${ref.loinc}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontFamily: 'monospace', color: '#1971c2' }}
+                >
+                  {ref.loinc}
+                </a>{' '}
+                {ref.longCommonName}, {ref.unit}
+              </div>
+            ))}
+            {renderLatest([popup.test.loinc, ...(popup.test.also?.map((ref) => ref.loinc) ?? [])])}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+              {popup.def.name}
+              {popup.def.name !== popup.def.nameCompact && ` (${popup.def.nameCompact})`}
+            </div>
+            <div style={{ fontSize: 12, color: '#888', fontFamily: 'monospace', marginBottom: 10 }}>{popup.def.formula}</div>
+            {(() => {
+              const latest = latestIndexValue(popup.def);
+              const reported = popup.def.loinc ? latestByLoinc[popup.def.loinc] : undefined;
+              return (
+                <>
+                  <div style={{ fontSize: 13, color: '#555', paddingTop: 8, borderTop: '1px solid #eee' }}>
+                    {latest ? (
+                      <>
+                        <div style={{ fontWeight: 500, color: '#333' }}>Calculated, {formatMonthYear(latest.date)}</div>
+                        <div
+                          style={{
+                            marginTop: 4,
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            background: ZONE_BG[zone(latest.value, popup.def.cut[0], popup.def.cut[1], popup.def.hi)],
+                          }}
+                        >
+                          {fmtNum(latest.value)} {popup.def.unit ?? ''}
+                        </div>
+                      </>
+                    ) : (
+                      'Not enough data to calculate yet'
+                    )}
+                  </div>
+                  {reported && (
+                    <div style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
+                      <div style={{ fontWeight: 500, color: '#333' }}>Lab reported, {formatMonthYear(reported.date)}</div>
+                      <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: '#f5f5f5' }}>
+                        {reported.result.rawValue || fmtNum(reported.result.value)} {reported.result.unit}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+            <div style={{ fontSize: 13, color: '#333', marginTop: 10 }}>{popup.def.meaning}</div>
+            <div style={{ fontSize: 12, color: '#666', marginTop: 10 }}>
+              <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{popup.def.evidenceLevel}</span> -- {popup.def.consensus}
+            </div>
+            {popup.def.references.length > 0 && (
+              <div style={{ fontSize: 11, color: '#888', marginTop: 10, paddingTop: 8, borderTop: '1px solid #eee' }}>
+                {popup.def.references.map((ref, i) => (
+                  <div key={i} style={{ marginTop: i > 0 ? 8 : 0 }}>
+                    {ref.url ? (
+                      <a href={ref.url} target="_blank" rel="noreferrer" style={{ color: '#1971c2' }}>
+                        {ref.organization}
+                      </a>
+                    ) : (
+                      ref.organization
+                    )}
+                    {' -- '}
+                    {ref.document}
+                    {ref.year ? ` (${ref.year})` : ''}
+                    <div style={{ fontStyle: 'italic', marginTop: 2 }}>{ref.quote}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </>
   );
@@ -398,17 +515,22 @@ export function MedicalConditionsPage() {
     const condition = conditions.find((c) => c.name === detailPanel);
     const tests = condition?.tests ?? [];
     const observations = tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
-    const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc));
+    const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc) && !COMPUTED_LOINCS.has(t.loinc));
+    const computedForPanel = INDEX_DEFS.filter((d) => d.panels.includes(detailPanel));
+    const computedInputLoincs = new Set(
+      computedForPanel.flatMap((d) => d.needs.map((short) => MARKER_LOINC[short]).filter((x): x is string => !!x))
+    );
 
     const dates = Array.from(
       new Set(
         allResults
-          .filter((r) => tests.some((t) => testLoincs(t).includes(r.loinc)))
+          .filter((r) => tests.some((t) => testLoincs(t).includes(r.loinc)) || computedInputLoincs.has(r.loinc))
           .map((r) => r.date)
       )
     ).sort((a, b) => b.localeCompare(a));
 
-    const visibleDates = sampleLimit === 'all' ? dates : dates.slice(0, sampleLimit);
+    const recentDates = sampleLimit === 'all' ? dates : dates.slice(0, sampleLimit);
+    const visibleDates = dateOrder === 'asc' ? [...recentDates].reverse() : recentDates;
 
     const cellMatch = (test: Observation, date: string) => {
       const loincs = testLoincs(test);
@@ -496,6 +618,83 @@ export function MedicalConditionsPage() {
       </div>
     );
 
+    const renderIndexTable = (defs: IndexDef[]) => (
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2' }} />
+              {visibleDates.map((date) => (
+                <th
+                  key={date}
+                  style={{
+                    width: DATE_COL_WIDTH,
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    borderBottom: '1.5px solid #1971c2',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {formatMonthYear(date)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {defs.map((def) => {
+              const selected = selectedLoinc === def.key;
+              return (
+                <tr key={def.key} style={{ background: selected ? '#eaf3fb' : undefined }}>
+                  <td
+                    onClick={(e) => {
+                      setSelectedLoinc(def.key);
+                      openIndexPopup(def, e);
+                    }}
+                    style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{def.nameCompact}</span>
+                    {def.unit && `, ${def.unit}`}
+                  </td>
+                  {visibleDates.map((date) => {
+                    const value = computeIndex(def, resultsByDate[date] ?? {});
+                    if (value == null) {
+                      return (
+                        <td
+                          key={date}
+                          onClick={() => setSelectedLoinc(def.key)}
+                          style={{ width: DATE_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                        >
+                          –
+                        </td>
+                      );
+                    }
+                    const z = zone(value, def.cut[0], def.cut[1], def.hi);
+                    const bg = selected ? SELECTED_ZONE_BG[z] : ZONE_BG[z];
+                    return (
+                      <td
+                        key={date}
+                        onClick={() => setSelectedLoinc(def.key)}
+                        style={{
+                          width: DATE_COL_WIDTH,
+                          padding: '8px 12px',
+                          borderBottom: '1px solid #eee',
+                          whiteSpace: 'nowrap',
+                          background: bg,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {fmtNum(value)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+
     return (
       <div style={{ padding: '56px 48px' }}>
         <div
@@ -526,59 +725,84 @@ export function MedicalConditionsPage() {
 
         {detailTab === 'analysis' ? (
           <div>
-            <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
-              {(['si', 'us'] as const).map((sys) => (
+            <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Unit system</div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {(['si', 'us'] as const).map((sys) => (
+                    <div
+                      key={sys}
+                      onClick={() => setUnitSystem(sys)}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: 9999,
+                        border: '1.5px solid #1971c2',
+                        background: unitSystem === sys ? '#1971c2' : 'transparent',
+                        color: unitSystem === sys ? '#fff' : '#1971c2',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {sys.toUpperCase()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Last N samplings</div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {([5, 10, 15, 'all'] as const).map((n) => (
+                    <div
+                      key={n}
+                      onClick={() => setSampleLimit(n)}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: 9999,
+                        border: '1.5px solid #1971c2',
+                        background: sampleLimit === n ? '#1971c2' : 'transparent',
+                        color: sampleLimit === n ? '#fff' : '#1971c2',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {n === 'all' ? 'All' : n}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Column order</div>
                 <div
-                  key={sys}
-                  onClick={() => setUnitSystem(sys)}
+                  onClick={() => setDateOrder(dateOrder === 'desc' ? 'asc' : 'desc')}
                   style={{
+                    display: 'inline-block',
                     padding: '4px 12px',
                     borderRadius: 9999,
                     border: '1.5px solid #1971c2',
-                    background: unitSystem === sys ? '#1971c2' : 'transparent',
-                    color: unitSystem === sys ? '#fff' : '#1971c2',
+                    color: '#1971c2',
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: 'pointer',
                   }}
                 >
-                  {sys.toUpperCase()}
+                  {dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}
                 </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 20 }}>
-              <span style={{ fontSize: 13, color: '#888', marginRight: 4 }}>Last</span>
-              {([5, 10, 15, 'all'] as const).map((n) => (
-                <div
-                  key={n}
-                  onClick={() => setSampleLimit(n)}
-                  style={{
-                    padding: '4px 12px',
-                    borderRadius: 9999,
-                    border: '1.5px solid #1971c2',
-                    background: sampleLimit === n ? '#1971c2' : 'transparent',
-                    color: sampleLimit === n ? '#fff' : '#1971c2',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {n === 'all' ? 'All' : n}
-                </div>
-              ))}
-              <span style={{ fontSize: 13, color: '#888' }}>samplings</span>
+              </div>
             </div>
             {dates.length === 0 ? (
               <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
             ) : (
               <>
                 {renderTable(observations)}
-                {indices.length > 0 && (
+                {(indices.length > 0 || computedForPanel.length > 0) && (
                   <>
                     <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', margin: '24px 0 12px' }}>
                       Indices
                     </div>
-                    {renderTable(indices)}
+                    {indices.length > 0 && renderTable(indices)}
+                    {computedForPanel.length > 0 && renderIndexTable(computedForPanel)}
                   </>
                 )}
               </>

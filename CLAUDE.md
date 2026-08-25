@@ -37,4 +37,5 @@ original upload/panels/results/analytics flow still exists in
 
 - [README.md](README.md) — repo entry point + structure
 - [docs/README.md](docs/README.md) — docs subtree map
-- [docs/product/concepts/](docs/product/concepts/) — observation, monitoring panel
+- [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
+  panel, lab report, computed index

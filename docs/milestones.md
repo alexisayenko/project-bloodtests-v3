@@ -12,3 +12,5 @@ events accumulate enough to warrant their own pages — see
 
 - 2026-08-25 — Monitoring Panels app built and deployed to
   `blood.isayenko.org`.
+- 2026-08-25 — Computed indices (TC/HDL, HOMA-IR, calculated free
+  testosterone, and 17 others) ported from `project-bloodtests-v2`.

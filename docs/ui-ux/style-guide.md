@@ -33,6 +33,14 @@ rationale per rule so future-us can revisit.
   for destructive confirmations only.]
 - [TODO: accent color use cases — call-to-action, success
   state, brand surfaces.]
+- **Result status.** An [observation](../product/concepts/observation.md)'s
+  result is 2-state against its lab reference range: green =
+  in-range, red = out-of-range. A [computed
+  index](../product/concepts/computed-index.md) is 3-state against
+  its own cut-points instead: green = ok, amber = warn, red = bad.
+  A selected table row blends its cell color with the row-selection
+  blue rather than replacing it, so status stays visible while
+  selected.
 
 ### Numbers
 

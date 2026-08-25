@@ -16,7 +16,7 @@ and constraints.
 
 Current concepts: [observation](observation.md),
 [monitoring panel](monitoring-panel.md),
-[lab report](lab-report.md).
+[lab report](lab-report.md), [computed index](computed-index.md).
 
 ## What a concept is not
 
