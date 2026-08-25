@@ -8,10 +8,14 @@ on:
 
 jobs:
   test:
-    name: typecheck + lint + build
+    name: typecheck + lint + test + build
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # SonarCloud needs full history for blame/new-code
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -27,13 +31,18 @@ jobs:
         working-directory: web
         run: npm run lint
 
-      - name: Test
+      - name: Test + coverage
         working-directory: web
-        run: npm test
+        run: npm run coverage
 
       - name: Typecheck + build
         working-directory: web
         run: npm run build
 
-      # No SonarCloud step: the project uses SonarCloud Automatic Analysis
-      # (sonarcloud.io scans every push itself; a CI scan would conflict).
+      # Activates once the SONAR_TOKEN repo secret exists (also switch OFF
+      # Automatic Analysis in the SonarCloud project settings then — the two
+      # modes conflict). Until that, Automatic Analysis keeps scanning, just
+      # without coverage.
+      - name: SonarCloud scan
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
