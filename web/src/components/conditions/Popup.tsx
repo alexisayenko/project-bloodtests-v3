@@ -51,7 +51,7 @@ function ObservationPopupBody({ test, latestByLoinc }: Readonly<{ test: Observat
         {!isEchoRedundant(test.full, test.short) && ` (${test.short})`}
       </div>
       <div style={{ fontSize: 13, color: '#555', marginBottom: test.also ? 10 : 0 }}>
-        <LoincLine loinc={test.loinc} text={`${test.longCommonName}${test.unit ? `, ${test.unit}` : ''}`} />
+        <LoincLine loinc={test.loinc} text={test.longCommonName + (test.unit ? `, ${test.unit}` : '')} />
       </div>
       {test.also?.map((ref) => (
         <div key={ref.loinc} style={{ fontSize: 13, color: '#555', marginTop: 8 }}>

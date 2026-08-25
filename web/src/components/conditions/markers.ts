@@ -1,5 +1,5 @@
 import { INDEX_DEFS, MARKER_LOINC } from '../../data/computedIndices';
-import type { Panel } from '../../types';
+import type { Analysis, Panel } from '../../types';
 
 export type LoincRef = { label: string; loinc: string; longCommonName: string; unit: string };
 export type Observation = { short: string; full: string; longCommonName: string; loinc: string; unit?: string; also?: LoincRef[] };
@@ -229,7 +229,6 @@ export function isEchoRedundant(full: string, short: string): boolean {
   return true;
 }
 
-import type { Analysis } from '../../types';
 
 /** The Monitoring Panels grid model: PANEL_DEFS resolved against the loaded catalog. */
 export function buildConditions(
