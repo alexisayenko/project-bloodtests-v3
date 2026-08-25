@@ -10,6 +10,11 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-08-25 — Quality baseline: page shell split into view
+  components; 91-test vitest suite (v2 golden-masters ported); CI +
+  SonarCloud (0 issues, quality gate green, 90.6% coverage of the
+  logic layer) + Dependabot; eslint/Sonar/coverage all exclude the
+  legacy unwired flow consistently.
 - 2026-08-25 — Reference Book gains an HP Axis physiology page: the
   homepage-era HPG/prolactin explainer and HPT/HPG/HPA feedback-loop
   cascades, ported verbatim from v2's lens-common.
