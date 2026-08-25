@@ -23,7 +23,9 @@ reference data ships as static JSON (`web/public/data/`), uploaded lab
 results are parsed client-side and kept in `localStorage`. Deploys as
 a Cloudflare Worker (static assets) to `blood.isayenko.org` via
 `web/wrangler.jsonc`; deploy is manual (`wrangler deploy`), not CI-triggered.
-The app is one component, `web/src/components/conditions/MedicalConditionsPage.tsx`,
+The app is one component, `web/src/components/conditions/MedicalConditionsPage.tsx`
+(pure helpers split into sibling `markers.ts` / `routing.ts` / `ui.ts`
+and `data/generateTestData.ts`),
 with a persistent top nav across four sections — Reference Book (stub),
 Monitoring Panels (the default/entry route), All Observations (every
 uploaded result in one table), Profile (upload JSON / generate synthetic
