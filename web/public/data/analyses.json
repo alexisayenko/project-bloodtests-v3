@@ -1279,7 +1279,22 @@
     }
   },
   {
-    "loinc": "32700-7",
+    "loinc": "5763-8",
+    "longCommonName": "Zinc [Mass/volume] in Serum or Plasma",
+    "displayName": "Zinc",
+    "lang": {
+      "ru-RU": "Цинк",
+      "uk-UA": "Цинк"
+    },
+    "info": {
+      "description": "Trace mineral involved in immune function, wound healing, and taste/smell.",
+      "scientific": "Zinc is an essential trace element that serves as a cofactor for over 300 enzymes involved in immune function, protein synthesis, wound healing, and DNA synthesis.",
+      "why": "Detects deficiency, which can cause impaired immunity, poor wound healing, and taste disturbances.",
+      "frequency": "As clinically indicated"
+    }
+  },
+  {
+    "loinc": "2998-3",
     "longCommonName": "Thiamine [Mass/volume] in Blood",
     "displayName": "Vitamin B1 (Thiamine)",
     "lang": {
