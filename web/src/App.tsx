@@ -9,6 +9,7 @@ import { PanelsPage } from './components/panels/PanelsPage';
 import { PanelDetailPage } from './components/panels/PanelDetailPage';
 import { ResultsPage } from './components/results/ResultsPage';
 import { AnalyticsPage } from './components/analytics/AnalyticsPage';
+import { MedicalConditionsPage } from './components/conditions/MedicalConditionsPage';
 import type { ViewName } from './types';
 
 function AppShell() {
@@ -51,15 +52,7 @@ function AppShell() {
 }
 
 function App() {
-  return (
-    <LangProvider>
-      <DataProvider>
-        <ResultsProvider>
-          <AppShell />
-        </ResultsProvider>
-      </DataProvider>
-    </LangProvider>
-  );
+  return <MedicalConditionsPage />;
 }
 
 export default App;
