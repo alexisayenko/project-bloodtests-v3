@@ -1249,8 +1249,8 @@
     }
   },
   {
-    "loinc": "26454-9",
-    "longCommonName": "Dihydrotestosterone [Mass/volume] in Serum or Plasma",
+    "loinc": "1848-1",
+    "longCommonName": "Androstanolone [Mass/volume] in Serum or Plasma",
     "displayName": "Dihydrotestosterone (DHT)",
     "lang": {
       "ru-RU": "Дигидротестостерон",

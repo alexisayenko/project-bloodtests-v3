@@ -34,7 +34,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '15081-3': { short: 'PRL', unit: 'ng/mL' },
   '2942-1': { short: 'SHBG', unit: 'nmol/L' },
   '2243-4': { short: 'E2', unit: 'pg/mL' },
-  '26454-9': { short: 'DHT', unit: 'ng/dL' },
+  '1848-1': { short: 'DHT', unit: 'ng/dL' },
   '2191-5': { short: 'DHEA-S', unit: 'mcg/dL' },
   // Hypothyroidism
   '11580-8': { short: 'TSH', unit: 'mIU/L' },
@@ -152,6 +152,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
 // Manually curated cross-references (not sourced from panels.json).
 const ALSO_REFS: Record<string, LoincRef[]> = {
   '14913-8': [{ label: 'ng/dL unit', loinc: '2986-8', longCommonName: 'Testosterone [Mass/volume] in Serum or Plasma', unit: 'ng/dL' }],
+  '2942-1': [{ label: 'nmol/L unit', loinc: '13967-5', longCommonName: 'Sex hormone binding globulin [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
 };
 
 function getPanelLoincs(panel: Panel): string[] {
@@ -160,6 +161,13 @@ function getPanelLoincs(panel: Panel): string[] {
 }
 
 type PopupState = { test: Observation; top: number; left: number };
+
+const STATUS_STYLES = {
+  'never': { border: '#ccc', background: '#f5f5f5', color: '#999' },
+  'in-range': { border: '#34a853', background: '#e6f4ea', color: '#1a1a1a' },
+  'out-of-range': { border: '#ea4335', background: '#fdecea', color: '#1a1a1a' },
+  'unknown': { border: '#1971c2', background: 'transparent', color: '#1a1a1a' },
+} as const;
 
 const BADGE_WIDTH = 84;
 const BADGE_GAP = 12;
@@ -245,12 +253,28 @@ export function MedicalConditionsPage() {
     setPopup({ test, top: rect.bottom + 8, left });
   };
 
-  const renderLatest = (loincs: string[]) => {
+  const getLatest = (loincs: string[]): { result: Result; date: string } | null => {
     let current: { result: Result; date: string } | null = null;
     for (const loinc of loincs) {
       const candidate = latestByLoinc[loinc];
       if (candidate && (!current || candidate.date > current.date)) current = candidate;
     }
+    return current;
+  };
+
+  type Status = 'never' | 'in-range' | 'out-of-range' | 'unknown';
+  const getStatus = (loincs: string[]): Status => {
+    const current = getLatest(loincs);
+    if (!current) return 'never';
+    const hasRef = current.result.value != null && (current.result.refMin != null || current.result.refMax != null);
+    if (!hasRef) return 'unknown';
+    return isOutOfRange(current.result) ? 'out-of-range' : 'in-range';
+  };
+
+  const testLoincs = (test: Observation) => [test.loinc, ...(test.also?.map((ref) => ref.loinc) ?? [])];
+
+  const renderLatest = (loincs: string[]) => {
+    const current = getLatest(loincs);
     if (!current) {
       return (
         <div style={{ fontSize: 13, color: '#888', marginTop: 8, paddingTop: 8, borderTop: '1px solid #eee' }}>
@@ -299,7 +323,9 @@ export function MedicalConditionsPage() {
               {condition.name}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(3, ${BADGE_WIDTH}px)`, gap: BADGE_GAP }}>
-              {condition.tests.map((test) => (
+              {condition.tests.map((test) => {
+                const style = STATUS_STYLES[getStatus(testLoincs(test))];
+                return (
                 <div
                   key={test.loinc}
                   onClick={(e) => openPopup(test, e)}
@@ -309,7 +335,9 @@ export function MedicalConditionsPage() {
                     justifyContent: 'center',
                     width: BADGE_WIDTH,
                     height: 40,
-                    border: '1.5px solid #1971c2',
+                    border: `1.5px solid ${style.border}`,
+                    background: style.background,
+                    color: style.color,
                     borderRadius: 9999,
                     fontSize: 14,
                     fontWeight: 600,
@@ -320,7 +348,8 @@ export function MedicalConditionsPage() {
                 >
                   {test.short}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
