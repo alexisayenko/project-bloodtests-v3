@@ -1,0 +1,23 @@
+[
+  {
+    "id": "synevo-ua",
+    "name": "Synevo Ukraine",
+    "url": "https://www.synevo.ua",
+    "lang": {
+      "ru-RU": "Синэво Украина",
+      "uk-UA": "Синево Україна"
+    },
+    "tests": {
+      "11580-8": {
+        "code": "1004",
+        "name": "Тиреотропный гормон (ТТГ)",
+        "url": "https://www.synevo.ua/ru/tests/1004"
+      },
+      "1992-7": {
+        "code": "2068",
+        "name": "Кальцитонин",
+        "url": "https://www.synevo.ua/ru/tests/2068"
+      }
+    }
+  }
+]
