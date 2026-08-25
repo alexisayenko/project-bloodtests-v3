@@ -57,37 +57,33 @@ interface ResultsContextType {
 const ResultsContext = createContext<ResultsContextType>(null!);
 
 export function ResultsProvider({ children }: { children: ReactNode }) {
-  const [sessions, setSessions] = useState<ResultGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
+  const [sessions, setSessions] = useState<ResultGroup[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        setSessions(JSON.parse(raw));
-        setLoading(false);
-        return;
-      }
+      if (raw) return JSON.parse(raw);
     } catch {
       // corrupt/incompatible local storage — ignore and start fresh
     }
+    return [];
+  });
+  // Loading is only ever true while the dev-only seed fetch is in flight —
+  // localStorage loads synchronously in the useState initializer above.
+  const [loading, setLoading] = useState(() => import.meta.env.DEV && sessions.length === 0);
+  const [error, setError] = useState<string | null>(null);
 
-    if (import.meta.env.DEV) {
-      fetch('/dev-data/bloodtests.json')
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: DevRawSession[] | null) => {
-          if (data) setSessions(adaptDevData(data));
-        })
-        .catch(() => {
-          // no dev-data file present — fine, just nothing to seed
-        })
-        .finally(() => setLoading(false));
-      return;
-    }
+  useEffect(() => {
+    if (!loading) return;
 
-    setLoading(false);
-  }, []);
+    fetch('/dev-data/bloodtests.json')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: DevRawSession[] | null) => {
+        if (data) setSessions(adaptDevData(data));
+      })
+      .catch(() => {
+        // no dev-data file present — fine, just nothing to seed
+      })
+      .finally(() => setLoading(false));
+  }, [loading]);
 
   // Merge incoming sessions into what's already loaded (an incoming session
   // replaces an existing one with the same `file` id), so uploaded JSON and
