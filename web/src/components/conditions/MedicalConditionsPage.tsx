@@ -116,7 +116,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2823-3': { short: 'K+', unit: 'mmol/L' },
   '19123-9': { short: 'MG', unit: 'mg/dL' },
   '29900-7': { short: 'MGRBC', unit: 'mg/dL' },
-  '2950-4': { short: 'NA', unit: 'mmol/L' },
+  '2951-2': { short: 'NA', unit: 'mmol/L' },
   '5763-8': { short: 'ZN', unit: 'mcg/dL' },
   '2731-8': { short: 'PTH', unit: 'pg/mL' },
   // Pancreatic Function
@@ -153,6 +153,9 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
 const ALSO_REFS: Record<string, LoincRef[]> = {
   '14913-8': [{ label: 'ng/dL unit', loinc: '2986-8', longCommonName: 'Testosterone [Mass/volume] in Serum or Plasma', unit: 'ng/dL' }],
   '2942-1': [{ label: 'nmol/L unit', loinc: '13967-5', longCommonName: 'Sex hormone binding globulin [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
+  '1989-3': [{ label: 'D2+D3 combined', loinc: '62292-8', longCommonName: '25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma', unit: 'ng/mL' }],
+  '4548-4': [{ label: 'by calculation', loinc: '17855-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by calculation', unit: '%' }],
+  '2777-1': [{ label: 'whole blood', loinc: '2774-8', longCommonName: 'Phosphate [Mass/volume] in Blood', unit: 'mg/dL' }],
 };
 
 function getPanelLoincs(panel: Panel): string[] {
