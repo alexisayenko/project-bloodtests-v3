@@ -54,7 +54,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '59261-8': { short: 'A1cI', unit: 'mmol/mol' },
   '13979-8': { short: 'GA', unit: '%' },
   '1557-8': { short: 'FRA', unit: 'umol/L' },
-  '1986-0': { short: 'C-P', unit: 'ng/mL' },
+  '1986-9': { short: 'C-P', unit: 'ng/mL' },
   // Cardiovascular Risk
   '1988-5': { short: 'CRP', unit: 'mg/L' },
   '30522-7': { short: 'hsCRP', unit: 'mg/L' },
@@ -63,7 +63,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '49246-0': { short: 'oxLDL', unit: 'U/L' },
   '2293-7': { short: 'LEP', unit: 'ng/mL' },
   '56660-9': { short: 'ADIPO', unit: 'mcg/mL' },
-  '2160-0': { short: 'HCY', unit: 'umol/L' },
+  '13965-9': { short: 'HCY', unit: 'umol/L' },
   '3255-7': { short: 'FIB', unit: 'mg/dL' },
   '2093-3': { short: 'TC', unit: 'mg/dL' },
   '2085-9': { short: 'HDL', unit: 'mg/dL' },
@@ -89,7 +89,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2885-2': { short: 'TP', unit: 'g/dL' },
   // Kidney Function
   '3094-0': { short: 'BUN', unit: 'mg/dL' },
-  '12190-5': { short: 'CREA', unit: 'mg/dL' },
+  '2160-0': { short: 'CREA', unit: 'mg/dL' },
   '3084-1': { short: 'UA', unit: 'mg/dL' },
   '48642-3': { short: 'eGFR', unit: 'mL/min/1.73m2' },
   '33863-2': { short: 'CYSC', unit: 'mg/L' },
@@ -105,7 +105,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2502-3': { short: 'TSAT', unit: '%' },
   // Bone and Mineral Metabolism
   '2998-3': { short: 'B1', unit: 'nmol/L' },
-  '2842-3': { short: 'B6', unit: 'nmol/L' },
+  '30552-4': { short: 'B6', unit: 'nmol/L' },
   '2284-8': { short: 'B9', unit: 'ng/mL' },
   '2132-9': { short: 'B12', unit: 'pg/mL' },
   '1989-3': { short: '25OH', unit: 'ng/mL' },
@@ -156,6 +156,8 @@ const ALSO_REFS: Record<string, LoincRef[]> = {
   '1989-3': [{ label: 'D2+D3 combined', loinc: '62292-8', longCommonName: '25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma', unit: 'ng/mL' }],
   '4548-4': [{ label: 'by calculation', loinc: '17855-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by calculation', unit: '%' }],
   '2777-1': [{ label: 'whole blood', loinc: '2774-8', longCommonName: 'Phosphate [Mass/volume] in Blood', unit: 'mg/dL' }],
+  '15081-3': [{ label: 'Mass/volume variant', loinc: '2842-3', longCommonName: 'Prolactin [Mass/volume] in Serum or Plasma', unit: 'ng/mL' }],
+  '3094-0': [{ label: 'Urea', loinc: '3091-6', longCommonName: 'Urea [Mass/volume] in Serum or Plasma', unit: 'mg/dL' }],
 };
 
 function getPanelLoincs(panel: Panel): string[] {

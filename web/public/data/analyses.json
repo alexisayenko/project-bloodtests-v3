@@ -492,7 +492,7 @@
     }
   },
   {
-    "loinc": "12190-5",
+    "loinc": "2160-0",
     "longCommonName": "Creatinine [Mass/volume] in Serum or Plasma",
     "displayName": "Creatinine",
     "lang": {
@@ -1189,7 +1189,7 @@
     }
   },
   {
-    "loinc": "2160-0",
+    "loinc": "13965-9",
     "longCommonName": "Homocysteine [Moles/volume] in Serum or Plasma",
     "displayName": "Homocysteine",
     "lang": {
@@ -1309,8 +1309,8 @@
     }
   },
   {
-    "loinc": "2842-3",
-    "longCommonName": "Pyridoxal phosphate [Mass/volume] in Plasma",
+    "loinc": "30552-4",
+    "longCommonName": "Pyridoxal phosphate [Mass/volume] in Serum or Plasma",
     "displayName": "Vitamin B6 (Pyridoxal-5-Phosphate)",
     "lang": {
       "ru-RU": "Витамин B6 (пиридоксальфосфат)",
