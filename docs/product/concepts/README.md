@@ -14,8 +14,8 @@ exists in the product's mental model and persists across UIs and
 features. Each file covers data model, invariants, edge cases,
 and constraints.
 
-[TODO: 3-7 example concepts for this product, e.g. painting,
-palette, period, garment, outfit, …]
+Current concepts: [observation](observation.md),
+[monitoring panel](monitoring-panel.md).
 
 ## What a concept is not
 

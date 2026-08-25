@@ -18,15 +18,23 @@ monetization.]
 
 ## Tech stack
 
-[TODO: one paragraph — stack, deploy targets, current status.]
+React 19 + TypeScript + Vite, in `web/`. No backend — panel/analyte
+reference data ships as static JSON (`web/public/data/`), uploaded lab
+results are parsed client-side and kept in `localStorage`. Deploys as
+a Cloudflare Worker (static assets) to `blood.isayenko.org` via
+`web/wrangler.jsonc`; deploy is manual (`wrangler deploy`), not CI-triggered.
+Current entry view is the Monitoring Panels screen
+(`web/src/components/conditions/MedicalConditionsPage.tsx`); the
+original upload/panels/results/analytics flow still exists in
+`web/src/components/` but isn't currently wired into `App.tsx`.
 
 ## Repo
 
-[TODO: `[owner/repo](https://github.com/owner/repo)` (private/public).
-Auth notes if any (HTTPS, fine-grained PAT, etc.).]
+[project-bloodtests-v3](https://github.com/alexisayenko/project-bloodtests-v3)
+(private). Remote via SSH (`git@github.com:...`).
 
 ## Where to look for more
 
 - [README.md](README.md) — repo entry point + structure
 - [docs/README.md](docs/README.md) — docs subtree map
-- [TODO: add project-specific docs as they land]
+- [docs/product/concepts/](docs/product/concepts/) — observation, monitoring panel

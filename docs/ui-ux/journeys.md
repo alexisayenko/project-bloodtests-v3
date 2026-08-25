@@ -11,11 +11,13 @@ or open questions — see
 For the journey concept and how it relates to screens, see
 [`README.md`](README.md).
 
-## [TODO: journey name]
+## Browse a monitoring panel
 
-[TODO: one-line definition — entry point → exit / success state.]
+Entry point → panel detail, with a historical values table.
 
-- **Entry:** [TODO]
-- **Screens (in order):** [TODO: link to `screens/<name>.md`]
-- **Branches:** [TODO: condition → alternate path]
-- **Exit / success:** [TODO]
+- **Entry:** Monitoring Panels (panel grid)
+- **Screens (in order):** Monitoring Panels → panel detail (Analysis
+  tab)
+- **Branches:** "What's in range" tab not yet built
+- **Exit / success:** viewer sees an observation's historical values
+  and reference range

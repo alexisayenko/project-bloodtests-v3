@@ -16,8 +16,9 @@ is built from.
 Don't pre-create — extract on first real entry. See
 [Section, file, folder](../README.md#section-file-folder).
 
-- **`[TODO: top-level subject — e.g. paintings.md, garments.md]`**
-  — the primary corpus.
+- **`panels.json` / `analyses.json`** (in `web/public/data/`) — the
+  primary corpus: LOINC-coded biomarker panels and per-analyte
+  reference data.
 - **`sources.md`** — bibliography / canonical sources for factual
   claims (with licensing notes per source).
 - **`prompts/`** — prompt sources for AI-assisted content

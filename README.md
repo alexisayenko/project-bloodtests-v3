@@ -1,31 +1,16 @@
-# project-template
+# project-bloodtests-v3
 
-Seed repo for new projects. Defines a standard folder layout,
-naming rules, and docs subtree. Copy on init; not used as a
-runtime dependency.
+LOINC-coded blood-test monitoring app. Upload a lab-results JSON
+export; it's visualized client-side, grouped into monitoring panels
+(conditions/organ systems).
 
 ## Overview
 
-This template assumes **one product, delivered through one or
-more top-level code folders** at the repo root. Each folder is a
-deployment target — name it by what it is (`mobile/`, `web/`,
-`workers/`, `marketing-site/`, etc.). Avoid generic names like
-`app/` that don't say which one.
-
-Multi-product is rare; see
-[`docs/README.md`](docs/README.md#multi-product-split) for the
-split path if/when it happens.
-
-## Quick start
-
-1. Click **Use this template** on GitHub (or `git clone` and
-   remove `.git/` to start fresh).
-2. Replace this Overview and Quick start with content for the
-   new project.
-3. Keep the [Structure](#structure) section — that's the
-   canonical convention.
-4. Fill in [`docs/README.md`](docs/README.md) with the project's
-   product and docs subtree.
+React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON
+reference data (`web/public/data/`), uploaded results parsed
+client-side and kept in `localStorage`. Deploys as a Cloudflare
+Worker to `blood.isayenko.org`. See [`CLAUDE.md`](CLAUDE.md) for the
+fast-path summary.
 
 ## Structure
 

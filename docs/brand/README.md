@@ -38,8 +38,8 @@ owns identity / spirit; the style guide operationalizes it.
   - **Typography**: [TODO: serif / sans / mono / handwritten +
     any specific typefaces in use.]
   - **Mark**: [TODO: pictorial / abstract / letterform direction.]
-- **Domain**: [TODO: registered domains + provider + dates +
-  which is primary vs defensive.]
+- **Domain**: `blood.isayenko.org` — subdomain, no separate
+  registration.
 - **Wordmark / logo**: [TODO: TBD or describe the lockup.]
 
 ## Where applications live
@@ -49,9 +49,7 @@ Per-folder applications live with their code.
 
 | Where it appears | Location |
 | --- | --- |
-| [TODO: e.g. Web favicon] | [TODO: e.g. `web/public/favicon.svg`] |
-| [TODO: e.g. Open Graph / social cards] | [TODO: `web/public/`] |
-| [TODO: e.g. iOS app icon] | [TODO: `mobile/…` or remove if N/A] |
+| Web favicon | `web/public/favicon.png` |
 
 ## Names considered
 

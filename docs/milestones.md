@@ -10,5 +10,5 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
-- [TODO: YYYY-MM-DD — event title] — [TODO: one-line summary;
-  link to artifact, post, or release if applicable].
+- 2026-08-25 — Monitoring Panels app built and deployed to
+  `blood.isayenko.org`.
