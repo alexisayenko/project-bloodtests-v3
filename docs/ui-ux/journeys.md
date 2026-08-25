@@ -21,3 +21,15 @@ Entry point → panel detail, with a historical values table.
 - **Branches:** "What's in range" tab not yet built
 - **Exit / success:** viewer sees an observation's historical values
   and reference range
+
+## Load data
+
+Get lab results into the app — real or synthetic.
+
+- **Entry:** Profile
+- **Screens (in order):** Profile (Upload JSON or Generate Test Data)
+  → Monitoring Panels / All Observations
+- **Branches:** invalid JSON shows an inline parse error; Clear (with
+  confirm) wipes all sessions
+- **Exit / success:** panels and tables populate; uploads and
+  generated data coexist (merged by session id)

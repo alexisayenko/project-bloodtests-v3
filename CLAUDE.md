@@ -24,11 +24,13 @@ results are parsed client-side and kept in `localStorage`. Deploys as
 a Cloudflare Worker (static assets) to `blood.isayenko.org` via
 `web/wrangler.jsonc`; deploy is manual (`wrangler deploy`), not CI-triggered.
 The app is one component, `web/src/components/conditions/MedicalConditionsPage.tsx`,
-with a persistent top nav across three sections — Reference Book,
-Monitoring Panels (the default/entry route), Profile — each its own
-URL hash so browser back/forward works; Reference and Profile are
-still stubs. The original upload/panels/results/analytics flow still
-exists in `web/src/components/` but isn't currently wired into `App.tsx`.
+with a persistent top nav across four sections — Reference Book (stub),
+Monitoring Panels (the default/entry route), All Observations (every
+uploaded result in one table), Profile (upload JSON / generate synthetic
+test data / clear; sessions merge, keyed by session id) — each its own
+URL hash so browser back/forward works. The original
+upload/panels/results/analytics flow still exists in
+`web/src/components/` but isn't currently wired into `App.tsx`.
 
 ## Repo
 

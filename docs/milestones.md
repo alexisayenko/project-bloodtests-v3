@@ -10,6 +10,10 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-08-25 — All Observations section (all results, one table) and
+  Profile data actions (Upload JSON / Generate Test Data / Clear,
+  merging instead of replacing); short-label cleanup and de-duplicated
+  popup headings; leptin LOINC corrected to 21365-2.
 - 2026-08-25 — Monitoring Panels app built and deployed to
   `blood.isayenko.org`.
 - 2026-08-25 — Computed indices (TC/HDL, HOMA-IR, calculated free
