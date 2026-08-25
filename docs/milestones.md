@@ -10,6 +10,9 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-08-25 — Reference Book gains an HP Axis physiology page: the
+  homepage-era HPG/prolactin explainer and HPT/HPG/HPA feedback-loop
+  cascades, ported verbatim from v2's lens-common.
 - 2026-08-25 — Reference Book built: a page per computed index with
   v2's full clinical prose (meaning + evidence standing) and cited
   sources with verbatim quotes; index popups deep-link into it.

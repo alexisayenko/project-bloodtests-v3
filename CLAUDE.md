@@ -26,8 +26,10 @@ a Cloudflare Worker (static assets) to `blood.isayenko.org` via
 The app is one component, `web/src/components/conditions/MedicalConditionsPage.tsx`
 (pure helpers split into sibling `markers.ts` / `routing.ts` / `ui.ts`
 and `data/generateTestData.ts`),
-with a persistent top nav across four sections — Reference Book (per-index
-pages: formula, v2's full clinical prose, cited sources with verbatim quotes),
+with a persistent top nav across four sections — Reference Book (Indices
+Descriptions: a page per computed index with formula, v2's full clinical
+prose and cited sources with verbatim quotes; Physiology: HP Axis page
+with v2's homepage-derived feedback-loop cascades),
 Monitoring Panels (the default/entry route), All Observations (every
 uploaded result in one table), Profile (upload JSON / generate synthetic
 test data / clear; sessions merge, keyed by session id) — each its own
