@@ -16,19 +16,35 @@ export function formatDate(dateStr: string, lang: string = 'en'): string {
   return `${year} ${monthCap}`;
 }
 
+// Adaptive precision by magnitude — fewer decimals as the value grows.
+// Only used when there's no rawValue to show as-printed; see
+// docs/ui-ux/style-guide.md#numbers. Ported from project-bloodtests-v2's
+// engine/src/format.ts (fmtNum).
+function decimalsFor(a: number): number {
+  if (a >= 100) return 0;
+  if (a >= 10) return 1;
+  if (a >= 1) return 2;
+  return 3;
+}
+
+export function fmtNum(v: number | null | undefined): string {
+  if (v == null) return '';
+  return String(Number(v.toFixed(decimalsFor(Math.abs(v)))));
+}
+
 export function formatResultValue(result: Result): string {
   if (result.rawValue != null && result.rawValue !== '') {
     return `${result.rawValue} ${result.unit || ''}`.trim();
   }
   if (result.value == null) return '—';
-  return `${result.value} ${result.unit || ''}`.trim();
+  return `${fmtNum(result.value)} ${result.unit || ''}`.trim();
 }
 
 export function formatResultReference(result: Result): string {
   if (result.refText) return result.refText;
-  if (result.refMin != null && result.refMax != null) return result.refMin + ' – ' + result.refMax;
-  if (result.refMin != null) return '> ' + result.refMin;
-  if (result.refMax != null) return '< ' + result.refMax;
+  if (result.refMin != null && result.refMax != null) return fmtNum(result.refMin) + ' – ' + fmtNum(result.refMax);
+  if (result.refMin != null) return '> ' + fmtNum(result.refMin);
+  if (result.refMax != null) return '< ' + fmtNum(result.refMax);
   return '—';
 }
 

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
-import { formatResultReference, isOutOfRange } from '../../utils/format';
+import { fmtNum, formatResultReference, isOutOfRange } from '../../utils/format';
 import type { Panel, Result } from '../../types';
 
 type LoincRef = { label: string; loinc: string; longCommonName: string; unit: string };
@@ -110,15 +110,15 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2284-8': { short: 'B9', unit: 'ng/mL' },
   '2132-9': { short: 'B12', unit: 'pg/mL' },
   '1989-3': { short: '25OH', unit: 'ng/mL' },
-  '17861-6': { short: 'CA', unit: 'mg/dL' },
-  '1994-3': { short: 'ICA', unit: 'mmol/L' },
-  '2075-0': { short: 'CL', unit: 'mmol/L' },
+  '17861-6': { short: 'Ca', unit: 'mg/dL' },
+  '1994-3': { short: 'iCa', unit: 'mmol/L' },
+  '2075-0': { short: 'Cl', unit: 'mmol/L' },
   '2777-1': { short: 'PHOS', unit: 'mg/dL' },
   '2823-3': { short: 'K+', unit: 'mmol/L' },
-  '19123-9': { short: 'MG', unit: 'mg/dL' },
-  '29900-7': { short: 'MGRBC', unit: 'mg/dL' },
-  '2951-2': { short: 'NA', unit: 'mmol/L' },
-  '5763-8': { short: 'ZN', unit: 'mcg/dL' },
+  '19123-9': { short: 'Mg', unit: 'mg/dL' },
+  '29900-7': { short: 'MgRBC', unit: 'mg/dL' },
+  '2951-2': { short: 'Na', unit: 'mmol/L' },
+  '5763-8': { short: 'Zn', unit: 'mcg/dL' },
   '2731-8': { short: 'PTH', unit: 'pg/mL' },
   // Bone turnover markers
   '2697-1': { short: 'OC', unit: 'ng/mL' }, // Osteocalcin
@@ -245,6 +245,23 @@ export function MedicalConditionsPage() {
   }, [panels, analysesCatalog]);
 
   useEffect(() => {
+    const hash = decodeURIComponent(window.location.hash.slice(1));
+    if (hash) setDetailPanel(hash);
+
+    const onPopState = (e: PopStateEvent) => {
+      setDetailPanel(e.state?.panel ?? null);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const openDetail = (name: string) => {
+    window.history.pushState({ panel: name }, '', `#${encodeURIComponent(name)}`);
+    setDetailPanel(name);
+    setDetailTab('analysis');
+  };
+
+  useEffect(() => {
     let cancelled = false;
 
     async function buildAllResults() {
@@ -309,7 +326,7 @@ export function MedicalConditionsPage() {
         </div>
       );
     }
-    const value = current.result.rawValue || current.result.value;
+    const value = current.result.rawValue || fmtNum(current.result.value);
     const hasRef = current.result.value != null && (current.result.refMin != null || current.result.refMax != null);
     const bg = hasRef ? (isOutOfRange(current.result) ? '#fdecea' : '#e6f4ea') : 'transparent';
     return (
@@ -342,16 +359,24 @@ export function MedicalConditionsPage() {
       return allResults.find((r) => r.date === date && loincs.includes(r.loinc)) ?? null;
     };
 
+    const DATE_COL_WIDTH = 96;
+
     const renderTable = (rowTests: Observation[]) => (
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2' }} />
               {dates.map((date) => (
                 <th
                   key={date}
-                  style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2', whiteSpace: 'nowrap' }}
+                  style={{
+                    width: DATE_COL_WIDTH,
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    borderBottom: '1.5px solid #1971c2',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   {formatMonthYear(date)}
                 </th>
@@ -369,7 +394,10 @@ export function MedicalConditionsPage() {
                   const match = cellMatch(test, date);
                   if (!match) {
                     return (
-                      <td key={date} style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>
+                      <td
+                        key={date}
+                        style={{ width: DATE_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}
+                      >
                         –
                       </td>
                     );
@@ -377,10 +405,17 @@ export function MedicalConditionsPage() {
                   const hasRef = match.result.value != null && (match.result.refMin != null || match.result.refMax != null);
                   const bg = hasRef ? (isOutOfRange(match.result) ? '#fdecea' : '#e6f4ea') : 'transparent';
                   return (
-                    <td key={date} style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>
-                      <span style={{ padding: '2px 6px', borderRadius: 4, background: bg }}>
-                        {match.result.rawValue || match.result.value}
-                      </span>
+                    <td
+                      key={date}
+                      style={{
+                        width: DATE_COL_WIDTH,
+                        padding: '8px 12px',
+                        borderBottom: '1px solid #eee',
+                        whiteSpace: 'nowrap',
+                        background: bg,
+                      }}
+                    >
+                      {match.result.rawValue || fmtNum(match.result.value)}
                     </td>
                   );
                 })}
@@ -394,7 +429,7 @@ export function MedicalConditionsPage() {
     return (
       <div style={{ padding: '56px 48px' }}>
         <div
-          onClick={() => setDetailPanel(null)}
+          onClick={() => window.history.back()}
           style={{ fontSize: 14, color: '#1971c2', cursor: 'pointer', marginBottom: 24 }}
         >
           ← Monitoring Panels
@@ -480,15 +515,11 @@ export function MedicalConditionsPage() {
             }}
           >
             <div
-              onClick={() => {
-                setDetailPanel(condition.name);
-                setDetailTab('analysis');
-              }}
+              onClick={() => openDetail(condition.name)}
               style={{
                 fontSize: 13,
                 fontWeight: 600,
                 letterSpacing: '0.04em',
-                textTransform: 'uppercase',
                 marginBottom: 16,
                 cursor: 'pointer',
               }}
@@ -496,7 +527,7 @@ export function MedicalConditionsPage() {
               {condition.name}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(3, ${BADGE_WIDTH}px)`, gap: BADGE_GAP }}>
-              {condition.tests.map((test) => {
+              {condition.tests.filter((test) => !INDEX_LOINCS.has(test.loinc)).map((test) => {
                 const style = STATUS_STYLES[getStatus(testLoincs(test))];
                 return (
                 <div

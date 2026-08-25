@@ -34,6 +34,23 @@ rationale per rule so future-us can revisit.
 - [TODO: accent color use cases — call-to-action, success
   state, brand surfaces.]
 
+### Numbers
+
+- **Prefer the lab's own printed value.** A result's `rawValue` (the
+  string exactly as the lab report shows it) is displayed as-is — no
+  rounding, no reformatting. It's the reconciliation surface against
+  the paper report; touching it defeats that purpose.
+- **Adaptive-precision fallback.** Only when there's no `rawValue`
+  (a value we computed, or one with no printed string) do we round,
+  by magnitude: `≥ 100` -> 0 decimals, `≥ 10` -> 1, `≥ 1` -> 2,
+  `< 1` -> 3. Trailing zeros are stripped. Locale-agnostic (`.` as
+  the decimal separator) — locale-aware formatting is a separate
+  render-time concern.
+- Ported from `project-bloodtests-v2`'s `engine/src/format.ts`
+  (`fmtNum`) and its use in `engine/src/matrix.ts`; see
+  [`../product/concepts/lab-report.md`](../product/concepts/lab-report.md)
+  for the reported-value vs. computed-value distinction.
+
 ### Typography
 
 - [TODO: type scale — base size, line-height, weight ladder.]
