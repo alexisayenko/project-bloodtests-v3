@@ -13,30 +13,35 @@ export type Markers = Record<string, number | undefined>;
 
 const has = (m: Markers, ...keys: string[]): boolean => keys.every((k) => m[k] != null);
 
-/** v2 marker short name -> v3 LOINC code, for every marker any ported index needs. */
-export const MARKER_LOINC: Record<string, string> = {
-  TC: '2093-3',
-  'HDL-C': '2085-9',
-  'LDL-C': '13457-7',
-  TRIG: '2571-8',
-  ApoB: '1884-6',
-  ApoA1: '1869-7',
-  GLU: '2339-0',
-  Insulin: '20448-7',
-  T: '14913-8',
-  SHBG: '2942-1',
-  ALB: '1751-7',
-  DHT: '1848-1',
-  LH: '10501-5',
-  E2: '2243-4',
-  Cortisol: '2143-6',
-  'DHEA-S': '2191-5',
-  FT3: '3051-0',
-  FT4: '3024-7',
-  AST: '1920-8',
-  ALT: '1742-6',
-  Fe: '2498-4',
-  TIBC: '2500-7',
+/**
+ * v2 marker short name -> candidate v3 LOINC codes, for every marker any ported
+ * index needs. Some analytes are reported under different LOINCs across labs/eras
+ * (same list as MedicalConditionsPage's ALSO_REFS) -- listed primary-first, tried
+ * in order, first one with data on the draw's date wins.
+ */
+export const MARKER_LOINC: Record<string, string[]> = {
+  TC: ['2093-3'],
+  'HDL-C': ['2085-9'],
+  'LDL-C': ['13457-7'],
+  TRIG: ['2571-8'],
+  ApoB: ['1884-6'],
+  ApoA1: ['1869-7'],
+  GLU: ['2339-0'],
+  Insulin: ['20448-7'],
+  T: ['14913-8', '2986-8'],
+  SHBG: ['2942-1', '13967-5'],
+  ALB: ['1751-7'],
+  DHT: ['1848-1', '15057-3'],
+  LH: ['10501-5'],
+  E2: ['2243-4'],
+  Cortisol: ['2143-6'],
+  'DHEA-S': ['2191-5'],
+  FT3: ['3051-0'],
+  FT4: ['3024-7'],
+  AST: ['1920-8'],
+  ALT: ['1742-6'],
+  Fe: ['2498-4'],
+  TIBC: ['2500-7'],
 };
 
 // ---- unit conversion, ported verbatim from engine/src/convert.ts + build.ts's UNIT_CONVERSIONS ----
@@ -60,22 +65,52 @@ interface UnitConv {
   conv: (x: number) => number;
 }
 
+// Testosterone MW 288.42 g/mol (see calculatedFreeTestosterone below) => 1 ng/dL = 0.03467 nmol/L.
+const T_NGDL_TO_NMOLL_FACTOR = 0.03467;
+
 const UNIT_CONVERSIONS: UnitConv[] = [
   { marker: 'FT3', from: 'pg/mL', to: 'pmol/L', conv: (x) => x * 1.536 },
   { marker: 'FT3', from: 'pmol/L', to: 'pg/mL', conv: (x) => x / 1.536 },
   { marker: 'FT4', from: 'ng/dL', to: 'pmol/L', conv: (x) => x * 12.87 },
   { marker: 'FT4', from: 'pmol/L', to: 'ng/dL', conv: (x) => x / 12.87 },
+  // Testosterone: nmol/L (molar, e.g. LOINC 14913-8) <-> ng/dL (the mass unit
+  // cft/tlh/te2/dhtt's formulas expect).
+  { marker: 'T', from: 'nmol/L', to: 'ng/dL', conv: (x) => x / T_NGDL_TO_NMOLL_FACTOR },
+  { marker: 'T', from: 'ng/dL', to: 'nmol/L', conv: (x) => x * T_NGDL_TO_NMOLL_FACTOR },
+  // Testosterone: ng/mL (e.g. LOINC 2986-8) <-> ng/dL -- same mass unit, dL = 100 mL.
+  { marker: 'T', from: 'ng/mL', to: 'ng/dL', conv: (x) => x * 100 },
+  { marker: 'T', from: 'ng/dL', to: 'ng/mL', conv: (x) => x / 100 },
+  // Testosterone: ng/mL <-> nmol/L directly (ng/mL -> ng/dL -> nmol/L combined).
+  { marker: 'T', from: 'ng/mL', to: 'nmol/L', conv: (x) => x * 100 * T_NGDL_TO_NMOLL_FACTOR },
+  { marker: 'T', from: 'nmol/L', to: 'ng/mL', conv: (x) => x / T_NGDL_TO_NMOLL_FACTOR / 100 },
   ...Object.entries(MGDL_TO_MMOLL).flatMap(([marker, f]): UnitConv[] => [
     { marker, from: 'mg/dL', to: 'mmol/L', conv: f },
     { marker, from: 'mmol/L', to: 'mg/dL', conv: (x) => x / f(1) },
   ]),
 ];
 
-function toUnit(value: number, marker: string, from: string | null | undefined, to: string): number {
+export function toUnit(value: number, marker: string, from: string | null | undefined, to: string): number {
   if (!from || from === to) return value;
   const rule = UNIT_CONVERSIONS.find((r) => r.marker === marker && r.from === from && r.to === to);
   return rule ? rule.conv(value) : value;
 }
+
+/**
+ * The SI/US toggle only touches observations we have a verified conversion
+ * factor for (the markers above with an entry in UNIT_CONVERSIONS) -- every
+ * other observation keeps showing its as-reported value/unit unchanged rather
+ * than an invented conversion.
+ */
+export const SI_US_UNIT: Record<string, { si: string; us: string }> = {
+  TC: { si: 'mmol/L', us: 'mg/dL' },
+  'HDL-C': { si: 'mmol/L', us: 'mg/dL' },
+  'LDL-C': { si: 'mmol/L', us: 'mg/dL' },
+  TRIG: { si: 'mmol/L', us: 'mg/dL' },
+  GLU: { si: 'mmol/L', us: 'mg/dL' },
+  T: { si: 'nmol/L', us: 'ng/dL' },
+  FT3: { si: 'pmol/L', us: 'pg/mL' },
+  FT4: { si: 'pmol/L', us: 'ng/dL' },
+};
 
 // ---- 3-zone coloring, ported verbatim from engine/src/flag.ts's `zone()` ----
 
@@ -151,7 +186,7 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'ka', name: 'Atherogenic coefficient', nameCompact: 'AC', panels: ['Cardiovascular Risk'],
     formula: '(TC − HDL) / HDL', cut: [3, 4], needs: ['TC', 'HDL-C'], level: 'heuristic',
-    meaning: 'Share of atherogenic cholesterol relative to protective HDL. Higher = more atherogenic blood. Rough guide: <3 good, 3–4 borderline, >4 high.',
+    meaning: 'Share of atherogenic cholesterol relative to protective HDL -- higher means more atherogenic blood.',
     consensus: 'Common in post-Soviet labs; in international guidelines superseded by ApoB and direct ratios. Fine as a rough orientation.',
     evidenceLevel: 'heuristic',
     references: [
@@ -162,7 +197,7 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'tchdl', name: 'TC / HDL ratio', nameCompact: 'TC/HDL', panels: ['Cardiovascular Risk'],
     formula: 'TC / HDL', cut: [3.5, 5], needs: ['TC', 'HDL-C'], level: 'consensus', loinc: '9830-1',
-    meaning: 'Total cholesterol per unit of protective HDL. Simple, robust cardiovascular-risk marker. Target usually <3.5–4.',
+    meaning: 'Total cholesterol per unit of protective HDL -- a simple, robust cardiovascular-risk marker.',
     consensus: 'Well-established CV-risk marker, used in risk calculators (e.g. Framingham). Good evidence base.',
     evidenceLevel: 'consensus',
     references: [
@@ -173,7 +208,7 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'ldlhdl', name: 'LDL / HDL ratio', nameCompact: 'LDL/HDL', panels: ['Cardiovascular Risk'],
     formula: 'LDL / HDL', cut: [2, 3.5], needs: ['LDL-C', 'HDL-C'], level: 'heuristic', loinc: '11054-4',
-    meaning: 'Direct ratio of atherogenic LDL to protective HDL. More LDL-sensitive than TC/HDL. Target <2–3.',
+    meaning: 'Direct ratio of atherogenic LDL to protective HDL -- more LDL-sensitive than TC/HDL.',
     consensus: 'Long used and intuitive, but current guidance considers ApoB / non-HDL more accurate.',
     evidenceLevel: 'heuristic',
     references: [
@@ -185,7 +220,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'aip', name: 'AIP (atherogenic index of plasma)', nameCompact: 'AIP', panels: ['Insulin Resistance', 'Cardiovascular Risk'],
     formula: 'log₁₀(TG / HDL), molar', cut: [0.11, 0.21], needs: ['TRIG', 'HDL-C'],
     inputUnits: { TRIG: 'mmol/L', 'HDL-C': 'mmol/L' }, level: 'consensus',
-    meaning: 'Reflects LDL particle size and insulin resistance. Scale: <0.11 low risk, 0.11–0.21 medium, >0.21 high.',
+    meaning: 'Reflects LDL particle size and insulin resistance.',
     consensus: 'Growing evidence as a CV-risk predictor, especially with high triglycerides / metabolic syndrome.',
     evidenceLevel: 'consensus',
     references: [
@@ -197,7 +232,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'nonhdl', name: 'Non-HDL cholesterol', nameCompact: 'Non HDL', panels: ['Cardiovascular Risk'],
     formula: 'TC − HDL (mg/dL)', cut: [130, 160], unit: 'mg/dL', needs: ['TC', 'HDL-C'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL' }, level: 'consensus', loinc: '43396-1',
-    meaning: 'All atherogenic cholesterol (LDL + VLDL + remnants). Reflects risk better than LDL alone, especially with high TG. Target <130 mg/dL (high risk <100).',
+    meaning: 'All atherogenic cholesterol (LDL + VLDL + remnants) -- reflects risk better than LDL alone, especially with high triglycerides.',
     consensus: 'Recommended by ESC/AHA guidelines as a secondary treatment target; more reliable than isolated LDL.',
     evidenceLevel: 'guideline',
     references: [
@@ -210,7 +245,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'remnant', name: 'Remnant cholesterol', nameCompact: 'Remnant-C', panels: ['Cardiovascular Risk'],
     formula: 'TC − HDL − LDL (mg/dL)', cut: [24, 30], unit: 'mg/dL', needs: ['TC', 'HDL-C', 'LDL-C'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', 'LDL-C': 'mg/dL' }, level: 'consensus',
-    meaning: 'Cholesterol in triglyceride-rich lipoproteins (VLDL and remnants). Independent CV-risk and vascular-inflammation factor. Target <24 mg/dL (~0.6 mmol/L).',
+    meaning: 'Cholesterol in triglyceride-rich lipoproteins (VLDL and remnants) -- an independent cardiovascular-risk and vascular-inflammation factor.',
     consensus: 'Accumulating evidence as a causal driver of atherosclerosis; increasingly used.',
     evidenceLevel: 'consensus',
     references: [
@@ -222,7 +257,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'vldl', name: 'VLDL cholesterol', nameCompact: 'VLDL', panels: ['Cardiovascular Risk'],
     formula: 'TG / 5 (mg/dL)', cut: [30, 40], unit: 'mg/dL', needs: ['TRIG'],
     inputUnits: { TRIG: 'mg/dL' }, level: 'heuristic', loinc: '13458-5',
-    meaning: "Cholesterol carried by triglyceride-rich VLDL ('pre-beta' lipoprotein), estimated as triglycerides ÷ 5 (Friedewald — valid when TG <400 mg/dL). Tracks triglyceride load; overlaps with the Remnant-cholesterol index (VLDL is the bulk of remnants). Guide: <30 normal · 30–40 borderline · >40 high.",
+    meaning: "Cholesterol carried by triglyceride-rich VLDL ('pre-beta' lipoprotein) -- tracks triglyceride load; overlaps with Remnant cholesterol (VLDL is the bulk of remnants). Estimated as triglycerides ÷ 5 (Friedewald, valid when TG <400 mg/dL).",
     consensus: 'Standard Friedewald estimate; a rough surrogate, not a directly measured fraction. Remnant-C is the more modern read of the same triglyceride-rich pool.',
     evidenceLevel: 'heuristic',
     references: [
@@ -233,7 +268,7 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'apobapoa', name: 'ApoB / ApoA1', nameCompact: 'ApoB/ApoA', panels: ['Cardiovascular Risk'],
     formula: 'ApoB / ApoA1', cut: [0.7, 0.9], needs: ['ApoB', 'ApoA1'], level: 'consensus', loinc: '1874-7',
-    meaning: "Atherogenic particles (ApoB) per protective particle (ApoA1) — essentially 'bad' particles per 'good'. One of the strongest lipid predictors of MI. Men: <0.7 low, 0.7–0.9 moderate, >0.9 high.",
+    meaning: "Atherogenic particles (ApoB) per protective particle (ApoA1) -- essentially 'bad' particles per 'good'. One of the strongest lipid predictors of heart attack risk.",
     consensus: 'Strong predictor in large studies (INTERHEART). Needs ApoB and ApoA1 from the same draw.',
     evidenceLevel: 'consensus',
     references: [
@@ -246,7 +281,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'tyg', name: 'TyG index', nameCompact: 'TyG', panels: ['Insulin Resistance'],
     formula: 'ln(TG[mg/dL] × glucose[mg/dL] / 2)', cut: [8.5, 9], needs: ['TRIG', 'GLU'],
     inputUnits: { TRIG: 'mg/dL', GLU: 'mg/dL' }, level: 'consensus',
-    meaning: 'Surrogate of insulin resistance from triglycerides and glucose — no insulin needed. Guide: <8.5 normal, >9 marked IR.',
+    meaning: 'Surrogate of insulin resistance from triglycerides and glucose -- no insulin measurement needed.',
     consensus: 'Well-validated IR / metabolic-risk marker; convenient (no insulin assay). Needs fasting TG and glucose from one draw.',
     evidenceLevel: 'consensus',
     references: [
@@ -258,7 +293,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'gi', name: 'Glucose / insulin ratio', nameCompact: 'Glu/Insulin', panels: ['Insulin Resistance'],
     formula: 'glucose(mg/dL) / insulin(µIU/mL)', cut: [7, 4.5], hi: true, needs: ['GLU', 'Insulin'],
     inputUnits: { GLU: 'mg/dL' }, level: 'heuristic', loinc: '62418-9',
-    meaning: 'An older fasting insulin-resistance surrogate: glucose ÷ insulin. Higher = more insulin-sensitive; a low ratio means high fasting insulin (insulin resistance). Cutoffs vary widely by population and assay, so read it as orientation only. Guide here: >7 sensitive · 4.5–7 borderline · <4.5 resistant.',
+    meaning: 'An older fasting insulin-resistance surrogate: glucose ÷ insulin. Higher means more insulin-sensitive; a low ratio means high fasting insulin (insulin resistance).',
     consensus: 'Crude, non-standardized IR proxy, superseded by HOMA-IR (built from the same two values). Prefer HOMA-IR.',
     evidenceLevel: 'heuristic',
     references: [
@@ -270,7 +305,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'homair', name: 'HOMA-IR', nameCompact: 'HOMA-IR', panels: ['Insulin Resistance', 'Pancreatic Function'],
     formula: 'glucose(mmol/L) × insulin(µIU/mL) / 22.5', cut: [2, 2.9], needs: ['GLU', 'Insulin'],
     inputUnits: { GLU: 'mmol/L' }, level: 'consensus',
-    meaning: 'Fasting insulin-resistance estimate. Guide: <2 normal · 2–2.9 borderline / early insulin resistance · ≥2.9 insulin resistance.',
+    meaning: 'Fasting insulin-resistance estimate from glucose and insulin.',
     consensus: 'Standard IR screening index. Requires fasting glucose AND insulin from one draw.',
     evidenceLevel: 'consensus',
     references: [
@@ -282,7 +317,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'homab', name: 'HOMA-%B (beta-cell function)', nameCompact: 'HOMA-%B', panels: ['Pancreatic Function', 'Insulin Resistance'],
     formula: '20 × insulin(µIU/mL) / (glucose(mmol/L) − 3.5)', cut: [80, 50], hi: true, unit: '%', needs: ['GLU', 'Insulin'],
     inputUnits: { GLU: 'mmol/L' }, level: 'heuristic',
-    meaning: "Estimates how well the pancreas's beta cells are still producing insulin, from the SAME fasting glucose + insulin pair as HOMA-IR (one draw, both fasting). Reference is ~100% = normal beta-cell function; lower means the beta cells are no longer keeping up. It must be read NEXT TO HOMA-IR, never alone: the two answer different halves of one question -- HOMA-IR says how resistant the tissues are, %B says whether the pancreas can still compensate. A calm HOMA-IR with a low %B is a real pattern: no insulin resistance, but the beta cells are under-delivering, and glucose creeps up anyway. Guide: >80% good · 50–80% borderline · <50% low -- orientation only, HOMA-%B has no agreed cut-points. And one draw is one point, not a trend.",
+    meaning: "Estimates how well the pancreas's beta cells are still producing insulin, from the SAME fasting glucose + insulin pair as HOMA-IR. ~100% is normal beta-cell function; lower means the beta cells are no longer keeping up. Must be read NEXT TO HOMA-IR, never alone: the two answer different halves of one question -- HOMA-IR says how resistant the tissues are, %B says whether the pancreas can still compensate. A calm HOMA-IR with a low %B is a real pattern: no insulin resistance, but the beta cells are under-delivering.",
     consensus: "Deliberately graded HEURISTIC, not consensus, for two honest reasons. (1) HOMA1's linear approximation is imprecise -- the original paper reports a coefficient of variation around 32%; the non-linear HOMA2 model is the better estimator and this engine does not implement it. (2) The HOMA authors explicitly list measuring beta-cell function in isolation among the model's inappropriate uses; %B is meaningful only alongside HOMA-IR, which is why it is shipped on the same panels and never on its own. Requires fasting glucose AND insulin from ONE draw -- computed only where both exist on the same date, never paired across dates. Undefined when fasting glucose <= 3.5 mmol/L (the formula's denominator), in which case no value is produced.",
     evidenceLevel: 'heuristic',
     references: [
@@ -293,9 +328,10 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'cft', name: 'Free testosterone (calculated)', nameCompact: 'cFT', panels: ['Hypogonadism'],
-    formula: 'Vermeulen (T, SHBG, albumin)', cut: [100, 65], unit: 'pg/mL', hi: true, needs: ['T', 'SHBG'],
-    level: 'consensus', loinc: '103227-5',
-    meaning: 'Bioavailable testosterone estimated from total T, SHBG and albumin (Vermeulen equation), in pg/mL. Assay-independent -- compare it with the measured Free Testosterone row, whose direct immunoassay is unreliable and uses incompatible reference ranges across labs. Higher is better; guide: >100 good · 65–100 low-normal · <65 low (~6.5 ng/dL floor). Albumin defaults to 4.3 g/dL when not measured. The equation solves the binding equilibrium of testosterone to SHBG (high affinity, Ks≈1×10⁹ L/mol) and albumin (low affinity, Ka≈3.6×10⁴ L/mol) as a quadratic: free T = [−b+√(b²−4ac)]/2a, with a=N·Ks, b=N+Ks(SHBG−T), c=−T and N=1+Ka·albumin (all in mol/L).',
+    formula: 'free T = (−b + √(b²−4ac)) / 2a\na = N·Ks\nb = N + Ks(SHBG−T)\nc = −T\nN = 1 + Ka·albumin\n(Vermeulen equation, all in mol/L)',
+    cut: [100, 65], unit: 'pg/mL', hi: true, needs: ['T', 'SHBG'],
+    inputUnits: { T: 'ng/dL', SHBG: 'nmol/L' }, level: 'consensus', loinc: '103227-5',
+    meaning: 'Bioavailable testosterone estimated from total T, SHBG and albumin. Assay-independent -- compare it with the measured Free Testosterone row, whose direct immunoassay is unreliable and uses incompatible reference ranges across labs. Albumin defaults to 4.3 g/dL when not measured.',
     consensus: 'Calculated free T (Vermeulen) is the method recommended by the Endocrine Society when free T is needed; direct analog free-T immunoassays are discouraged -- they systematically under-read and are lab-specific (which is why the measured row can differ several-fold and only agrees on some assays). Sanity check: free T should be ~2% of total; when the two rows disagree, trust the calculated one.',
     evidenceLevel: 'guideline',
     references: [
@@ -306,8 +342,9 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'tlh', name: 'T / LH ratio', nameCompact: 'T/LH', panels: ['Hypogonadism'],
-    formula: 'T(ng/dL) / LH(mIU/mL)', cut: [100, 50], hi: true, needs: ['T', 'LH'], level: 'heuristic',
-    meaning: 'Leydig-cell function -- testosterone output per unit of pituitary LH drive. A high ratio means the testes respond well to LH; a low ratio (low T despite high LH) points to primary testicular failure, whereas low T with low/normal LH points to a central (secondary) cause. No validated cutoff -- read it alongside the absolute LH value.',
+    formula: 'T(ng/dL) / LH(mIU/mL)', cut: [100, 50], hi: true, needs: ['T', 'LH'],
+    inputUnits: { T: 'ng/dL' }, level: 'heuristic',
+    meaning: 'Leydig-cell function -- testosterone output per unit of pituitary LH drive. A low ratio (low T despite high LH) points to primary testicular failure; low T with low/normal LH points to a central (secondary) cause.',
     consensus: 'Used in andrology research to characterise where a problem sits (testes vs pituitary); not a standardised diagnostic with fixed thresholds.',
     evidenceLevel: 'heuristic',
     references: [
@@ -317,8 +354,9 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'te2', name: 'T / E2 ratio', nameCompact: 'T/E2', panels: ['Hypogonadism'],
-    formula: 'T(ng/dL) / E2(pg/mL)', cut: [15, 10], hi: true, needs: ['T', 'E2'], level: 'heuristic',
-    meaning: 'Aromatization balance -- testosterone relative to the estradiol aromatized from it. A low ratio (<10) suggests relatively high estrogen conversion; mid-teens and up is usually comfortable. Cuts both ways though: a very high ratio can mean estradiol is too low (E2 is needed for bone, libido and mood). Guide: >15 good · 10–15 borderline · <10 high relative estrogen.',
+    formula: 'T(ng/dL) / E2(pg/mL)', cut: [15, 10], hi: true, needs: ['T', 'E2'],
+    inputUnits: { T: 'ng/dL' }, level: 'heuristic',
+    meaning: 'Aromatization balance -- testosterone relative to the estradiol aromatized from it. A low ratio suggests relatively high estrogen conversion. Cuts both ways though: a very high ratio can mean estradiol is too low (E2 is needed for bone, libido and mood).',
     consensus: 'Popular in men\'s-health / andrology practice; evidence is moderate and there is no formal guideline cutoff.',
     evidenceLevel: 'heuristic',
     references: [
@@ -328,8 +366,9 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'dhtt', name: 'DHT / T ratio (5α-reductase)', nameCompact: 'DHT/T', panels: ['Hypogonadism'],
-    formula: 'DHT / T × 100, %', cut: [12, 18], unit: '%', needs: ['DHT', 'T'], level: 'heuristic',
-    meaning: 'How much testosterone you convert to the more potent DHT via 5α-reductase, as a percent. Higher = more androgenic signalling in skin, scalp and prostate (relevant to hair loss, acne, BPH). Contextual, not simply good/bad: a low ratio is expected on a 5α-reductase inhibitor (finasteride/dutasteride). Rough orientation: <12% typical · 12–18% high-normal · >18% high conversion.',
+    formula: 'DHT / T × 100, %', cut: [12, 18], unit: '%', needs: ['DHT', 'T'],
+    inputUnits: { T: 'ng/dL' }, level: 'heuristic',
+    meaning: 'How much testosterone you convert to the more potent DHT via 5α-reductase. Higher means more androgenic signalling in skin, scalp and prostate (relevant to hair loss, acne, BPH). Contextual, not simply good/bad: a low ratio is expected on a 5α-reductase inhibitor (finasteride/dutasteride).',
     consensus: 'Used to gauge 5α-reductase activity and to monitor 5α-reductase inhibitors; no standardised diagnostic threshold.',
     evidenceLevel: 'heuristic',
     references: [
@@ -341,7 +380,7 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'cortdhea', name: 'Cortisol / DHEA-S ratio', nameCompact: 'Cort/DHEA-S', panels: ['Adrenal'],
     formula: 'Cortisol / DHEA-S (molar, both nmol/L)', cut: [0.1, 0.2], needs: ['Cortisol', 'DHEA-S'], level: 'heuristic',
-    meaning: 'Balance between the catabolic stress hormone (cortisol) and the anabolic adrenal androgen reserve (DHEA-S), as a molar ratio with both in the same unit (nmol/L). Healthy adults sit around 0.03–0.10; a high ratio (high cortisol, low DHEA-S) is read as a chronic-stress / catabolic pattern. Guide (orientation only): <0.1 balanced · 0.1–0.2 borderline · >0.2 catabolic.',
+    meaning: 'Balance between the catabolic stress hormone (cortisol) and the anabolic adrenal androgen reserve (DHEA-S). A high ratio (high cortisol, low DHEA-S) is read as a chronic-stress / catabolic pattern.',
     consensus: 'Popular in functional / integrative medicine; weak support in conventional endocrinology and no agreed cutoff -- treat as exploratory, not diagnostic.',
     evidenceLevel: 'heuristic',
     references: [
@@ -354,7 +393,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'ft3ft4', name: 'FT3 / FT4 ratio', nameCompact: 'FT3/FT4', panels: ['Hypothyroidism'],
     formula: 'FT3 / FT4 (molar)', cut: [0.3, 0.2], hi: true, needs: ['FT3', 'FT4'],
     inputUnits: { FT3: 'pmol/L', FT4: 'pmol/L' }, level: 'heuristic',
-    meaning: "Peripheral T4→T3 conversion (deiodinase activity), using the free hormones so it's independent of binding-protein swings. A low ratio means poor conversion -- seen in low-T3 / euthyroid-sick syndrome, chronic stress, illness, low selenium or caloric restriction. Guide: >0.30 good · 0.20–0.30 low-normal · <0.20 poor conversion.",
+    meaning: "Peripheral T4→T3 conversion (deiodinase activity), using the free hormones so it's independent of binding-protein swings. A low ratio means poor conversion -- seen in low-T3 / euthyroid-sick syndrome, chronic stress, illness, low selenium or caloric restriction.",
     consensus: 'Used as an orientation for conversion problems; no formal diagnostic cutoff. Free-hormone ratio is preferred over total T3/T4 (which are distorted by binding globulin).',
     evidenceLevel: 'heuristic',
     references: [
@@ -365,7 +404,7 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'deritis', name: 'De Ritis ratio (AST/ALT)', nameCompact: 'De Ritis', panels: ['Fatty Liver'],
     formula: 'AST / ALT', cut: [1.3, 2], needs: ['AST', 'ALT'], level: 'consensus', loinc: '1916-6',
-    meaning: 'Pattern of liver injury. <1 typical of fatty liver; >1 alcoholic/cirrhotic or muscle source; >2 especially concerning.',
+    meaning: 'Pattern of liver injury: below 1 suggests fatty liver; above 1 suggests alcoholic, cirrhotic or muscle origin.',
     consensus: 'Classic hepatology index with a long track record.',
     evidenceLevel: 'consensus',
     references: [
@@ -377,7 +416,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'tsat', name: 'Transferrin saturation', nameCompact: 'TSAT', panels: ['Anemia'],
     formula: 'serum iron / TIBC × 100, %', cut: [20, 15], unit: '%', hi: true, needs: ['Fe', 'TIBC'],
     level: 'consensus', loinc: '2502-3',
-    meaning: 'How full the iron-transport protein (transferrin) is running. Low is the iron-deficiency signal: 20–45% normal · 15–20 low · <15 clear deficiency. More dynamic than ferritin, so they\'re read together. Note the other end -- a HIGH saturation (>45%) means iron overload / hemochromatosis (flagged via ferritin on the Hypogonadism panel).',
+    meaning: 'How full the iron-transport protein (transferrin) is running. Low is the iron-deficiency signal; more dynamic than ferritin, so they\'re read together. A HIGH saturation means iron overload / hemochromatosis.',
     consensus: 'Standard part of the iron panel; interpreted alongside ferritin.',
     evidenceLevel: 'consensus',
     references: [
@@ -387,18 +426,26 @@ export const INDEX_DEFS: IndexDef[] = [
   },
 ];
 
+/** First of a marker's candidate LOINCs that has a value on this draw. */
+function findResult(short: string, resultsByLoinc: Record<string, Result>): Result | undefined {
+  for (const loinc of MARKER_LOINC[short] ?? []) {
+    const r = resultsByLoinc[loinc];
+    if (r?.value != null) return r;
+  }
+  return undefined;
+}
+
 /** One draw's observations, converted to the units each index's fn expects. */
 export function markersForIndex(def: IndexDef, resultsByLoinc: Record<string, Result>): Markers {
   const m: Markers = {};
   for (const short of def.needs) {
-    const loinc = MARKER_LOINC[short];
-    const r = loinc ? resultsByLoinc[loinc] : undefined;
+    const r = findResult(short, resultsByLoinc);
     if (r?.value == null) continue;
     const target = def.inputUnits?.[short];
     m[short] = target ? toUnit(r.value, short, r.unit, target) : r.value;
   }
   if (def.key === 'cft') {
-    const alb = resultsByLoinc[MARKER_LOINC['ALB']!];
+    const alb = findResult('ALB', resultsByLoinc);
     if (alb?.value != null) m['ALB'] = alb.value;
   }
   return m;
@@ -406,5 +453,8 @@ export function markersForIndex(def: IndexDef, resultsByLoinc: Record<string, Re
 
 export function computeIndex(def: IndexDef, resultsByLoinc: Record<string, Result>): number | null {
   const v = def.fn(markersForIndex(def, resultsByLoinc));
-  return v != null && Number.isFinite(v) ? v : null;
+  if (v == null || !Number.isFinite(v)) return null;
+  // Quantize to 2dp before display formatting -- matches v2's historical display
+  // (e.g. AIP 0.4475 -> 0.45 -> "0.45", not fmtNum's raw "0.448").
+  return Math.round(v * 100) / 100;
 }
