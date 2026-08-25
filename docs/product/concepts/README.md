@@ -15,7 +15,8 @@ features. Each file covers data model, invariants, edge cases,
 and constraints.
 
 Current concepts: [observation](observation.md),
-[monitoring panel](monitoring-panel.md).
+[monitoring panel](monitoring-panel.md),
+[lab report](lab-report.md).
 
 ## What a concept is not
 

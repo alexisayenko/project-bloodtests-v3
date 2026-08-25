@@ -11,7 +11,8 @@ A single lab-measurable quantity, identified by its LOINC code — the atomic un
 
 ## What it is not
 
-- **Not a result** — an observation is the definition of *what* is measured (name, code, reference info). A result is *when* a specific value was measured for a specific person. Results are recorded against an observation.
+- **Not a result** — an observation is the definition of *what* is measured (name, code). A result is *when* a specific value was measured for a specific person, recorded as an entry in a [lab report](lab-report.md).
+- **Not a unit or reference range** — the lab running the assay determines the unit and reference range for each result; these are reported per lab-report entry, not fixed by the observation.
 - **Not a panel** — an observation doesn't know which [monitoring panels](monitoring-panel.md) it belongs to; that grouping is owned by the panel, not the observation.
 
 ## Where it lives today
