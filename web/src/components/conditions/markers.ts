@@ -228,3 +228,43 @@ export function isEchoRedundant(full: string, short: string): boolean {
   }
   return true;
 }
+
+import type { Analysis } from '../../types';
+
+/** The Monitoring Panels grid model: PANEL_DEFS resolved against the loaded catalog. */
+export function buildConditions(
+  panels: Panel[],
+  analysesCatalog: Record<string, Analysis>
+): { name: string; tests: Observation[] }[] {
+  return PANEL_DEFS.map((def) => {
+    let loincs: string[];
+    if (def.panelIds) {
+      loincs = def.panelIds.flatMap((id) => {
+        const panel = panels.find((p) => p.id === id);
+        return panel ? getPanelLoincs(panel) : [];
+      });
+    } else if (def.panelId) {
+      const panel = panels.find((p) => p.id === def.panelId);
+      loincs = panel ? getPanelLoincs(panel) : [];
+    } else {
+      loincs = def.loincs ?? [];
+    }
+    if (def.excludeLoincs) {
+      loincs = loincs.filter((loinc) => !def.excludeLoincs!.includes(loinc));
+    }
+    loincs = [...loincs, ...(def.extraLoincs ?? [])];
+    const tests: Observation[] = loincs.map((loinc) => {
+      const analysis = analysesCatalog[loinc];
+      const labelInfo = SHORT_LABELS[loinc];
+      return {
+        short: labelInfo?.short ?? analysis?.displayName ?? loinc,
+        full: analysis?.displayName ?? loinc,
+        longCommonName: analysis?.longCommonName ?? '',
+        loinc,
+        unit: labelInfo?.unit,
+        also: ALSO_REFS[loinc],
+      };
+    });
+    return { name: def.name, tests };
+  });
+}

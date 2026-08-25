@@ -79,3 +79,27 @@ export function cellBg(hasRef: boolean, outOfRange: boolean, selected: boolean):
   if (outOfRange) return selected ? '#e6e8f0' : '#fdecea';
   return selected ? '#dbecf0' : '#e6f4ea';
 }
+
+/** The date columns to show, applying the sampling limit and column order. */
+export function visibleDatesOf(dates: string[], sampleLimit: number | 'all', dateOrder: 'asc' | 'desc'): string[] {
+  const recent = sampleLimit === 'all' ? dates : dates.slice(0, sampleLimit);
+  return dateOrder === 'asc' ? [...recent].reverse() : recent;
+}
+
+/** Where to anchor a popup opened from the given element, for the given width. */
+export function popupPosition(
+  rect: DOMRect,
+  width: number
+): { left: number; top?: number; bottom?: number } {
+  const center = rect.left + rect.width / 2;
+  const left = Math.min(Math.max(center - width / 2, 8), window.innerWidth - width - 8);
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  // Open upward when there's little room below and more room above --
+  // keeps the popup from running off the bottom of the viewport for a
+  // row near the end of a long page.
+  if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+    return { left, bottom: window.innerHeight - rect.top + 8 };
+  }
+  return { left, top: rect.bottom + 8 };
+}
