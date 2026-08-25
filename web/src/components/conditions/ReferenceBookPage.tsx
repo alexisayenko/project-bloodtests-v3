@@ -81,6 +81,10 @@ function IndexDetail({ def, navigate }: { def: IndexDef; navigate: (r: Route) =>
           Reference Book
         </span>
         <span>›</span>
+        <span onClick={() => navigate({ view: 'reference' })} style={{ color: '#1971c2', cursor: 'pointer' }}>
+          Indices Descriptions
+        </span>
+        <span>›</span>
         <span>{def.nameCompact}</span>
       </div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>
@@ -135,8 +139,9 @@ export function ReferenceBookPage({ indexKey, navigate }: { indexKey?: string; n
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Reference Book</h1>
-      <div style={{ color: '#888', fontSize: 14, marginBottom: 28 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 28 }}>Reference Book</h1>
+      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Indices Descriptions</h2>
+      <div style={{ color: '#888', fontSize: 14, marginBottom: 24 }}>
         Physiology, evidence standing and cited sources for every computed index.
       </div>
       {Array.from(groups.entries()).map(([panel, defs]) => (
