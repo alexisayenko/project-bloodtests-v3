@@ -7,19 +7,19 @@ import type { Panel, Result } from '../../types';
 type LoincRef = { label: string; loinc: string; longCommonName: string; unit: string };
 type Observation = { short: string; full: string; longCommonName: string; loinc: string; unit?: string; also?: LoincRef[] };
 
-type PanelDef = { name: string; panelId?: string; panelIds?: string[]; loincs?: string[]; excludeLoincs?: string[] };
+type PanelDef = { name: string; panelId?: string; panelIds?: string[]; loincs?: string[]; excludeLoincs?: string[]; extraLoincs?: string[] };
 
 const PANEL_DEFS: PanelDef[] = [
-  { name: 'Hypogonadism', panelId: 'hpg-axis' },
-  { name: 'Hypothyroidism', panelId: 'thyroid' },
-  { name: 'Adrenal', panelId: 'hpa-axis' },
-  { name: 'Insulin Resistance', panelId: 'glucose-metabolism', excludeLoincs: ['1798-8', '3040-3'] },
+  { name: 'Hypogonadism', panelId: 'hpg-axis', extraLoincs: ['1751-7', '2276-4', '11580-8', '5763-8', '1989-3', '4548-4'] },
+  { name: 'Hypothyroidism', panelId: 'thyroid', extraLoincs: ['1989-3'] },
+  { name: 'Adrenal', panelId: 'hpa-axis', extraLoincs: ['2191-5'] },
+  { name: 'Insulin Resistance', panelId: 'glucose-metabolism', excludeLoincs: ['1798-8', '3040-3'], extraLoincs: ['2571-8', '2085-9'] },
   { name: 'Cardiovascular Risk', panelIds: ['cardiovascular-inflammatory', 'lipid-metabolism'] },
-  { name: 'Fatty Liver', panelId: 'liver-function' },
-  { name: 'Kidney Function', panelId: 'kidney-function' },
+  { name: 'Fatty Liver', panelId: 'liver-function', extraLoincs: ['777-3', '2571-8', '4548-4', '2339-0'] },
+  { name: 'Kidney Function', panelId: 'kidney-function', extraLoincs: ['2951-2', '2823-3', '2075-0', '17861-6', '2777-1', '1751-7', '2339-0', '9318-7'] },
   { name: 'Anemia', panelId: 'iron-metabolism' },
-  { name: 'Bone and Mineral Metabolism', panelId: 'vitamins-minerals-electrolytes' },
-  { name: 'Pancreatic Function', loincs: ['1798-8', '3040-3'] },
+  { name: 'Bone and Mineral Metabolism', panelId: 'vitamins-minerals-electrolytes', extraLoincs: ['2697-1', '41171-0', '77370-5', '9622-2', '17838-4'] },
+  { name: 'Pancreatic Function', loincs: ['1798-8', '3040-3'], extraLoincs: ['25907-7', '2339-0', '4548-4', '20448-7', '2571-8', '17861-6', '6768-6', '2324-2', '1975-2', '1968-7'] },
   { name: 'FBC', panelId: 'fbc' },
 ];
 
@@ -93,6 +93,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '3084-1': { short: 'UA', unit: 'mg/dL' },
   '48642-3': { short: 'eGFR', unit: 'mL/min/1.73m2' },
   '33863-2': { short: 'CYSC', unit: 'mg/L' },
+  '9318-7': { short: 'ACR', unit: 'mg/g' }, // Albumin/Creatinine ratio, urine
   // Anemia
   '789-8': { short: 'RBC', unit: 'x10^6/uL' },
   '718-7': { short: 'HGB', unit: 'g/dL' },
@@ -119,9 +120,16 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2951-2': { short: 'NA', unit: 'mmol/L' },
   '5763-8': { short: 'ZN', unit: 'mcg/dL' },
   '2731-8': { short: 'PTH', unit: 'pg/mL' },
+  // Bone turnover markers
+  '2697-1': { short: 'OC', unit: 'ng/mL' }, // Osteocalcin
+  '41171-0': { short: 'CTX', unit: 'ng/mL' }, // Beta-CrossLaps/CTX
+  '77370-5': { short: 'P1NP', unit: 'ng/mL' }, // Procollagen type I N-terminal propeptide
+  '9622-2': { short: 'VitK', unit: 'ng/mL' }, // Vitamin K1
+  '17838-4': { short: 'BALP', unit: 'ug/L' }, // Bone-specific alkaline phosphatase
   // Pancreatic Function
   '1798-8': { short: 'AMY', unit: 'U/L' },
   '3040-3': { short: 'LIP', unit: 'U/L' },
+  '25907-7': { short: 'ELA1', unit: 'ug/g' }, // Pancreatic elastase-1, stool
   // FBC — Leukocytes and Differentials
   '6690-2': { short: 'WBC', unit: 'x10^3/uL' },
   '751-8': { short: 'NEUT#', unit: 'x10^3/uL' },
@@ -160,6 +168,9 @@ const ALSO_REFS: Record<string, LoincRef[]> = {
   '3094-0': [{ label: 'Urea', loinc: '3091-6', longCommonName: 'Urea [Mass/volume] in Serum or Plasma', unit: 'mg/dL' }],
 };
 
+// Computed/derived values (ratios, estimates) rather than direct measurements.
+const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3']); // Atherogenic Index, % Iron Saturation, eGFR
+
 function getPanelLoincs(panel: Panel): string[] {
   if (panel.sections) return panel.sections.flatMap((section) => section.loincs);
   return panel.loincs ?? [];
@@ -193,7 +204,8 @@ export function MedicalConditionsPage() {
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [detailPanel, setDetailPanel] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<'analysis' | 'in-range'>('analysis');
-  const [latestByLoinc, setLatestByLoinc] = useState<Record<string, { result: Result; date: string }>>({});
+  const [unitSystem, setUnitSystem] = useState<'si' | 'us'>('si');
+  const [allResults, setAllResults] = useState<{ loinc: string; date: string; result: Result }[]>([]);
 
   const POPUP_WIDTH = 260;
 
@@ -214,6 +226,7 @@ export function MedicalConditionsPage() {
       if (def.excludeLoincs) {
         loincs = loincs.filter((loinc) => !def.excludeLoincs!.includes(loinc));
       }
+      loincs = [...loincs, ...(def.extraLoincs ?? [])];
       const tests: Observation[] = loincs.map((loinc) => {
         const analysis = analysesCatalog[loinc];
         const labelInfo = SHORT_LABELS[loinc];
@@ -233,25 +246,31 @@ export function MedicalConditionsPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function buildLatest() {
-      const map: Record<string, { result: Result; date: string }> = {};
+    async function buildAllResults() {
+      const all: { loinc: string; date: string; result: Result }[] = [];
       for (const session of sessions) {
         const items = session.items ?? (await loadGroupItems(session.file));
         for (const item of items) {
-          const existing = map[item.loinc];
-          if (!existing || session.date > existing.date) {
-            map[item.loinc] = { result: item, date: session.date };
-          }
+          all.push({ loinc: item.loinc, date: session.date, result: item });
         }
       }
-      if (!cancelled) setLatestByLoinc(map);
+      if (!cancelled) setAllResults(all);
     }
 
-    buildLatest();
+    buildAllResults();
     return () => {
       cancelled = true;
     };
   }, [sessions, loadGroupItems]);
+
+  const latestByLoinc = useMemo(() => {
+    const map: Record<string, { result: Result; date: string }> = {};
+    for (const { loinc, date, result } of allResults) {
+      const existing = map[loinc];
+      if (!existing || date > existing.date) map[loinc] = { result, date };
+    }
+    return map;
+  }, [allResults]);
 
   const openPopup = (test: Observation, e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -304,6 +323,73 @@ export function MedicalConditionsPage() {
   };
 
   if (detailPanel) {
+    const condition = conditions.find((c) => c.name === detailPanel);
+    const tests = condition?.tests ?? [];
+    const observations = tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
+    const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc));
+
+    const dates = Array.from(
+      new Set(
+        allResults
+          .filter((r) => tests.some((t) => testLoincs(t).includes(r.loinc)))
+          .map((r) => r.date)
+      )
+    ).sort((a, b) => b.localeCompare(a));
+
+    const cellMatch = (test: Observation, date: string) => {
+      const loincs = testLoincs(test);
+      return allResults.find((r) => r.date === date && loincs.includes(r.loinc)) ?? null;
+    };
+
+    const renderTable = (rowTests: Observation[]) => (
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2' }} />
+              {dates.map((date) => (
+                <th
+                  key={date}
+                  style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2', whiteSpace: 'nowrap' }}
+                >
+                  {formatMonthYear(date)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rowTests.map((test) => (
+              <tr key={test.loinc}>
+                <td style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontWeight: 600 }}>{test.short}</span>
+                  {test.unit && `, ${test.unit}`}
+                </td>
+                {dates.map((date) => {
+                  const match = cellMatch(test, date);
+                  if (!match) {
+                    return (
+                      <td key={date} style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>
+                        –
+                      </td>
+                    );
+                  }
+                  const hasRef = match.result.value != null && (match.result.refMin != null || match.result.refMax != null);
+                  const bg = hasRef ? (isOutOfRange(match.result) ? '#fdecea' : '#e6f4ea') : 'transparent';
+                  return (
+                    <td key={date} style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>
+                      <span style={{ padding: '2px 6px', borderRadius: 4, background: bg }}>
+                        {match.result.rawValue || match.result.value}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+
     return (
       <div style={{ padding: '56px 48px' }}>
         <div
@@ -331,7 +417,48 @@ export function MedicalConditionsPage() {
             </div>
           ))}
         </div>
-        <div style={{ color: '#888', fontSize: 14 }}>Coming soon.</div>
+
+        {detailTab === 'analysis' ? (
+          <div>
+            <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+              {(['si', 'us'] as const).map((sys) => (
+                <div
+                  key={sys}
+                  onClick={() => setUnitSystem(sys)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: 9999,
+                    border: '1.5px solid #1971c2',
+                    background: unitSystem === sys ? '#1971c2' : 'transparent',
+                    color: unitSystem === sys ? '#fff' : '#1971c2',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {sys.toUpperCase()}
+                </div>
+              ))}
+            </div>
+            {dates.length === 0 ? (
+              <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
+            ) : (
+              <>
+                {renderTable(observations)}
+                {indices.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', margin: '24px 0 12px' }}>
+                      Indices
+                    </div>
+                    {renderTable(indices)}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          <div style={{ color: '#888', fontSize: 14 }}>Coming soon.</div>
+        )}
       </div>
     );
   }
