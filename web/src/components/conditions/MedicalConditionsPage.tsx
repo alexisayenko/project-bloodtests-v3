@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
-import { formatResultReference } from '../../utils/format';
+import { formatResultReference, isOutOfRange } from '../../utils/format';
 import type { Panel, Result } from '../../types';
 
 type LoincRef = { label: string; loinc: string; longCommonName: string; unit: string };
@@ -251,12 +251,20 @@ export function MedicalConditionsPage() {
       const candidate = latestByLoinc[loinc];
       if (candidate && (!current || candidate.date > current.date)) current = candidate;
     }
-    if (!current) return null;
+    if (!current) {
+      return (
+        <div style={{ fontSize: 13, color: '#888', marginTop: 8, paddingTop: 8, borderTop: '1px solid #eee' }}>
+          Never taken
+        </div>
+      );
+    }
     const value = current.result.rawValue || current.result.value;
+    const hasRef = current.result.value != null && (current.result.refMin != null || current.result.refMax != null);
+    const bg = hasRef ? (isOutOfRange(current.result) ? '#fdecea' : '#e6f4ea') : 'transparent';
     return (
       <div style={{ fontSize: 13, color: '#555', marginTop: 8, paddingTop: 8, borderTop: '1px solid #eee' }}>
         <div style={{ fontWeight: 500, color: '#333' }}>Latest taken on {formatMonthYear(current.date)}</div>
-        <div style={{ marginTop: 2 }}>
+        <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: bg }}>
           {value} {current.result.unit}
           <span style={{ color: '#888' }}> (Ref: {formatResultReference(current.result)})</span>
         </div>
