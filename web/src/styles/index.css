@@ -21,12 +21,12 @@ body {
 .header-controls { display: flex; align-items: center; gap: 8px; position: relative; }
 .lang-group { display: flex; gap: 4px; }
 .lang-btn {
-  background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px;
+  background: rgba(0,0,0,0.25); border: none; color: white; padding: 4px 8px;
   border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
 .lang-btn.active { background: rgba(255,255,255,0.5); }
 .btn-header {
-  background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px;
+  background: rgba(0,0,0,0.25); border: none; color: white; padding: 6px 12px;
   border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
   font-family: inherit;
 }
@@ -164,7 +164,6 @@ img.panel-icon { display: none; }
   padding: 12px; display: flex; flex-direction: column; gap: 16px;
   border-left: 3px solid var(--panel-color, #d1d5db);
 }
-.biomarker-chart { }
 .biomarker-chart-title {
   font-size: 14px; font-weight: 600; color: var(--gray-900);
   margin-bottom: 4px; display: flex; align-items: baseline; gap: 6px;

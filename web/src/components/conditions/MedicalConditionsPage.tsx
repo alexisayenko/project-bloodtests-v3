@@ -14,7 +14,7 @@ import { ReferenceBookPage } from './ReferenceBookPage';
 import {
   STATUS_STYLES, ZONE_BG, SELECTED_ZONE_BG, BADGE_WIDTH, BADGE_GAP, PANEL_PADDING, PANEL_GAP,
   PANEL_WIDTH, POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, formatMonthYear,
-  greenRangeOf, loadAnalysisSettings,
+  greenRangeOf, loadAnalysisSettings, pressable, cellBg,
 } from './ui';
 
 type PopupPosition = { left: number; top?: number; bottom?: number };
@@ -109,7 +109,7 @@ export function MedicalConditionsPage() {
         return (
           <div
             key={item.view}
-            onClick={() => navigate({ view: item.view })}
+            {...pressable(() => navigate({ view: item.view }))}
             style={{
               padding: '12px 2px',
               marginBottom: -1.5,
@@ -137,7 +137,7 @@ export function MedicalConditionsPage() {
           {(['si', 'us'] as const).map((sys) => (
             <div
               key={sys}
-              onClick={() => setUnitSystem(sys)}
+              {...pressable(() => setUnitSystem(sys))}
               style={{
                 padding: '4px 12px',
                 borderRadius: 9999,
@@ -160,7 +160,7 @@ export function MedicalConditionsPage() {
           {([5, 10, 15, 'all'] as const).map((n) => (
             <div
               key={n}
-              onClick={() => setSampleLimit(n)}
+              {...pressable(() => setSampleLimit(n))}
               style={{
                 padding: '4px 12px',
                 borderRadius: 9999,
@@ -180,7 +180,7 @@ export function MedicalConditionsPage() {
       <div>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Column order</div>
         <div
-          onClick={() => setDateOrder(dateOrder === 'desc' ? 'asc' : 'desc')}
+          {...pressable(() => setDateOrder(dateOrder === 'desc' ? 'asc' : 'desc'))}
           style={{
             display: 'inline-block',
             padding: '4px 12px',
@@ -231,7 +231,8 @@ export function MedicalConditionsPage() {
   const resultsByDate = useMemo(() => {
     const map: Record<string, Record<string, Result>> = {};
     for (const { loinc, date, result } of allResults) {
-      (map[date] ??= {})[loinc] = result;
+      map[date] ??= {};
+      map[date]![loinc] = result;
     }
     return map;
   }, [allResults]);
@@ -259,12 +260,12 @@ export function MedicalConditionsPage() {
     return { left, top: rect.bottom + 8 };
   };
 
-  const openPopup = (test: Observation, e: React.MouseEvent<HTMLElement>) => {
+  const openPopup = (test: Observation, e: { currentTarget: HTMLElement }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setPopup({ kind: 'observation', test, ...popupPosition(rect, POPUP_WIDTH) });
   };
 
-  const openIndexPopup = (def: IndexDef, e: React.MouseEvent<HTMLElement>) => {
+  const openIndexPopup = (def: IndexDef, e: { currentTarget: HTMLElement }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setPopup({ kind: 'index', def, ...popupPosition(rect, INDEX_POPUP_WIDTH) });
   };
@@ -312,7 +313,7 @@ export function MedicalConditionsPage() {
 
   const popupEl = popup && (
     <>
-      <div onClick={() => setPopup(null)} style={{ position: 'fixed', inset: 0, zIndex: 100 }} />
+      <div aria-label="Close popup" {...pressable(() => setPopup(null))} style={{ position: 'fixed', inset: 0, zIndex: 100 }} />
       <div
         style={{
           position: 'fixed',
@@ -416,7 +417,7 @@ export function MedicalConditionsPage() {
               {popup.def.references[0] && ` -- ${popup.def.references[0].organization}`}
             </div>
             <div
-              onClick={() => openReference(popup.def.key)}
+              {...pressable(() => openReference(popup.def.key))}
               style={{ fontSize: 13, color: '#1971c2', fontWeight: 500, marginTop: 10, cursor: 'pointer' }}
             >
               Learn more →
@@ -486,10 +487,10 @@ export function MedicalConditionsPage() {
                     return (
                       <tr key={test.loinc} style={{ background: selected ? '#eaf3fb' : undefined }}>
                         <td
-                          onClick={(e) => {
+                          {...pressable((e) => {
                             setSelectedLoinc(test.loinc);
                             openPopup(test, e);
-                          }}
+                          })}
                           style={{ width: 140, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                         >
                           <span style={{ fontWeight: 600 }}>{test.short}</span>
@@ -502,7 +503,7 @@ export function MedicalConditionsPage() {
                             return (
                               <td
                                 key={date}
-                                onClick={() => setSelectedLoinc(test.loinc)}
+                                {...pressable(() => setSelectedLoinc(test.loinc))}
                                 style={{ width: 96, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                               >
                                 –
@@ -510,9 +511,7 @@ export function MedicalConditionsPage() {
                             );
                           }
                           const hasRef = match.result.value != null && (match.result.refMin != null || match.result.refMax != null);
-                          const bg = hasRef
-                            ? (isOutOfRange(match.result) ? (selected ? '#e6e8f0' : '#fdecea') : (selected ? '#dbecf0' : '#e6f4ea'))
-                            : (selected ? '#eaf3fb' : 'transparent');
+                          const bg = cellBg(hasRef, isOutOfRange(match.result), selected);
                           const displayValue =
                             siUsUnit && match.result.value != null
                               ? toUnit(match.result.value, marker!, match.result.unit, siUsUnit[unitSystem])
@@ -520,7 +519,7 @@ export function MedicalConditionsPage() {
                           return (
                             <td
                               key={date}
-                              onClick={() => setSelectedLoinc(test.loinc)}
+                              {...pressable(() => setSelectedLoinc(test.loinc))}
                               style={{ width: 96, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', background: bg, cursor: 'pointer' }}
                             >
                               {siUsUnit ? fmtNum(displayValue) : match.result.rawValue || fmtNum(match.result.value)}
@@ -559,7 +558,7 @@ export function MedicalConditionsPage() {
               cursor: 'pointer',
             }}
           >
-            Upload JSON
+            {'Upload JSON'}
             <input
               type="file"
               accept=".json,application/json"
@@ -572,7 +571,7 @@ export function MedicalConditionsPage() {
             />
           </label>
           <div
-            onClick={() => loadGenerated(generateTestData())}
+            {...pressable(() => loadGenerated(generateTestData()))}
             style={{
               display: 'inline-block',
               padding: '8px 20px',
@@ -587,9 +586,9 @@ export function MedicalConditionsPage() {
             Generate Test Data
           </div>
           <div
-            onClick={() => {
+            {...pressable(() => {
               if (window.confirm('Remove all loaded lab reports?')) clearData();
-            }}
+            })}
             style={{
               display: 'inline-block',
               padding: '8px 20px',
@@ -688,10 +687,10 @@ export function MedicalConditionsPage() {
               return (
               <tr key={test.loinc} style={{ background: selected ? '#eaf3fb' : undefined }}>
                 <td
-                  onClick={(e) => {
+                  {...pressable((e) => {
                     setSelectedLoinc(test.loinc);
                     openPopup(test, e);
-                  }}
+                  })}
                   style={{ width: LABEL_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                 >
                   <span style={{ fontWeight: 600 }}>{test.short}</span>
@@ -703,7 +702,7 @@ export function MedicalConditionsPage() {
                     return (
                       <td
                         key={date}
-                        onClick={() => setSelectedLoinc(test.loinc)}
+                        {...pressable(() => setSelectedLoinc(test.loinc))}
                         style={{ width: DATE_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                       >
                         –
@@ -711,9 +710,7 @@ export function MedicalConditionsPage() {
                     );
                   }
                   const hasRef = match.result.value != null && (match.result.refMin != null || match.result.refMax != null);
-                  const bg = hasRef
-                    ? (isOutOfRange(match.result) ? (selected ? '#e6e8f0' : '#fdecea') : (selected ? '#dbecf0' : '#e6f4ea'))
-                    : (selected ? '#eaf3fb' : 'transparent');
+                  const bg = cellBg(hasRef, isOutOfRange(match.result), selected);
                   // Coloring always uses the as-reported value/range (self-consistent);
                   // only the displayed number is converted for the toggle.
                   const displayValue =
@@ -723,7 +720,7 @@ export function MedicalConditionsPage() {
                   return (
                     <td
                       key={date}
-                      onClick={() => setSelectedLoinc(test.loinc)}
+                      {...pressable(() => setSelectedLoinc(test.loinc))}
                       style={{
                         width: DATE_COL_WIDTH,
                         padding: '8px 12px',
@@ -775,10 +772,10 @@ export function MedicalConditionsPage() {
               return (
                 <tr key={def.key} style={{ background: selected ? '#eaf3fb' : undefined }}>
                   <td
-                    onClick={(e) => {
+                    {...pressable((e) => {
                       setSelectedLoinc(def.key);
                       openIndexPopup(def, e);
-                    }}
+                    })}
                     style={{ width: LABEL_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                   >
                     <span style={{ fontWeight: 600 }}>{def.nameCompact}</span>
@@ -790,7 +787,7 @@ export function MedicalConditionsPage() {
                       return (
                         <td
                           key={date}
-                          onClick={() => setSelectedLoinc(def.key)}
+                          {...pressable(() => setSelectedLoinc(def.key))}
                           style={{ width: DATE_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                         >
                           –
@@ -802,7 +799,7 @@ export function MedicalConditionsPage() {
                     return (
                       <td
                         key={date}
-                        onClick={() => setSelectedLoinc(def.key)}
+                        {...pressable(() => setSelectedLoinc(def.key))}
                         style={{
                           width: DATE_COL_WIDTH,
                           padding: '8px 12px',
@@ -828,11 +825,11 @@ export function MedicalConditionsPage() {
       <div style={{ padding: '56px 48px' }}>
         {navEl}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
-          <span onClick={() => navigate({ view: 'panels' })} style={{ color: '#1971c2', cursor: 'pointer' }}>
+          <span {...pressable(() => navigate({ view: 'panels' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
             Monitoring Panels
           </span>
           <span>›</span>
-          <span onClick={() => setDetailTab('analysis')} style={{ color: '#1971c2', cursor: 'pointer' }}>
+          <span {...pressable(() => setDetailTab('analysis'))} style={{ color: '#1971c2', cursor: 'pointer' }}>
             {detailPanel}
           </span>
           <span>›</span>
@@ -843,7 +840,7 @@ export function MedicalConditionsPage() {
           {(['analysis', 'in-range'] as const).map((tab) => (
             <div
               key={tab}
-              onClick={() => setDetailTab(tab)}
+              {...pressable(() => setDetailTab(tab))}
               style={{
                 padding: '10px 4px',
                 marginBottom: -2,
@@ -900,7 +897,7 @@ export function MedicalConditionsPage() {
             }}
           >
             <div
-              onClick={() => openDetail(condition.name)}
+              {...pressable(() => openDetail(condition.name))}
               style={{
                 fontSize: 13,
                 fontWeight: 600,
@@ -917,7 +914,7 @@ export function MedicalConditionsPage() {
                 return (
                 <div
                   key={test.loinc}
-                  onClick={(e) => openPopup(test, e)}
+                  {...pressable((e) => openPopup(test, e))}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',

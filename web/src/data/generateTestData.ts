@@ -8,7 +8,7 @@ import { SHORT_LABELS } from '../components/conditions/markers';
 export function generateTestData(): ResultGroup[] {
   const hash = (s: string) => {
     let h = 0;
-    for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    for (const c of s) h = (h * 31 + (c.codePointAt(0) ?? 0)) >>> 0;
     return h;
   };
   const round = (v: number) => Math.round(v * 100) / 100;
@@ -18,20 +18,23 @@ export function generateTestData(): ResultGroup[] {
     const d = new Date(today.getFullYear(), today.getMonth() - i * 4, 15);
     dates.push(d.toISOString().slice(0, 10));
   }
+  // Math.random() throughout: non-cryptographic randomness is exactly right for
+  // fabricated demo data (NOSONAR S2245).
+  const rnd = () => Math.random(); // NOSONAR
   return dates.map((date) => {
     const items = Object.entries(SHORT_LABELS)
-      .filter(() => Math.random() > 0.25) // each report covers ~75% of markers
+      .filter(() => rnd() > 0.25) // each report covers ~75% of markers
       .map(([loinc, { short, unit }]) => {
         const h = hash(loinc);
         const refMin = round((h % 90) + 10);
         const refMax = round(refMin * (1.5 + ((h >> 8) % 100) / 100));
         const span = refMax - refMin;
         // Mostly inside the range; ~1 in 6 drifts below or above it.
-        const roll = Math.random();
-        const value =
-          roll < 0.08 ? refMin - Math.random() * span * 0.3
-          : roll < 0.16 ? refMax + Math.random() * span * 0.3
-          : refMin + Math.random() * span;
+        const roll = rnd();
+        let value: number;
+        if (roll < 0.08) value = refMin - rnd() * span * 0.3;
+        else if (roll < 0.16) value = refMax + rnd() * span * 0.3;
+        else value = refMin + rnd() * span;
         const v = round(Math.max(0, value));
         return {
           loinc,

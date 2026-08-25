@@ -1,6 +1,6 @@
 import { INDEX_DEFS, type IndexDef, type IndexReference } from '../../data/computedIndices';
 import { HP_AXIS_HTML } from './hpAxisContent';
-import { greenRangeOf } from './ui';
+import { greenRangeOf, pressable } from './ui';
 import { isEchoRedundant } from './markers';
 import type { Route } from './routing';
 
@@ -13,7 +13,7 @@ const EVIDENCE_BADGE: Record<string, { background: string; color: string }> = {
   heuristic: { background: '#fff4e0', color: '#a05a00' },
 };
 
-function EvidenceBadge({ level }: { level: string }) {
+function EvidenceBadge({ level }: Readonly<{ level: string }>) {
   const style = EVIDENCE_BADGE[level] ?? { background: '#f5f5f5', color: '#666' };
   return (
     <span
@@ -32,7 +32,7 @@ function EvidenceBadge({ level }: { level: string }) {
   );
 }
 
-function ReferenceItem({ source }: { source: IndexReference }) {
+function ReferenceItem({ source }: Readonly<{ source: IndexReference }>) {
   const link = source.url ?? (source.doi ? `https://doi.org/${source.doi}` : undefined);
   return (
     <div style={{ marginBottom: 16 }}>
@@ -74,15 +74,15 @@ function ReferenceItem({ source }: { source: IndexReference }) {
   );
 }
 
-function IndexDetail({ def, navigate }: { def: IndexDef; navigate: (r: Route) => void }) {
+function IndexDetail({ def, navigate }: Readonly<{ def: IndexDef; navigate: (r: Route) => void }>) {
   return (
     <div style={{ maxWidth: 720 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
-        <span onClick={() => navigate({ view: 'reference' })} style={{ color: '#1971c2', cursor: 'pointer' }}>
+        <span {...pressable(() => navigate({ view: 'reference' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
           Reference Book
         </span>
         <span>›</span>
-        <span onClick={() => navigate({ view: 'reference' })} style={{ color: '#1971c2', cursor: 'pointer' }}>
+        <span {...pressable(() => navigate({ view: 'reference' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
           Indices Descriptions
         </span>
         <span>›</span>
@@ -120,8 +120,8 @@ function IndexDetail({ def, navigate }: { def: IndexDef; navigate: (r: Route) =>
       <p style={{ fontSize: 14, color: '#333', lineHeight: 1.55, marginBottom: 20 }}>{def.consensus}</p>
 
       <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 10 }}>References</h2>
-      {def.references.map((ref, i) => (
-        <ReferenceItem key={i} source={ref} />
+      {def.references.map((ref) => (
+        <ReferenceItem key={ref.doi ?? ref.url ?? ref.document} source={ref} />
       ))}
     </div>
   );
@@ -146,12 +146,12 @@ const HP_AXIS_CSS = `
 .hp-axis a { color: #1971c2; }
 `;
 
-function HpAxisPage({ navigate }: { navigate: (r: Route) => void }) {
+function HpAxisPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
   return (
     <div>
       <style>{HP_AXIS_CSS}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
-        <span onClick={() => navigate({ view: 'reference' })} style={{ color: '#1971c2', cursor: 'pointer' }}>
+        <span {...pressable(() => navigate({ view: 'reference' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
           Reference Book
         </span>
         <span>›</span>
@@ -168,7 +168,7 @@ function HpAxisPage({ navigate }: { navigate: (r: Route) => void }) {
   );
 }
 
-export function ReferenceBookPage({ indexKey, navigate }: { indexKey?: string; navigate: (r: Route) => void }) {
+export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: string; navigate: (r: Route) => void }>) {
   if (indexKey === 'hp-axis') return <HpAxisPage navigate={navigate} />;
   const def = indexKey ? INDEX_DEFS.find((d) => d.key === indexKey) : undefined;
   if (def) return <IndexDetail def={def} navigate={navigate} />;
@@ -185,7 +185,7 @@ export function ReferenceBookPage({ indexKey, navigate }: { indexKey?: string; n
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 28 }}>Reference Book</h1>
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Physiology</h2>
       <div
-        onClick={() => navigate({ view: 'reference', key: 'hp-axis' })}
+        {...pressable(() => navigate({ view: 'reference', key: 'hp-axis' }))}
         style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
       >
         <span style={{ fontSize: 15, fontWeight: 600, color: '#1971c2' }}>HP Axis</span>
@@ -203,7 +203,7 @@ export function ReferenceBookPage({ indexKey, navigate }: { indexKey?: string; n
           {defs.map((d) => (
             <div
               key={d.key}
-              onClick={() => navigate({ view: 'reference', key: d.key })}
+              {...pressable(() => navigate({ view: 'reference', key: d.key }))}
               style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer' }}
             >
               <span style={{ fontSize: 15, fontWeight: 600, color: '#1971c2' }}>{d.nameCompact}</span>

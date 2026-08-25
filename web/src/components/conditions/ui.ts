@@ -53,3 +53,29 @@ export function loadAnalysisSettings(): AnalysisSettings {
   }
   return DEFAULT_ANALYSIS_SETTINGS;
 }
+
+/**
+ * Props that make a styled non-native element (div/span/td used as a control)
+ * keyboard-activatable: role, tab stop, and Enter/Space triggering the same
+ * handler as click (Sonar S6848/S1082).
+ */
+export function pressable(handler: (e: { currentTarget: HTMLElement }) => void) {
+  return {
+    role: 'button' as const,
+    tabIndex: 0,
+    onClick: handler,
+    onKeyDown: (e: { key: string; preventDefault: () => void; currentTarget: HTMLElement }) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handler(e);
+      }
+    },
+  };
+}
+
+/** Background for a result cell: reference presence, range status, row selection. */
+export function cellBg(hasRef: boolean, outOfRange: boolean, selected: boolean): string {
+  if (!hasRef) return selected ? '#eaf3fb' : 'transparent';
+  if (outOfRange) return selected ? '#e6e8f0' : '#fdecea';
+  return selected ? '#dbecf0' : '#e6f4ea';
+}

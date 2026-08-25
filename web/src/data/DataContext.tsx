@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import type { Analysis, Panel } from '../types';
 
 interface DataContextType {
@@ -9,7 +9,7 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType>(null!);
 
-export function DataProvider({ children }: { children: ReactNode }) {
+export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [analysesCatalog, setAnalysesCatalog] = useState<Record<string, Analysis>>({});
   const [panels, setPanels] = useState<Panel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,8 +27,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const value = useMemo(() => ({ analysesCatalog, panels, loading }), [analysesCatalog, panels, loading]);
+
   return (
-    <DataContext.Provider value={{ analysesCatalog, panels, loading }}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );

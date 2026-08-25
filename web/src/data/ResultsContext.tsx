@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import type { Result, ResultGroup } from '../types';
 import { parseUploadedResults, UploadParseError } from './parseUpload';
 
@@ -56,7 +56,7 @@ interface ResultsContextType {
 
 const ResultsContext = createContext<ResultsContextType>(null!);
 
-export function ResultsProvider({ children }: { children: ReactNode }) {
+export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [sessions, setSessions] = useState<ResultGroup[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -133,10 +133,13 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  const value = useMemo(
+    () => ({ sessions, hasData: sessions.length > 0, loading, error, uploadFile, loadGenerated, loadGroupItems, clearData }),
+    [sessions, loading, error, uploadFile, loadGenerated, loadGroupItems, clearData]
+  );
+
   return (
-    <ResultsContext.Provider
-      value={{ sessions, hasData: sessions.length > 0, loading, error, uploadFile, loadGenerated, loadGroupItems, clearData }}
-    >
+    <ResultsContext.Provider value={value}>
       {children}
     </ResultsContext.Provider>
   );

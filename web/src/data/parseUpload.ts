@@ -18,6 +18,8 @@ import type { Result, ResultGroup } from '../types';
  *    Used as-is, no re-grouping.
  */
 
+type RawScalar = string | number | null;
+
 interface RawEntry {
   date?: string | null;
   place?: string | null;
@@ -26,8 +28,8 @@ interface RawEntry {
   symbol?: string | null;
   analysis?: string | null;
   loinc?: string | null;
-  rawValue?: string | number | null;
-  value?: number | string | null;
+  rawValue?: RawScalar;
+  value?: RawScalar;
   valueQualifier?: string | null;
   unit?: string | null;
   refText?: string | null;
@@ -45,8 +47,8 @@ interface RawGroup {
 }
 
 function slugify(text: string): string {
-  const value = (text || 'unknown').trim().toLowerCase().replace(/\//g, ' ');
-  const slug = value.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const value = (text || 'unknown').trim().toLowerCase().replaceAll('/', ' ');
+  const slug = value.replace(/[^a-z0-9]+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
   return slug || 'unknown';
 }
 
