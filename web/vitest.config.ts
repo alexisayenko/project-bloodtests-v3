@@ -14,6 +14,7 @@ export default defineConfig({
         'src/components/results/**',
         'src/components/upload/**',
         'src/components/analytics/**',
+        'src/utils/analysis.ts', // used only by the legacy flow above
       ],
     },
   },
