@@ -59,6 +59,7 @@ Optional. Useful when the name is still in motion.
 | --- | --- |
 | `heman.cc` | candidate (2026-08-25) — short for "hematology analyzer" |
 | `hematologyanalyzer.cc` | candidate (2026-08-25) — descriptive long form |
+| `serum.im` | candidate (2026-08-25) — short, clinical, memorable |
 
 ## Open questions
 
