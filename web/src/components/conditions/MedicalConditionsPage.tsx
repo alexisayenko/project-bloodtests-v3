@@ -189,6 +189,8 @@ export function MedicalConditionsPage() {
   const { analysesCatalog, panels } = useData();
   const { sessions, loadGroupItems } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
+  const [detailPanel, setDetailPanel] = useState<string | null>(null);
+  const [detailTab, setDetailTab] = useState<'analysis' | 'in-range'>('analysis');
   const [latestByLoinc, setLatestByLoinc] = useState<Record<string, { result: Result; date: string }>>({});
 
   const POPUP_WIDTH = 260;
@@ -299,6 +301,39 @@ export function MedicalConditionsPage() {
     );
   };
 
+  if (detailPanel) {
+    return (
+      <div style={{ padding: '56px 48px' }}>
+        <div
+          onClick={() => setDetailPanel(null)}
+          style={{ fontSize: 14, color: '#1971c2', cursor: 'pointer', marginBottom: 24 }}
+        >
+          ← Monitoring Panels
+        </div>
+        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>{detailPanel}</h1>
+        <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
+          {(['analysis', 'in-range'] as const).map((tab) => (
+            <div
+              key={tab}
+              onClick={() => setDetailTab(tab)}
+              style={{
+                padding: '10px 4px',
+                marginBottom: -2,
+                borderBottom: detailTab === tab ? '2px solid #1971c2' : '2px solid transparent',
+                fontWeight: detailTab === tab ? 600 : 400,
+                color: detailTab === tab ? '#1971c2' : '#555',
+                cursor: 'pointer',
+              }}
+            >
+              {tab === 'analysis' ? 'Analysis' : "What's in range"}
+            </div>
+          ))}
+        </div>
+        <div style={{ color: '#888', fontSize: 14 }}>Coming soon.</div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '56px 48px' }}>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 32 }}>Monitoring Panels</h1>
@@ -315,12 +350,17 @@ export function MedicalConditionsPage() {
             }}
           >
             <div
+              onClick={() => {
+                setDetailPanel(condition.name);
+                setDetailTab('analysis');
+              }}
               style={{
                 fontSize: 13,
                 fontWeight: 600,
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
                 marginBottom: 16,
+                cursor: 'pointer',
               }}
             >
               {condition.name}
