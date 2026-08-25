@@ -14,7 +14,7 @@ const PANEL_DEFS: PanelDef[] = [
   { name: 'Hypogonadism', panelId: 'hpg-axis', extraLoincs: ['1751-7', '2276-4', '11580-8', '5763-8', '1989-3', '4548-4'] },
   { name: 'Hypothyroidism', panelId: 'thyroid', extraLoincs: ['1989-3'] },
   { name: 'Adrenal', panelId: 'hpa-axis', extraLoincs: ['2191-5'] },
-  { name: 'Insulin Resistance', panelId: 'glucose-metabolism', excludeLoincs: ['1798-8', '3040-3'], extraLoincs: ['2571-8', '2085-9'] },
+  { name: 'Insulin Resistance', panelId: 'glucose-metabolism', excludeLoincs: ['1798-8', '3040-3', '59261-8'], extraLoincs: ['2571-8', '2085-9'] },
   { name: 'Cardiovascular Risk', panelIds: ['cardiovascular-inflammatory', 'lipid-metabolism'] },
   { name: 'Fatty Liver', panelId: 'liver-function', extraLoincs: ['777-3', '2571-8', '4548-4', '2339-0'] },
   { name: 'Kidney Function', panelId: 'kidney-function', extraLoincs: ['2951-2', '2823-3', '2075-0', '17861-6', '2777-1', '1751-7', '2339-0', '9318-7'] },
@@ -51,8 +51,7 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   // Insulin Resistance
   '20448-7': { short: 'INS', unit: 'uIU/mL' },
   '2339-0': { short: 'GLU', unit: 'mg/dL' },
-  '4548-4': { short: 'A1c', unit: '%' },
-  '59261-8': { short: 'A1cI', unit: 'mmol/mol' },
+  '4548-4': { short: 'HbA1c', unit: '%' },
   '13979-8': { short: 'GA', unit: '%' },
   '1557-8': { short: 'FRA', unit: 'umol/L' },
   '1986-9': { short: 'C-P', unit: 'ng/mL' },
@@ -60,15 +59,15 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '1988-5': { short: 'CRP', unit: 'mg/L' },
   '30522-7': { short: 'hsCRP', unit: 'mg/L' },
   '26881-3': { short: 'IL6', unit: 'pg/mL' },
-  '3167-4': { short: 'TNFA', unit: 'pg/mL' },
+  '3167-4': { short: 'TNF-α', unit: 'pg/mL' },
   '49246-0': { short: 'oxLDL', unit: 'U/L' },
-  '2293-7': { short: 'LEP', unit: 'ng/mL' },
+  '21365-2': { short: 'LEP', unit: 'ng/mL' },
   '56660-9': { short: 'ADIPO', unit: 'mcg/mL' },
   '13965-9': { short: 'HCY', unit: 'umol/L' },
   '3255-7': { short: 'FIB', unit: 'mg/dL' },
   '2093-3': { short: 'TC', unit: 'mg/dL' },
-  '2085-9': { short: 'HDL', unit: 'mg/dL' },
-  '13457-7': { short: 'LDL', unit: 'mg/dL' },
+  '2085-9': { short: 'HDL-C', unit: 'mg/dL' },
+  '13457-7': { short: 'LDL-C', unit: 'mg/dL' },
   '2571-8': { short: 'TRIG', unit: 'mg/dL' },
   '9830-1': { short: 'TC/HDL', unit: 'ratio' },
   '1884-6': { short: 'ApoB', unit: 'mg/dL' },
@@ -82,14 +81,14 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '1920-8': { short: 'AST', unit: 'U/L' },
   '1742-6': { short: 'ALT', unit: 'U/L' },
   '2324-2': { short: 'GGT', unit: 'U/L' },
-  '2710-2': { short: 'PCHE', unit: 'U/L' },
+  '2710-2': { short: 'PChE', unit: 'U/L' },
   '5195-3': { short: 'HBsAg', unit: 'Positive/Negative' },
   '16128-1': { short: 'HCV', unit: 'Positive/Negative' },
   '1751-7': { short: 'ALB', unit: 'g/dL' },
   '10834-0': { short: 'GLOB', unit: 'g/dL' },
   '2885-2': { short: 'TP', unit: 'g/dL' },
   // Kidney Function
-  '3094-0': { short: 'BUN', unit: 'mg/dL' },
+  '3094-0': { short: 'Urea', unit: 'mg/dL' },
   '2160-0': { short: 'CREA', unit: 'mg/dL' },
   '3084-1': { short: 'UA', unit: 'mg/dL' },
   '48642-3': { short: 'eGFR', unit: 'mL/min/1.73m2' },
@@ -97,27 +96,27 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '9318-7': { short: 'ACR', unit: 'mg/g' }, // Albumin/Creatinine ratio, urine
   // Anemia
   '789-8': { short: 'RBC', unit: 'x10^6/uL' },
-  '718-7': { short: 'HGB', unit: 'g/dL' },
+  '718-7': { short: 'Hb', unit: 'g/dL' },
   '4544-3': { short: 'HCT', unit: '%' },
-  '2498-4': { short: 'FE', unit: 'mcg/dL' },
-  '2276-4': { short: 'FERR', unit: 'ng/mL' },
+  '2498-4': { short: 'Fe', unit: 'mcg/dL' },
+  '2276-4': { short: 'Ferr', unit: 'ng/mL' },
   '2500-7': { short: 'TIBC', unit: 'mcg/dL' },
   '2501-5': { short: 'UIBC', unit: 'mcg/dL' },
   '3034-6': { short: 'TRF', unit: 'mg/dL' },
   '2502-3': { short: 'TSAT', unit: '%' },
   // Bone and Mineral Metabolism
-  '2998-3': { short: 'B1', unit: 'nmol/L' },
-  '30552-4': { short: 'B6', unit: 'nmol/L' },
-  '2284-8': { short: 'B9', unit: 'ng/mL' },
-  '2132-9': { short: 'B12', unit: 'pg/mL' },
-  '1989-3': { short: '25OH', unit: 'ng/mL' },
+  '2998-3': { short: 'Vit B1', unit: 'nmol/L' },
+  '30552-4': { short: 'Vit B6', unit: 'nmol/L' },
+  '2284-8': { short: 'Vit B9', unit: 'ng/mL' },
+  '2132-9': { short: 'Vit B12', unit: 'pg/mL' },
+  '1989-3': { short: 'Vit D', unit: 'ng/mL' },
   '17861-6': { short: 'Ca', unit: 'mg/dL' },
   '1994-3': { short: 'iCa', unit: 'mmol/L' },
   '2075-0': { short: 'Cl', unit: 'mmol/L' },
-  '2777-1': { short: 'PHOS', unit: 'mg/dL' },
-  '2823-3': { short: 'K+', unit: 'mmol/L' },
+  '2777-1': { short: 'P', unit: 'mg/dL' },
+  '2823-3': { short: 'K', unit: 'mmol/L' },
   '19123-9': { short: 'Mg', unit: 'mg/dL' },
-  '29900-7': { short: 'MgRBC', unit: 'mg/dL' },
+  '29900-7': { short: 'Mg RBC', unit: 'mg/dL' },
   '2951-2': { short: 'Na', unit: 'mmol/L' },
   '5763-8': { short: 'Zn', unit: 'mcg/dL' },
   '2731-8': { short: 'PTH', unit: 'pg/mL' },
@@ -125,12 +124,18 @@ const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2697-1': { short: 'OC', unit: 'ng/mL' }, // Osteocalcin
   '41171-0': { short: 'CTX', unit: 'ng/mL' }, // Beta-CrossLaps/CTX
   '77370-5': { short: 'P1NP', unit: 'ng/mL' }, // Procollagen type I N-terminal propeptide
-  '9622-2': { short: 'VitK', unit: 'ng/mL' }, // Vitamin K1
+  '9622-2': { short: 'Vit K', unit: 'ng/mL' }, // Vitamin K1
   '17838-4': { short: 'BALP', unit: 'ug/L' }, // Bone-specific alkaline phosphatase
   // Pancreatic Function
   '1798-8': { short: 'AMY', unit: 'U/L' },
   '3040-3': { short: 'LIP', unit: 'U/L' },
   '25907-7': { short: 'ELA1', unit: 'ug/g' }, // Pancreatic elastase-1, stool
+  // Not in any panel yet — labeled so All Observations shows them readably.
+  '2465-3': { short: 'IgG', unit: 'mg/dL' },
+  '2862-1': { short: 'IgA', unit: 'mg/dL' },
+  '4537-7': { short: 'ESR', unit: 'mm/hr' },
+  '48066-5': { short: 'D-Dim', unit: 'ng/mL' },
+  '62418-9': { short: 'Glu/Ins', unit: 'ratio' },
   // FBC — Leukocytes and Differentials
   '6690-2': { short: 'WBC', unit: 'x10^3/uL' },
   '751-8': { short: 'NEUT#', unit: 'x10^3/uL' },
@@ -163,12 +168,23 @@ const ALSO_REFS: Record<string, LoincRef[]> = {
   '14913-8': [{ label: 'ng/dL unit', loinc: '2986-8', longCommonName: 'Testosterone [Mass/volume] in Serum or Plasma', unit: 'ng/dL' }],
   '2942-1': [{ label: 'nmol/L unit', loinc: '13967-5', longCommonName: 'Sex hormone binding globulin [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
   '1989-3': [{ label: 'D2+D3 combined', loinc: '62292-8', longCommonName: '25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma', unit: 'ng/mL' }],
-  '4548-4': [{ label: 'by calculation', loinc: '17855-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by calculation', unit: '%' }],
+  '4548-4': [
+    { label: 'by calculation', loinc: '17855-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by calculation', unit: '%' },
+    { label: 'IFCC unit', loinc: '59261-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by IFCC protocol', unit: 'mmol/mol' },
+  ],
   '2777-1': [{ label: 'whole blood', loinc: '2774-8', longCommonName: 'Phosphate [Mass/volume] in Blood', unit: 'mg/dL' }],
   '15081-3': [{ label: 'Mass/volume variant', loinc: '2842-3', longCommonName: 'Prolactin [Mass/volume] in Serum or Plasma', unit: 'ng/mL' }],
   '3094-0': [{ label: 'Urea', loinc: '3091-6', longCommonName: 'Urea [Mass/volume] in Serum or Plasma', unit: 'mg/dL' }],
   '1848-1': [{ label: 'nmol/L unit', loinc: '15057-3', longCommonName: 'Androstanolone (Dihydrotestosterone) [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
+  '2143-6': [{ label: 'nmol/L unit', loinc: '14675-3', longCommonName: 'Cortisol [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
+  '3024-7': [{ label: 'pmol/L unit', loinc: '14920-3', longCommonName: 'Thyroxine (T4) free [Moles/volume] in Serum or Plasma', unit: 'pmol/L' }],
 };
+
+// Reverse of ALSO_REFS: alias LOINC → the primary LOINC whose badge/row it
+// folds into (so e.g. a result uploaded as 2986-8 shows on the T row).
+const ALIAS_TO_PRIMARY: Record<string, string> = Object.fromEntries(
+  Object.entries(ALSO_REFS).flatMap(([primary, refs]) => refs.map((ref) => [ref.loinc, primary]))
+);
 
 // Computed/derived values (ratios, estimates) rather than direct measurements. TC/HDL
 // ratio and % Iron Saturation are also independently reportable by a lab (LOINCs
@@ -206,17 +222,20 @@ type Route =
   | { view: 'panels' }
   | { view: 'panel'; name: string }
   | { view: 'reference' }
+  | { view: 'all' }
   | { view: 'profile' };
 
-const NAV_ITEMS: { view: 'reference' | 'panels' | 'profile'; label: string }[] = [
+const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'profile'; label: string }[] = [
   { view: 'reference', label: 'Reference Book' },
   { view: 'panels', label: 'Monitoring Panels' },
+  { view: 'all', label: 'All Observations' },
   { view: 'profile', label: 'Profile' },
 ];
 
 function routeToHash(route: Route): string {
   if (route.view === 'panel') return `#panels/${encodeURIComponent(route.name)}`;
   if (route.view === 'reference') return '#reference';
+  if (route.view === 'all') return '#all';
   if (route.view === 'profile') return '#profile';
   return '#panels';
 }
@@ -225,6 +244,7 @@ function hashToRoute(hash: string): Route {
   const value = decodeURIComponent(hash.replace(/^#/, ''));
   if (!value || value === 'panels') return { view: 'panels' };
   if (value === 'reference') return { view: 'reference' };
+  if (value === 'all') return { view: 'all' };
   if (value === 'profile') return { view: 'profile' };
   if (value.startsWith('panels/')) return { view: 'panel', name: value.slice('panels/'.length) };
   return { view: 'panel', name: value }; // back-compat with pre-nav-menu links
@@ -247,6 +267,75 @@ const BADGE_GAP = 12;
 const PANEL_PADDING = 20;
 const PANEL_GAP = 24;
 const PANEL_WIDTH = BADGE_WIDTH * 3 + BADGE_GAP * 2 + PANEL_PADDING * 2;
+
+// Fabricates a few sessions of plausible-looking results for every marker in
+// SHORT_LABELS. Each LOINC gets a stable synthetic reference range (seeded by a
+// hash of the code, so regenerating keeps ranges consistent), and each value is
+// drawn near that range with roughly a 1-in-6 chance of landing outside it.
+function generateTestData(): import('../../types').ResultGroup[] {
+  const hash = (s: string) => {
+    let h = 0;
+    for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return h;
+  };
+  const round = (v: number) => Math.round(v * 100) / 100;
+  const today = new Date();
+  const dates: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i * 4, 15);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates.map((date) => {
+    const items = Object.entries(SHORT_LABELS)
+      .filter(() => Math.random() > 0.25) // each report covers ~75% of markers
+      .map(([loinc, { short, unit }]) => {
+        const h = hash(loinc);
+        const refMin = round((h % 90) + 10);
+        const refMax = round(refMin * (1.5 + ((h >> 8) % 100) / 100));
+        const span = refMax - refMin;
+        // Mostly inside the range; ~1 in 6 drifts below or above it.
+        const roll = Math.random();
+        const value =
+          roll < 0.08 ? refMin - Math.random() * span * 0.3
+          : roll < 0.16 ? refMax + Math.random() * span * 0.3
+          : refMin + Math.random() * span;
+        const v = round(Math.max(0, value));
+        return {
+          loinc,
+          analysis: short,
+          symbol: short,
+          section: '',
+          value: v,
+          rawValue: String(v),
+          valueQualifier: '',
+          unit,
+          refText: `${refMin} - ${refMax}`,
+          refMin,
+          refMax,
+          method: '',
+        };
+      });
+    return { date, place: 'Test Data Lab', file: `generated__${date}`, items, itemCount: items.length };
+  });
+}
+
+// True when echoing `short` beside `full` would add nothing: the full name
+// already contains it (ignoring case and punctuation, so "25OH" matches
+// "(25-OH)"), or each word of the short label abbreviates a word of the full
+// name in order ("Vit D" ⊂ "Vitamin D (25-OH)").
+function isEchoRedundant(full: string, short: string): boolean {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  if (norm(full).includes(norm(short))) return true;
+  const fullWords = full.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const shortWords = short.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  let i = 0;
+  for (const w of shortWords) {
+    while (i < fullWords.length && !fullWords[i]!.startsWith(w)) i++;
+    if (i === fullWords.length) return false;
+    i++;
+  }
+  return true;
+}
 
 function formatMonthYear(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
@@ -282,7 +371,7 @@ function loadAnalysisSettings(): AnalysisSettings {
 
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels } = useData();
-  const { sessions, loadGroupItems } = useResultsContext();
+  const { sessions, loadGroupItems, loadGenerated, uploadFile, clearData, error: uploadError } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
   const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
@@ -385,6 +474,77 @@ export function MedicalConditionsPage() {
           </div>
         );
       })}
+    </div>
+  );
+
+  // Shared table controls (unit system, samplings shown, column order) — one
+  // setting across the panel Analysis tables and All Observations alike.
+  const controlsEl = (
+    <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Unit system</div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(['si', 'us'] as const).map((sys) => (
+            <div
+              key={sys}
+              onClick={() => setUnitSystem(sys)}
+              style={{
+                padding: '4px 12px',
+                borderRadius: 9999,
+                border: '1.5px solid #1971c2',
+                background: unitSystem === sys ? '#1971c2' : 'transparent',
+                color: unitSystem === sys ? '#fff' : '#1971c2',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {sys.toUpperCase()}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Last N samplings</div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {([5, 10, 15, 'all'] as const).map((n) => (
+            <div
+              key={n}
+              onClick={() => setSampleLimit(n)}
+              style={{
+                padding: '4px 12px',
+                borderRadius: 9999,
+                border: '1.5px solid #1971c2',
+                background: sampleLimit === n ? '#1971c2' : 'transparent',
+                color: sampleLimit === n ? '#fff' : '#1971c2',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {n === 'all' ? 'All' : n}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Column order</div>
+        <div
+          onClick={() => setDateOrder(dateOrder === 'desc' ? 'asc' : 'desc')}
+          style={{
+            display: 'inline-block',
+            padding: '4px 12px',
+            borderRadius: 9999,
+            border: '1.5px solid #1971c2',
+            color: '#1971c2',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}
+        </div>
+      </div>
     </div>
   );
 
@@ -530,7 +690,7 @@ export function MedicalConditionsPage() {
           <>
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
               {popup.test.full}
-              {popup.test.full !== popup.test.short && ` (${popup.test.short})`}
+              {!isEchoRedundant(popup.test.full, popup.test.short) && ` (${popup.test.short})`}
             </div>
             <div style={{ fontSize: 13, color: '#555', marginBottom: popup.test.also ? 10 : 0 }}>
               <a
@@ -563,7 +723,7 @@ export function MedicalConditionsPage() {
           <>
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
               {popup.def.name}
-              {popup.def.name !== popup.def.nameCompact && ` (${popup.def.nameCompact})`}
+              {!isEchoRedundant(popup.def.name, popup.def.nameCompact) && ` (${popup.def.nameCompact})`}
             </div>
             <div style={{ fontSize: 12, color: '#888', fontFamily: 'monospace', whiteSpace: 'pre-line', marginBottom: 10 }}>{popup.def.formula}</div>
             {(() => {
@@ -619,12 +779,188 @@ export function MedicalConditionsPage() {
     </>
   );
 
+  if (route.view === 'all') {
+    // Every distinct observation ever uploaded, regardless of panel membership.
+    // A result recorded under an also-ref alias (unit-variant LOINC) folds into
+    // its primary marker's row instead of appearing as a bare-LOINC duplicate.
+    const seen = new Map<string, Observation>();
+    for (const { loinc: rawLoinc } of allResults) {
+      const loinc = ALIAS_TO_PRIMARY[rawLoinc] ?? rawLoinc;
+      if (seen.has(loinc)) continue;
+      const analysis = analysesCatalog[loinc];
+      const labelInfo = SHORT_LABELS[loinc];
+      seen.set(loinc, {
+        short: labelInfo?.short ?? analysis?.displayName ?? loinc,
+        full: analysis?.displayName ?? loinc,
+        longCommonName: analysis?.longCommonName ?? '',
+        loinc,
+        unit: labelInfo?.unit,
+        also: ALSO_REFS[loinc],
+      });
+    }
+    const rows = Array.from(seen.values()).sort((a, b) => a.short.localeCompare(b.short));
+    const sortedDates = Array.from(new Set(allResults.map((r) => r.date))).sort((a, b) => b.localeCompare(a));
+    const recentDates = sampleLimit === 'all' ? sortedDates : sortedDates.slice(0, sampleLimit);
+    const allDates = dateOrder === 'asc' ? [...recentDates].reverse() : recentDates;
+
+    return (
+      <div style={{ padding: '56px 48px' }}>
+        {navEl}
+        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>All Observations</h1>
+        {rows.length === 0 ? (
+          <div style={{ color: '#888', fontSize: 14 }}>No results uploaded yet.</div>
+        ) : (
+          <>
+            <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+              {rows.length} observations across {sortedDates.length} lab reports
+            </div>
+            {controlsEl}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: 140, textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2', whiteSpace: 'nowrap' }}>
+                      Observations
+                    </th>
+                    {allDates.map((date) => (
+                      <th key={date} style={{ width: 96, textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2', whiteSpace: 'nowrap' }}>
+                        {formatMonthYear(date)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((test) => {
+                    const selected = selectedLoinc === test.loinc;
+                    const marker = LOINC_TO_MARKER[test.loinc];
+                    const siUsUnit = marker ? SI_US_UNIT[marker] : undefined;
+                    const displayUnit = siUsUnit ? siUsUnit[unitSystem] : test.unit;
+                    return (
+                      <tr key={test.loinc} style={{ background: selected ? '#eaf3fb' : undefined }}>
+                        <td
+                          onClick={(e) => {
+                            setSelectedLoinc(test.loinc);
+                            openPopup(test, e);
+                          }}
+                          style={{ width: 140, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                        >
+                          <span style={{ fontWeight: 600 }}>{test.short}</span>
+                          {displayUnit && `, ${displayUnit}`}
+                        </td>
+                        {allDates.map((date) => {
+                          const rowLoincs = testLoincs(test);
+                          const match = allResults.find((r) => r.date === date && rowLoincs.includes(r.loinc)) ?? null;
+                          if (!match) {
+                            return (
+                              <td
+                                key={date}
+                                onClick={() => setSelectedLoinc(test.loinc)}
+                                style={{ width: 96, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                              >
+                                –
+                              </td>
+                            );
+                          }
+                          const hasRef = match.result.value != null && (match.result.refMin != null || match.result.refMax != null);
+                          const bg = hasRef
+                            ? (isOutOfRange(match.result) ? (selected ? '#e6e8f0' : '#fdecea') : (selected ? '#dbecf0' : '#e6f4ea'))
+                            : (selected ? '#eaf3fb' : 'transparent');
+                          const displayValue =
+                            siUsUnit && match.result.value != null
+                              ? toUnit(match.result.value, marker!, match.result.unit, siUsUnit[unitSystem])
+                              : match.result.value;
+                          return (
+                            <td
+                              key={date}
+                              onClick={() => setSelectedLoinc(test.loinc)}
+                              style={{ width: 96, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', background: bg, cursor: 'pointer' }}
+                            >
+                              {siUsUnit ? fmtNum(displayValue) : match.result.rawValue || fmtNum(match.result.value)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+        {popupEl}
+      </div>
+    );
+  }
+
   if (route.view === 'profile') {
     return (
       <div style={{ padding: '56px 48px' }}>
         {navEl}
         <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>Profile</h1>
-        <div style={{ color: '#888', fontSize: 14 }}>Coming soon.</div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+          <label
+            style={{
+              display: 'inline-block',
+              padding: '8px 20px',
+              borderRadius: 9999,
+              border: '1.5px solid #1971c2',
+              background: '#1971c2',
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Upload JSON
+            <input
+              type="file"
+              accept=".json,application/json"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadFile(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          <div
+            onClick={() => loadGenerated(generateTestData())}
+            style={{
+              display: 'inline-block',
+              padding: '8px 20px',
+              borderRadius: 9999,
+              border: '1.5px solid #1971c2',
+              color: '#1971c2',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Generate Test Data
+          </div>
+          <div
+            onClick={() => {
+              if (window.confirm('Remove all loaded lab reports?')) clearData();
+            }}
+            style={{
+              display: 'inline-block',
+              padding: '8px 20px',
+              borderRadius: 9999,
+              border: '1.5px solid #ea4335',
+              color: '#ea4335',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Clear
+          </div>
+        </div>
+        {uploadError && <div style={{ color: '#ea4335', fontSize: 14, marginBottom: 12 }}>{uploadError}</div>}
+        <div style={{ color: '#888', fontSize: 14 }}>
+          Upload a lab-results JSON export, or add 6 randomly generated lab reports. Both merge with whatever is
+          already loaded ({sessions.length} report{sessions.length === 1 ? '' : 's'} currently).
+        </div>
         {popupEl}
       </div>
     );
@@ -879,72 +1215,7 @@ export function MedicalConditionsPage() {
 
         {detailTab === 'analysis' ? (
           <div>
-            <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Unit system</div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {(['si', 'us'] as const).map((sys) => (
-                    <div
-                      key={sys}
-                      onClick={() => setUnitSystem(sys)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 9999,
-                        border: '1.5px solid #1971c2',
-                        background: unitSystem === sys ? '#1971c2' : 'transparent',
-                        color: unitSystem === sys ? '#fff' : '#1971c2',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {sys.toUpperCase()}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Last N samplings</div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {([5, 10, 15, 'all'] as const).map((n) => (
-                    <div
-                      key={n}
-                      onClick={() => setSampleLimit(n)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 9999,
-                        border: '1.5px solid #1971c2',
-                        background: sampleLimit === n ? '#1971c2' : 'transparent',
-                        color: sampleLimit === n ? '#fff' : '#1971c2',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {n === 'all' ? 'All' : n}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Column order</div>
-                <div
-                  onClick={() => setDateOrder(dateOrder === 'desc' ? 'asc' : 'desc')}
-                  style={{
-                    display: 'inline-block',
-                    padding: '4px 12px',
-                    borderRadius: 9999,
-                    border: '1.5px solid #1971c2',
-                    color: '#1971c2',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}
-                </div>
-              </div>
-            </div>
+            {controlsEl}
             {dates.length === 0 ? (
               <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
             ) : (

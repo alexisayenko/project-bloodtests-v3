@@ -49,6 +49,7 @@ interface ResultsContextType {
   loading: boolean;
   error: string | null;
   uploadFile: (file: File) => Promise<void>;
+  loadGenerated: (groups: ResultGroup[]) => void;
   loadGroupItems: (sessionId: string) => Promise<Result[]>;
   clearData: () => void;
 }
@@ -88,6 +89,19 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  // Merge incoming sessions into what's already loaded (an incoming session
+  // replaces an existing one with the same `file` id), so uploaded JSON and
+  // generated test data can coexist instead of clobbering each other.
+  const mergeSessions = useCallback((incoming: ResultGroup[]) => {
+    setSessions((prev) => {
+      const byFile = new Map(prev.map((g) => [g.file, g]));
+      for (const g of incoming) byFile.set(g.file, g);
+      const merged = Array.from(byFile.values()).sort((a, b) => b.date.localeCompare(a.date));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
+
   const uploadFile = useCallback(async (file: File) => {
     setError(null);
 
@@ -100,13 +114,18 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const groups = parseUploadedResults(json);
-      setSessions(groups);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
+      mergeSessions(parseUploadedResults(json));
     } catch (e) {
       setError(e instanceof UploadParseError ? e.message : 'Could not read that file.');
     }
-  }, []);
+  }, [mergeSessions]);
+
+  // Synthetic data (e.g. Profile's "Generate Test Data") — persisted exactly
+  // like a real upload, so the rest of the app can't tell the difference.
+  const loadGenerated = useCallback((groups: ResultGroup[]) => {
+    setError(null);
+    mergeSessions(groups);
+  }, [mergeSessions]);
 
   const loadGroupItems = useCallback(async (sessionId: string): Promise<Result[]> => {
     return sessions.find(s => s.file === sessionId)?.items || [];
@@ -120,7 +139,7 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
 
   return (
     <ResultsContext.Provider
-      value={{ sessions, hasData: sessions.length > 0, loading, error, uploadFile, loadGroupItems, clearData }}
+      value={{ sessions, hasData: sessions.length > 0, loading, error, uploadFile, loadGenerated, loadGroupItems, clearData }}
     >
       {children}
     </ResultsContext.Provider>
