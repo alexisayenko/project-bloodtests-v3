@@ -10,6 +10,7 @@ import {
   LOINC_TO_MARKER, getPanelLoincs, testLoincs, isEchoRedundant, type Observation,
 } from './markers';
 import { NAV_ITEMS, routeToHash, hashToRoute, type Route } from './routing';
+import { ReferenceBookPage } from './ReferenceBookPage';
 import {
   STATUS_STYLES, ZONE_BG, SELECTED_ZONE_BG, BADGE_WIDTH, BADGE_GAP, PANEL_PADDING, PANEL_GAP,
   PANEL_WIDTH, POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, formatMonthYear,
@@ -99,7 +100,7 @@ export function MedicalConditionsPage() {
     setDetailTab('analysis');
   };
 
-  const openReference = () => navigate({ view: 'reference' });
+  const openReference = (key?: string) => navigate({ view: 'reference', key });
 
   const navEl = (
     <div style={{ display: 'flex', gap: 32, marginBottom: 32, borderBottom: '1.5px solid #eee' }}>
@@ -415,7 +416,7 @@ export function MedicalConditionsPage() {
               {popup.def.references[0] && ` -- ${popup.def.references[0].organization}`}
             </div>
             <div
-              onClick={openReference}
+              onClick={() => openReference(popup.def.key)}
               style={{ fontSize: 13, color: '#1971c2', fontWeight: 500, marginTop: 10, cursor: 'pointer' }}
             >
               Learn more →
@@ -617,10 +618,7 @@ export function MedicalConditionsPage() {
     return (
       <div style={{ padding: '56px 48px' }}>
         {navEl}
-        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>Reference</h1>
-        <div style={{ color: '#888', fontSize: 14 }}>
-          Coming soon -- full physiology, evidence and citations for every computed index.
-        </div>
+        <ReferenceBookPage indexKey={route.key} navigate={navigate} />
         {popupEl}
       </div>
     );
