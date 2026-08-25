@@ -39,8 +39,10 @@ export function formatFrequencyText(text: string): string {
 }
 
 export function isOutOfRange(r: Result): boolean {
-  if (r.refMin == null || r.refMax == null || r.value == null) return false;
-  return r.value < r.refMin || r.value > r.refMax;
+  if (r.value == null || (r.refMin == null && r.refMax == null)) return false;
+  if (r.refMin != null && r.value < r.refMin) return true;
+  if (r.refMax != null && r.value > r.refMax) return true;
+  return false;
 }
 
 export function isNearOutOfRange(r: Result): boolean {
