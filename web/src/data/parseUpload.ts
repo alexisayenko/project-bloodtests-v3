@@ -48,7 +48,9 @@ interface RawGroup {
 
 function slugify(text: string): string {
   const value = (text || 'unknown').trim().toLowerCase().replaceAll('/', ' ');
-  const slug = value.replace(/[^a-z0-9]+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
+  // Split on non-alphanumeric runs and rejoin: same slug, no trailing-anchor
+  // regex (which Sonar flags for super-linear backtracking).
+  const slug = value.split(/[^a-z0-9]+/).filter(Boolean).join('-');
   return slug || 'unknown';
 }
 

@@ -50,7 +50,7 @@ export function formatResultReference(result: Result): string {
 
 export function formatFrequencyText(text: string): string {
   if (!text) return '';
-  const normalized = text.replace(/ *; */g, ', ').trim();
+  const normalized = text.split(';').map((part) => part.trim()).filter(Boolean).join(', ');
   return normalized.charAt(0).toLowerCase() + normalized.slice(1);
 }
 

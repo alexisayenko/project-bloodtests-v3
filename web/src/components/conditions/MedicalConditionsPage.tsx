@@ -299,7 +299,7 @@ export function MedicalConditionsPage() {
     }
     const value = current.result.rawValue || fmtNum(current.result.value);
     const hasRef = current.result.value != null && (current.result.refMin != null || current.result.refMax != null);
-    const bg = hasRef ? (isOutOfRange(current.result) ? '#fdecea' : '#e6f4ea') : 'transparent';
+    const bg = cellBg(hasRef, isOutOfRange(current.result), false);
     return (
       <div style={{ fontSize: 13, color: '#555', marginTop: 8, paddingTop: 8, borderTop: '1px solid #eee' }}>
         <div style={{ fontWeight: 500, color: '#333' }}>Latest taken on {formatMonthYear(current.date)}</div>
