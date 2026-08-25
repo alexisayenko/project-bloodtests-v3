@@ -60,6 +60,9 @@ Optional. Useful when the name is still in motion.
 | `heman.cc` | candidate (2026-08-25) — short for "hematology analyzer" |
 | `hematologyanalyzer.cc` | candidate (2026-08-25) — descriptive long form |
 | `serum.im` | candidate (2026-08-25) — short, clinical, memorable |
+| `in-vitro.cc` | candidate (2026-08-25) — lab-diagnostics term, hyphenated |
+| `invitro.im` | candidate (2026-08-25) — same, unhyphenated (note: clashes with Invitro, the large RU/CIS lab chain) |
+| `assay.guru` | candidate (2026-08-25) — playful, assay = lab test |
 
 ## Open questions
 
