@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { fmtNum, formatResultReference, isOutOfRange } from '../../utils/format';
-import { INDEX_DEFS, MARKER_LOINC, computeIndex, zone, type IndexDef } from '../../data/computedIndices';
+import { INDEX_DEFS, MARKER_LOINC, SI_US_UNIT, computeIndex, toUnit, zone, type IndexDef } from '../../data/computedIndices';
 import type { Panel, Result } from '../../types';
 
 type LoincRef = { label: string; loinc: string; longCommonName: string; unit: string };
@@ -183,14 +183,52 @@ const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3']);
 // each one renders once, via its computed row, not twice.
 const COMPUTED_LOINCS = new Set(INDEX_DEFS.map((d) => d.loinc).filter((x): x is string => !!x));
 
+// Reverse of MARKER_LOINC, for looking up an observation's SI/US conversion by
+// whichever LOINC it happens to be recorded under.
+const LOINC_TO_MARKER: Record<string, string> = Object.fromEntries(
+  Object.entries(MARKER_LOINC).flatMap(([marker, loincs]) => loincs.map((loinc) => [loinc, marker]))
+);
+
 function getPanelLoincs(panel: Panel): string[] {
   if (panel.sections) return panel.sections.flatMap((section) => section.loincs);
   return panel.loincs ?? [];
 }
 
+type PopupPosition = { left: number; top?: number; bottom?: number };
 type PopupState =
-  | { kind: 'observation'; test: Observation; top: number; left: number }
-  | { kind: 'index'; def: IndexDef; top: number; left: number };
+  | ({ kind: 'observation'; test: Observation } & PopupPosition)
+  | ({ kind: 'index'; def: IndexDef } & PopupPosition);
+
+// Three top-level sections (the nav menu), each its own URL hash, so the
+// browser's back/forward always works. Panel detail nests under Monitoring
+// Panels. Popups are transient overlays, not routes -- they never touch history.
+type Route =
+  | { view: 'panels' }
+  | { view: 'panel'; name: string }
+  | { view: 'reference' }
+  | { view: 'profile' };
+
+const NAV_ITEMS: { view: 'reference' | 'panels' | 'profile'; label: string }[] = [
+  { view: 'reference', label: 'Reference Book' },
+  { view: 'panels', label: 'Monitoring Panels' },
+  { view: 'profile', label: 'Profile' },
+];
+
+function routeToHash(route: Route): string {
+  if (route.view === 'panel') return `#panels/${encodeURIComponent(route.name)}`;
+  if (route.view === 'reference') return '#reference';
+  if (route.view === 'profile') return '#profile';
+  return '#panels';
+}
+
+function hashToRoute(hash: string): Route {
+  const value = decodeURIComponent(hash.replace(/^#/, ''));
+  if (!value || value === 'panels') return { view: 'panels' };
+  if (value === 'reference') return { view: 'reference' };
+  if (value === 'profile') return { view: 'profile' };
+  if (value.startsWith('panels/')) return { view: 'panel', name: value.slice('panels/'.length) };
+  return { view: 'panel', name: value }; // back-compat with pre-nav-menu links
+}
 
 const STATUS_STYLES = {
   'never': { border: '#ccc', background: '#f5f5f5', color: '#999' },
@@ -217,17 +255,50 @@ function formatMonthYear(dateStr: string): string {
   return `${month} ${year}`;
 }
 
+// The optimal (green-zone) range implied by an index's cut-points, formatted
+// like a lab reference range -- same orientation `zone()` uses to color a cell.
+function greenRangeOf(def: IndexDef): string {
+  const cmp = def.hi ? '>' : '<';
+  const unit = def.unit ? ` ${def.unit}` : '';
+  return `${cmp} ${fmtNum(def.cut[0])}${unit}`;
+}
+
+// The Analysis-tab controls (unit system, samplings shown, column order) are
+// one shared setting across every panel already (component-level state, not
+// per-panel) -- persisted here so they also survive a page refresh.
+const ANALYSIS_SETTINGS_KEY = 'bloodtests_analysis_settings_v1';
+type AnalysisSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all'; dateOrder: 'asc' | 'desc' };
+const DEFAULT_ANALYSIS_SETTINGS: AnalysisSettings = { unitSystem: 'si', sampleLimit: 'all', dateOrder: 'desc' };
+
+function loadAnalysisSettings(): AnalysisSettings {
+  try {
+    const raw = localStorage.getItem(ANALYSIS_SETTINGS_KEY);
+    if (raw) return { ...DEFAULT_ANALYSIS_SETTINGS, ...JSON.parse(raw) };
+  } catch {
+    // corrupt/incompatible local storage -- ignore and start fresh
+  }
+  return DEFAULT_ANALYSIS_SETTINGS;
+}
+
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels } = useData();
   const { sessions, loadGroupItems } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
-  const [detailPanel, setDetailPanel] = useState<string | null>(null);
+  const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
   const [detailTab, setDetailTab] = useState<'analysis' | 'in-range'>('analysis');
-  const [unitSystem, setUnitSystem] = useState<'si' | 'us'>('si');
-  const [sampleLimit, setSampleLimit] = useState<number | 'all'>('all');
-  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>('desc');
+  const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(() => loadAnalysisSettings().unitSystem);
+  const [sampleLimit, setSampleLimit] = useState<number | 'all'>(() => loadAnalysisSettings().sampleLimit);
+  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>(() => loadAnalysisSettings().dateOrder);
   const [allResults, setAllResults] = useState<{ loinc: string; date: string; result: Result }[]>([]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify({ unitSystem, sampleLimit, dateOrder }));
+    } catch {
+      // storage unavailable (private browsing, quota) -- setting just won't persist
+    }
+  }, [unitSystem, sampleLimit, dateOrder]);
 
   const POPUP_WIDTH = 260;
   const INDEX_POPUP_WIDTH = 380;
@@ -267,21 +338,55 @@ export function MedicalConditionsPage() {
   }, [panels, analysesCatalog]);
 
   useEffect(() => {
-    const hash = decodeURIComponent(window.location.hash.slice(1));
-    if (hash) setDetailPanel(hash);
-
-    const onPopState = (e: PopStateEvent) => {
-      setDetailPanel(e.state?.panel ?? null);
+    // The single source of truth for the current route is always the URL, so
+    // back/forward -- browser buttons or in-app links -- stay in sync by
+    // construction, and any open popup (a transient overlay, not a page) is
+    // always dropped on navigation instead of surviving over the new view.
+    const onPopState = () => {
+      setPopup(null);
+      setRoute(hashToRoute(window.location.hash));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  const navigate = (next: Route) => {
+    window.history.pushState(null, '', routeToHash(next));
+    setPopup(null);
+    setRoute(next);
+  };
+
   const openDetail = (name: string) => {
-    window.history.pushState({ panel: name }, '', `#${encodeURIComponent(name)}`);
-    setDetailPanel(name);
+    navigate({ view: 'panel', name });
     setDetailTab('analysis');
   };
+
+  const openReference = () => navigate({ view: 'reference' });
+
+  const navEl = (
+    <div style={{ display: 'flex', gap: 32, marginBottom: 32, borderBottom: '1.5px solid #eee' }}>
+      {NAV_ITEMS.map((item) => {
+        const active = route.view === item.view || (item.view === 'panels' && route.view === 'panel');
+        return (
+          <div
+            key={item.view}
+            onClick={() => navigate({ view: item.view })}
+            style={{
+              padding: '12px 2px',
+              marginBottom: -1.5,
+              borderBottom: active ? '2px solid #1971c2' : '2px solid transparent',
+              fontSize: 15,
+              fontWeight: active ? 600 : 400,
+              color: active ? '#1971c2' : '#555',
+              cursor: 'pointer',
+            }}
+          >
+            {item.label}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -330,18 +435,28 @@ export function MedicalConditionsPage() {
     return null;
   };
 
+  const popupPosition = (rect: DOMRect, width: number): PopupPosition => {
+    const center = rect.left + rect.width / 2;
+    const left = Math.min(Math.max(center - width / 2, 8), window.innerWidth - width - 8);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    // Open upward when there's little room below and more room above --
+    // keeps the popup from running off the bottom of the viewport for a
+    // row near the end of a long page.
+    if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+      return { left, bottom: window.innerHeight - rect.top + 8 };
+    }
+    return { left, top: rect.bottom + 8 };
+  };
+
   const openPopup = (test: Observation, e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const center = rect.left + rect.width / 2;
-    const left = Math.min(Math.max(center - POPUP_WIDTH / 2, 8), window.innerWidth - POPUP_WIDTH - 8);
-    setPopup({ kind: 'observation', test, top: rect.bottom + 8, left });
+    setPopup({ kind: 'observation', test, ...popupPosition(rect, POPUP_WIDTH) });
   };
 
   const openIndexPopup = (def: IndexDef, e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const center = rect.left + rect.width / 2;
-    const left = Math.min(Math.max(center - INDEX_POPUP_WIDTH / 2, 8), window.innerWidth - INDEX_POPUP_WIDTH - 8);
-    setPopup({ kind: 'index', def, top: rect.bottom + 8, left });
+    setPopup({ kind: 'index', def, ...popupPosition(rect, INDEX_POPUP_WIDTH) });
   };
 
   const getLatest = (loincs: string[]): { result: Result; date: string } | null => {
@@ -394,14 +509,18 @@ export function MedicalConditionsPage() {
         style={{
           position: 'fixed',
           top: popup.top,
+          bottom: popup.bottom,
           left: popup.left,
           background: '#fff',
           border: '1.5px solid #1971c2',
           borderRadius: 12,
           padding: 18,
           width: popup.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH,
-          maxHeight: popup.kind === 'index' ? '70vh' : undefined,
-          overflowY: popup.kind === 'index' ? 'auto' : undefined,
+          // Cap to whatever room is actually left on the anchored side, not just
+          // the viewport height -- otherwise a popup opened partway down the
+          // page can still try to render taller than the space below it.
+          maxHeight: popup.top != null ? `calc(100vh - ${popup.top}px - 8px)` : `calc(100vh - ${popup.bottom}px - 8px)`,
+          overflowY: 'auto',
           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
           boxSizing: 'border-box',
           zIndex: 101,
@@ -446,7 +565,7 @@ export function MedicalConditionsPage() {
               {popup.def.name}
               {popup.def.name !== popup.def.nameCompact && ` (${popup.def.nameCompact})`}
             </div>
-            <div style={{ fontSize: 12, color: '#888', fontFamily: 'monospace', marginBottom: 10 }}>{popup.def.formula}</div>
+            <div style={{ fontSize: 12, color: '#888', fontFamily: 'monospace', whiteSpace: 'pre-line', marginBottom: 10 }}>{popup.def.formula}</div>
             {(() => {
               const latest = latestIndexValue(popup.def);
               const reported = popup.def.loinc ? latestByLoinc[popup.def.loinc] : undefined;
@@ -465,6 +584,7 @@ export function MedicalConditionsPage() {
                           }}
                         >
                           {fmtNum(latest.value)} {popup.def.unit ?? ''}
+                          <span style={{ color: '#888' }}> (Ref: {greenRangeOf(popup.def)})</span>
                         </div>
                       </>
                     ) : (
@@ -484,41 +604,54 @@ export function MedicalConditionsPage() {
             })()}
             <div style={{ fontSize: 13, color: '#333', marginTop: 10 }}>{popup.def.meaning}</div>
             <div style={{ fontSize: 12, color: '#666', marginTop: 10 }}>
-              <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{popup.def.evidenceLevel}</span> -- {popup.def.consensus}
+              <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{popup.def.evidenceLevel}</span>
+              {popup.def.references[0] && ` -- ${popup.def.references[0].organization}`}
             </div>
-            {popup.def.references.length > 0 && (
-              <div style={{ fontSize: 11, color: '#888', marginTop: 10, paddingTop: 8, borderTop: '1px solid #eee' }}>
-                {popup.def.references.map((ref, i) => (
-                  <div key={i} style={{ marginTop: i > 0 ? 8 : 0 }}>
-                    {ref.url ? (
-                      <a href={ref.url} target="_blank" rel="noreferrer" style={{ color: '#1971c2' }}>
-                        {ref.organization}
-                      </a>
-                    ) : (
-                      ref.organization
-                    )}
-                    {' -- '}
-                    {ref.document}
-                    {ref.year ? ` (${ref.year})` : ''}
-                    <div style={{ fontStyle: 'italic', marginTop: 2 }}>{ref.quote}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div
+              onClick={openReference}
+              style={{ fontSize: 13, color: '#1971c2', fontWeight: 500, marginTop: 10, cursor: 'pointer' }}
+            >
+              Learn more →
+            </div>
           </>
         )}
       </div>
     </>
   );
 
-  if (detailPanel) {
+  if (route.view === 'profile') {
+    return (
+      <div style={{ padding: '56px 48px' }}>
+        {navEl}
+        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>Profile</h1>
+        <div style={{ color: '#888', fontSize: 14 }}>Coming soon.</div>
+        {popupEl}
+      </div>
+    );
+  }
+
+  if (route.view === 'reference') {
+    return (
+      <div style={{ padding: '56px 48px' }}>
+        {navEl}
+        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>Reference</h1>
+        <div style={{ color: '#888', fontSize: 14 }}>
+          Coming soon -- full physiology, evidence and citations for every computed index.
+        </div>
+        {popupEl}
+      </div>
+    );
+  }
+
+  if (route.view === 'panel') {
+    const detailPanel = route.name;
     const condition = conditions.find((c) => c.name === detailPanel);
     const tests = condition?.tests ?? [];
     const observations = tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
     const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc) && !COMPUTED_LOINCS.has(t.loinc));
     const computedForPanel = INDEX_DEFS.filter((d) => d.panels.includes(detailPanel));
     const computedInputLoincs = new Set(
-      computedForPanel.flatMap((d) => d.needs.map((short) => MARKER_LOINC[short]).filter((x): x is string => !!x))
+      computedForPanel.flatMap((d) => d.needs.flatMap((short) => MARKER_LOINC[short] ?? []))
     );
 
     const dates = Array.from(
@@ -538,13 +671,17 @@ export function MedicalConditionsPage() {
     };
 
     const DATE_COL_WIDTH = 96;
+    // Shared across observations and both indices tables so they line up as one block.
+    const LABEL_COL_WIDTH = 140;
 
-    const renderTable = (rowTests: Observation[]) => (
+    const renderTable = (rowTests: Observation[], label: string) => (
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2' }} />
+              <th style={{ width: LABEL_COL_WIDTH, textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2', whiteSpace: 'nowrap' }}>
+                {label}
+              </th>
               {visibleDates.map((date) => (
                 <th
                   key={date}
@@ -564,6 +701,9 @@ export function MedicalConditionsPage() {
           <tbody>
             {rowTests.map((test) => {
               const selected = selectedLoinc === test.loinc;
+              const marker = LOINC_TO_MARKER[test.loinc];
+              const siUsUnit = marker ? SI_US_UNIT[marker] : undefined;
+              const displayUnit = siUsUnit ? siUsUnit[unitSystem] : test.unit;
               return (
               <tr key={test.loinc} style={{ background: selected ? '#eaf3fb' : undefined }}>
                 <td
@@ -571,10 +711,10 @@ export function MedicalConditionsPage() {
                     setSelectedLoinc(test.loinc);
                     openPopup(test, e);
                   }}
-                  style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                  style={{ width: LABEL_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                 >
                   <span style={{ fontWeight: 600 }}>{test.short}</span>
-                  {test.unit && `, ${test.unit}`}
+                  {displayUnit && `, ${displayUnit}`}
                 </td>
                 {visibleDates.map((date) => {
                   const match = cellMatch(test, date);
@@ -593,6 +733,12 @@ export function MedicalConditionsPage() {
                   const bg = hasRef
                     ? (isOutOfRange(match.result) ? (selected ? '#e6e8f0' : '#fdecea') : (selected ? '#dbecf0' : '#e6f4ea'))
                     : (selected ? '#eaf3fb' : 'transparent');
+                  // Coloring always uses the as-reported value/range (self-consistent);
+                  // only the displayed number is converted for the toggle.
+                  const displayValue =
+                    siUsUnit && match.result.value != null
+                      ? toUnit(match.result.value, marker!, match.result.unit, siUsUnit[unitSystem])
+                      : match.result.value;
                   return (
                     <td
                       key={date}
@@ -606,7 +752,7 @@ export function MedicalConditionsPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      {match.result.rawValue || fmtNum(match.result.value)}
+                      {fmtNum(displayValue)}
                     </td>
                   );
                 })}
@@ -623,7 +769,9 @@ export function MedicalConditionsPage() {
         <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2' }} />
+              <th style={{ width: LABEL_COL_WIDTH, textAlign: 'left', padding: '8px 12px', borderBottom: '1.5px solid #1971c2', whiteSpace: 'nowrap' }}>
+                Indices
+              </th>
               {visibleDates.map((date) => (
                 <th
                   key={date}
@@ -650,7 +798,7 @@ export function MedicalConditionsPage() {
                       setSelectedLoinc(def.key);
                       openIndexPopup(def, e);
                     }}
-                    style={{ padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                    style={{ width: LABEL_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' }}
                   >
                     <span style={{ fontWeight: 600 }}>{def.nameCompact}</span>
                     {def.unit && `, ${def.unit}`}
@@ -697,11 +845,17 @@ export function MedicalConditionsPage() {
 
     return (
       <div style={{ padding: '56px 48px' }}>
-        <div
-          onClick={() => window.history.back()}
-          style={{ fontSize: 14, color: '#1971c2', cursor: 'pointer', marginBottom: 24 }}
-        >
-          ← Monitoring Panels
+        {navEl}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
+          <span onClick={() => navigate({ view: 'panels' })} style={{ color: '#1971c2', cursor: 'pointer' }}>
+            Monitoring Panels
+          </span>
+          <span>›</span>
+          <span onClick={() => setDetailTab('analysis')} style={{ color: '#1971c2', cursor: 'pointer' }}>
+            {detailPanel}
+          </span>
+          <span>›</span>
+          <span>{detailTab === 'analysis' ? 'Analysis' : "What's in range"}</span>
         </div>
         <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>{detailPanel}</h1>
         <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
@@ -795,15 +949,12 @@ export function MedicalConditionsPage() {
               <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
             ) : (
               <>
-                {renderTable(observations)}
+                {renderTable(observations, 'Observations')}
                 {(indices.length > 0 || computedForPanel.length > 0) && (
-                  <>
-                    <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', margin: '24px 0 12px' }}>
-                      Indices
-                    </div>
-                    {indices.length > 0 && renderTable(indices)}
+                  <div style={{ marginTop: 16 }}>
+                    {indices.length > 0 && renderTable(indices, 'Indices')}
                     {computedForPanel.length > 0 && renderIndexTable(computedForPanel)}
-                  </>
+                  </div>
                 )}
               </>
             )}
@@ -818,6 +969,7 @@ export function MedicalConditionsPage() {
 
   return (
     <div style={{ padding: '56px 48px' }}>
+      {navEl}
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 32 }}>Monitoring Panels</h1>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, ${PANEL_WIDTH}px)`, gap: PANEL_GAP }}>
         {conditions.map((condition) => (
