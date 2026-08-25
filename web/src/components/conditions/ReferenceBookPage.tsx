@@ -1,4 +1,5 @@
 import { INDEX_DEFS, type IndexDef, type IndexReference } from '../../data/computedIndices';
+import { HP_AXIS_HTML } from './hpAxisContent';
 import { greenRangeOf } from './ui';
 import { isEchoRedundant } from './markers';
 import type { Route } from './routing';
@@ -126,7 +127,49 @@ function IndexDetail({ def, navigate }: { def: IndexDef; navigate: (r: Route) =>
   );
 }
 
+// Scoped styles for the v2 cascade notation (the original CSS lived in the
+// pre-v2 homepage project and did not survive; this is a minimal equivalent).
+const HP_AXIS_CSS = `
+.hp-axis { max-width: 780px; font-size: 14px; color: #333; line-height: 1.55; }
+.hp-axis .na-sys { margin: 20px 0 8px; font-size: 15px; }
+.hp-axis .cascade { overflow-x: auto; background: #f5f5f5; border-radius: 8px; padding: 12px 14px; font-size: 12.5px; line-height: 1.7; }
+.hp-axis .ar { color: #1971c2; font-weight: 700; }
+.hp-axis .har { color: #999; }
+.hp-axis .pr { color: #8e44ad; font-style: italic; }
+.hp-axis .cascade-key { margin: 8px 0 0; font-size: 13px; }
+.hp-axis .cascade-key dt { font-weight: 600; margin-top: 8px; }
+.hp-axis .cascade-key dd { margin: 2px 0 0 0; color: #555; }
+.hp-axis .cascade-note { font-size: 13px; color: #555; margin-top: 12px; }
+.hp-axis code { background: #f0f3f6; border-radius: 4px; padding: 0 4px; font-size: 12.5px; }
+.hp-axis .ref-note { font-size: 13px; font-style: italic; }
+.hp-axis .muted { color: #888; }
+.hp-axis a { color: #1971c2; }
+`;
+
+function HpAxisPage({ navigate }: { navigate: (r: Route) => void }) {
+  return (
+    <div>
+      <style>{HP_AXIS_CSS}</style>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
+        <span onClick={() => navigate({ view: 'reference' })} style={{ color: '#1971c2', cursor: 'pointer' }}>
+          Reference Book
+        </span>
+        <span>›</span>
+        <span>HP Axis</span>
+      </div>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>HP Axis</h1>
+      <div style={{ color: '#888', fontSize: 14, marginBottom: 20 }}>
+        Hypothalamic–pituitary feedback loops — thyroid (HPT), gonadal (HPG) and adrenal (HPA) — with the
+        cascade notation used to read them.
+      </div>
+      {/* Verbatim v2 prose (static, repo-authored HTML — no user input involved). */}
+      <div className="hp-axis" dangerouslySetInnerHTML={{ __html: HP_AXIS_HTML }} />
+    </div>
+  );
+}
+
 export function ReferenceBookPage({ indexKey, navigate }: { indexKey?: string; navigate: (r: Route) => void }) {
+  if (indexKey === 'hp-axis') return <HpAxisPage navigate={navigate} />;
   const def = indexKey ? INDEX_DEFS.find((d) => d.key === indexKey) : undefined;
   if (def) return <IndexDetail def={def} navigate={navigate} />;
 
@@ -140,6 +183,14 @@ export function ReferenceBookPage({ indexKey, navigate }: { indexKey?: string; n
   return (
     <div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 28 }}>Reference Book</h1>
+      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Physiology</h2>
+      <div
+        onClick={() => navigate({ view: 'reference', key: 'hp-axis' })}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 600, color: '#1971c2' }}>HP Axis</span>
+        <span style={{ fontSize: 14, color: '#555' }}>Hypothalamic–pituitary feedback loops (HPT · HPG · HPA)</span>
+      </div>
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Indices Descriptions</h2>
       <div style={{ color: '#888', fontSize: 14, marginBottom: 24 }}>
         Physiology, evidence standing and cited sources for every computed index.
