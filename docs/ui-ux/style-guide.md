@@ -81,11 +81,12 @@ rationale per rule so future-us can revisit.
   page, each section its own URL hash (`#profile`, `#panels`, `#all`,
   `#reference`) so browser back/forward always works. Active section:
   bold + blue underline.
-- The persistent top nav is the only navigation chrome — no
-  breadcrumb trail anywhere. Nested position within a section (e.g.
-  panel detail under Monitoring Panels) still gets its own URL hash
-  so browser back/forward works, it's just not echoed as a trail on
-  the page.
+- The persistent top nav is the only cross-section navigation
+  chrome — no breadcrumb trail anywhere. Nested position within a
+  section (e.g. panel detail under Monitoring Panels) still gets its
+  own URL hash so browser back/forward works. Panel Detail is the one
+  exception: a back chevron (‹) before its `<h1>` name, a single link
+  back to the Monitoring Panels grid — not a breadcrumb path.
 - A popup is never part of the URL/history; navigating away always
   closes it rather than leaving it open over the next page.
 

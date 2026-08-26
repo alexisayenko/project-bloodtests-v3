@@ -19,8 +19,9 @@ Entry point → panel detail, with a historical values table.
 - **Screens (in order):** Monitoring Panels → panel detail (Analysis
   tab)
 - **Branches:** "What's in range" tab shows a normalized-overlay chart
-  (every marker as % of its own reference range) instead of the values
-  table
+  (every marker as % of its own reference range, plus the panel's
+  computed indices normalized against their own ok/warn/bad
+  cut-points) instead of the values table
 - **Exit / success:** viewer sees an observation's historical values
   and reference range
 

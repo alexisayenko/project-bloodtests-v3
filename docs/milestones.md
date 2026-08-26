@@ -10,6 +10,14 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-08-26 — Monitoring Panels grid cards and the "What's in range"
+  chart (Panel Detail only) now also show each panel's computed
+  indices, dot-colored by ok/warn/bad zone, below a divider; Panel
+  Detail gained a back chevron (‹) before its title, back to the
+  Monitoring Panels grid; not-taken chips show just the marker name
+  (no "never taken" caption); the single-panel picker (Panel Detail)
+  drops the bordered box/caption that multi-panel pickers (All
+  Observations) still show.
 - 2026-08-26 — Panel Detail and All Observations' "What's in range" tab
   built: a normalized-overlay time chart (every marker as % of its own
   reference range on one shared axis), v2's `<lab-explore>` component

@@ -29,10 +29,15 @@ its own sibling view component (`PanelsGridView` / `PanelDetailView` /
 `AllObservationsView` / `ProfileView` / `ReferenceBookPage`, plus shared
 `NavBar` / `ControlsBar` / `ResultTables` / `Popup`), with pure helpers
 in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` and
-`data/generateTestData.ts`. Panel Detail and All Observations each carry
-a "What's in range" tab — a normalized-overlay time chart (every marker
-plotted as % of its own reference range on one shared axis, with a panel
-picker, zoom, autoscale, and a "not taken" section) — built from v2's
+`data/generateTestData.ts`. Monitoring Panels grid cards list each
+panel's observations and, below a divider, its computed indices
+(`INDEX_DEFS`), both dot-colored by status; Panel Detail has a back
+chevron (‹) before its title, back to the grid. Panel Detail and All
+Observations each carry a "What's in range" tab — a normalized-overlay
+time chart (every marker, and on Panel Detail also each panel's
+computed indices, plotted as % of its own reference range or ok-zone
+band on one shared axis, with a panel picker, zoom, autoscale, and a
+"not taken" section) — built from v2's
 `<lab-explore>` web component, vendored as-is into
 `web/src/vendor/lab-explore/` and `web/src/vendor/chart-kit/` (its
 domain-agnostic uPlot-based charting engine) and driven by the
