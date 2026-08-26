@@ -1,3 +1,5 @@
+import { hasStoredResults } from './resultsStorage';
+
 const GUID_RE = /^[a-f0-9-]{36}$/i;
 
 export const IMPORTED_LINKS_KEY = 'bloodtests_imported_links_v1';
@@ -11,7 +13,8 @@ export function isAlreadyImported(guid: string): boolean {
   try {
     const raw = localStorage.getItem(IMPORTED_LINKS_KEY);
     const list: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) && list.includes(guid);
+    if (!Array.isArray(list) || !list.includes(guid)) return false;
+    return hasStoredResults();
   } catch {
     return false;
   }

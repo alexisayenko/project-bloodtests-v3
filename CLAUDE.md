@@ -21,7 +21,7 @@ monetization.]
 React 19 + TypeScript + Vite, in `web/`. No backend — panel/analyte
 reference data ships as static JSON (`web/public/data/`), uploaded lab
 results are parsed client-side and kept in `localStorage`. A read-only
-share link, `/?data=<guid>`, fetches `/d/<guid>.json` and merges it
+share link, `/?data=<guid>`, fetches `/d/<guid>.json` and imports it
 through the same parse path as an upload, then strips the param; the
 payloads are real health data and are gitignored (`web/public/d/*.json`)
 because this repo is public, so a deploy needs them copied in locally
@@ -53,8 +53,9 @@ domain-agnostic uPlot-based charting engine) and driven by the
 reference-band overrides, or data-quality flagging). Persistent top nav
 across four sections — Get Started (app-description, data-privacy statement and
 evidence-grading note, upload JSON /
-generate synthetic test data / clear; sessions merge, keyed by session
-id), Monitoring Panels (the default/entry route), All Observations
+generate synthetic test data / clear; an imported JSON file — uploaded
+or share-link — replaces all stored sessions, while generated test data
+still merges, keyed by session id), Monitoring Panels (the default/entry route), All Observations
 (every uploaded result in one table), Reference Book (Indices
 Descriptions: a page per computed index with formula, v2's full clinical
 prose and cited sources with verbatim quotes; Physiology: HP Axis page
@@ -67,8 +68,9 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (91 tests: index golden-masters ported
-from v2, upload parsing, routing, ui helpers, format utils). CI
+Vitest suites in `web/test/` (146 tests: index golden-masters ported
+from v2, upload parsing and import-replace, routing, ui helpers, format
+utils). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a
 SonarCloud scan (CI-based, `SONAR_TOKEN` secret; Automatic Analysis is
 off). Coverage metric is scoped to the testable logic —

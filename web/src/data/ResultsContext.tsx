@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import type { Result, ResultGroup } from '../types';
-import { parseUploadedResults, UploadParseError } from './parseUpload';
+import { UploadParseError } from './parseUpload';
 import {
   fetchSharedDataOnce,
   isAlreadyImported,
@@ -8,8 +8,8 @@ import {
   readSharedDataGuid,
   stripDataParam,
 } from './sharedLink';
-
-const STORAGE_KEY = 'bloodtests_upload_v1';
+import { RESULTS_STORAGE_KEY as STORAGE_KEY } from './resultsStorage';
+import { importResults } from './importResults';
 
 // Dev-only seed: web/dev-data/*.json is served exclusively by vite.config.ts's
 // dev-only plugin (never present in a production build). It's a personal
@@ -95,8 +95,8 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   }, [loading]);
 
   // Merge incoming sessions into what's already loaded (an incoming session
-  // replaces an existing one with the same `file` id), so uploaded JSON and
-  // generated test data can coexist instead of clobbering each other.
+  // replaces an existing one with the same `file` id) — generated test data
+  // adds to whatever is there rather than clobbering it.
   const mergeSessions = useCallback((incoming: ResultGroup[]) => {
     setSessions((prev) => {
       const byFile = new Map(prev.map((g) => [g.file, g]));
@@ -108,7 +108,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   // Read-only share link: ?data=<guid> pulls /d/<guid>.json through the same
-  // parse+merge path as an upload, so it persists and works offline afterwards.
+  // parse+replace path as an upload, so it persists and works offline afterwards.
   useEffect(() => {
     const guid = readSharedDataGuid(window.location.search);
     if (!guid) return;
@@ -124,7 +124,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     fetchSharedDataOnce(guid)
       .then((json) => {
         if (!isAlreadyImported(guid)) {
-          mergeSessions(parseUploadedResults(json));
+          setSessions(importResults(json));
           markImported(guid);
         }
         stripDataParam();
@@ -140,7 +140,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     return () => {
       cancelled = true;
     };
-  }, [mergeSessions]);
+  }, []);
 
   const uploadFile = useCallback(async (file: File) => {
     setError(null);
@@ -154,11 +154,11 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     }
 
     try {
-      mergeSessions(parseUploadedResults(json));
+      setSessions(importResults(json));
     } catch (e) {
       setError(e instanceof UploadParseError ? e.message : 'Could not read that file.');
     }
-  }, [mergeSessions]);
+  }, []);
 
   // Synthetic data (e.g. Profile's "Generate Test Data") — persisted exactly
   // like a real upload, so the rest of the app can't tell the difference.
