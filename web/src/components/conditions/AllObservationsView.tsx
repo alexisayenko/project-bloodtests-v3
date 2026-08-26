@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Analysis } from '../../types';
+import type { Analysis, Result } from '../../types';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, type Observation } from './markers';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { pressable, visibleDatesOf, type SelectedCell } from './ui';
@@ -44,6 +44,7 @@ export function AllObservationsView({
   selectedCell,
   onSelectCell,
   onOpenResultPopup,
+  resultsByDate,
 }: Readonly<{
   allResults: ResultEntry[];
   conditions: Condition[];
@@ -55,6 +56,14 @@ export function AllObservationsView({
   selectedCell: SelectedCell;
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
+  /**
+   * Per-date observation lookup, so the "What's in range" tab's picker can
+   * also build computed-index markers -- passed through to LabExploreView
+   * WITHOUT a currentPanel, which is what fans each index out across all of
+   * its own declared panels instead of scoping to just one (see
+   * buildExploreModel's doc comment).
+   */
+  resultsByDate: Record<string, Record<string, Result>>;
 }>) {
   const [tab, setTab] = useState<ObservationsTab>('analysis');
 
@@ -77,7 +86,9 @@ export function AllObservationsView({
               padding: '10px 4px',
               marginBottom: -2,
               borderBottom: tab === t ? '2px solid #1971c2' : '2px solid transparent',
-              fontWeight: tab === t ? 600 : 400,
+              // Faux-bold via text-shadow, not fontWeight -- see NavBar.tsx's comment:
+              // a real weight change reflows neighboring tabs by a px on switch.
+              textShadow: tab === t ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
               color: tab === t ? '#1971c2' : '#555',
               cursor: 'pointer',
             }}
@@ -113,7 +124,12 @@ export function AllObservationsView({
           </>
         )
       ) : (
-        <LabExploreView conditions={conditions} allResults={allResults} unitSystem={controls.unitSystem} />
+        <LabExploreView
+          conditions={conditions}
+          allResults={allResults}
+          unitSystem={controls.unitSystem}
+          resultsByDate={resultsByDate}
+        />
       )}
     </>
   );

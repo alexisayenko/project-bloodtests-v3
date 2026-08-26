@@ -9,7 +9,8 @@ export type PopupPosition = { left: number; top?: number; bottom?: number };
 export type PopupState =
   | ({ kind: 'observation'; test: Observation } & PopupPosition)
   | ({ kind: 'index'; def: IndexDef } & PopupPosition)
-  | ({ kind: 'result'; test: Observation; entry: ResultEntry } & PopupPosition);
+  | ({ kind: 'result'; test: Observation; entry: ResultEntry } & PopupPosition)
+  | ({ kind: 'indexResult'; def: IndexDef; date: string; value: number } & PopupPosition);
 
 function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: LatestByLoinc; loincs: string[] }>) {
   const current = getLatest(latestByLoinc, loincs);
@@ -80,6 +81,41 @@ function ResultPopupBody({ test, entry }: Readonly<{ test: Observation; entry: R
         {value} {entry.result.unit}
         <span style={{ color: '#888' }}> (Ref: {formatResultReference(entry.result)})</span>
       </div>
+    </>
+  );
+}
+
+function IndexResultPopupBody({
+  def,
+  date,
+  value,
+  resultsByDate,
+}: Readonly<{ def: IndexDef; date: string; value: number; resultsByDate: Record<string, Record<string, Result>> }>) {
+  const z = zone(value, def.cut[0], def.cut[1], def.hi);
+  // Same date as the calculated value -- more precise than IndexPopupBody's
+  // "latest lab-reported" fallback, since here we already know which draw.
+  const reported = def.loinc ? resultsByDate[date]?.[def.loinc] : undefined;
+  return (
+    <>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
+        {def.name}
+        {!isEchoRedundant(def.name, def.nameCompact) && ` (${def.nameCompact})`}
+      </div>
+      <div style={{ fontSize: 13, color: '#555' }}>
+        {formatMonthYear(date)} · Calculated
+      </div>
+      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: ZONE_BG[z], fontSize: 13, color: '#555' }}>
+        {fmtNum(value)} {def.unit ?? ''}
+        <span style={{ color: '#888' }}> (Ref: {greenRangeOf(def)})</span>
+      </div>
+      {reported && (
+        <div style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
+          <div style={{ fontWeight: 500, color: '#333' }}>Lab reported, same draw</div>
+          <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: '#f5f5f5' }}>
+            {reported.rawValue || fmtNum(reported.value)} {reported.unit}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -183,6 +219,8 @@ export function Popup({
           borderRadius: 12,
           padding: 18,
           width: popup.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH,
+          // 'result' and 'indexResult' are both simple value cards (name +
+          // date + one colored value line) -- same narrow width as 'observation'.
           // Cap to whatever room is actually left on the anchored side, not just
           // the viewport height -- otherwise a popup opened partway down the
           // page can still try to render taller than the space below it.
@@ -197,8 +235,10 @@ export function Popup({
           <ObservationPopupBody test={popup.test} latestByLoinc={latestByLoinc} />
         ) : popup.kind === 'index' ? (
           <IndexPopupBody def={popup.def} latestByLoinc={latestByLoinc} resultsByDate={resultsByDate} onLearnMore={onLearnMore} />
-        ) : (
+        ) : popup.kind === 'result' ? (
           <ResultPopupBody test={popup.test} entry={popup.entry} />
+        ) : (
+          <IndexResultPopupBody def={popup.def} date={popup.date} value={popup.value} resultsByDate={resultsByDate} />
         )}
       </div>
     </>

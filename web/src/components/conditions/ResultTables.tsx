@@ -131,7 +131,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
 }
 
 export function IndexTable({
-  defs, visibleDates, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell,
+  defs, visibleDates, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup,
 }: Readonly<{
   defs: IndexDef[];
   visibleDates: string[];
@@ -142,6 +142,8 @@ export function IndexTable({
   /** Which single (index, date) data cell is armed for a second click to open. */
   selectedCell: SelectedCell;
   onSelectCell: (key: string, date: string) => void;
+  /** Second click on an already-armed cell: open the simple value popup for that specific date's value. */
+  onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
 }>) {
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -166,8 +168,8 @@ export function IndexTable({
                   const value = computeIndex(def, resultsByDate[date] ?? {});
                   const armed = isCellArmed(selectedCell, def.key, date);
                   const handleClick = (e: { currentTarget: HTMLElement }) => {
-                    if (armed) {
-                      onOpenPopup(def, e);
+                    if (armed && value != null) {
+                      onOpenIndexResultPopup(def, date, value, e);
                     } else {
                       onSelect(def.key);
                       onSelectCell(def.key, date);

@@ -23,6 +23,7 @@ export function PanelDetailView({
   selectedCell,
   onSelectCell,
   onOpenResultPopup,
+  onOpenIndexResultPopup,
   onBack,
 }: Readonly<{
   name: string;
@@ -37,6 +38,7 @@ export function PanelDetailView({
   selectedCell: SelectedCell;
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
+  onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
   onBack: () => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
@@ -91,7 +93,9 @@ export function PanelDetailView({
               padding: '10px 4px',
               marginBottom: -2,
               borderBottom: detailTab === tab ? '2px solid #1971c2' : '2px solid transparent',
-              fontWeight: detailTab === tab ? 600 : 400,
+              // Faux-bold via text-shadow, not fontWeight -- see NavBar.tsx's comment:
+              // a real weight change reflows neighboring tabs by a px on switch.
+              textShadow: detailTab === tab ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
               color: detailTab === tab ? '#1971c2' : '#555',
               cursor: 'pointer',
             }}
@@ -122,6 +126,7 @@ export function PanelDetailView({
                       onOpenPopup={onOpenIndexPopup}
                       selectedCell={selectedCell}
                       onSelectCell={onSelectCell}
+                      onOpenIndexResultPopup={onOpenIndexResultPopup}
                     />
                   )}
                 </div>

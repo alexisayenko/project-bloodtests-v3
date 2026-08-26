@@ -28,10 +28,11 @@ export function LabExploreView({
   /** Panel to pre-select markers from; omit for no default-panel bias (e.g. the cross-panel All Observations view). */
   currentPanel?: string;
   /**
-   * Per-date observation lookup, needed to compute each of the current panel's
-   * computed indices' full historical series. Omit (as All Observations does) to
-   * keep this view scoped to raw observations only -- see buildExploreModel's doc
-   * comment for why that's the whole gate.
+   * Per-date observation lookup, needed to compute any computed index's full
+   * historical series. With `currentPanel` (Panel Detail): only that panel's
+   * indices. Without it (All Observations): every index, grouped under all of
+   * its own declared panels -- see buildExploreModel's doc comment. Omit
+   * entirely to keep a view scoped to raw observations only.
    */
   resultsByDate?: Record<string, Record<string, Result>>;
 }>) {

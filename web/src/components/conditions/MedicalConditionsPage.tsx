@@ -114,6 +114,11 @@ export function MedicalConditionsPage() {
     setPopup({ kind: 'result', test, entry, ...popupPosition(rect, POPUP_WIDTH) });
   };
 
+  const openIndexResultPopup = (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopup({ kind: 'indexResult', def, date, value, ...popupPosition(rect, POPUP_WIDTH) });
+  };
+
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder };
 
   const view = (() => {
@@ -131,6 +136,7 @@ export function MedicalConditionsPage() {
             selectedCell={selectedCell}
             onSelectCell={onSelectCell}
             onOpenResultPopup={openResultPopup}
+            resultsByDate={resultsByDate}
           />
         );
       case 'profile':
@@ -161,6 +167,7 @@ export function MedicalConditionsPage() {
             selectedCell={selectedCell}
             onSelectCell={onSelectCell}
             onOpenResultPopup={openResultPopup}
+            onOpenIndexResultPopup={openIndexResultPopup}
             onBack={() => navigate({ view: 'panels' })}
           />
         );

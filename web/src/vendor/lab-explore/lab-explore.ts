@@ -246,14 +246,27 @@ export class LabExplore extends HTMLElement {
       }
       return byPanel[p]!;
     };
-    for (const k of Object.keys(m.markers)) add(m.markers[k]!.panel).push(k);
+    // v3 DEVIATION from the v2 source: v2's ExploreMarker/ExploreNotTaken.panel
+    // was always a single string, so this loop only ever added a key to one
+    // group. v3 widened `panel` to `string | string[]` (see explore-types.ts)
+    // so a marker genuinely shared by several panels groups under ALL of
+    // them -- panelsOf() normalizes either shape, and the same key/badge just
+    // gets appended to every relevant group's byPanel/ntByPanel bucket below.
+    // The click/select state (#sel/#selSet) stays keyed by marker key, not by
+    // (key, panel) pair, so every badge instance of a shared marker toggles
+    // the same underlying series.
+    const panelsOf = (p: string | string[]): string[] => (Array.isArray(p) ? p : [p]);
+    for (const k of Object.keys(m.markers))
+      for (const p of panelsOf(m.markers[k]!.panel)) add(p).push(k);
     // never-drawn markers ride in their own group box, so a group whose markers she
     // has ALL never had taken still appears — that group is the one worth reading.
     const nt = m.notTaken ?? [];
     const ntByPanel: Record<string, typeof nt> = {};
     for (const n of nt) {
-      add(n.panel);
-      (ntByPanel[n.panel] ??= []).push(n);
+      for (const p of panelsOf(n.panel)) {
+        add(p);
+        (ntByPanel[p] ??= []).push(n);
+      }
     }
 
     // v3-side convention (see exploreModel.ts's INDEX_MARKER_KEY_PREFIX): a
@@ -284,7 +297,16 @@ export class LabExplore extends HTMLElement {
       b.className = "mbadge nodata";
       b.disabled = true;
       b.dataset.key = n.key;
-      b.textContent = this.#lbl("notTaken") ? `${n.label} · ${this.#lbl("notTaken")}` : n.label;
+      // n.reason (see explore-types.ts) marks the OTHER disabled case — real
+      // data on file that can't be normalized — so it always gets a visible
+      // suffix, independent of the notTaken label opt-in above; the bare
+      // never-drawn chip stays exactly as before.
+      b.textContent = n.reason
+        ? `${n.label} · ${n.reason}`
+        : this.#lbl("notTaken")
+          ? `${n.label} · ${this.#lbl("notTaken")}`
+          : n.label;
+      if (n.reason) b.title = n.reason;
       return b;
     };
 
@@ -315,38 +337,40 @@ export class LabExplore extends HTMLElement {
 
       const keys = byPanel[pname] ?? [];
       const nts = ntByPanel[pname] ?? [];
-      // The multi-group picker (All Observations) never gets index markers in
-      // the first place (see buildExploreModel's doc comment), so there is
-      // nothing to split there — everything renders as one row, as before.
-      // The single-group picker (Panel Detail) instead renders observations
-      // first, then — only if the panel has any index markers/not-taken
-      // indices — a divider and a second row of index badges below it.
-      const obsKeys = box ? keys : keys.filter((k) => !isIndexKey(k));
-      const idxKeys = box ? [] : keys.filter(isIndexKey);
-      const obsNt = box ? nts : nts.filter((n) => !isIndexKey(n.key));
-      const idxNt = box ? [] : nts.filter((n) => isIndexKey(n.key));
+      // Both the single-group (Panel Detail) and multi-group (All
+      // Observations) pickers split a group's badges into an observations
+      // row, then — only when that group actually has any index markers/
+      // not-taken indices (buildExploreModel now builds those for both
+      // contexts, see its doc comment) — the same pale-blue divider and a
+      // second row of index badges below it. Only the CONTAINER differs: a
+      // single-group picker has no box (see above) so both rows append
+      // straight to the picker root; a multi-group picker scopes the split to
+      // inside that group's own `.picker-panel` box, so the divider never
+      // bleeds across groups.
+      const obsKeys = keys.filter((k) => !isIndexKey(k));
+      const idxKeys = keys.filter(isIndexKey);
+      const obsNt = nts.filter((n) => !isIndexKey(n.key));
+      const idxNt = nts.filter((n) => isIndexKey(n.key));
+      const container = box ?? picker;
 
       const bb = document.createElement("div");
       bb.className = "picker-badges";
       for (const k of obsKeys) bb.appendChild(mkBadge(k));
       for (const n of obsNt) bb.appendChild(mkNotTaken(n));
+      container.appendChild(bb);
 
-      if (box) {
-        box.appendChild(bb);
-        picker.appendChild(box);
-      } else {
-        picker.appendChild(bb);
-        if (idxKeys.length || idxNt.length) {
-          const divider = document.createElement("div");
-          divider.className = "picker-index-divider";
-          picker.appendChild(divider);
-          const ibb = document.createElement("div");
-          ibb.className = "picker-badges";
-          for (const k of idxKeys) ibb.appendChild(mkBadge(k));
-          for (const n of idxNt) ibb.appendChild(mkNotTaken(n));
-          picker.appendChild(ibb);
-        }
+      if (idxKeys.length || idxNt.length) {
+        const divider = document.createElement("div");
+        divider.className = "picker-index-divider";
+        container.appendChild(divider);
+        const ibb = document.createElement("div");
+        ibb.className = "picker-badges";
+        for (const k of idxKeys) ibb.appendChild(mkBadge(k));
+        for (const n of idxNt) ibb.appendChild(mkNotTaken(n));
+        container.appendChild(ibb);
       }
+
+      if (box) picker.appendChild(box);
     }
   }
 

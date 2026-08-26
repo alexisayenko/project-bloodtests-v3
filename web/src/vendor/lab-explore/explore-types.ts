@@ -13,8 +13,22 @@ export interface ExploreMarker {
   /** band the series normalizes to: value → (v - refMin) / (refMax - refMin) × 100 % */
   refMin: number;
   refMax: number;
-  /** picker group */
-  panel: string;
+  /**
+   * picker group(s). Usually one panel, but a marker genuinely belonging to
+   * more than one (e.g. Albumin under both Fatty Liver and Kidney Function)
+   * takes the array form -- same key, same plotted series, one badge
+   * rendered per group #buildPicker() adds it to (see lab-explore.ts).
+   *
+   * v3 DEVIATION from the v2 source: v2's panel was always exactly one
+   * string, because v2 never had a marker that legitimately belonged to more
+   * than one group. v3's panel definitions do allow that (see markers.ts's
+   * PANEL_DEFS), and the Monitoring Panels grid already reflects it by
+   * listing such a marker on every one of its panel cards -- so the
+   * cross-panel All Observations picker needed a way to match that instead
+   * of silently picking one "winning" panel. Single-panel contexts (Panel
+   * Detail) still only ever produce the plain-string form.
+   */
+  panel: string | string[];
   /** at/above this raw value the tooltip adds a ✓ note (e.g. HDL-C ≥ 60) */
   goodAbove?: number | null;
   goodNote?: string | null;
@@ -50,8 +64,26 @@ export interface ExploreMarker {
 export interface ExploreNotTaken {
   key: string;
   label: string;
-  /** picker group it belongs to (same axis as ExploreMarker.panel) */
-  panel: string;
+  /** picker group(s) it belongs to (same axis and same v3 DEVIATION as ExploreMarker.panel) */
+  panel: string | string[];
+  /**
+   * v3 ADDITION, not part of the ported v2 shape. Distinguishes "genuinely
+   * never drawn" (the case above) from a SECOND, unrelated reason a marker
+   * can land in this same disabled-chip list: it exists and HAS real dated
+   * readings on file, but none of them can be normalized to this chart's
+   * 0-100%-of-range band (e.g. every reading only ever printed a lower
+   * reference bound -- HDL-C's "> 40 mg/dL" -- never an upper one, so there
+   * is nothing to normalize against).
+   *
+   * Both cases render as the same disabled `.nodata` chip, and collapsing
+   * them into one indistinguishable grey chip would be exactly the silent
+   * "this marker does not exist" lie the doc comment above warns against --
+   * worse here, since real values genuinely ARE on file. When set, the chip
+   * appends this as a short suffix (and mirrors it as its title/tooltip) so
+   * the two cases read as different stories, not the same one. Left unset
+   * for the plain never-drawn case, which needs no explanation.
+   */
+  reason?: string;
 }
 
 /** UI strings for the chart's own chrome. Absent → English defaults. */

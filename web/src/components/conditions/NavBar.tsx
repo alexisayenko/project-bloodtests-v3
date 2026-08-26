@@ -15,7 +15,11 @@ export function NavBar({ route, navigate }: Readonly<{ route: Route; navigate: (
               marginBottom: -1.5,
               borderBottom: active ? '2px solid #1971c2' : '2px solid transparent',
               fontSize: 15,
-              fontWeight: active ? 600 : 400,
+              // Faux-bold via text-shadow, not fontWeight: a real weight change measures
+              // wider and reflows neighboring tabs by a px when switching (the jitter this
+              // was written to fix) -- this keeps the glyph metrics, hence the row width,
+              // identical in both states.
+              textShadow: active ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
               color: active ? '#1971c2' : '#555',
               cursor: 'pointer',
             }}

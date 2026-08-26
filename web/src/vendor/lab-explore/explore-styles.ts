@@ -84,22 +84,29 @@ export const EXPLORE_STYLES = `
 
 /* marker picker — panels are rectangles, markers are togglable badges */
 .marker-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.7rem; margin-top: 1.4rem; align-items: start; }
-.picker-panel { border: 1px solid var(--_rule-soft); border-radius: 6px; padding: 0.5rem 0.6rem 0.6rem; }
-.picker-cap { display: block; width: 100%; text-align: left; font: inherit; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--_muted); margin-bottom: 0.45rem; background: none; border: 0; padding: 0; cursor: pointer; }
+.picker-panel { border: 1px solid var(--_rule-soft); border-radius: 6px; padding: 0.75rem 0.85rem 0.85rem; }
+.picker-cap { display: block; width: 100%; text-align: left; font: inherit; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--_muted); margin-bottom: 0.6rem; background: none; border: 0; padding: 0; cursor: pointer; }
 .picker-cap:hover { color: var(--_fg); text-decoration: underline; }
-.picker-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.picker-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 /* Single-panel picker (#buildPicker's box===null branch) appends the badge row as a
    DIRECT child of the .marker-picker grid instead of inside a .picker-panel box, so
    without this it's just another grid item -- confined to one auto-fill track (~220px)
    like a panel box would be, instead of the full chart width. Multi-panel boxes are
    unaffected: their .picker-badges live inside .picker-panel, not directly in the grid. */
 .marker-picker > .picker-badges { grid-column: 1 / -1; }
-/* Divider between the single-panel picker's two rows -- raw observations first,
-   then computed indices (see #buildPicker()'s box===null branch). Same 1px
+/* Divider between a group's two badge rows -- raw observations first, then
+   computed indices (see #buildPicker()'s obsKeys/idxKeys split). Same 1px
    pale-blue rule PanelsGridView.tsx draws between a card's observation dots and
    its computed-index dots, reused verbatim so the two kinds of thing read as the
-   same visual language everywhere they meet, not just on the grid cards. */
-.marker-picker > .picker-index-divider { grid-column: 1 / -1; border-top: 1px solid #cfe2f3; margin: 0.25rem 0 0; }
+   same visual language everywhere they meet, not just on the grid cards. Two
+   selectors, one shared look: a single-panel picker's divider is a direct
+   .marker-picker child (needs grid-column to span the row, see above); a
+   multi-panel picker's divider instead lives inside that group's own
+   .picker-panel box, which isn't a grid, so grid-column would be a no-op
+   there -- listed separately rather than folded into one selector so neither
+   context carries a rule it doesn't need. */
+.marker-picker > .picker-index-divider { grid-column: 1 / -1; border-top: 1px solid #cfe2f3; margin: 0.6rem 0; }
+.picker-panel > .picker-index-divider { border-top: 1px solid #cfe2f3; margin: 0.6rem 0; }
 .mbadge { font: inherit; font-size: 0.8rem; line-height: 1; padding: 0.32rem 0.55rem; border: 1px solid var(--_rule-soft); border-radius: 999px; background: transparent; color: var(--_fg); cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; }
 .mbadge:hover { border-color: var(--_muted); }
 .mbadge.on { color: #fff; font-weight: 500; }
