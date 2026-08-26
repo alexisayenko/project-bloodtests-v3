@@ -14,11 +14,12 @@ The wrapper of a lab-data interchange file: the JSON object that carries a set o
   "subject": "p-7fa3",
   "sex": "female",
   "birthYear": 1972,
+  "notes": "Rebuilt from the lab PDFs, March 2026.",
   "reports": [ /* LabReport objects, specified below */ ]
 }
 ```
 
-Seven keys: `schema` and `reports` are required, `generatedAt`, `contentHash`, `subject`, `sex` and `birthYear` are optional. This page specifies the envelope only.
+Eight keys: `schema` and `reports` are required, `generatedAt`, `contentHash`, `subject`, `sex`, `birthYear` and `notes` are optional. This page specifies the envelope only.
 
 The split follows from who writes the file: a hand-written or hand-edited file must be valid without computing a hash, and the two provenance fields plus `subject`, `sex` and `birthYear` are conveniences the converter fills in, not things a reader needs to function.
 
@@ -71,6 +72,18 @@ It is a range selector, not identity — the reasoning about what identity the f
 A year as an integer, not a date. Age is not a property of the person but of when the sample was taken: a stored "age" is wrong a year later, and wrong differently for every report in the file. A birth year plus a report's [`collectedAt`](#collectedat) yields the age at collection, which is the number a range actually bands on.
 
 A year rather than a full birth date because reference ranges band coarsely — children, adults 15–65, over 65. A full date would add precision nobody uses, and sex plus an exact date of birth plus lab results is close to identifying on its own; see [`subject`](#subject).
+
+## `notes`
+
+**Optional** — when absent, a reader shows nothing and loses nothing; no behaviour depends on it.
+
+Free text the file's **author** writes for themselves: context about the file as a whole — how it was assembled, what a gap in it means, which source the numbers were transcribed from.
+
+This does not contradict the format's avoidance of free text. The rule stated under [Not in this file](#not-in-this-file) is about **passthrough** — fields a parser copies out of a lab report, where a name or a patient number rides along by accident because it sat in the same table. `notes` is deliberately authored, not copied: whatever is in it, a person put there on purpose.
+
+Caveat: anything written here travels with the file, so it is visible to whoever opens a share link. It is not a place for anything the reader should not see.
+
+Scope is the **envelope only** for now. Per-report and per-observation notes are deliberately deferred, though the likely real value is at the observation level — "was not fasting", "two weeks after flu", "different lab, method changed" — which is the context that makes an odd value readable a year later. Adding them later is not a breaking change and does not bump [`schema`](#schema).
 
 ## `reports`
 
@@ -277,3 +290,6 @@ Any free-text passthrough field is where identity re-enters, whatever the intent
 - ~~Whether canonical serialization replaces `JSON.stringify` for
   `contentHash`.~~ Decided: plain `JSON.stringify` —
   [ADR-0001](decisions/adr-0001-content-hash-plain-stringify.md).
+- Whether [`subject`](#subject) earns its place: files are replaced on
+  import and there is one file per person, so it is currently insurance
+  against merging two people's data rather than something in use.
