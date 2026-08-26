@@ -169,6 +169,7 @@ docs/
 │   ├── README.md
 │   └── task-XXXX.md                    # numbered tasks
 ├── tech/                               # entry: tech/README.md
+│   ├── decisions/                      # ADRs (adr-NNNN-<slug>.md)
 │   └── interchange-format.md           # lab-data file envelope (design)
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
@@ -198,6 +199,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Cross-folder feature specs (one file per verb) | [`product/features/`](product/features/) | Implementing or scoping a specific user-facing capability |
 | Tasks (numbered, frontmatter-tagged) | [`tasks/`](tasks/) | Creating or closing a task; orienting at session start |
 | Stack, ADRs, architecture | [`tech/`](tech/) | Anything implementation: framework, hosting, data, payments |
+| Architecture decision records (one file per decision) | [`tech/decisions/`](tech/decisions/) | Asking why an architectural call was made, or recording a new one |
 | Lab-data interchange file envelope | [`tech/interchange-format.md`](tech/interchange-format.md) | Reading or writing an exported lab-data file |
 | Screens (where the user is) | [`ui-ux/screens/`](ui-ux/screens/) | Building or changing a screen |
 | Journeys (paths across screens) | [`ui-ux/journeys.md`](ui-ux/journeys.md) | Designing or changing a multi-screen flow |

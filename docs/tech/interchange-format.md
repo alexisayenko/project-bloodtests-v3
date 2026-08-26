@@ -44,7 +44,7 @@ The `sha256:` prefix plus lowercase hex of `JSON.stringify(reports)` — the **r
 
 Purpose is **change detection**: *has this file changed since I last imported it?* It is not corruption protection — HTTPS and `JSON.parse` already cover transport integrity.
 
-Caveat: `JSON.stringify` is key-order-sensitive, so two semantically identical files can hash differently. If that ever matters, the stricter option is a canonical (sorted-key) serialization.
+Caveat: `JSON.stringify` is key-order-sensitive, so two semantically identical files can hash differently. Plain serialization is a deliberate choice over a canonical (sorted-key) one — see [ADR-0001](decisions/adr-0001-content-hash-plain-stringify.md), which also states what would force revisiting it.
 
 ## `subject`
 
@@ -274,4 +274,6 @@ Any free-text passthrough field is where identity re-enters, whatever the intent
 
 ## Open questions
 
-- Whether canonical serialization replaces `JSON.stringify` for `contentHash`.
+- ~~Whether canonical serialization replaces `JSON.stringify` for
+  `contentHash`.~~ Decided: plain `JSON.stringify` —
+  [ADR-0001](decisions/adr-0001-content-hash-plain-stringify.md).

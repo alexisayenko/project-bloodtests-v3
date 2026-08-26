@@ -8,6 +8,8 @@ Product / business / UX live in their own sections.
 
 - [`interchange-format.md`](interchange-format.md) — envelope of
   the lab-data interchange file (under design).
+- [`decisions/`](decisions/) — ADRs, one file per decision
+  (`adr-NNNN-<slug>.md`, numbered independently of v2).
 
 ## Common slots
 
@@ -18,11 +20,8 @@ Don't pre-create — extract on first real entry. See
   payments, language, etc., with rationale per pick.
 - **`architecture.md`** — system overview, data flow, key
   components.
-- **`decisions.md`** (or **`decisions/<slug>.md`** if a single
-  decision warrants its own file) — ADRs. Substantive
-  architectural decisions with date, alternatives considered,
-  rationale. Don't delete superseded decisions — strikethrough
-  and add the new one underneath.
+(`decisions/` has been extracted — see [Current
+files](#current-files).)
 
 ## Open questions
 
