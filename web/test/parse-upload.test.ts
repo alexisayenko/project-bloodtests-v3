@@ -46,6 +46,72 @@ describe('parseUploadedResults — grouped sessions', () => {
   });
 });
 
+describe('parseUploadedResults — canonical Draws shape', () => {
+  it('parses a valid draw into a ResultGroup using labName and original values', () => {
+    const [g] = parseUploadedResults([
+      {
+        date: '2026-01-10',
+        labName: 'Lab A',
+        items: [
+          {
+            shortName: 'HGB',
+            loinc: '718-7',
+            original: { value: 14.2, unit: 'g/dL', refText: '13.0-17.0', refMin: 13, refMax: 17 },
+            us: { value: 14.2, unit: 'g/dL' },
+            si: { value: 142, unit: 'g/L' },
+          },
+        ],
+      },
+    ]);
+    expect(g!.place).toBe('Lab A');
+    expect(g!.date).toBe('2026-01-10');
+    expect(g!.items[0]).toMatchObject({
+      symbol: 'HGB',
+      loinc: '718-7',
+      value: 14.2,
+      unit: 'g/dL',
+      refText: '13.0-17.0',
+      refMin: 13,
+      refMax: 17,
+    });
+  });
+
+  it('accepts the legacy symbol key as an alias for shortName', () => {
+    const [g] = parseUploadedResults([
+      {
+        date: '2026-01-10',
+        labName: 'Lab A',
+        items: [{ symbol: 'HGB', original: { value: 14.2 }, us: { value: 14.2 }, si: { value: 142 } }],
+      },
+    ]);
+    expect(g!.items[0]!.symbol).toBe('HGB');
+  });
+
+  it('rejects an item missing shortName/analysis/loinc as a failed canonical parse, not an unrecognized shape', () => {
+    expect(() =>
+      parseUploadedResults([
+        {
+          date: '2026-01-10',
+          labName: 'Lab A',
+          items: [{ original: { value: 14.2 }, us: { value: 14.2 }, si: { value: 142 } }],
+        },
+      ])
+    ).toThrow(/item needs at least one of shortName \/ analysis \/ loinc/);
+  });
+
+  it('rejects a malformed LOINC code on a recognized canonical shape', () => {
+    expect(() =>
+      parseUploadedResults([
+        {
+          date: '2026-01-10',
+          labName: 'Lab A',
+          items: [{ shortName: 'HGB', loinc: 'not-a-loinc', original: { value: 14.2 } }],
+        },
+      ])
+    ).toThrow(/invalid LOINC code/);
+  });
+});
+
 describe('parseUploadedResults — rejects', () => {
   it('empty array', () => {
     expect(() => parseUploadedResults([])).toThrow(UploadParseError);
