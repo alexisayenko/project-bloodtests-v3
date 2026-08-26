@@ -10,6 +10,20 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-08-26 — FAI (Free Androgen Index) added to the Hypogonadism panel
+  alongside cFT, graded heuristic (Vermeulen's own paper calls FAI
+  SHBG-biased and unreliable; cFT is preferred); first nav tab renamed
+  Profile → Get Started, gaining an app-description, data-privacy
+  statement, and evidence-grading note; "What's in range" chart gains a
+  distinct index-value-cell popup (name/short name/date/"Calculated"/
+  value/ref-range, plus a same-draw lab-reported comparison when
+  available); its computed-indices support, previously Panel Detail
+  only, now also works on All Observations; markers/indices shared
+  across multiple panels now group under every relevant panel in the
+  picker (previously collapsed to one); HDL-C plots against a cited
+  NCEP ATP III band (40/60 mg/dL) since its lab-printed range has no
+  upper bound; a 1px tab-switching jitter (top nav + Analysis/What's-in-
+  range tab bars) fixed.
 - 2026-08-26 — Monitoring Panels grid cards and the "What's in range"
   chart (Panel Detail only) now also show each panel's computed
   indices, dot-colored by ok/warn/bad zone, below a divider; Panel

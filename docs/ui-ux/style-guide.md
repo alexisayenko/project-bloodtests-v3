@@ -76,7 +76,7 @@ rationale per rule so future-us can revisit.
 
 ### Navigation
 
-- **Top-level sections** (Profile, Monitoring Panels, All
+- **Top-level sections** (Get Started, Monitoring Panels, All
   Observations, Reference Book) are a persistent top nav on every
   page, each section its own URL hash (`#profile`, `#panels`, `#all`,
   `#reference`) so browser back/forward always works. Active section:
@@ -96,8 +96,12 @@ rationale per rule so future-us can revisit.
   first click (selects it and highlights its row) and opens on a
   second click on that same armed cell — an Observations cell opens a
   popup for that specific result (name, short name, date, laboratory,
-  value, lab reference range); an Indices cell opens the same index
-  popup as its row label. Clicking a different cell re-arms instead
+  value, lab reference range); an Indices cell opens a popup for that
+  specific computed value (name, short name, date, "Calculated", value,
+  ref-range, plus a same-draw lab-reported comparison when the lab
+  independently reports that index) — distinct from the index
+  popup its row label opens (formula, evidence level, references).
+  Clicking a different cell re-arms instead
   of opening; the row label still opens on a single click.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
 - **Tab placement:** top (web) — both the section nav and the

@@ -34,9 +34,10 @@ panel's observations and, below a divider, its computed indices
 (`INDEX_DEFS`), both dot-colored by status; Panel Detail has a back
 chevron (‹) before its title, back to the grid. Panel Detail and All
 Observations each carry a "What's in range" tab — a normalized-overlay
-time chart (every marker, and on Panel Detail also each panel's
+time chart (every marker, and every panel's
 computed indices, plotted as % of its own reference range or ok-zone
-band on one shared axis, with a panel picker, zoom, autoscale, and a
+band on one shared axis, with a panel picker (a marker or index shared
+across panels groups under every relevant one), zoom, autoscale, and a
 "not taken" section) — built from v2's
 `<lab-explore>` web component, vendored as-is into
 `web/src/vendor/lab-explore/` and `web/src/vendor/chart-kit/` (its
@@ -44,7 +45,8 @@ domain-agnostic uPlot-based charting engine) and driven by the
 `buildExploreModel` adapter in `exploreModel.ts`, mounted via
 `LabExploreView.tsx`; deliberately generic-only (no medication overlays,
 reference-band overrides, or data-quality flagging). Persistent top nav
-across four sections — Profile (upload JSON /
+across four sections — Get Started (app-description, data-privacy statement and
+evidence-grading note, upload JSON /
 generate synthetic test data / clear; sessions merge, keyed by session
 id), Monitoring Panels (the default/entry route), All Observations
 (every uploaded result in one table), Reference Book (Indices

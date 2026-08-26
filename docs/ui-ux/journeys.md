@@ -29,8 +29,8 @@ Entry point → panel detail, with a historical values table.
 
 Get lab results into the app — real or synthetic.
 
-- **Entry:** Profile
-- **Screens (in order):** Profile (Upload JSON or Generate Test Data)
+- **Entry:** Get Started
+- **Screens (in order):** Get Started (Upload JSON or Generate Test Data)
   → Monitoring Panels / All Observations
 - **Branches:** invalid JSON shows an inline parse error; Clear (with
   confirm) wipes all sessions
