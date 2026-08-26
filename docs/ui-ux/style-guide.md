@@ -76,19 +76,28 @@ rationale per rule so future-us can revisit.
 
 ### Navigation
 
-- **Top-level sections** (Reference Book, Monitoring Panels, Profile)
-  are a persistent top nav on every page, each section its own URL
-  hash (`#reference`, `#panels`, `#profile`) so browser back/forward
-  always works. Active section: bold + blue underline.
-- **Nested position** within a section (currently only Monitoring
-  Panels has one: panel detail) is a breadcrumb trail below the top
-  nav, e.g. `Monitoring Panels › Hypothyroidism › Analysis` — earlier
-  segments are clickable, the current one is plain text.
+- **Top-level sections** (Profile, Monitoring Panels, All
+  Observations, Reference Book) are a persistent top nav on every
+  page, each section its own URL hash (`#profile`, `#panels`, `#all`,
+  `#reference`) so browser back/forward always works. Active section:
+  bold + blue underline.
+- The persistent top nav is the only navigation chrome — no
+  breadcrumb trail anywhere. Nested position within a section (e.g.
+  panel detail under Monitoring Panels) still gets its own URL hash
+  so browser back/forward works, it's just not echoed as a trail on
+  the page.
 - A popup is never part of the URL/history; navigating away always
   closes it rather than leaving it open over the next page.
 
 ### Interaction
 
+- **Two-step cell open:** a data cell in the Analysis table arms on
+  first click (selects it and highlights its row) and opens on a
+  second click on that same armed cell — an Observations cell opens a
+  popup for that specific result (name, short name, date, laboratory,
+  value, lab reference range); an Indices cell opens the same index
+  popup as its row label. Clicking a different cell re-arms instead
+  of opening; the row label still opens on a single click.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
 - **Tab placement:** top (web) — both the section nav and the
   Analysis/What's-in-range tabs use the same top, underlined-active

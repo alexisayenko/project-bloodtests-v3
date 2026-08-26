@@ -5,7 +5,7 @@ A single lab-measurable quantity, identified by its LOINC code — the atomic un
 ## Identity
 
 - **LOINC code** — the canonical identifier (e.g. `2345-7`). Two observations are the same observation iff they share a LOINC code.
-- **Short name** — a compact label for dense UI (badges, chip grids), e.g. `TSH`, `FT4`, `CREA`.
+- **Short name** — a compact label for dense UI (list rows, table cells), e.g. `TSH`, `FT4`, `CREA`.
 - **Full name** — the human-readable display name, e.g. "Free T4", "Creatinine".
 - **LOINC long common name** — LOINC's own canonical description string, shown for disambiguation and linked out to `loinc.org/<code>`.
 

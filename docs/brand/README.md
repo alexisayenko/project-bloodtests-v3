@@ -38,7 +38,7 @@ owns identity / spirit; the style guide operationalizes it.
   - **Typography**: [TODO: serif / sans / mono / handwritten +
     any specific typefaces in use.]
   - **Mark**: [TODO: pictorial / abstract / letterform direction.]
-- **Domain**: `blood.isayenko.org` — subdomain, no separate
+- **Domain**: `blood.isayenko.net` — subdomain, no separate
   registration.
 - **Wordmark / logo**: [TODO: TBD or describe the lockup.]
 

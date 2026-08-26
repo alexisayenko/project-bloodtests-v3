@@ -9,7 +9,7 @@ export; it's visualized client-side, grouped into monitoring panels
 React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON
 reference data (`web/public/data/`), uploaded results parsed
 client-side and kept in `localStorage`. Deploys as a Cloudflare
-Worker to `blood.isayenko.org`. See [`CLAUDE.md`](CLAUDE.md) for the
+Worker to `blood.isayenko.net`. See [`CLAUDE.md`](CLAUDE.md) for the
 fast-path summary.
 
 ## Structure

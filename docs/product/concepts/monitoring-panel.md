@@ -18,4 +18,4 @@ An observation can belong to more than one panel — e.g. Amylase informs both F
 
 ## Where it lives today
 
-Panel-to-LOINC groupings are defined in `web/public/data/panels.json`. The Monitoring Panels screen (`web/src/components/conditions/MedicalConditionsPage.tsx`) renders each panel as a card of observation badges; clicking one shows its full name and LOINC detail.
+Panel-to-LOINC groupings are defined in `web/public/data/panels.json`. The Monitoring Panels screen (`web/src/components/conditions/PanelsGridView.tsx`) renders each panel as a list of observation rows, status shown as a small colored dot; clicking an observation opens a popup with its full name and LOINC detail, clicking the panel name opens the panel's detail view.

@@ -10,6 +10,14 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-08-26 — Monitoring Panels grid restyled from pill/badge cards
+  to list rows (status as a colored dot); breadcrumb navigation
+  removed from Panel Detail and Reference Book; top nav reordered to
+  Profile, Monitoring Panels, All Observations, Reference Book;
+  Analysis table cells gain two-step click-to-open (arm, then open a
+  result popup).
+- 2026-08-26 — Deploy domain switched from `blood.isayenko.org` to
+  `blood.isayenko.net`.
 - 2026-08-25 — Quality baseline: page shell split into view
   components; 91-test vitest suite (v2 golden-masters ported); CI +
   SonarCloud (0 issues, quality gate green, 90.6% coverage of the

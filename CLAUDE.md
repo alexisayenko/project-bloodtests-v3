@@ -21,7 +21,7 @@ monetization.]
 React 19 + TypeScript + Vite, in `web/`. No backend — panel/analyte
 reference data ships as static JSON (`web/public/data/`), uploaded lab
 results are parsed client-side and kept in `localStorage`. Deploys as
-a Cloudflare Worker (static assets) to `blood.isayenko.org` via
+a Cloudflare Worker (static assets) to `blood.isayenko.net` via
 `web/wrangler.jsonc`; deploy is manual (`wrangler deploy`), not CI-triggered.
 The app shell is `web/src/components/conditions/MedicalConditionsPage.tsx`
 (route + results + shared settings + popup state); each section renders
@@ -29,13 +29,13 @@ its own sibling view component (`PanelsGridView` / `PanelDetailView` /
 `AllObservationsView` / `ProfileView` / `ReferenceBookPage`, plus shared
 `NavBar` / `ControlsBar` / `ResultTables` / `Popup`), with pure helpers
 in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` and
-`data/generateTestData.ts`. Persistent top nav across four sections — Reference Book (Indices
+`data/generateTestData.ts`. Persistent top nav across four sections — Profile (upload JSON /
+generate synthetic test data / clear; sessions merge, keyed by session
+id), Monitoring Panels (the default/entry route), All Observations
+(every uploaded result in one table), Reference Book (Indices
 Descriptions: a page per computed index with formula, v2's full clinical
 prose and cited sources with verbatim quotes; Physiology: HP Axis page
-with v2's homepage-derived feedback-loop cascades),
-Monitoring Panels (the default/entry route), All Observations (every
-uploaded result in one table), Profile (upload JSON / generate synthetic
-test data / clear; sessions merge, keyed by session id) — each its own
+with v2's homepage-derived feedback-loop cascades) — each its own
 URL hash so browser back/forward works. The original
 upload/panels/results/analytics flow still exists in
 `web/src/components/` but isn't currently wired into `App.tsx` (and is
