@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildExploreModel, type Condition } from '../src/components/conditions/exploreModel';
-import { toUnit } from '../src/data/computedIndices';
+import { buildExploreModel, refBandFor, INDEX_MARKER_KEY_PREFIX, type Condition } from '../src/components/conditions/exploreModel';
+import { INDEX_DEFS, toUnit } from '../src/data/computedIndices';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import type { Result } from '../src/types';
@@ -9,9 +9,9 @@ function obs(loinc: string, short: string, unit?: string): Observation {
   return { short, full: short, longCommonName: '', loinc, unit };
 }
 
-function entry(loinc: string, date: string, value: number | null, overrides: Partial<Result> = {}): ResultEntry {
-  const result: Result = {
-    loinc,
+function result(value: number | null, overrides: Partial<Result> = {}): Result {
+  return {
+    loinc: '',
     analysis: '',
     symbol: '',
     section: '',
@@ -25,7 +25,10 @@ function entry(loinc: string, date: string, value: number | null, overrides: Par
     method: '',
     ...overrides,
   };
-  return { loinc, date, place: 'Lab', result };
+}
+
+function entry(loinc: string, date: string, value: number | null, overrides: Partial<Result> = {}): ResultEntry {
+  return { loinc, date, place: 'Lab', result: { ...result(value, overrides), loinc } };
 }
 
 describe('buildExploreModel — plottable two-sided-range markers', () => {
@@ -188,5 +191,85 @@ describe('buildExploreModel — title', () => {
   it('names the view honestly, matching the ported explore-types.ts rationale', () => {
     const model = buildExploreModel([], [], 'si', 'PanelA');
     expect(model.title).toBe("What's in range, what isn't");
+  });
+});
+
+// Sanity-checks refBandFor against two REAL INDEX_DEFS entries (not fabricated
+// cut-points), one of each `hi` direction.
+describe('refBandFor', () => {
+  it('lower-is-better (hi=false/undefined, e.g. TC/HDL): [0, good] keeps the whole ok zone under 100%', () => {
+    const tchdl = INDEX_DEFS.find((d) => d.key === 'tchdl')!;
+    expect(tchdl.cut).toEqual([3.5, 5]); // good=3.5, warn=5
+    expect(tchdl.hi).toBeFalsy();
+
+    const { refMin, refMax } = refBandFor(tchdl);
+    expect(refMin).toBe(0);
+    expect(refMax).toBe(3.5);
+
+    const pct = (v: number) => ((v - refMin) / (refMax - refMin)) * 100;
+    expect(pct(3.0)).toBeLessThan(100); // an ok TC/HDL reads comfortably under 100%
+    expect(pct(4.5)).toBeGreaterThan(100); // a warn-zone TC/HDL reads over 100%
+  });
+
+  it('higher-is-better (hi=true, e.g. T/LH): [warn, good] puts the ok threshold at/above 100%', () => {
+    const tlh = INDEX_DEFS.find((d) => d.key === 'tlh')!;
+    expect(tlh.cut).toEqual([100, 50]); // good=100, warn=50
+    expect(tlh.hi).toBe(true);
+
+    const { refMin, refMax } = refBandFor(tlh);
+    expect(refMin).toBe(50);
+    expect(refMax).toBe(100);
+
+    const pct = (v: number) => ((v - refMin) / (refMax - refMin)) * 100;
+    expect(pct(120)).toBeGreaterThanOrEqual(100); // clearly-ok T/LH reads at/past the band
+    expect(pct(100)).toBe(100); // AT the ok threshold itself: at 100%, not still climbing toward it
+    expect(pct(60)).toBeLessThan(100); // a low T/LH reads within-band-but-low, not off-scale
+    expect(pct(60)).toBeGreaterThan(0);
+  });
+});
+
+describe('buildExploreModel — computed indices (Panel Detail only)', () => {
+  const CARDIO = 'Cardiovascular Risk'; // real PANEL_DEFS/INDEX_DEFS panel name
+  const TC_LOINC = '2093-3';
+  const HDL_LOINC = '2085-9';
+
+  it('builds a full historical series for a panel index, banded via refBandFor', () => {
+    const conditions: Condition[] = [{ name: CARDIO, tests: [] }];
+    const resultsByDate: Record<string, Record<string, Result>> = {
+      '2024-01-01': { [TC_LOINC]: result(200, { unit: 'mg/dL' }), [HDL_LOINC]: result(50, { unit: 'mg/dL' }) }, // TC/HDL = 4
+      '2024-06-01': { [TC_LOINC]: result(175, { unit: 'mg/dL' }), [HDL_LOINC]: result(50, { unit: 'mg/dL' }) }, // TC/HDL = 3.5
+    };
+
+    const model = buildExploreModel(conditions, [], 'si', CARDIO, resultsByDate);
+    const tchdl = INDEX_DEFS.find((d) => d.key === 'tchdl')!;
+
+    expect(model.markers[`${INDEX_MARKER_KEY_PREFIX}tchdl`]).toMatchObject({
+      label: 'TC/HDL',
+      panel: CARDIO,
+      warn: false,
+      ...refBandFor(tchdl),
+      data: [
+        ['2024-01-01', 4],
+        ['2024-06-01', 3.5],
+      ],
+    });
+  });
+
+  it('never builds index markers when called without resultsByDate (the All Observations call shape)', () => {
+    const conditions: Condition[] = [{ name: CARDIO, tests: [] }];
+    const model = buildExploreModel(conditions, [], 'si', CARDIO);
+    expect(Object.keys(model.markers).some((k) => k.startsWith(INDEX_MARKER_KEY_PREFIX))).toBe(false);
+  });
+
+  it('lists an index that is never computable from anything on file as not taken, not plotted', () => {
+    const conditions: Condition[] = [{ name: CARDIO, tests: [] }];
+    // TC only, every date -- tchdl also needs HDL-C, so it can never be computed.
+    const resultsByDate: Record<string, Record<string, Result>> = {
+      '2024-01-01': { [TC_LOINC]: result(200, { unit: 'mg/dL' }) },
+    };
+
+    const model = buildExploreModel(conditions, [], 'si', CARDIO, resultsByDate);
+    expect(model.markers[`${INDEX_MARKER_KEY_PREFIX}tchdl`]).toBeUndefined();
+    expect(model.notTaken).toContainEqual({ key: `${INDEX_MARKER_KEY_PREFIX}tchdl`, label: 'TC/HDL', panel: CARDIO });
   });
 });

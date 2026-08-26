@@ -151,7 +151,6 @@ export function MedicalConditionsPage() {
             key={route.name} // remount on panel change so the Analysis tab resets
             name={route.name}
             tests={conditions.find((c) => c.name === route.name)?.tests ?? []}
-            conditions={conditions}
             allResults={allResults}
             resultsByDate={resultsByDate}
             controls={controls}
@@ -162,6 +161,7 @@ export function MedicalConditionsPage() {
             selectedCell={selectedCell}
             onSelectCell={onSelectCell}
             onOpenResultPopup={openResultPopup}
+            onBack={() => navigate({ view: 'panels' })}
           />
         );
       default:
@@ -169,8 +169,10 @@ export function MedicalConditionsPage() {
           <PanelsGridView
             conditions={conditions}
             latestByLoinc={latestByLoinc}
+            resultsByDate={resultsByDate}
             onOpenDetail={(name) => navigate({ view: 'panel', name })}
             onOpenPopup={openPopup}
+            onOpenIndexPopup={openIndexPopup}
           />
         );
     }

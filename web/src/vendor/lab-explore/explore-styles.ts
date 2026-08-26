@@ -88,6 +88,18 @@ export const EXPLORE_STYLES = `
 .picker-cap { display: block; width: 100%; text-align: left; font: inherit; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--_muted); margin-bottom: 0.45rem; background: none; border: 0; padding: 0; cursor: pointer; }
 .picker-cap:hover { color: var(--_fg); text-decoration: underline; }
 .picker-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+/* Single-panel picker (#buildPicker's box===null branch) appends the badge row as a
+   DIRECT child of the .marker-picker grid instead of inside a .picker-panel box, so
+   without this it's just another grid item -- confined to one auto-fill track (~220px)
+   like a panel box would be, instead of the full chart width. Multi-panel boxes are
+   unaffected: their .picker-badges live inside .picker-panel, not directly in the grid. */
+.marker-picker > .picker-badges { grid-column: 1 / -1; }
+/* Divider between the single-panel picker's two rows -- raw observations first,
+   then computed indices (see #buildPicker()'s box===null branch). Same 1px
+   pale-blue rule PanelsGridView.tsx draws between a card's observation dots and
+   its computed-index dots, reused verbatim so the two kinds of thing read as the
+   same visual language everywhere they meet, not just on the grid cards. */
+.marker-picker > .picker-index-divider { grid-column: 1 / -1; border-top: 1px solid #cfe2f3; margin: 0.25rem 0 0; }
 .mbadge { font: inherit; font-size: 0.8rem; line-height: 1; padding: 0.32rem 0.55rem; border: 1px solid var(--_rule-soft); border-radius: 999px; background: transparent; color: var(--_fg); cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; }
 .mbadge:hover { border-color: var(--_muted); }
 .mbadge.on { color: #fff; font-weight: 500; }

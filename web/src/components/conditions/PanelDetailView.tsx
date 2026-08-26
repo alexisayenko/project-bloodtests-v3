@@ -6,7 +6,6 @@ import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { ObservationTable, IndexTable } from './ResultTables';
 import { LabExploreView } from './LabExploreView';
-import type { Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
 
 type DetailTab = 'analysis' | 'in-range';
@@ -14,7 +13,6 @@ type DetailTab = 'analysis' | 'in-range';
 export function PanelDetailView({
   name,
   tests,
-  conditions,
   allResults,
   resultsByDate,
   controls,
@@ -25,11 +23,10 @@ export function PanelDetailView({
   selectedCell,
   onSelectCell,
   onOpenResultPopup,
+  onBack,
 }: Readonly<{
   name: string;
   tests: Observation[];
-  /** Every panel's tests, for the "What's in range" tab's own multi-panel marker picker. */
-  conditions: Condition[];
   allResults: ResultEntry[];
   resultsByDate: Record<string, Record<string, Result>>;
   controls: ControlsProps;
@@ -40,6 +37,7 @@ export function PanelDetailView({
   selectedCell: SelectedCell;
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
+  onBack: () => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
 
@@ -78,7 +76,12 @@ export function PanelDetailView({
 
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>{name}</h1>
+      <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
+        <span {...pressable(onBack)} style={{ color: '#1971c2', cursor: 'pointer' }}>
+          ‹
+        </span>
+        {name}
+      </h1>
       <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
         {(['analysis', 'in-range'] as const).map((tab) => (
           <div
@@ -127,7 +130,13 @@ export function PanelDetailView({
           )}
         </div>
       ) : (
-        <LabExploreView conditions={conditions} allResults={allResults} unitSystem={controls.unitSystem} currentPanel={name} />
+        <LabExploreView
+          conditions={[{ name, tests }]}
+          allResults={allResults}
+          unitSystem={controls.unitSystem}
+          currentPanel={name}
+          resultsByDate={resultsByDate}
+        />
       )}
     </>
   );

@@ -12,6 +12,12 @@ export const STATUS_STYLES = {
 export const ZONE_BG = { ok: '#e6f4ea', warn: '#fff4e0', bad: '#fdecea' } as const;
 // Selected-row variants, blended with the row-selection blue (#eaf3fb).
 export const SELECTED_ZONE_BG = { ok: '#dbecf0', warn: '#e7ecea', bad: '#e6e8f0' } as const;
+// Saturated dot colors for the same 3 zones, for compact list rows (e.g. the
+// Monitoring Panels grid card) where ZONE_BG's pale backgrounds would be too
+// faint to read as a small dot. ok/bad reuse STATUS_STYLES' green/red so the
+// two-state and three-state dots read as one color language; warn is Google's
+// amber, completing the same red/yellow/green triad.
+export const ZONE_DOT = { ok: '#34a853', warn: '#fbbc04', bad: '#ea4335' } as const;
 
 export const PANEL_PADDING = 20;
 export const PANEL_GAP = 24;

@@ -22,7 +22,7 @@ import {
   type Navigator,
   type SetTarget,
 } from "../chart-kit";
-import type { ExploreMarker, LabExploreModel } from "./explore-types";
+import type { ExploreMarker, ExploreNotTaken, LabExploreModel } from "./explore-types";
 import { EXPLORE_STYLES, UPLOT_CSS } from "./explore-styles";
 
 const esc = (s: unknown): string =>
@@ -51,7 +51,12 @@ const DEFAULT_INTRO =
 
 /** English fallbacks for the chart's chrome; a host page overrides via model.labels. */
 const DEFAULT_LABELS = {
-  notTaken: "never taken",
+  // v3 DEVIATION from the v2 source: v2 always captions a never-taken chip
+  // ("never taken"); v3 wants the bare marker name instead, so the default
+  // is empty here and `#lbl("notTaken")` is checked for truthiness at its
+  // one call site below. A host that still wants the caption can opt back
+  // in via model.labels.notTaken.
+  notTaken: "",
   dataQuality:
     "their reference range is not trustworthy (unsourced, or written for the other sex), " +
     "so read their position on this chart as a hint, not as a verdict.",
@@ -251,44 +256,97 @@ export class LabExplore extends HTMLElement {
       (ntByPanel[n.panel] ??= []).push(n);
     }
 
+    // v3-side convention (see exploreModel.ts's INDEX_MARKER_KEY_PREFIX): a
+    // computed-index marker's key carries this prefix, purely so the
+    // single-panel picker below can tell it apart from a raw observation
+    // marker without a new field on the vendored ExploreMarker/
+    // ExploreNotTaken types.
+    const isIndexKey = (k: string): boolean => k.startsWith("idx:");
+
+    const mkBadge = (k: string): HTMLButtonElement => {
+      const mk = m.markers[k]!;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = mk.warn ? "mbadge warn" : "mbadge";
+      b.dataset.key = k;
+      // ⚠ RIDES THE LABEL ITSELF, not a separate glyph elsewhere: the badge is the
+      // one place she reads this marker's name before choosing to plot it, so the
+      // caveat has to be attached to the name, the way it is in the table.
+      b.textContent = mk.warn ? `⚠ ${mk.label}` : mk.label;
+      b.addEventListener("click", () => this.#toggle(k));
+      return b;
+    };
+    // NEVER TAKEN — present, named, and disabled. Not plotted (there is no value),
+    // not omitted (it exists), not zero (0 % would read as catastrophically low).
+    const mkNotTaken = (n: ExploreNotTaken): HTMLButtonElement => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "mbadge nodata";
+      b.disabled = true;
+      b.dataset.key = n.key;
+      b.textContent = this.#lbl("notTaken") ? `${n.label} · ${this.#lbl("notTaken")}` : n.label;
+      return b;
+    };
+
     for (const pname of order) {
-      const box = document.createElement("div");
-      box.className = "picker-panel";
-      const cap = document.createElement("button");
-      cap.type = "button";
-      cap.className = "picker-cap";
-      cap.textContent = pname;
-      cap.title = this.#lbl("panelToggle");
-      cap.addEventListener("click", () => this.#togglePanel(byPanel[pname] ?? []));
-      box.appendChild(cap);
+      // v3 DEVIATION from the v2 source: v2 always wraps each group in the
+      // bordered `.picker-panel` box, captioned with its panel name. v3's Panel
+      // Detail page pre-scopes `order` to that one panel (see PanelDetailView),
+      // so a single-group picker showing a caption — or even just the box's
+      // border around it — is pure noise — everything on screen already
+      // belongs to it, and a bordered rectangle around a single badge row
+      // still reads as "a group" with nothing to distinguish it from. Both the
+      // box and its caption (and the caption's select-all-in-group toggle) are
+      // only worth showing when they actually distinguish one group from
+      // another, i.e. on pages like All Observations where `order` has
+      // multiple panels; a single-group picker instead appends the badge row
+      // straight to the picker root, unboxed.
+      const box = order.length === 1 ? null : document.createElement("div");
+      if (box) {
+        box.className = "picker-panel";
+        const cap = document.createElement("button");
+        cap.type = "button";
+        cap.className = "picker-cap";
+        cap.textContent = pname;
+        cap.title = this.#lbl("panelToggle");
+        cap.addEventListener("click", () => this.#togglePanel(byPanel[pname] ?? []));
+        box.appendChild(cap);
+      }
+
+      const keys = byPanel[pname] ?? [];
+      const nts = ntByPanel[pname] ?? [];
+      // The multi-group picker (All Observations) never gets index markers in
+      // the first place (see buildExploreModel's doc comment), so there is
+      // nothing to split there — everything renders as one row, as before.
+      // The single-group picker (Panel Detail) instead renders observations
+      // first, then — only if the panel has any index markers/not-taken
+      // indices — a divider and a second row of index badges below it.
+      const obsKeys = box ? keys : keys.filter((k) => !isIndexKey(k));
+      const idxKeys = box ? [] : keys.filter(isIndexKey);
+      const obsNt = box ? nts : nts.filter((n) => !isIndexKey(n.key));
+      const idxNt = box ? [] : nts.filter((n) => isIndexKey(n.key));
+
       const bb = document.createElement("div");
       bb.className = "picker-badges";
-      for (const k of byPanel[pname] ?? []) {
-        const mk = m.markers[k]!;
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = mk.warn ? "mbadge warn" : "mbadge";
-        b.dataset.key = k;
-        // ⚠ RIDES THE LABEL ITSELF, not a separate glyph elsewhere: the badge is the
-        // one place she reads this marker's name before choosing to plot it, so the
-        // caveat has to be attached to the name, the way it is in the table.
-        b.textContent = mk.warn ? `⚠ ${mk.label}` : mk.label;
-        b.addEventListener("click", () => this.#toggle(k));
-        bb.appendChild(b);
+      for (const k of obsKeys) bb.appendChild(mkBadge(k));
+      for (const n of obsNt) bb.appendChild(mkNotTaken(n));
+
+      if (box) {
+        box.appendChild(bb);
+        picker.appendChild(box);
+      } else {
+        picker.appendChild(bb);
+        if (idxKeys.length || idxNt.length) {
+          const divider = document.createElement("div");
+          divider.className = "picker-index-divider";
+          picker.appendChild(divider);
+          const ibb = document.createElement("div");
+          ibb.className = "picker-badges";
+          for (const k of idxKeys) ibb.appendChild(mkBadge(k));
+          for (const n of idxNt) ibb.appendChild(mkNotTaken(n));
+          picker.appendChild(ibb);
+        }
       }
-      // NEVER TAKEN — present, named, and disabled. Not plotted (there is no value),
-      // not omitted (it exists), not zero (0 % would read as catastrophically low).
-      for (const n of ntByPanel[pname] ?? []) {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "mbadge nodata";
-        b.disabled = true;
-        b.dataset.key = n.key;
-        b.textContent = `${n.label} · ${this.#lbl("notTaken")}`;
-        bb.appendChild(b);
-      }
-      box.appendChild(bb);
-      picker.appendChild(box);
     }
   }
 

@@ -378,7 +378,7 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (has(m, 'DHT', 'T') ? (m['DHT']! / 10 / m['T']!) * 100 : null),
   },
   {
-    key: 'cortdhea', name: 'Cortisol / DHEA-S ratio', nameCompact: 'Cort/DHEA-S', panels: ['Adrenal'],
+    key: 'cortdhea', name: 'Cortisol / DHEA-S ratio', nameCompact: 'Cort/DHEA', panels: ['Adrenal'],
     formula: 'Cortisol / DHEA-S (molar, both nmol/L)', cut: [0.1, 0.2], needs: ['Cortisol', 'DHEA-S'], level: 'heuristic',
     meaning: 'Balance between the catabolic stress hormone (cortisol) and the anabolic adrenal androgen reserve (DHEA-S), as a molar ratio with both in the same unit (nmol/L). Healthy adults sit around 0.03–0.10; a high ratio (high cortisol, low DHEA-S) is read as a chronic-stress / catabolic pattern. Guide (orientation only): <0.1 balanced · 0.1–0.2 borderline · >0.2 catabolic. Needs both from the same draw — you have plenty of cortisol but only one DHEA-S, and never together, so order them in one fasting morning draw.',
     consensus: 'Popular in functional / integrative medicine; weak support in conventional endocrinology and no agreed cutoff — treat as exploratory, not diagnostic.',
