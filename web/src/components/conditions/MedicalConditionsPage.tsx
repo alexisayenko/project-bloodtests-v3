@@ -122,6 +122,7 @@ export function MedicalConditionsPage() {
         return (
           <AllObservationsView
             allResults={allResults}
+            conditions={conditions}
             analysesCatalog={analysesCatalog}
             controls={controls}
             selectedLoinc={selectedLoinc}
@@ -150,6 +151,7 @@ export function MedicalConditionsPage() {
             key={route.name} // remount on panel change so the Analysis tab resets
             name={route.name}
             tests={conditions.find((c) => c.name === route.name)?.tests ?? []}
+            conditions={conditions}
             allResults={allResults}
             resultsByDate={resultsByDate}
             controls={controls}

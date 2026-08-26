@@ -1,10 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Analysis } from '../../types';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, type Observation } from './markers';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
-import { visibleDatesOf, type SelectedCell } from './ui';
+import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ObservationTable } from './ResultTables';
+import { LabExploreView } from './LabExploreView';
+import type { Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
+
+type ObservationsTab = 'analysis' | 'in-range';
 
 // Every distinct observation ever uploaded, regardless of panel membership.
 // A result recorded under an also-ref alias (unit-variant LOINC) folds into
@@ -30,6 +34,8 @@ function buildRows(allResults: ResultEntry[], analysesCatalog: Record<string, An
 
 export function AllObservationsView({
   allResults,
+  /** Every panel's tests, for the "What's in range" tab's own cross-panel marker picker. */
+  conditions,
   analysesCatalog,
   controls,
   selectedLoinc,
@@ -40,6 +46,7 @@ export function AllObservationsView({
   onOpenResultPopup,
 }: Readonly<{
   allResults: ResultEntry[];
+  conditions: Condition[];
   analysesCatalog: Record<string, Analysis>;
   controls: ControlsProps;
   selectedLoinc: string | null;
@@ -49,6 +56,8 @@ export function AllObservationsView({
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
 }>) {
+  const [tab, setTab] = useState<ObservationsTab>('analysis');
+
   const rows = useMemo(() => buildRows(allResults, analysesCatalog), [allResults, analysesCatalog]);
   const sortedDates = useMemo(
     () => Array.from(new Set(allResults.map((r) => r.date))).sort((a, b) => b.localeCompare(a)),
@@ -59,29 +68,52 @@ export function AllObservationsView({
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>All Observations</h1>
-      {rows.length === 0 ? (
-        <div style={{ color: '#888', fontSize: 14 }}>No results uploaded yet.</div>
-      ) : (
-        <>
-          <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
-            {rows.length} observations across {sortedDates.length} lab reports
+      <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
+        {(['analysis', 'in-range'] as const).map((t) => (
+          <div
+            key={t}
+            {...pressable(() => setTab(t))}
+            style={{
+              padding: '10px 4px',
+              marginBottom: -2,
+              borderBottom: tab === t ? '2px solid #1971c2' : '2px solid transparent',
+              fontWeight: tab === t ? 600 : 400,
+              color: tab === t ? '#1971c2' : '#555',
+              cursor: 'pointer',
+            }}
+          >
+            {t === 'analysis' ? 'Analysis' : "What's in range"}
           </div>
-          <ControlsBar {...controls} />
-          <ObservationTable
-            label="Observations"
-            rows={rows}
-            visibleDates={allDates}
-            allResults={allResults}
-            unitSystem={controls.unitSystem}
-            selectedLoinc={selectedLoinc}
-            onSelect={onSelect}
-            onOpenPopup={onOpenPopup}
-            selectedCell={selectedCell}
-            onSelectCell={onSelectCell}
-            onOpenResultPopup={onOpenResultPopup}
-            preferRaw
-          />
-        </>
+        ))}
+      </div>
+
+      {tab === 'analysis' ? (
+        rows.length === 0 ? (
+          <div style={{ color: '#888', fontSize: 14 }}>No results uploaded yet.</div>
+        ) : (
+          <>
+            <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+              {rows.length} observations across {sortedDates.length} lab reports
+            </div>
+            <ControlsBar {...controls} />
+            <ObservationTable
+              label="Observations"
+              rows={rows}
+              visibleDates={allDates}
+              allResults={allResults}
+              unitSystem={controls.unitSystem}
+              selectedLoinc={selectedLoinc}
+              onSelect={onSelect}
+              onOpenPopup={onOpenPopup}
+              selectedCell={selectedCell}
+              onSelectCell={onSelectCell}
+              onOpenResultPopup={onOpenResultPopup}
+              preferRaw
+            />
+          </>
+        )
+      ) : (
+        <LabExploreView conditions={conditions} allResults={allResults} unitSystem={controls.unitSystem} />
       )}
     </>
   );
