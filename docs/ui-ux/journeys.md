@@ -18,7 +18,9 @@ Entry point → panel detail, with a historical values table.
 - **Entry:** Monitoring Panels (panel grid)
 - **Screens (in order):** Monitoring Panels → panel detail (Analysis
   tab)
-- **Branches:** "What's in range" tab not yet built
+- **Branches:** "What's in range" tab shows a normalized-overlay chart
+  (every marker as % of its own reference range) instead of the values
+  table
 - **Exit / success:** viewer sees an observation's historical values
   and reference range
 

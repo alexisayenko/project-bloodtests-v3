@@ -29,7 +29,17 @@ its own sibling view component (`PanelsGridView` / `PanelDetailView` /
 `AllObservationsView` / `ProfileView` / `ReferenceBookPage`, plus shared
 `NavBar` / `ControlsBar` / `ResultTables` / `Popup`), with pure helpers
 in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` and
-`data/generateTestData.ts`. Persistent top nav across four sections — Profile (upload JSON /
+`data/generateTestData.ts`. Panel Detail and All Observations each carry
+a "What's in range" tab — a normalized-overlay time chart (every marker
+plotted as % of its own reference range on one shared axis, with a panel
+picker, zoom, autoscale, and a "not taken" section) — built from v2's
+`<lab-explore>` web component, vendored as-is into
+`web/src/vendor/lab-explore/` and `web/src/vendor/chart-kit/` (its
+domain-agnostic uPlot-based charting engine) and driven by the
+`buildExploreModel` adapter in `exploreModel.ts`, mounted via
+`LabExploreView.tsx`; deliberately generic-only (no medication overlays,
+reference-band overrides, or data-quality flagging). Persistent top nav
+across four sections — Profile (upload JSON /
 generate synthetic test data / clear; sessions merge, keyed by session
 id), Monitoring Panels (the default/entry route), All Observations
 (every uploaded result in one table), Reference Book (Indices

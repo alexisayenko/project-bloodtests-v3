@@ -10,6 +10,13 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-08-26 — Panel Detail and All Observations' "What's in range" tab
+  built: a normalized-overlay time chart (every marker as % of its own
+  reference range on one shared axis), v2's `<lab-explore>` component
+  vendored as-is (`web/src/vendor/lab-explore/`, `web/src/vendor/chart-kit/`)
+  and driven by a new `exploreModel.ts` adapter; generic-only scope (no
+  medication overlays, reference-band overrides, or data-quality
+  flagging).
 - 2026-08-26 — Monitoring Panels grid restyled from pill/badge cards
   to list rows (status as a colored dot); breadcrumb navigation
   removed from Panel Detail and Reference Book; top nav reordered to
