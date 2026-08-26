@@ -4,6 +4,11 @@ Stack, infrastructure, and architectural decisions. The "how it
 runs" layer — what's used to build and operate the product.
 Product / business / UX live in their own sections.
 
+## Current files
+
+- [`interchange-format.md`](interchange-format.md) — envelope of
+  the lab-data interchange file (under design).
+
 ## Common slots
 
 Don't pre-create — extract on first real entry. See
