@@ -9,7 +9,7 @@ export type Route =
   | { view: 'profile' };
 
 export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'profile'; label: string }[] = [
-  { view: 'profile', label: 'Profile' },
+  { view: 'profile', label: 'Get Started' },
   { view: 'panels', label: 'Monitoring Panels' },
   { view: 'all', label: 'All Observations' },
   { view: 'reference', label: 'Reference Book' },

@@ -25,7 +25,20 @@ export function ProfileView({
 }>) {
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>Profile</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Get Started</h1>
+      <div style={{ color: '#888', fontSize: 14, marginBottom: 12 }}>
+        A LOINC-coded blood-test monitoring tool. Upload a lab-results export and it is organized into monitoring
+        panels by condition and organ system, tracked over time against reference ranges and computed indices.
+      </div>
+      <div style={{ color: '#888', fontSize: 14, marginBottom: 12 }}>
+        All processing occurs locally, within this browser. Uploaded results are parsed client-side and persisted
+        only to this device's local storage; no data is transmitted to, or retained by, any server.
+      </div>
+      <div style={{ color: '#888', fontSize: 14, marginBottom: 24 }}>
+        Every reference range and computed index is sourced from a cited paper or clinical guideline, and labeled
+        by how strong that evidence is: <b>guideline</b> (a professional-society standard), <b>consensus</b> (a
+        widely used but secondary source), or <b>heuristic</b> (orientation only — no validated cutoff).
+      </div>
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         <label style={{ ...ACTION, border: '1.5px solid #1971c2', background: '#1971c2', color: '#fff' }}>
           {'Upload JSON'}
