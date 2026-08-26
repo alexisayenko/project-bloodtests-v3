@@ -1,6 +1,13 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import type { Result, ResultGroup } from '../types';
 import { parseUploadedResults, UploadParseError } from './parseUpload';
+import {
+  fetchSharedDataOnce,
+  isAlreadyImported,
+  markImported,
+  readSharedDataGuid,
+  stripDataParam,
+} from './sharedLink';
 
 const STORAGE_KEY = 'bloodtests_upload_v1';
 
@@ -48,6 +55,7 @@ interface ResultsContextType {
   hasData: boolean;
   loading: boolean;
   error: string | null;
+  sharedLinkError: string | null;
   uploadFile: (file: File) => Promise<void>;
   loadGenerated: (groups: ResultGroup[]) => void;
   loadGroupItems: (sessionId: string) => Promise<Result[]>;
@@ -70,6 +78,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   // localStorage loads synchronously in the useState initializer above.
   const [loading, setLoading] = useState(() => import.meta.env.DEV && sessions.length === 0);
   const [error, setError] = useState<string | null>(null);
+  const [sharedLinkError, setSharedLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading) return;
@@ -97,6 +106,41 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
       return merged;
     });
   }, []);
+
+  // Read-only share link: ?data=<guid> pulls /d/<guid>.json through the same
+  // parse+merge path as an upload, so it persists and works offline afterwards.
+  useEffect(() => {
+    const guid = readSharedDataGuid(window.location.search);
+    if (!guid) return;
+    if (isAlreadyImported(guid)) {
+      stripDataParam();
+      return;
+    }
+
+    // `cancelled` only suppresses state updates after unmount — the import
+    // itself (parse, persist, mark) always completes, so StrictMode's
+    // mount/unmount/mount cycle can't drop an already-fetched result.
+    let cancelled = false;
+    fetchSharedDataOnce(guid)
+      .then((json) => {
+        if (!isAlreadyImported(guid)) {
+          mergeSessions(parseUploadedResults(json));
+          markImported(guid);
+        }
+        stripDataParam();
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setSharedLinkError(
+            e instanceof UploadParseError ? e.message : 'Could not load the shared data link.'
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mergeSessions]);
 
   const uploadFile = useCallback(async (file: File) => {
     setError(null);
@@ -134,8 +178,8 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   const value = useMemo(
-    () => ({ sessions, hasData: sessions.length > 0, loading, error, uploadFile, loadGenerated, loadGroupItems, clearData }),
-    [sessions, loading, error, uploadFile, loadGenerated, loadGroupItems, clearData]
+    () => ({ sessions, hasData: sessions.length > 0, loading, error, sharedLinkError, uploadFile, loadGenerated, loadGroupItems, clearData }),
+    [sessions, loading, error, sharedLinkError, uploadFile, loadGenerated, loadGroupItems, clearData]
   );
 
   return (

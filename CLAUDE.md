@@ -20,7 +20,13 @@ monetization.]
 
 React 19 + TypeScript + Vite, in `web/`. No backend — panel/analyte
 reference data ships as static JSON (`web/public/data/`), uploaded lab
-results are parsed client-side and kept in `localStorage`. Deploys as
+results are parsed client-side and kept in `localStorage`. A read-only
+share link, `/?data=<guid>`, fetches `/d/<guid>.json` and merges it
+through the same parse path as an upload, then strips the param; the
+payloads are real health data and are gitignored (`web/public/d/*.json`)
+because this repo is public, so a deploy needs them copied in locally
+first. `web/public/_headers` serves `/d/*` as
+`noindex`/`private`, and `robots.txt` disallows `/d/`. Deploys as
 a Cloudflare Worker (static assets) to `blood.isayenko.net` via
 `web/wrangler.jsonc`; deploy is manual (`wrangler deploy`), not CI-triggered.
 The app shell is `web/src/components/conditions/MedicalConditionsPage.tsx`

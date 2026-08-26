@@ -30,3 +30,6 @@ out/
 
 # Real personal health data for local dev only — never committed, never served in a build
 web/dev-data/
+
+# Share-link payloads: real health data, deployed as unguessable assets. This repo is public.
+web/public/d/*.json

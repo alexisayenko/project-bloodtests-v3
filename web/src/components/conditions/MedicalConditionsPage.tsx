@@ -19,7 +19,7 @@ import type { ResultEntry } from './resultsLookup';
 // settings and the popup, and renders one view component per section.
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels } = useData();
-  const { sessions, loadGroupItems, loadGenerated, uploadFile, clearData, error: uploadError } = useResultsContext();
+  const { sessions, loadGroupItems, loadGenerated, uploadFile, clearData, error: uploadError, sharedLinkError } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
@@ -189,6 +189,9 @@ export function MedicalConditionsPage() {
   return (
     <div style={{ padding: '56px 48px' }}>
       <NavBar route={route} navigate={navigate} />
+      {sharedLinkError && (
+        <div style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>{sharedLinkError}</div>
+      )}
       {view}
       <Popup
         popup={popup}
