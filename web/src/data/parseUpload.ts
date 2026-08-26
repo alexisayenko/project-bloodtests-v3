@@ -1,21 +1,34 @@
 import type { Result, ResultGroup } from '../types';
+import { safeParseDraws, type Draw, type LabItem } from './drawsSchema';
 
 /**
  * Parses a visitor-uploaded JSON file into ResultGroup[].
  *
- * Matches the shape produced by this project's own export pipeline
- * (see import_lab_results.py in the original private project), so an
- * existing export can be uploaded as-is. Two shapes are accepted:
+ * Matches shapes produced by this project's own export pipeline and by
+ * project-bloodtests-v2's engine, so an existing export can be uploaded
+ * as-is. Three shapes are accepted, tried in this order:
  *
- * 1. Flat entries — a JSON array of individual lab-result rows, each
- *    with at least a `date` field (this is what
- *    `imports/<file>.json` contains). Rows are grouped client-side
- *    into sessions by (date, place), the same way the Python script
- *    groups them into `results-by-date/*.json`.
+ * 1. Canonical draws — the current shape produced by v2's engine (see
+ *    `drawsSchema.ts`, ported from its `schema.ts`): a JSON array of
+ *    `{ date, labName, sourceFile?, items }`, where each item's value
+ *    lives under `item.original` (with `us`/`si` siblings, unused here).
+ *    Detected and validated via `safeParseDraws`; a shape that looks like
+ *    an attempt at this (has `labName` and/or `items` with `original`/
+ *    `shortName`) but fails validation raises immediately rather than
+ *    falling through to the legacy shapes below.
  *
- * 2. Grouped sessions — a JSON array (or single object) already
- *    shaped like `results-by-date/*.json`: `{ date, place, items }`.
- *    Used as-is, no re-grouping.
+ * 2. Flat entries (legacy) — a JSON array of individual lab-result rows,
+ *    each with at least a `date` field (this is what
+ *    `imports/<file>.json` contained in the original private project).
+ *    Rows are grouped client-side into sessions by (date, place), the
+ *    same way the old Python import script grouped them into
+ *    `results-by-date/*.json`.
+ *
+ * 3. Grouped sessions (legacy) — a JSON array (or single object) already
+ *    shaped like `results-by-date/*.json`: `{ date, place, items }`,
+ *    with each item's fields flat (`value`/`unit`/`refMin`/... directly
+ *    on the item, not nested under `original`). Used as-is, no
+ *    re-grouping.
  */
 
 type RawScalar = string | number | null;
@@ -85,12 +98,77 @@ function isEntryShape(x: unknown): x is RawEntry {
   return !!x && typeof x === 'object' && 'date' in x;
 }
 
+/**
+ * True when `x` looks like an attempt at the canonical draws shape
+ * (`{ date, labName, items }` with items shaped like `{ original: {...} }`
+ * / `{ shortName }`), as opposed to the legacy grouped-sessions shape
+ * (`{ date, place, items }` with flat item fields). Used to route to the
+ * canonical parser and to fail loudly on malformed canonical data instead
+ * of silently misparsing it as a legacy shape.
+ */
+function looksLikeCanonicalDraw(x: unknown): boolean {
+  if (!x || typeof x !== 'object') return false;
+  const o = x as Record<string, unknown>;
+  if (typeof o.labName === 'string') return true;
+  if (Array.isArray(o.items)) {
+    return o.items.some((it) => {
+      if (!it || typeof it !== 'object') return false;
+      const io = it as Record<string, unknown>;
+      return 'original' in io || 'shortName' in io;
+    });
+  }
+  return false;
+}
+
+function labItemToResult(item: LabItem): Result {
+  return {
+    loinc: item.loinc || '',
+    analysis: item.analysis || '',
+    symbol: item.shortName || '',
+    section: '',
+    value: item.original.value,
+    rawValue: item.original.rawValue != null ? String(item.original.rawValue) : '',
+    valueQualifier: '',
+    unit: item.original.unit || '',
+    refText: item.original.refText || '',
+    refMin: item.original.refMin ?? null,
+    refMax: item.original.refMax ?? null,
+    method: item.method || '',
+  };
+}
+
+function drawsToGroups(draws: Draw[]): ResultGroup[] {
+  const groups = draws.map((d, i): ResultGroup => {
+    const items = d.items.map(labItemToResult);
+    return {
+      date: d.date,
+      place: d.labName,
+      file: d.sourceFile || `${d.date || 'unknown'}__${slugify(d.labName)}` || `session-${i}`,
+      items,
+      itemCount: items.length,
+    };
+  });
+  return groups.sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export class UploadParseError extends Error {}
 
 export function parseUploadedResults(data: unknown): ResultGroup[] {
   const arr = Array.isArray(data) ? data : [data];
   if (arr.length === 0) {
     throw new UploadParseError('The file is empty.');
+  }
+
+  if (arr.some(looksLikeCanonicalDraw)) {
+    const parsed = safeParseDraws(arr);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue?.path?.length ? ` at ${issue.path.join('.')}` : '';
+      throw new UploadParseError(
+        `Invalid lab-results data${path}: ${issue?.message ?? parsed.error.message}`
+      );
+    }
+    return drawsToGroups(parsed.data);
   }
 
   if (arr.every(isGroupShape)) {
