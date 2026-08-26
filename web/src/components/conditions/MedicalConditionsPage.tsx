@@ -81,6 +81,7 @@ export function MedicalConditionsPage() {
   const latestByLoinc = useMemo(() => {
     const map: Record<string, { result: Result; date: string }> = {};
     for (const { loinc, date, result } of allResults) {
+      if (result.value == null) continue; // e.g. "not tested this draw" -- don't let a blank beat a real reading
       const existing = map[loinc];
       if (!existing || date > existing.date) map[loinc] = { result, date };
     }
