@@ -64,6 +64,7 @@ export const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2093-3': { short: 'TC', unit: 'mg/dL' },
   '2085-9': { short: 'HDL-C', unit: 'mg/dL' },
   '13457-7': { short: 'LDL-C', unit: 'mg/dL' },
+  '13458-5': { short: 'VLDL', unit: 'mg/dL' },
   '2571-8': { short: 'TRIG', unit: 'mg/dL' },
   '9830-1': { short: 'TC/HDL', unit: 'ratio' },
   '1884-6': { short: 'ApoB', unit: 'mg/dL' },
@@ -126,6 +127,11 @@ export const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '1798-8': { short: 'AMY', unit: 'U/L' },
   '3040-3': { short: 'LIP', unit: 'U/L' },
   '25907-7': { short: 'ELA1', unit: 'ug/g' }, // Pancreatic elastase-1, stool
+  // Muscle
+  '2157-6': { short: 'CK', unit: 'U/L' },
+  // Coagulation
+  '6301-6': { short: 'INR', unit: 'ratio' },
+  '5902-2': { short: 'PT', unit: 'sec' },
   // Not in any panel yet — labeled so All Observations shows them readably.
   '2465-3': { short: 'IgG', unit: 'mg/dL' },
   '2862-1': { short: 'IgA', unit: 'mg/dL' },
