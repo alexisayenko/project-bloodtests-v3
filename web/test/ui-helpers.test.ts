@@ -3,6 +3,7 @@ import {
   cellBg,
   formatMonthYear,
   greenRangeOf,
+  isCellArmed,
   loadAnalysisSettings,
   popupPosition,
   pressable,
@@ -40,6 +41,19 @@ describe('cellBg', () => {
     expect(cellBg(true, true, false)).toBe('#fdecea');
     expect(cellBg(true, false, true)).toBe('#dbecf0');
     expect(cellBg(true, true, true)).toBe('#e6e8f0');
+  });
+});
+
+describe('isCellArmed (two-step click-to-select-then-open)', () => {
+  it('is false when nothing is selected', () => {
+    expect(isCellArmed(null, '14913-8', '2026-01-01')).toBe(false);
+  });
+
+  it('is true only for the exact (loinc, date) that is selected', () => {
+    const cell = { loinc: '14913-8', date: '2026-01-01' };
+    expect(isCellArmed(cell, '14913-8', '2026-01-01')).toBe(true);
+    expect(isCellArmed(cell, '14913-8', '2025-06-01')).toBe(false);
+    expect(isCellArmed(cell, '2991-8', '2026-01-01')).toBe(false);
   });
 });
 

@@ -6,7 +6,7 @@ import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
 import { routeToHash, hashToRoute, type Route } from './routing';
 import { ReferenceBookPage } from './ReferenceBookPage';
-import { POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, loadAnalysisSettings, popupPosition } from './ui';
+import { POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, loadAnalysisSettings, popupPosition, type SelectedCell } from './ui';
 import { NavBar } from './NavBar';
 import { Popup, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
@@ -22,6 +22,7 @@ export function MedicalConditionsPage() {
   const { sessions, loadGroupItems, loadGenerated, uploadFile, clearData, error: uploadError } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
+  const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
   const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
   const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(() => loadAnalysisSettings().unitSystem);
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(() => loadAnalysisSettings().sampleLimit);
@@ -65,7 +66,7 @@ export function MedicalConditionsPage() {
       for (const session of sessions) {
         const items = session.items ?? (await loadGroupItems(session.file));
         for (const item of items) {
-          all.push({ loinc: item.loinc, date: session.date, result: item });
+          all.push({ loinc: item.loinc, date: session.date, place: session.place, result: item });
         }
       }
       if (!cancelled) setAllResults(all);
@@ -106,6 +107,13 @@ export function MedicalConditionsPage() {
     setPopup({ kind: 'index', def, ...popupPosition(rect, INDEX_POPUP_WIDTH) });
   };
 
+  const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
+
+  const openResultPopup = (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopup({ kind: 'result', test, entry, ...popupPosition(rect, POPUP_WIDTH) });
+  };
+
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder };
 
   const view = (() => {
@@ -119,6 +127,9 @@ export function MedicalConditionsPage() {
             selectedLoinc={selectedLoinc}
             onSelect={setSelectedLoinc}
             onOpenPopup={openPopup}
+            selectedCell={selectedCell}
+            onSelectCell={onSelectCell}
+            onOpenResultPopup={openResultPopup}
           />
         );
       case 'profile':
@@ -146,7 +157,9 @@ export function MedicalConditionsPage() {
             onSelect={setSelectedLoinc}
             onOpenPopup={openPopup}
             onOpenIndexPopup={openIndexPopup}
-            navigate={navigate}
+            selectedCell={selectedCell}
+            onSelectCell={onSelectCell}
+            onOpenResultPopup={openResultPopup}
           />
         );
       default:

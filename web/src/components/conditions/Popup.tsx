@@ -3,12 +3,13 @@ import { computeIndex, zone, type IndexDef } from '../../data/computedIndices';
 import type { Result } from '../../types';
 import { isEchoRedundant, testLoincs, type Observation } from './markers';
 import { ZONE_BG, POPUP_WIDTH, INDEX_POPUP_WIDTH, formatMonthYear, greenRangeOf, pressable, cellBg } from './ui';
-import { getLatest, hasReference, type LatestByLoinc } from './resultsLookup';
+import { getLatest, hasReference, type LatestByLoinc, type ResultEntry } from './resultsLookup';
 
 export type PopupPosition = { left: number; top?: number; bottom?: number };
 export type PopupState =
   | ({ kind: 'observation'; test: Observation } & PopupPosition)
-  | ({ kind: 'index'; def: IndexDef } & PopupPosition);
+  | ({ kind: 'index'; def: IndexDef } & PopupPosition)
+  | ({ kind: 'result'; test: Observation; entry: ResultEntry } & PopupPosition);
 
 function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: LatestByLoinc; loincs: string[] }>) {
   const current = getLatest(latestByLoinc, loincs);
@@ -59,6 +60,26 @@ function ObservationPopupBody({ test, latestByLoinc }: Readonly<{ test: Observat
         </div>
       ))}
       <LatestValue latestByLoinc={latestByLoinc} loincs={testLoincs(test)} />
+    </>
+  );
+}
+
+function ResultPopupBody({ test, entry }: Readonly<{ test: Observation; entry: ResultEntry }>) {
+  const value = entry.result.rawValue || fmtNum(entry.result.value);
+  const bg = cellBg(hasReference(entry.result), isOutOfRange(entry.result), false);
+  return (
+    <>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
+        {test.full}
+        {!isEchoRedundant(test.full, test.short) && ` (${test.short})`}
+      </div>
+      <div style={{ fontSize: 13, color: '#555' }}>
+        {formatMonthYear(entry.date)} · {entry.place}
+      </div>
+      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: bg, fontSize: 13, color: '#555' }}>
+        {value} {entry.result.unit}
+        <span style={{ color: '#888' }}> (Ref: {formatResultReference(entry.result)})</span>
+      </div>
     </>
   );
 }
@@ -174,8 +195,10 @@ export function Popup({
       >
         {popup.kind === 'observation' ? (
           <ObservationPopupBody test={popup.test} latestByLoinc={latestByLoinc} />
-        ) : (
+        ) : popup.kind === 'index' ? (
           <IndexPopupBody def={popup.def} latestByLoinc={latestByLoinc} resultsByDate={resultsByDate} onLearnMore={onLearnMore} />
+        ) : (
+          <ResultPopupBody test={popup.test} entry={popup.entry} />
         )}
       </div>
     </>

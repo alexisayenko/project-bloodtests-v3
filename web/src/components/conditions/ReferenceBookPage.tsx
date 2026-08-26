@@ -74,20 +74,9 @@ function ReferenceItem({ source }: Readonly<{ source: IndexReference }>) {
   );
 }
 
-function IndexDetail({ def, navigate }: Readonly<{ def: IndexDef; navigate: (r: Route) => void }>) {
+function IndexDetail({ def }: Readonly<{ def: IndexDef }>) {
   return (
     <div style={{ maxWidth: 720 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
-        <span {...pressable(() => navigate({ view: 'reference' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
-          Reference Book
-        </span>
-        <span>›</span>
-        <span {...pressable(() => navigate({ view: 'reference' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
-          Indices Descriptions
-        </span>
-        <span>›</span>
-        <span>{def.nameCompact}</span>
-      </div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>
         {def.name}
         {!isEchoRedundant(def.name, def.nameCompact) && ` (${def.nameCompact})`}
@@ -146,17 +135,10 @@ const HP_AXIS_CSS = `
 .hp-axis a { color: #1971c2; }
 `;
 
-function HpAxisPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
+function HpAxisPage() {
   return (
     <div>
       <style>{HP_AXIS_CSS}</style>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
-        <span {...pressable(() => navigate({ view: 'reference' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
-          Reference Book
-        </span>
-        <span>›</span>
-        <span>HP Axis</span>
-      </div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>HP Axis</h1>
       <div style={{ color: '#888', fontSize: 14, marginBottom: 20 }}>
         Hypothalamic–pituitary feedback loops — thyroid (HPT), gonadal (HPG) and adrenal (HPA) — with the
@@ -169,9 +151,9 @@ function HpAxisPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
 }
 
 export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: string; navigate: (r: Route) => void }>) {
-  if (indexKey === 'hp-axis') return <HpAxisPage navigate={navigate} />;
+  if (indexKey === 'hp-axis') return <HpAxisPage />;
   const def = indexKey ? INDEX_DEFS.find((d) => d.key === indexKey) : undefined;
-  if (def) return <IndexDetail def={def} navigate={navigate} />;
+  if (def) return <IndexDetail def={def} />;
 
   // Index list, grouped by the first monitoring panel each index belongs to.
   const groups = new Map<string, IndexDef[]>();

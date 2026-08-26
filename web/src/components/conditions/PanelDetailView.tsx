@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Result } from '../../types';
 import { INDEX_DEFS, MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
 import { COMPUTED_LOINCS, INDEX_LOINCS, testLoincs, type Observation } from './markers';
-import type { Route } from './routing';
-import { pressable, visibleDatesOf } from './ui';
+import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { ObservationTable, IndexTable } from './ResultTables';
 import type { ResultEntry } from './resultsLookup';
@@ -20,7 +19,9 @@ export function PanelDetailView({
   onSelect,
   onOpenPopup,
   onOpenIndexPopup,
-  navigate,
+  selectedCell,
+  onSelectCell,
+  onOpenResultPopup,
 }: Readonly<{
   name: string;
   tests: Observation[];
@@ -31,7 +32,9 @@ export function PanelDetailView({
   onSelect: (loinc: string) => void;
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
-  navigate: (r: Route) => void;
+  selectedCell: SelectedCell;
+  onSelectCell: (loinc: string, date: string) => void;
+  onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
 
@@ -63,21 +66,13 @@ export function PanelDetailView({
     selectedLoinc,
     onSelect,
     onOpenPopup,
+    selectedCell,
+    onSelectCell,
+    onOpenResultPopup,
   };
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#999', marginBottom: 20 }}>
-        <span {...pressable(() => navigate({ view: 'panels' }))} style={{ color: '#1971c2', cursor: 'pointer' }}>
-          Monitoring Panels
-        </span>
-        <span>›</span>
-        <span {...pressable(() => setDetailTab('analysis'))} style={{ color: '#1971c2', cursor: 'pointer' }}>
-          {name}
-        </span>
-        <span>›</span>
-        <span>{detailTab === 'analysis' ? 'Analysis' : "What's in range"}</span>
-      </div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>{name}</h1>
       <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
         {(['analysis', 'in-range'] as const).map((tab) => (
@@ -117,6 +112,8 @@ export function PanelDetailView({
                       selectedLoinc={selectedLoinc}
                       onSelect={onSelect}
                       onOpenPopup={onOpenIndexPopup}
+                      selectedCell={selectedCell}
+                      onSelectCell={onSelectCell}
                     />
                   )}
                 </div>

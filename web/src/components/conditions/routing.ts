@@ -9,10 +9,10 @@ export type Route =
   | { view: 'profile' };
 
 export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'profile'; label: string }[] = [
-  { view: 'reference', label: 'Reference Book' },
+  { view: 'profile', label: 'Profile' },
   { view: 'panels', label: 'Monitoring Panels' },
   { view: 'all', label: 'All Observations' },
-  { view: 'profile', label: 'Profile' },
+  { view: 'reference', label: 'Reference Book' },
 ];
 
 export function routeToHash(route: Route): string {

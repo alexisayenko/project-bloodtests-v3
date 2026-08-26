@@ -37,6 +37,6 @@ describe('routeToHash ↔ hashToRoute', () => {
 
 describe('NAV_ITEMS', () => {
   it('lists the four top-level sections in order', () => {
-    expect(NAV_ITEMS.map((i) => i.view)).toEqual(['reference', 'panels', 'all', 'profile']);
+    expect(NAV_ITEMS.map((i) => i.view)).toEqual(['profile', 'panels', 'all', 'reference']);
   });
 });

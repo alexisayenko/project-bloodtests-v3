@@ -1,8 +1,8 @@
 import type { Result } from '../../types';
 import { isOutOfRange } from '../../utils/format';
 
-/** One uploaded result together with the session date it came from. */
-export type ResultEntry = { loinc: string; date: string; result: Result };
+/** One uploaded result together with the session date and lab it came from. */
+export type ResultEntry = { loinc: string; date: string; place: string; result: Result };
 
 /** Latest result per LOINC: { loinc: { result, date } }. */
 export type LatestByLoinc = Record<string, { result: Result; date: string }>;

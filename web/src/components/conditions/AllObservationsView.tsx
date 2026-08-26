@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { Analysis } from '../../types';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, type Observation } from './markers';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
-import { visibleDatesOf } from './ui';
+import { visibleDatesOf, type SelectedCell } from './ui';
 import { ObservationTable } from './ResultTables';
 import type { ResultEntry } from './resultsLookup';
 
@@ -35,6 +35,9 @@ export function AllObservationsView({
   selectedLoinc,
   onSelect,
   onOpenPopup,
+  selectedCell,
+  onSelectCell,
+  onOpenResultPopup,
 }: Readonly<{
   allResults: ResultEntry[];
   analysesCatalog: Record<string, Analysis>;
@@ -42,6 +45,9 @@ export function AllObservationsView({
   selectedLoinc: string | null;
   onSelect: (loinc: string) => void;
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
+  selectedCell: SelectedCell;
+  onSelectCell: (loinc: string, date: string) => void;
+  onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
 }>) {
   const rows = useMemo(() => buildRows(allResults, analysesCatalog), [allResults, analysesCatalog]);
   const sortedDates = useMemo(
@@ -70,6 +76,9 @@ export function AllObservationsView({
             selectedLoinc={selectedLoinc}
             onSelect={onSelect}
             onOpenPopup={onOpenPopup}
+            selectedCell={selectedCell}
+            onSelectCell={onSelectCell}
+            onOpenResultPopup={onOpenResultPopup}
             preferRaw
           />
         </>

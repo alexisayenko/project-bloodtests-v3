@@ -1,7 +1,7 @@
 import { fmtNum, isOutOfRange } from '../../utils/format';
 import { SI_US_UNIT, computeIndex, toUnit, zone, type IndexDef } from '../../data/computedIndices';
 import { LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
-import { ZONE_BG, SELECTED_ZONE_BG, formatMonthYear, pressable, cellBg } from './ui';
+import { ZONE_BG, SELECTED_ZONE_BG, formatMonthYear, pressable, cellBg, isCellArmed, type SelectedCell } from './ui';
 import { hasReference, type ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
 
@@ -42,13 +42,18 @@ export type ObservationTableProps = {
   selectedLoinc: string | null;
   onSelect: (loinc: string) => void;
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
+  /** Which single (row, date) data cell is armed for a second click to open. */
+  selectedCell: SelectedCell;
+  onSelectCell: (loinc: string, date: string) => void;
+  /** Second click on an already-armed cell: open the result popup for that specific value. */
+  onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   /** Show the lab's raw string (qualifiers like "<0.1") when no unit conversion applies. */
   preferRaw?: boolean;
 };
 
 /** One observation row's cells across the visible dates. */
 function ObservationCells({
-  test, visibleDates, allResults, unitSystem, selected, onSelect, preferRaw,
+  test, visibleDates, allResults, unitSystem, selected, selectedCell, onSelect, onSelectCell, onOpenResultPopup, preferRaw,
 }: Readonly<Omit<ObservationTableProps, 'label' | 'rows' | 'selectedLoinc' | 'onOpenPopup'> & { test: Observation; selected: boolean }>) {
   const marker = LOINC_TO_MARKER[test.loinc];
   const siUsUnit = marker ? SI_US_UNIT[marker] : undefined;
@@ -57,9 +62,18 @@ function ObservationCells({
     <>
       {visibleDates.map((date) => {
         const match = allResults.find((r) => r.date === date && rowLoincs.includes(r.loinc)) ?? null;
+        const armed = isCellArmed(selectedCell, test.loinc, date);
+        const handleClick = (e: { currentTarget: HTMLElement }) => {
+          if (armed && match) {
+            onOpenResultPopup(test, match, e);
+          } else {
+            onSelect(test.loinc);
+            onSelectCell(test.loinc, date);
+          }
+        };
         if (!match) {
           return (
-            <td key={date} {...pressable(() => onSelect(test.loinc))} style={td}>
+            <td key={date} {...pressable(handleClick)} style={td}>
               –
             </td>
           );
@@ -73,7 +87,7 @@ function ObservationCells({
             : match.result.value;
         const text = !siUsUnit && preferRaw ? match.result.rawValue || fmtNum(match.result.value) : fmtNum(converted);
         return (
-          <td key={date} {...pressable(() => onSelect(test.loinc))} style={{ ...td, background: bg }}>
+          <td key={date} {...pressable(handleClick)} style={{ ...td, background: bg }}>
             {text}
           </td>
         );
@@ -117,7 +131,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
 }
 
 export function IndexTable({
-  defs, visibleDates, resultsByDate, selectedLoinc, onSelect, onOpenPopup,
+  defs, visibleDates, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell,
 }: Readonly<{
   defs: IndexDef[];
   visibleDates: string[];
@@ -125,6 +139,9 @@ export function IndexTable({
   selectedLoinc: string | null;
   onSelect: (key: string) => void;
   onOpenPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
+  /** Which single (index, date) data cell is armed for a second click to open. */
+  selectedCell: SelectedCell;
+  onSelectCell: (key: string, date: string) => void;
 }>) {
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -147,16 +164,25 @@ export function IndexTable({
                 </td>
                 {visibleDates.map((date) => {
                   const value = computeIndex(def, resultsByDate[date] ?? {});
+                  const armed = isCellArmed(selectedCell, def.key, date);
+                  const handleClick = (e: { currentTarget: HTMLElement }) => {
+                    if (armed) {
+                      onOpenPopup(def, e);
+                    } else {
+                      onSelect(def.key);
+                      onSelectCell(def.key, date);
+                    }
+                  };
                   if (value == null) {
                     return (
-                      <td key={date} {...pressable(() => onSelect(def.key))} style={td}>
+                      <td key={date} {...pressable(handleClick)} style={td}>
                         –
                       </td>
                     );
                   }
                   const z = zone(value, def.cut[0], def.cut[1], def.hi);
                   return (
-                    <td key={date} {...pressable(() => onSelect(def.key))} style={{ ...td, background: selected ? SELECTED_ZONE_BG[z] : ZONE_BG[z] }}>
+                    <td key={date} {...pressable(handleClick)} style={{ ...td, background: selected ? SELECTED_ZONE_BG[z] : ZONE_BG[z] }}>
                       {fmtNum(value)}
                     </td>
                   );

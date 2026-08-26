@@ -13,11 +13,9 @@ export const ZONE_BG = { ok: '#e6f4ea', warn: '#fff4e0', bad: '#fdecea' } as con
 // Selected-row variants, blended with the row-selection blue (#eaf3fb).
 export const SELECTED_ZONE_BG = { ok: '#dbecf0', warn: '#e7ecea', bad: '#e6e8f0' } as const;
 
-export const BADGE_WIDTH = 84;
-export const BADGE_GAP = 12;
 export const PANEL_PADDING = 20;
 export const PANEL_GAP = 24;
-export const PANEL_WIDTH = BADGE_WIDTH * 3 + BADGE_GAP * 2 + PANEL_PADDING * 2;
+export const PANEL_WIDTH = 316;
 
 export const POPUP_WIDTH = 260;
 export const INDEX_POPUP_WIDTH = 380;
@@ -78,6 +76,16 @@ export function cellBg(hasRef: boolean, outOfRange: boolean, selected: boolean):
   if (!hasRef) return selected ? '#eaf3fb' : 'transparent';
   if (outOfRange) return selected ? '#e6e8f0' : '#fdecea';
   return selected ? '#dbecf0' : '#e6f4ea';
+}
+
+// A cell-level selection: which one data cell (row identity + date) is
+// "armed" for the click-to-select-then-click-to-open interaction, distinct
+// from the row-level `selectedLoinc` that drives the row highlight.
+export type SelectedCell = { loinc: string; date: string } | null;
+
+/** Whether the given (row identity, date) cell is the currently armed one. */
+export function isCellArmed(selectedCell: SelectedCell, loinc: string, date: string): boolean {
+  return selectedCell?.loinc === loinc && selectedCell?.date === date;
 }
 
 /** The date columns to show, applying the sampling limit and column order. */
