@@ -8,6 +8,6 @@
 	"workers_dev": true,
 	"preview_urls": true,
 	"routes": [
-		{ "pattern": "blood.isayenko.org", "custom_domain": true }
+		{ "pattern": "blood.isayenko.net", "custom_domain": true }
 	]
 }
