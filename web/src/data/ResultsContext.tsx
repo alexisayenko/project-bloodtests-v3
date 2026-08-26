@@ -10,6 +10,7 @@ import {
 } from './sharedLink';
 import { RESULTS_STORAGE_KEY as STORAGE_KEY } from './resultsStorage';
 import { importResults } from './importResults';
+import { loadStoredSharedMeta, storeSharedMeta, type SharedMeta } from './sharedMeta';
 
 // Dev-only seed: web/dev-data/*.json is served exclusively by vite.config.ts's
 // dev-only plugin (never present in a production build). It's a personal
@@ -56,6 +57,7 @@ interface ResultsContextType {
   loading: boolean;
   error: string | null;
   sharedLinkError: string | null;
+  sharedMeta: SharedMeta | null;
   uploadFile: (file: File) => Promise<void>;
   loadGenerated: (groups: ResultGroup[]) => void;
   loadGroupItems: (sessionId: string) => Promise<Result[]>;
@@ -79,6 +81,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   const [loading, setLoading] = useState(() => import.meta.env.DEV && sessions.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [sharedLinkError, setSharedLinkError] = useState<string | null>(null);
+  const [sharedMeta, setSharedMeta] = useState<SharedMeta | null>(loadStoredSharedMeta);
 
   useEffect(() => {
     if (!loading) return;
@@ -107,8 +110,9 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     });
   }, []);
 
-  // Read-only share link: ?data=<guid> pulls /d/<guid>.json through the same
-  // parse+replace path as an upload, so it persists and works offline afterwards.
+  // Read-only share link: ?data=<guid> pulls /d/<guid>.data.json through the
+  // same parse+replace path as an upload, so it persists and works offline
+  // afterwards, plus an optional /d/<guid>.meta.json presentation config.
   useEffect(() => {
     const guid = readSharedDataGuid(window.location.search);
     if (!guid) return;
@@ -122,10 +126,14 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     // mount/unmount/mount cycle can't drop an already-fetched result.
     let cancelled = false;
     fetchSharedDataOnce(guid)
-      .then((json) => {
+      .then(({ data, meta }) => {
         if (!isAlreadyImported(guid)) {
-          setSessions(importResults(json));
+          setSessions(importResults(data));
           markImported(guid);
+        }
+        if (meta) {
+          storeSharedMeta(meta);
+          setSharedMeta(meta);
         }
         stripDataParam();
       })
@@ -178,8 +186,8 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   const value = useMemo(
-    () => ({ sessions, hasData: sessions.length > 0, loading, error, sharedLinkError, uploadFile, loadGenerated, loadGroupItems, clearData }),
-    [sessions, loading, error, sharedLinkError, uploadFile, loadGenerated, loadGroupItems, clearData]
+    () => ({ sessions, hasData: sessions.length > 0, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, clearData }),
+    [sessions, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, clearData]
   );
 
   return (

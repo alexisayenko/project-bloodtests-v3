@@ -21,8 +21,14 @@ monetization.]
 React 19 + TypeScript + Vite, in `web/`. No backend — panel/analyte
 reference data ships as static JSON (`web/public/data/`), uploaded lab
 results are parsed client-side and kept in `localStorage`. A read-only
-share link, `/?data=<guid>`, fetches `/d/<guid>.json` and imports it
-through the same parse path as an upload, then strips the param; the
+share link, `/?data=<guid>`, fetches `/d/<guid>.data.json` and imports it
+through the same parse path as an upload, then strips the param; in
+parallel it fetches an optional `/d/<guid>.meta.json` per-link
+presentation config (`showPanels` — an allowlist of panel display names
+limiting the Monitoring Panels grid, All Observations always showing
+everything — plus `settings`, which seeds the shared table controls only
+when the visitor has none stored yet), where a missing, 404 or malformed
+meta simply means "no meta" and never fails the import; the
 payloads are real health data and are gitignored (`web/public/d/*.json`)
 because this repo is public, so a deploy needs them copied in locally
 first. `web/public/_headers` serves `/d/*` as

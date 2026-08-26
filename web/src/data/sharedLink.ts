@@ -1,4 +1,7 @@
 import { hasStoredResults } from './resultsStorage';
+import { parseSharedMeta, type SharedMeta } from './sharedMeta';
+
+export type SharedPayload = { data: unknown; meta: SharedMeta | null };
 
 const GUID_RE = /^[a-f0-9-]{36}$/i;
 
@@ -37,12 +40,12 @@ export function markImported(guid: string): void {
 // StrictMode synthetic remount re-reads the same guid; this set makes the
 // second pass reuse the first pass's in-flight promise instead of starting a
 // second fetch (and, more importantly, instead of losing the first one).
-const inFlight = new Map<string, Promise<unknown>>();
+const inFlight = new Map<string, Promise<SharedPayload>>();
 
-export function fetchSharedDataOnce(guid: string): Promise<unknown> {
+export function fetchSharedDataOnce(guid: string): Promise<SharedPayload> {
   const existing = inFlight.get(guid);
   if (existing) return existing;
-  const p = fetchSharedData(guid);
+  const p = fetchSharedPayload(guid);
   inFlight.set(guid, p);
   return p;
 }
@@ -59,7 +62,24 @@ export function stripDataParam(): void {
 }
 
 export async function fetchSharedData(guid: string): Promise<unknown> {
-  const res = await fetch(`/d/${guid}.json`);
+  const res = await fetch(`/d/${guid}.data.json`);
   if (!res.ok) throw new Error(`Shared data not available (${res.status}).`);
   return res.json();
+}
+
+// A per-link presentation config. Optional in every sense: a missing file, a
+// non-200, or unparsable JSON all mean "no meta" and never fail the import.
+export async function fetchSharedMeta(guid: string): Promise<SharedMeta | null> {
+  try {
+    const res = await fetch(`/d/${guid}.meta.json`);
+    if (!res.ok) return null;
+    return parseSharedMeta(await res.json());
+  } catch {
+    return null;
+  }
+}
+
+async function fetchSharedPayload(guid: string): Promise<SharedPayload> {
+  const [data, meta] = await Promise.all([fetchSharedData(guid), fetchSharedMeta(guid)]);
+  return { data, meta };
 }

@@ -6,7 +6,7 @@ import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
 import { parseUploadedResults } from '../src/data/parseUpload';
 
 const GUID = '85269e21-e47e-433d-9696-db5aaede4f18';
-const dataFile = fileURLToPath(new URL(`../public/d/${GUID}.json`, import.meta.url));
+const dataFile = fileURLToPath(new URL(`../public/d/${GUID}.data.json`, import.meta.url));
 
 describe('readSharedDataGuid', () => {
   it('accepts a valid guid', () => {

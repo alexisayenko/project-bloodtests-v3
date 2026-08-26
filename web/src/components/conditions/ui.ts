@@ -58,6 +58,20 @@ export function loadAnalysisSettings(): AnalysisSettings {
   return { ...DEFAULT_ANALYSIS_SETTINGS };
 }
 
+/** Whether the visitor already made their own choice -- share-link settings only seed when they haven't. */
+export function hasStoredAnalysisSettings(): boolean {
+  try {
+    return localStorage.getItem(ANALYSIS_SETTINGS_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/** Share-link settings applied over the defaults: a starting point, never an override. */
+export function seedAnalysisSettings(seed: Partial<AnalysisSettings> | undefined): AnalysisSettings {
+  return { ...DEFAULT_ANALYSIS_SETTINGS, ...(seed ?? {}) };
+}
+
 /**
  * Props that make a styled non-native element (div/span/td used as a control)
  * keyboard-activatable: role, tab stop, and Enter/Space triggering the same

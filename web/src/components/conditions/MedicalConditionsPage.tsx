@@ -6,7 +6,8 @@ import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
 import { routeToHash, hashToRoute, type Route } from './routing';
 import { ReferenceBookPage } from './ReferenceBookPage';
-import { POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, loadAnalysisSettings, popupPosition, type SelectedCell } from './ui';
+import { POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, loadAnalysisSettings, hasStoredAnalysisSettings, seedAnalysisSettings, popupPosition, type SelectedCell } from './ui';
+import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { NavBar } from './NavBar';
 import { Popup, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
@@ -19,12 +20,13 @@ import type { ResultEntry } from './resultsLookup';
 // settings and the popup, and renders one view component per section.
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels } = useData();
-  const { sessions, loadGroupItems, loadGenerated, uploadFile, clearData, error: uploadError, sharedLinkError } = useResultsContext();
+  const { sessions, loadGroupItems, loadGenerated, uploadFile, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
   const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
   const [initialSettings] = useState(loadAnalysisSettings);
+  const [hadStoredSettings] = useState(hasStoredAnalysisSettings);
   const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(initialSettings.unitSystem);
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
   const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>(initialSettings.dateOrder);
@@ -38,7 +40,22 @@ export function MedicalConditionsPage() {
     }
   }, [unitSystem, sampleLimit, dateOrder]);
 
+  // A share link's settings seed the controls only for a visitor who has none
+  // of their own stored yet; once they pick anything, that choice is theirs.
+  // Adjusted during render (React's prop-change pattern) rather than in an
+  // effect, so the first paint after the meta arrives already uses the seed.
+  const [seededFrom, setSeededFrom] = useState<typeof sharedMeta>(null);
+  if (!hadStoredSettings && sharedMeta?.settings && sharedMeta !== seededFrom) {
+    const seeded = seedAnalysisSettings(sharedMeta.settings);
+    setSeededFrom(sharedMeta);
+    setUnitSystem(seeded.unitSystem);
+    setSampleLimit(seeded.sampleLimit);
+    setDateOrder(seeded.dateOrder);
+  }
+
   const conditions = useMemo(() => buildConditions(panels, analysesCatalog), [panels, analysesCatalog]);
+  const allowedPanels = panelAllowlist(sharedMeta);
+  const shownConditions = useMemo(() => visiblePanels(conditions, allowedPanels), [conditions, allowedPanels]);
 
   useEffect(() => {
     // The single source of truth for the current route is always the URL, so
@@ -123,7 +140,22 @@ export function MedicalConditionsPage() {
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder };
 
+  const panelsGrid = (
+    <PanelsGridView
+      conditions={shownConditions}
+      latestByLoinc={latestByLoinc}
+      resultsByDate={resultsByDate}
+      onOpenDetail={(name) => navigate({ view: 'panel', name })}
+      onOpenPopup={openPopup}
+      onOpenIndexPopup={openIndexPopup}
+    />
+  );
+
   const view = (() => {
+    // A hash pointing at a panel the link doesn't share falls back to the grid.
+    if (route.view === 'panel' && conditions.length > 0 && !isPanelVisible(route.name, allowedPanels)) {
+      return panelsGrid;
+    }
     switch (route.view) {
       case 'all':
         return (
@@ -174,16 +206,7 @@ export function MedicalConditionsPage() {
           />
         );
       default:
-        return (
-          <PanelsGridView
-            conditions={conditions}
-            latestByLoinc={latestByLoinc}
-            resultsByDate={resultsByDate}
-            onOpenDetail={(name) => navigate({ view: 'panel', name })}
-            onOpenPopup={openPopup}
-            onOpenIndexPopup={openIndexPopup}
-          />
-        );
+        return panelsGrid;
     }
   })();
 
