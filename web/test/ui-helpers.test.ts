@@ -5,6 +5,7 @@ import {
   greenRangeOf,
   isCellArmed,
   loadAnalysisSettings,
+  DEFAULT_ANALYSIS_SETTINGS,
   popupPosition,
   pressable,
   visibleDatesOf,
@@ -121,6 +122,26 @@ describe('popupPosition', () => {
 describe('loadAnalysisSettings', () => {
   it('falls back to defaults when storage is unavailable', () => {
     // node environment: localStorage is undefined → the try/catch default path
-    expect(loadAnalysisSettings()).toEqual({ unitSystem: 'si', sampleLimit: 'all', dateOrder: 'desc' });
+    expect(loadAnalysisSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, dateOrder: 'asc' });
+  });
+
+  it('gives a first-time visitor every default, sampleLimit included', () => {
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+    expect(loadAnalysisSettings()).toEqual(DEFAULT_ANALYSIS_SETTINGS);
+    expect(loadAnalysisSettings().sampleLimit).toBe(5);
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps a stored choice and fills only what is missing', () => {
+    vi.stubGlobal('localStorage', { getItem: () => '{"sampleLimit":"all"}', setItem: () => {} });
+    expect(loadAnalysisSettings()).toEqual({ ...DEFAULT_ANALYSIS_SETTINGS, sampleLimit: 'all' });
+    vi.unstubAllGlobals();
+  });
+
+  it('never hands out the shared defaults object', () => {
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+    loadAnalysisSettings().sampleLimit = 'all';
+    expect(DEFAULT_ANALYSIS_SETTINGS.sampleLimit).toBe(5);
+    vi.unstubAllGlobals();
   });
 });

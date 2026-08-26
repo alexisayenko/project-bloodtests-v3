@@ -46,7 +46,7 @@ export function greenRangeOf(def: IndexDef): string {
 // state, not per-panel) -- persisted here so they also survive a page refresh.
 export const ANALYSIS_SETTINGS_KEY = 'bloodtests_analysis_settings_v1';
 export type AnalysisSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all'; dateOrder: 'asc' | 'desc' };
-const DEFAULT_ANALYSIS_SETTINGS: AnalysisSettings = { unitSystem: 'si', sampleLimit: 'all', dateOrder: 'desc' };
+export const DEFAULT_ANALYSIS_SETTINGS: AnalysisSettings = { unitSystem: 'si', sampleLimit: 5, dateOrder: 'asc' };
 
 export function loadAnalysisSettings(): AnalysisSettings {
   try {
@@ -55,7 +55,7 @@ export function loadAnalysisSettings(): AnalysisSettings {
   } catch {
     // corrupt/incompatible local storage -- ignore and start fresh
   }
-  return DEFAULT_ANALYSIS_SETTINGS;
+  return { ...DEFAULT_ANALYSIS_SETTINGS };
 }
 
 /**

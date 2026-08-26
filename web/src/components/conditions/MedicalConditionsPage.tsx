@@ -24,9 +24,10 @@ export function MedicalConditionsPage() {
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
   const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
-  const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(() => loadAnalysisSettings().unitSystem);
-  const [sampleLimit, setSampleLimit] = useState<number | 'all'>(() => loadAnalysisSettings().sampleLimit);
-  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>(() => loadAnalysisSettings().dateOrder);
+  const [initialSettings] = useState(loadAnalysisSettings);
+  const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(initialSettings.unitSystem);
+  const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
+  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>(initialSettings.dateOrder);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
 
   useEffect(() => {
