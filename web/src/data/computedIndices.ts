@@ -341,6 +341,19 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (m['T'] != null && m['SHBG'] != null ? calculatedFreeTestosterone(m['T']!, m['SHBG']!, m['ALB']) : null),
   },
   {
+    key: 'fai', name: 'Free androgen index', nameCompact: 'FAI', panels: ['Hypogonadism'],
+    formula: 'T / SHBG × 100 (both nmol/L), %', cut: [35, 24], hi: true, unit: '%', needs: ['T', 'SHBG'],
+    inputUnits: { T: 'nmol/L', SHBG: 'nmol/L' }, level: 'heuristic', loinc: '24125-7',
+    meaning: 'A simpler, older alternative to the calculated free testosterone (cFT) above — both estimate the same thing (bioavailable androgen) from the same two inputs, total T and SHBG, but FAI is just their raw ratio ×100, without cFT\'s equilibrium-binding math. Because SHBG sits directly in the denominator, FAI is more sensitive to SHBG level itself than cFT is — a shift in SHBG (from thyroid status, obesity, aging, liver disease…) moves FAI even when true free T hasn\'t changed. Guide, adult men: >35% good/within reference range · 24–35% borderline-low · <24% low. Bands anchored to a clinical lab\'s own male reference intervals for ages 20–49 (35.0–92.6%) and ≥50 (24.3–72.1%) — this app has no age profile, so one fixed pair stands in for the age-stratified ranges the source actually reports.',
+    consensus: 'The Endocrine Society favors calculated free T over simple ratios like FAI when free T is needed — see cFT\'s consensus note above. Vermeulen\'s own validation paper (the same paper cFT\'s equation comes from) found the FAI/AFTC ratio varies with SHBG level, concluding FAI "is not a reliable index of bioavailable T." Kept here mainly because some labs and older literature still report it directly; when FAI and cFT disagree, trust cFT.',
+    evidenceLevel: 'heuristic',
+    references: [
+      { organization: "Journal of Clinical Endocrinology & Metabolism (Vermeulen A, Verdonck L, Kaufman JM)", document: "A critical evaluation of simple methods for the estimation of free testosterone in serum", year: 1999, url: "https://pubmed.ncbi.nlm.nih.gov/10523012/", doi: "10.1210/jcem.84.10.6079", quote: "...the free androgen index (FAI = the ratio 100T/iSHBG)... Also, the FAI/AFTC ratio varied as a function of the SHBG levels, and hence, neither aFT nor FAI is a reliable index of bioavailable T." },
+      { organization: "London Health Sciences Centre / St. Joseph's Health Care London (Pathology and Laboratory Medicine)", document: "Free Androgen Index and Calculated Free and Bioavailable Testosterone, Plasma/Serum — Lab Test Info Guide", url: "https://www.lhsc.on.ca/lab-test-info-guide/free-androgen-index-and-calculated-free-and-bioavailable-testosterone-plasma", doi: null, quote: "FAI = total testosterone (nmol/L)/SHBG (nmol/L) expressed as a percentage. Male reference range: 20–<50 years 35.0–92.6%; ≥50 years 24.3–72.1%." },
+    ],
+    fn: (m) => (has(m, 'T', 'SHBG') ? (m['T']! / m['SHBG']!) * 100 : null),
+  },
+  {
     key: 'tlh', name: 'T / LH ratio', nameCompact: 'T/LH', panels: ['Hypogonadism'],
     formula: 'T(ng/dL) / LH(mIU/mL)', cut: [100, 50], hi: true, needs: ['T', 'LH'],
     inputUnits: { T: 'ng/dL' }, level: 'heuristic',

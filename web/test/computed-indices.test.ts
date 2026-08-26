@@ -76,6 +76,7 @@ const GOLD: Record<string, number> = {
   homair: 1.874669,
   homab: 90.267715,
   cft: 93.163378,
+  fai: 43.3375,
   tlh: 100,
   te2: 16.666667,
   dhtt: 8,
@@ -142,6 +143,26 @@ describe('calculatedFreeTestosterone via the cft index (Vermeulen golden master)
     const ft = cft.fn(fixture(446, 24.9, 4.3))!;
     const pct = (ft / 10 / 446) * 100;
     expect(pct).toBeCloseTo(2.41, 1);
+  });
+});
+
+describe('fai (free androgen index)', () => {
+  const fai = INDEX_DEFS.find((d) => d.key === 'fai')!;
+
+  it('known pair: T 20 nmol/L, SHBG 40 nmol/L -> FAI 50', () => {
+    expect(fai.fn({ T: 20, SHBG: 40 })).toBeCloseTo(50, 5);
+  });
+
+  it('known pair: T 10 nmol/L, SHBG 25 nmol/L -> FAI 40', () => {
+    expect(fai.fn({ T: 10, SHBG: 25 })).toBeCloseTo(40, 5);
+  });
+
+  it('returns null when SHBG is missing', () => {
+    expect(fai.fn({ T: 20 })).toBeNull();
+  });
+
+  it('returns null when T is missing', () => {
+    expect(fai.fn({ SHBG: 40 })).toBeNull();
   });
 });
 
