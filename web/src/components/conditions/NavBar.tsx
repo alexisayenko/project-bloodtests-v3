@@ -3,7 +3,7 @@ import { pressable } from './ui';
 
 export function NavBar({ route, navigate }: Readonly<{ route: Route; navigate: (r: Route) => void }>) {
   return (
-    <div style={{ display: 'flex', gap: 32, marginBottom: 32, borderBottom: '1.5px solid #eee' }}>
+    <div className="mc-nav">
       {NAV_ITEMS.map((item) => {
         const active = route.view === item.view || (item.view === 'panels' && route.view === 'panel');
         return (

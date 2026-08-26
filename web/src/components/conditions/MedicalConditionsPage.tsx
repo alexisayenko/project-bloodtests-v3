@@ -211,7 +211,7 @@ export function MedicalConditionsPage() {
   })();
 
   return (
-    <div style={{ padding: '56px 48px' }}>
+    <div className="mc-page">
       <NavBar route={route} navigate={navigate} />
       {sharedLinkError && (
         <div style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>{sharedLinkError}</div>

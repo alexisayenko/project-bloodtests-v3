@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { INDEX_DEFS, computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
 import type { Result } from '../../types';
 import { INDEX_LOINCS, testLoincs, type Observation } from './markers';
-import { STATUS_STYLES, ZONE_DOT, PANEL_PADDING, PANEL_GAP, PANEL_WIDTH, pressable } from './ui';
+import { STATUS_STYLES, ZONE_DOT, pressable } from './ui';
 import { getStatus, type LatestByLoinc } from './resultsLookup';
 
 export type Condition = { name: string; tests: Observation[] };
@@ -67,18 +67,11 @@ export function PanelsGridView({
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 32 }}>Monitoring Panels</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, ${PANEL_WIDTH}px)`, gap: PANEL_GAP }}>
+      <div className="mc-panels-grid">
         {conditions.map((condition) => {
           const computedForPanel = INDEX_DEFS.filter((d) => d.panels.includes(condition.name));
           return (
-            <div
-              key={condition.name}
-              style={{
-                width: PANEL_WIDTH,
-                padding: PANEL_PADDING,
-                boxSizing: 'border-box',
-              }}
-            >
+            <div key={condition.name} className="mc-panel-card">
               <div
                 {...pressable(() => onOpenDetail(condition.name))}
                 style={{
@@ -97,7 +90,7 @@ export function PanelsGridView({
                 {condition.name}
                 <span style={{ color: '#1971c2', fontWeight: 400 }}>›</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', columnGap: 8, rowGap: 4 }}>
+              <div className="mc-panel-dots">
                 {condition.tests
                   .filter((test) => !INDEX_LOINCS.has(test.loinc))
                   .map((test) => {
@@ -107,15 +100,8 @@ export function PanelsGridView({
               </div>
               {computedForPanel.length > 0 && (
                 <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    columnGap: 8,
-                    rowGap: 4,
-                    marginTop: 12,
-                    paddingTop: 12,
-                    borderTop: '1px solid #cfe2f3',
-                  }}
+                  className="mc-panel-dots"
+                  style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #cfe2f3' }}
                 >
                   {computedForPanel.map((def) => {
                     const z = latestZone(def, datesDesc, resultsByDate);
