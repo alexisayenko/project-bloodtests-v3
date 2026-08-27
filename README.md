@@ -1,16 +1,18 @@
 # project-bloodtests-v3
 
-LOINC-coded blood-test monitoring app. Upload a lab-results JSON
-export; it's visualized client-side, grouped into monitoring panels
-(conditions/organ systems).
+LOINC-coded blood-test monitoring app. Three-step workflow: generate lab-results JSON from a chatbot → upload and edit locally → export. Visualized client-side, grouped into monitoring panels (conditions/organ systems).
 
 ## Overview
 
-React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON
-reference data (`web/public/data/`), uploaded results parsed
-client-side and kept in `localStorage`. Deploys as a Cloudflare
-Worker to `blood.isayenko.net`. See [`CLAUDE.md`](CLAUDE.md) for the
-fast-path summary.
+React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker to `blood.isayenko.net`. All data stays local — nothing leaves your device except through optional share links.
+
+**Workflow:**
+
+1. **Build JSON:** Generate v3-format lab data (chatbot or manual).
+2. **Upload & Edit:** Import into app; validate; refine in Diagnostic Reports view.
+3. **Export:** Download updated v3 envelope with new `contentHash`.
+
+See [`CLAUDE.md`](CLAUDE.md) for fast-path summary, [`docs/tech/README.md#upload--edit-workflow`](docs/tech/README.md#upload--edit-workflow) for implementation details.
 
 ## Structure
 
@@ -90,6 +92,14 @@ decisions into `archive/docs/` — code in archive rots; docs
 survive.
 
 `archive/` doesn't exist by default. Create on first retirement.
+
+## Key implementation details
+
+- **Upload:** v3 envelope JSON (schema version 1) with DiagnosticReport array. Parser in `web/src/data/parseUpload.ts`.
+- **Export:** v3 envelope with `contentHash` for change detection. See [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md).
+- **Validation:** Two tiers — errors block other routes, warnings are informational. See [`docs/tech/README.md#upload--edit-workflow`](docs/tech/README.md#upload--edit-workflow).
+- **LOINC:** Matching is required; names are provenance only. Phase 4 will suggest codes. Phase 3 allows manual entry during edit.
+- **Terminology:** Names borrowed from FHIR (DiagnosticReport, Observation) for alignment but data model is simplified; see [ADR-0002](docs/tech/decisions/adr-0002-borrow-fhir-shapes-not-fhir.md).
 
 ## Documentation
 

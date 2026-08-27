@@ -2,7 +2,7 @@
 
 The wrapper of a lab-data interchange file: the JSON object that carries a set of lab reports for one person between systems.
 
-> **Status: under design.** Nothing implements this envelope yet. The current app accepts the shapes described in `web/src/data/parseUpload.ts`.
+> **Status: implemented.** The v3 envelope is fully supported in upload and export. Parser accepts v3 JSON; export writes v3 envelope with `contentHash`. See `web/src/data/parseUpload.ts` and export code for implementation details.
 
 ## Shape
 
@@ -20,6 +20,8 @@ The wrapper of a lab-data interchange file: the JSON object that carries a set o
 ```
 
 Eight keys: `schema` and `diagnosticReports` are required, `generatedAt`, `contentHash`, `subject`, `sex`, `birthYear` and `notes` are optional. This page specifies the envelope only.
+
+**Envelope-level fields.** `sex` and `birthYear` are optional at the envelope level, not per-report. They act as defaults: when present, they apply to all DiagnosticReports in the file unless overridden per-observation. When absent, a reader falls back to ranges printed on the report itself.
 
 The split follows from who writes the file: a hand-written or hand-edited file must be valid without computing a hash, and the two provenance fields plus `subject`, `sex` and `birthYear` are conveniences the converter fills in, not things a reader needs to function.
 
