@@ -2,7 +2,7 @@
 
 The document a lab issues from one blood sampling (draw) — one date, one lab, a set of entries. What the product actually receives and parses; it never sees the draw independently.
 
-**Terminology note:** This page uses the FHIR term *diagnostic report* rather than "lab report". They mean the same thing: one report from one lab, covering one sample. FHIR's `DiagnosticReport` is a well-established structure in healthcare IT; borrowing the term aligns our data model with that convention. See [ADR-0002](../tech/decisions/adr-0002-borrow-fhir-shapes-not-fhir.md) for why we borrow terminology and shapes selectively, not the full spec.
+**Terminology note:** This page uses the FHIR term *diagnostic report* rather than "lab report". They mean the same thing: one report from one lab, covering one sample. FHIR's `DiagnosticReport` is a well-established structure in healthcare IT; borrowing the term aligns our data model with that convention. See [ADR-0002](../../tech/decisions/adr-0002-borrow-fhir-shapes-not-fhir.md) for why we borrow terminology and shapes selectively, not the full spec.
 
 ## Identity
 
@@ -27,7 +27,7 @@ A diagnostic report is structured as:
 
 Each observation is one line in the report:
 
-- **LOINC** — which test was measured. The name/identity is looked up from the static catalog (see [observation](observation.md)); the report itself only needs to carry the LOINC code.
+- **LOINC** — which test was measured. All matching is by LOINC; the report also carries the lab-printed test name, but only as provenance (see [observation](observation.md) and the interchange format's [`name`](../../tech/interchange-format.md#name)).
 - **Value** — the numeric or non-numeric result produced by the lab's assay.
 - **Unit** — the unit it was reported in (units vary by assay, so they travel with the observation, not globally).
 - **Reference range** — the lab's own range for that assay, not a fixed universal range.
@@ -40,7 +40,7 @@ Each observation is one line in the report:
 
 ## Where it lives
 
-- **Interchange format:** `DiagnosticReport` shape in [`docs/tech/interchange-format.md`](../tech/interchange-format.md#diagnosticreport)
+- **Interchange format:** `DiagnosticReport` shape in [`docs/tech/interchange-format.md`](../../tech/interchange-format.md#diagnosticreport)
 - **Code:** `DiagnosticReport`/`Result` in `web/src/types/index.ts` (`date`, `place`, `items: Result[]`), populated via upload parsing (`parseUpload.ts`) and held in `ResultsContext`
 
 Naming in both places (`DiagnosticReport`, `Result` + `Observation`) is aligned to FHIR terminology, though the data model is deliberately simplified (not a full FHIR import).

@@ -2,7 +2,10 @@
 
 The wrapper of a lab-data interchange file: the JSON object that carries a set of lab reports for one person between systems.
 
-> **Status: implemented.** The v3 envelope is fully supported in upload and export. Parser accepts v3 JSON; export writes v3 envelope with `contentHash`. See `web/src/data/parseUpload.ts` and export code for implementation details.
+> **Status: partially implemented.** This page is the full spec; the app implements a subset of it.
+>
+> - **Upload** (`web/src/data/parseUpload.ts`) accepts the v3 envelope but reads only `schema` and `diagnosticReports`. Per report it reads `lab`, `collectedAt` (date part only) and `observations`; per observation `loinc`, `name`, `value`, `comparator`, `rawValue`, `unit`, `method`, and `referenceRanges` — flattened to a single min/max pair plus display text. Still **ignored on upload**: `generatedAt`, `contentHash` (never verified), `subject`, `sex`, `birthYear`, `notes`; per-report `issuedAt`, `identifiers`, `specimen`; per-observation `interpretation` and `specimen`; range `label`/`appliesTo`/`ageLow`/`ageHigh` (kept only as display text, not used for range selection).
+> - **Export** (`web/src/utils/exportData.ts`) writes `schema`, `contentHash` (sha256 of `JSON.stringify(diagnosticReports)`, per [ADR-0001](decisions/adr-0001-content-hash-plain-stringify.md)) and `diagnosticReports` — per report `lab`, `collectedAt` (stored date at `T00:00:00Z`), `observations`; per observation `loinc`, `name`, and when present `value`, `rawValue`, `unit`, `method`, and a single `{ low, high, text }` reference range. `sex`/`birthYear` are supported by the envelope builder but no UI passes them yet. **Never written yet**: `generatedAt`, `subject`, `notes`; per-report `issuedAt`/`identifiers`/`specimen`; per-observation `comparator`, `interpretation`, `specimen`, and multi-band/`label`/`appliesTo`/age-banded ranges.
 
 ## Shape
 
@@ -89,7 +92,7 @@ Scope is the **envelope only** for now. Per-report and per-observation notes are
 
 ## `diagnosticReports`
 
-**Required.** Array of DiagnosticReport objects, specified below — see [lab report](../product/concepts/lab-report.md) for the product-level noun.
+**Required.** Array of DiagnosticReport objects, specified below — see [diagnostic report](../product/concepts/lab-report.md) for the product-level noun.
 
 The [Observation](../product/concepts/observation.md) shape inside a report is specified below.
 

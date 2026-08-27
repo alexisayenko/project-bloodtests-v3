@@ -38,7 +38,8 @@ a Cloudflare Worker (static assets) to `blood.isayenko.net` via
 The app shell is `web/src/components/conditions/MedicalConditionsPage.tsx`
 (route + results + shared settings + popup state); each section renders
 its own sibling view component (`PanelsGridView` / `PanelDetailView` /
-`AllObservationsView` / `ProfileView` / `ReferenceBookPage`, plus shared
+`AllObservationsView` / `DiagnosticReportsView` /
+`DiagnosticReportDetailView` / `ProfileView` / `ReferenceBookPage`, plus shared
 `NavBar` / `ControlsBar` / `ResultTables` / `Popup`), with pure helpers
 in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` and
 `data/generateTestData.ts`. Monitoring Panels grid cards list each
@@ -57,16 +58,33 @@ domain-agnostic uPlot-based charting engine) and driven by the
 `buildExploreModel` adapter in `exploreModel.ts`, mounted via
 `LabExploreView.tsx`; deliberately generic-only (no medication overlays,
 reference-band overrides, or data-quality flagging). Persistent top nav
-across four sections — Get Started (app-description, data-privacy statement and
-evidence-grading note, upload JSON /
-generate synthetic test data / clear; an imported JSON file — uploaded
-or share-link — replaces all stored sessions, while generated test data
-still merges, keyed by session id), Monitoring Panels (the default/entry route), All Observations
-(every uploaded result in one table), Reference Book (Indices
-Descriptions: a page per computed index with formula, v2's full clinical
-prose and cited sources with verbatim quotes; Physiology: HP Axis page
-with v2's homepage-derived feedback-loop cascades) — each its own
-URL hash so browser back/forward works. The original
+across five sections — Get Started (`#profile`: app description,
+data-privacy statement and evidence-grading note, a copyable chatbot
+prompt for building a v3 JSON, "Upload raw JSON" (merges by session id
+and redirects to `#reports`), "Upload JSON" (replaces all stored
+sessions, as a share-link import does), export, generate synthetic test
+data (merges), clear), Diagnostic Reports (`#reports`: table of uploaded
+reports with error/warning dots and an Export JSON button;
+`#reports/<file>` detail allows inline editing of each observation's
+LOINC / value / unit, saved to localStorage via `updateGroup`), All
+Observations (every uploaded result in one table), Monitoring Panels
+(the default/entry route), Reference Book (Indices Descriptions: a page
+per computed index with formula, v2's full clinical prose and cited
+sources with verbatim quotes; Physiology: HP Axis page with v2's
+homepage-derived feedback-loop cascades) — each its own URL hash so
+browser back/forward works. Validation
+(`validateDiagnosticReports.ts`) marks an observation missing LOINC,
+name, value-or-rawValue, or unit as an error and a missing reference
+range as a warning; while errors exist, Monitoring Panels and All
+Observations are disabled in the nav and their routes redirect to
+`#reports` (Get Started and Reference Book stay reachable). Upload
+accepts the v3 interchange envelope (`{ schema: 1, diagnosticReports }`;
+other envelope fields ignored for now) plus v2's canonical-draws and two
+legacy shapes; export (`exportData.ts`) writes a v3 envelope —
+`schema`, `contentHash` (sha256 of the diagnosticReports array), and
+reduced reports — as `blood-tests-export-<yyyymmdd>.json`; see
+`docs/tech/interchange-format.md` for exactly which envelope fields are
+implemented. The original
 upload/panels/results/analytics flow still exists in
 `web/src/components/` but isn't currently wired into `App.tsx` (and is
 excluded from eslint, Sonar, and coverage until it returns or moves to
@@ -74,9 +92,11 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (146 tests: index golden-masters ported
-from v2, upload parsing and import-replace, routing, ui helpers, format
-utils). CI
+Vitest suites in `web/test/` (214 tests across 13 files: index
+golden-masters ported from v2, upload parsing — v3 envelope and v2
+shapes — and import-replace, diagnostic-report validation, export
+envelope, share-link and shared-meta, explore-model, markers, routing,
+ui helpers, format utils). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a
 SonarCloud scan (CI-based, `SONAR_TOKEN` secret; Automatic Analysis is
 off). Coverage metric is scoped to the testable logic —

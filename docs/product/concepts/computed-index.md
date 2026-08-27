@@ -1,6 +1,6 @@
 # Computed index
 
-A ratio or estimate the product derives from one or more observations' results on the same [lab report](lab-report.md) -- not a value any lab measured directly.
+A ratio or estimate the product derives from one or more observations' results on the same [diagnostic report](lab-report.md) -- not a value any lab measured directly.
 
 ## Identity
 

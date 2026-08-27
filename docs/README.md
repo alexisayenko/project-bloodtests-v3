@@ -170,7 +170,7 @@ docs/
 │   └── task-XXXX.md                    # numbered tasks
 ├── tech/                               # entry: tech/README.md
 │   ├── decisions/                      # ADRs (adr-NNNN-<slug>.md)
-│   └── interchange-format.md           # lab-data file envelope (design)
+│   └── interchange-format.md           # lab-data file envelope (spec)
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
 │   ├── performance-guide.md            # end-to-end UX performance

@@ -54,18 +54,24 @@ describe('validateDiagnosticReports', () => {
     expect(issues[0]?.level).toBe('error');
   });
 
-  it('reports error when value is null', () => {
+  it('does not report error when value is null but rawValue is present', () => {
     const groups = [createGroup({ items: [createResult({ value: null })] })];
     const issues = validateDiagnosticReports(groups);
-    expect(issues).toHaveLength(1);
-    expect(issues[0]?.level).toBe('error');
+    expect(issues).toHaveLength(0);
   });
 
-  it('reports error when rawValue is missing', () => {
+  it('does not report error when rawValue is empty but value is present', () => {
     const groups = [createGroup({ items: [createResult({ rawValue: '' })] })];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues).toHaveLength(0);
+  });
+
+  it('reports error when value is null and rawValue is empty', () => {
+    const groups = [createGroup({ items: [createResult({ value: null, rawValue: '' })] })];
     const issues = validateDiagnosticReports(groups);
     expect(issues).toHaveLength(1);
     expect(issues[0]?.level).toBe('error');
+    expect(issues[0]?.message).toContain('result value');
   });
 
   it('reports error when unit is missing', () => {
