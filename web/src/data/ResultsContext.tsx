@@ -12,45 +12,6 @@ import { RESULTS_STORAGE_KEY as STORAGE_KEY } from './resultsStorage';
 import { importResults } from './importResults';
 import { loadStoredSharedMeta, storeSharedMeta, type SharedMeta } from './sharedMeta';
 
-// Dev-only seed: web/dev-data/*.json is served exclusively by vite.config.ts's
-// dev-only plugin (never present in a production build). It's a personal
-// export in a different shape than what uploadFile()/parseUpload.ts accept
-// (each item's value/unit live under `original`, not flat), so it's adapted
-// here rather than widening the real upload parser to a one-off shape. It's
-// only ever held in memory (never localStorage) — a real upload always wins.
-type DevRawItem = {
-  loinc?: string;
-  analysis?: string;
-  symbol?: string;
-  method?: string | null;
-  original?: { value: number | null; rawValue: string; unit: string; refMin?: number | null; refMax?: number | null; refText?: string };
-};
-type DevRawSession = { date: string; labName?: string; sourceFile?: string; items: DevRawItem[] };
-
-function adaptDevData(sessions: DevRawSession[]): DiagnosticReport[] {
-  return sessions
-    .map((s): DiagnosticReport => {
-      const items: Result[] = (s.items || [])
-        .filter((raw) => raw.loinc && raw.original)
-        .map((raw) => ({
-          loinc: raw.loinc!,
-          analysis: raw.analysis || '',
-          symbol: raw.symbol || '',
-          section: '',
-          value: raw.original!.value,
-          rawValue: raw.original!.rawValue || '',
-          valueQualifier: '',
-          unit: raw.original!.unit || '',
-          refText: raw.original!.refText || '',
-          refMin: raw.original!.refMin ?? null,
-          refMax: raw.original!.refMax ?? null,
-          method: raw.method || '',
-        }));
-      return { date: s.date, place: s.labName || '', file: `dev__${s.date}`, items, itemCount: items.length };
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
-}
-
 interface ResultsContextType {
   sessions: DiagnosticReport[];
   hasData: boolean;
@@ -77,26 +38,12 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     }
     return [];
   });
-  // Loading is only ever true while the dev-only seed fetch is in flight —
-  // localStorage loads synchronously in the useState initializer above.
-  const [loading, setLoading] = useState(() => import.meta.env.DEV && sessions.length === 0);
+  // localStorage loads synchronously in the useState initializer above,
+  // so there is nothing to wait for.
+  const loading = false;
   const [error, setError] = useState<string | null>(null);
   const [sharedLinkError, setSharedLinkError] = useState<string | null>(null);
   const [sharedMeta, setSharedMeta] = useState<SharedMeta | null>(loadStoredSharedMeta);
-
-  useEffect(() => {
-    if (!loading) return;
-
-    fetch('/dev-data/bloodtests.json')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: DevRawSession[] | null) => {
-        if (data) setSessions(adaptDevData(data));
-      })
-      .catch(() => {
-        // no dev-data file present — fine, just nothing to seed
-      })
-      .finally(() => setLoading(false));
-  }, [loading]);
 
   // Merge incoming sessions into what's already loaded (an incoming session
   // replaces an existing one with the same `file` id) — generated test data

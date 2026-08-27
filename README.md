@@ -96,7 +96,7 @@ survive.
 ## Key implementation details
 
 - **Upload:** v3 envelope JSON (schema version 1) with DiagnosticReport array; v2 canonical-draws and two legacy array shapes are also accepted. Parser in `web/src/data/parseUpload.ts`.
-- **Export:** v3 envelope with `contentHash` for change detection; some envelope fields aren't written yet — see [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md) for exactly what's implemented.
+- **Export:** v3 envelope with `generatedAt`, `contentHash` for change detection, and optional subject/sex/birthYear/notes metadata; some fields aren't written yet — see [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md) for exactly what's implemented.
 - **Validation:** Two tiers — errors disable Monitoring Panels and All Observations (redirecting to Diagnostic Reports) until fixed; warnings are informational. See [`docs/tech/README.md#upload--edit-workflow`](docs/tech/README.md#upload--edit-workflow).
 - **LOINC:** All matching/joins use LOINC only; names are provenance. A missing code is a validation error, fixable by inline edit in the Diagnostic Report detail view. *Planned:* Phase 4 will suggest codes from lab-printed names.
 - **Terminology:** Names borrowed from FHIR (DiagnosticReport, Observation) for alignment but data model is simplified; see [ADR-0002](docs/tech/decisions/adr-0002-borrow-fhir-shapes-not-fhir.md).

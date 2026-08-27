@@ -158,7 +158,14 @@ export function MedicalConditionsPage() {
   );
 
   const diagnosticReportsList = (
-    <DiagnosticReportsView sessions={sessions} onOpenDetail={(file) => navigate({ view: 'report', file })} />
+    <DiagnosticReportsView
+      sessions={sessions}
+      onOpenDetail={(file) => navigate({ view: 'report', file })}
+      onAddReports={loadGenerated}
+      onImportFile={uploadFile}
+      importError={uploadError}
+      onClear={clearData}
+    />
   );
 
   const view = (() => {
@@ -206,8 +213,6 @@ export function MedicalConditionsPage() {
             uploadError={uploadError}
             uploadFile={uploadFile}
             loadGenerated={loadGenerated}
-            clearData={clearData}
-            sessions={sessions}
           />
         );
       case 'reference':

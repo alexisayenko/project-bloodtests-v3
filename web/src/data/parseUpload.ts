@@ -173,11 +173,15 @@ function v3ToGroup(report: V3DiagnosticReport, index: number): DiagnosticReport 
 
   const items = report.observations.map(v3ToResult);
   const place = report.lab || 'Unknown Lab';
+  // The report's own identifier (visit/order/accession) disambiguates two
+  // draws from the same lab on the same date — without it they'd collide on
+  // the same session id and silently replace each other on merge.
+  const ident = report.identifiers?.visit || report.identifiers?.order || report.identifiers?.accession;
 
   return {
     date,
     place,
-    file: `${date}__${slugify(place)}`,
+    file: `${date}__${slugify(place)}${ident ? `__${slugify(String(ident))}` : ''}`,
     items,
     itemCount: items.length,
   };

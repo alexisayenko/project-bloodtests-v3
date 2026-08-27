@@ -76,9 +76,10 @@ rationale per rule so future-us can revisit.
 
 ### Navigation
 
-- **Top-level sections** (Get Started, Monitoring Panels, All
-  Observations, Reference Book) are a persistent top nav on every
-  page, each section its own URL hash (`#profile`, `#panels`, `#all`,
+- **Top-level sections** (Get Started, Diagnostic Reports, All
+  Observations, Monitoring Panels, Reference Book) are a persistent
+  top nav on every page, each section its own URL hash (`#profile`,
+  `#reports`, `#all`, `#panels`,
   `#reference`) so browser back/forward always works. Active section:
   bold + blue underline.
 - The persistent top nav is the only cross-section navigation

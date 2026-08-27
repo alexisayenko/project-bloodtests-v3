@@ -30,9 +30,12 @@ Entry point → panel detail, with a historical values table.
 Get lab results into the app — real or synthetic.
 
 - **Entry:** Get Started
-- **Screens (in order):** Get Started (Upload JSON or Generate Test Data)
-  → Monitoring Panels / All Observations
+- **Screens (in order):** Get Started (Import JSON — replaces — or
+  Generate Test Data — merges) → Monitoring Panels / All Observations;
+  or Get Started → Diagnostic Reports ("Add a report": copy the chatbot
+  prompt, build a JSON with a chatbot, Add — merges)
 - **Branches:** invalid JSON shows an inline parse error; Clear (with
-  confirm) wipes all sessions
+  confirm, on Diagnostic Reports' "Back up your database" card) wipes
+  all sessions
 - **Exit / success:** panels and tables populate; uploads and
   generated data coexist (merged by session id)

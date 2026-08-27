@@ -1,4 +1,5 @@
 import type { Result, DiagnosticReport as DiagnosticReportType } from '../types';
+import type { EnvelopeMeta } from '../data/envelopeMeta';
 
 interface DiagnosticReportObservation {
   loinc: string;
@@ -24,9 +25,12 @@ interface DiagnosticReport {
 
 interface ExportEnvelope {
   schema: 1;
+  generatedAt: string;
   contentHash: string;
+  subject?: string;
   sex?: string;
   birthYear?: number;
+  notes?: string;
   diagnosticReports: DiagnosticReport[];
 }
 
@@ -80,8 +84,7 @@ async function computeSha256Hash(data: DiagnosticReport[]): Promise<string> {
 
 export async function buildExportEnvelope(
   sessions: DiagnosticReportType[],
-  sex?: string,
-  birthYear?: number
+  meta?: EnvelopeMeta
 ): Promise<ExportEnvelope> {
   const diagnosticReports: DiagnosticReport[] = sessions
     .filter((session) => session.items && session.items.length > 0)
@@ -95,16 +98,25 @@ export async function buildExportEnvelope(
 
   const envelope: ExportEnvelope = {
     schema: 1,
+    generatedAt: new Date().toISOString(),
     contentHash,
     diagnosticReports,
   };
 
-  if (sex) {
-    envelope.sex = sex;
+  if (meta?.subject?.trim()) {
+    envelope.subject = meta.subject.trim();
   }
 
-  if (birthYear) {
-    envelope.birthYear = birthYear;
+  if (meta?.sex) {
+    envelope.sex = meta.sex;
+  }
+
+  if (meta?.birthYear) {
+    envelope.birthYear = meta.birthYear;
+  }
+
+  if (meta?.notes?.trim()) {
+    envelope.notes = meta.notes.trim();
   }
 
   return envelope;
@@ -128,11 +140,8 @@ export function downloadExportFile(envelope: ExportEnvelope): void {
   URL.revokeObjectURL(url);
 }
 
-export async function exportData(
-  sessions: DiagnosticReportType[],
-  sex?: string,
-  birthYear?: number
-): Promise<void> {
-  const envelope = await buildExportEnvelope(sessions, sex, birthYear);
+export async function exportData(sessions: DiagnosticReportType[], meta?: EnvelopeMeta): Promise<string> {
+  const envelope = await buildExportEnvelope(sessions, meta);
   downloadExportFile(envelope);
+  return envelope.generatedAt;
 }

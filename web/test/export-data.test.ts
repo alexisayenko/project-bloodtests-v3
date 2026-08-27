@@ -77,32 +77,48 @@ describe('buildExportEnvelope', () => {
     expect(envelope.diagnosticReports[0].lab).toBe('Unknown Lab');
   });
 
-  it('includes sex when provided', async () => {
-    const sessions = [session({})];
-    const envelope = await buildExportEnvelope(sessions, 'female');
+  it('includes a generatedAt ISO timestamp', async () => {
+    const envelope = await buildExportEnvelope([session({})]);
 
+    expect(envelope.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  });
+
+  it('includes meta fields in the envelope when set', async () => {
+    const envelope = await buildExportEnvelope([session({})], {
+      subject: 'p-7fa3',
+      sex: 'female',
+      birthYear: 1972,
+      notes: 'Rebuilt from the lab PDFs.',
+    });
+
+    expect(envelope.subject).toBe('p-7fa3');
     expect(envelope.sex).toBe('female');
-  });
-
-  it('includes birthYear when provided', async () => {
-    const sessions = [session({})];
-    const envelope = await buildExportEnvelope(sessions, undefined, 1972);
-
     expect(envelope.birthYear).toBe(1972);
+    expect(envelope.notes).toBe('Rebuilt from the lab PDFs.');
   });
 
-  it('omits sex and birthYear when not provided', async () => {
-    const sessions = [session({})];
-    const envelope = await buildExportEnvelope(sessions);
+  it('omits empty meta fields', async () => {
+    const envelope = await buildExportEnvelope([session({})], { subject: '  ', notes: '' });
+
+    expect(envelope).not.toHaveProperty('subject');
+    expect(envelope).not.toHaveProperty('sex');
+    expect(envelope).not.toHaveProperty('birthYear');
+    expect(envelope).not.toHaveProperty('notes');
+  });
+
+  it('omits meta fields when no meta given', async () => {
+    const envelope = await buildExportEnvelope([session({})]);
 
     expect(envelope.sex).toBeUndefined();
     expect(envelope.birthYear).toBeUndefined();
+    expect(envelope.subject).toBeUndefined();
+    expect(envelope.notes).toBeUndefined();
   });
 
   it('computes contentHash from diagnosticReports only (not full envelope)', async () => {
     const sessions = [session({})];
     const envelope1 = await buildExportEnvelope(sessions);
-    const envelope2 = await buildExportEnvelope(sessions, 'female');
+    const envelope2 = await buildExportEnvelope(sessions, { sex: 'female' });
 
     // Same diagnosticReports but different sex — hash should match
     expect(envelope1.contentHash).toBe(envelope2.contentHash);

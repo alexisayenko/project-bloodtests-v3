@@ -59,12 +59,20 @@ domain-agnostic uPlot-based charting engine) and driven by the
 `LabExploreView.tsx`; deliberately generic-only (no medication overlays,
 reference-band overrides, or data-quality flagging). Persistent top nav
 across five sections — Get Started (`#profile`: app description,
-data-privacy statement and evidence-grading note, a copyable chatbot
-prompt for building a v3 JSON, "Upload raw JSON" (merges by session id
-and redirects to `#reports`), "Upload JSON" (replaces all stored
-sessions, as a share-link import does), export, generate synthetic test
-data (merges), clear), Diagnostic Reports (`#reports`: table of uploaded
-reports with error/warning dots and an Export JSON button;
+data-privacy statement and evidence-grading note, "Import JSON"
+(replaces all stored sessions, as a share-link import does), a "Go to
+Diagnostic Reports" pill for building a first database, and generate
+synthetic test data (merges)), Diagnostic Reports (`#reports`: the
+data-management hub — a collapsible "Database details" card editing
+export-envelope metadata (read-only `generatedAt` stamped on each
+export, plus subject / sex / birth year / notes; persisted under
+localStorage key `bloodtests_envelope_meta_v1`, written into the export
+envelope with empty fields omitted), the reports table with
+error/warning dots, an "Add a report" card (1. copy the expandable
+chatbot prompt, 2. paste into a chatbot, 3. "Add" the chatbot-built
+JSON — merges by session id, with "Adding…" progress and "✓ Added N
+reports" feedback), and a "Back up your database" card (Export JSON /
+Import JSON (replaces) / Clear behind a divider);
 `#reports/<file>` detail allows inline editing of each observation's
 LOINC / value / unit, saved to localStorage via `updateGroup`), All
 Observations (every uploaded result in one table), Monitoring Panels
@@ -79,9 +87,12 @@ range as a warning; while errors exist, Monitoring Panels and All
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable). Upload
 accepts the v3 interchange envelope (`{ schema: 1, diagnosticReports }`;
-other envelope fields ignored for now) plus v2's canonical-draws and two
+other envelope fields ignored for now, though a report's `identifiers`
+(visit/order/accession) feeds the session id so two same-day same-lab
+draws don't collide on merge) plus v2's canonical-draws and two
 legacy shapes; export (`exportData.ts`) writes a v3 envelope —
-`schema`, `contentHash` (sha256 of the diagnosticReports array), and
+`schema`, `generatedAt`, `contentHash` (sha256 of the diagnosticReports
+array only), subject/sex/birthYear/notes when set, and
 reduced reports — as `blood-tests-export-<yyyymmdd>.json`; see
 `docs/tech/interchange-format.md` for exactly which envelope fields are
 implemented. The original
@@ -92,7 +103,7 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (214 tests across 13 files: index
+Vitest suites in `web/test/` (216 tests across 13 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — v3 envelope and v2
 shapes — and import-replace, diagnostic-report validation, export
 envelope, share-link and shared-meta, explore-model, markers, routing,
