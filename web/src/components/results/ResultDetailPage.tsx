@@ -4,10 +4,10 @@ import { useData } from '../../data/DataContext';
 import { formatDate } from '../../utils/format';
 import { getPanelName, getPanelAnalyses } from '../../utils/analysis';
 import { ResultRow } from './ResultRow';
-import type { ResultGroup, Result } from '../../types';
+import type { DiagnosticReport, Result } from '../../types';
 
 interface Props {
-  group: ResultGroup;
+  group: DiagnosticReport;
   loadItems: (sessionId: string) => Promise<Result[]>;
   onBack: () => void;
 }

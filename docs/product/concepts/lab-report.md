@@ -24,4 +24,4 @@ Each entry is one line in the report:
 
 ## Where it lives today
 
-`ResultGroup`/`Result` in `web/src/types/index.ts` (`date`, `place`, `items: Result[]`), populated via upload parsing (`parseUpload.ts`) and held in `ResultsContext`. Code naming (`ResultGroup`/`Result`) hasn't been aligned to `LabReport`/`LabReportEntry` yet.
+`DiagnosticReport`/`Result` in `web/src/types/index.ts` (`date`, `place`, `items: Result[]`), populated via upload parsing (`parseUpload.ts`) and held in `ResultsContext`. Code naming (`DiagnosticReport`/`Result`) is aligned to FHIR terminology for lab reports.

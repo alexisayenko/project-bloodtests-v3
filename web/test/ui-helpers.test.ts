@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   cellBg,
+  formatFullDate,
   formatMonthYear,
   greenRangeOf,
   isCellArmed,
@@ -16,6 +17,13 @@ describe('formatMonthYear', () => {
   it('renders "Mon YY"', () => {
     expect(formatMonthYear('2026-08-25')).toBe('Aug 26');
     expect(formatMonthYear('2024-12-01')).toBe('Dec 24');
+  });
+});
+
+describe('formatFullDate', () => {
+  it('renders "Mon D, YYYY"', () => {
+    expect(formatFullDate('2026-08-25')).toBe('Aug 25, 2026');
+    expect(formatFullDate('2024-12-01')).toBe('Dec 1, 2024');
   });
 });
 

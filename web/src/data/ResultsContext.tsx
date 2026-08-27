@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
-import type { Result, ResultGroup } from '../types';
+import type { Result, DiagnosticReport } from '../types';
 import { UploadParseError } from './parseUpload';
 import {
   fetchSharedDataOnce,
@@ -27,9 +27,9 @@ type DevRawItem = {
 };
 type DevRawSession = { date: string; labName?: string; sourceFile?: string; items: DevRawItem[] };
 
-function adaptDevData(sessions: DevRawSession[]): ResultGroup[] {
+function adaptDevData(sessions: DevRawSession[]): DiagnosticReport[] {
   return sessions
-    .map((s): ResultGroup => {
+    .map((s): DiagnosticReport => {
       const items: Result[] = (s.items || [])
         .filter((raw) => raw.loinc && raw.original)
         .map((raw) => ({
@@ -52,22 +52,23 @@ function adaptDevData(sessions: DevRawSession[]): ResultGroup[] {
 }
 
 interface ResultsContextType {
-  sessions: ResultGroup[];
+  sessions: DiagnosticReport[];
   hasData: boolean;
   loading: boolean;
   error: string | null;
   sharedLinkError: string | null;
   sharedMeta: SharedMeta | null;
   uploadFile: (file: File) => Promise<void>;
-  loadGenerated: (groups: ResultGroup[]) => void;
+  loadGenerated: (groups: DiagnosticReport[]) => void;
   loadGroupItems: (sessionId: string) => Promise<Result[]>;
+  updateGroup: (file: string, updatedGroup: DiagnosticReport) => void;
   clearData: () => void;
 }
 
 const ResultsContext = createContext<ResultsContextType>(null!);
 
 export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [sessions, setSessions] = useState<ResultGroup[]>(() => {
+  const [sessions, setSessions] = useState<DiagnosticReport[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
@@ -100,7 +101,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   // Merge incoming sessions into what's already loaded (an incoming session
   // replaces an existing one with the same `file` id) — generated test data
   // adds to whatever is there rather than clobbering it.
-  const mergeSessions = useCallback((incoming: ResultGroup[]) => {
+  const mergeSessions = useCallback((incoming: DiagnosticReport[]) => {
     setSessions((prev) => {
       const byFile = new Map(prev.map((g) => [g.file, g]));
       for (const g of incoming) byFile.set(g.file, g);
@@ -170,7 +171,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
 
   // Synthetic data (e.g. Profile's "Generate Test Data") — persisted exactly
   // like a real upload, so the rest of the app can't tell the difference.
-  const loadGenerated = useCallback((groups: ResultGroup[]) => {
+  const loadGenerated = useCallback((groups: DiagnosticReport[]) => {
     setError(null);
     mergeSessions(groups);
   }, [mergeSessions]);
@@ -179,6 +180,14 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     return sessions.find(s => s.file === sessionId)?.items || [];
   }, [sessions]);
 
+  const updateGroup = useCallback((file: string, updatedGroup: DiagnosticReport) => {
+    setSessions((prev) => {
+      const updated = prev.map((g) => (g.file === file ? updatedGroup : g));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const clearData = useCallback(() => {
     setSessions([]);
     setError(null);
@@ -186,8 +195,8 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   const value = useMemo(
-    () => ({ sessions, hasData: sessions.length > 0, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, clearData }),
-    [sessions, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, clearData]
+    () => ({ sessions, hasData: sessions.length > 0, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, updateGroup, clearData }),
+    [sessions, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, updateGroup, clearData]
   );
 
   return (

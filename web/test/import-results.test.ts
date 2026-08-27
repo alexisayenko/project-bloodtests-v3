@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { importResults, replaceStoredSessions } from '../src/data/importResults';
 import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
 import { UploadParseError } from '../src/data/parseUpload';
-import type { ResultGroup } from '../src/types';
+import type { DiagnosticReport } from '../src/types';
 
 function installLocalStorageStub(): void {
   const store = new Map<string, string>();
@@ -19,7 +19,7 @@ function installLocalStorageStub(): void {
   Object.defineProperty(globalThis, 'localStorage', { value: stub, configurable: true, writable: true });
 }
 
-const stored = (): ResultGroup[] => JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY) ?? '[]');
+const stored = (): DiagnosticReport[] => JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY) ?? '[]');
 
 const FIRST = [{ date: '2026-01-10', place: 'Lab A', loinc: '718-7', value: 14.2, unit: 'g/dL' }];
 const SECOND = [{ date: '2025-06-01', place: 'Lab B', loinc: '2339-0', value: 95, unit: 'mg/dL' }];

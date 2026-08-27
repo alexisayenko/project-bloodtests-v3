@@ -46,7 +46,7 @@ export interface Result {
   method: string;
 }
 
-export interface ResultGroup {
+export interface DiagnosticReport {
   date: string;
   place: string;
   file: string; // stable id for this session, derived from date + place

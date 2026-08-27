@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
+import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnosticReports';
 import type { IndexDef } from '../../data/computedIndices';
 import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
@@ -14,13 +15,15 @@ import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
 import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
+import { DiagnosticReportsView } from './DiagnosticReportsView';
+import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
 import type { ResultEntry } from './resultsLookup';
 
 // The app shell: owns the route, the flattened results, the shared table
 // settings and the popup, and renders one view component per section.
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels } = useData();
-  const { sessions, loadGroupItems, loadGenerated, uploadFile, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
+  const { sessions, loadGroupItems, loadGenerated, uploadFile, updateGroup, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
@@ -56,6 +59,9 @@ export function MedicalConditionsPage() {
   const conditions = useMemo(() => buildConditions(panels, analysesCatalog), [panels, analysesCatalog]);
   const allowedPanels = panelAllowlist(sharedMeta);
   const shownConditions = useMemo(() => visiblePanels(conditions, allowedPanels), [conditions, allowedPanels]);
+
+  const validationIssues = useMemo(() => validateDiagnosticReports(sessions), [sessions]);
+  const hasValidationErrors = hasErrors(validationIssues);
 
   useEffect(() => {
     // The single source of truth for the current route is always the URL, so
@@ -151,10 +157,18 @@ export function MedicalConditionsPage() {
     />
   );
 
+  const diagnosticReportsList = (
+    <DiagnosticReportsView sessions={sessions} onOpenDetail={(file) => navigate({ view: 'report', file })} />
+  );
+
   const view = (() => {
     // A hash pointing at a panel the link doesn't share falls back to the grid.
     if (route.view === 'panel' && conditions.length > 0 && !isPanelVisible(route.name, allowedPanels)) {
       return panelsGrid;
+    }
+    // A hash pointing at a report that isn't loaded (stale link, cleared data) falls back to the list.
+    if (route.view === 'report' && sessions.length > 0 && !sessions.some((s) => s.file === route.file)) {
+      return diagnosticReportsList;
     }
     switch (route.view) {
       case 'all':
@@ -173,6 +187,18 @@ export function MedicalConditionsPage() {
             resultsByDate={resultsByDate}
           />
         );
+      case 'reports':
+        return diagnosticReportsList;
+      case 'report':
+        return (
+          <DiagnosticReportDetailView
+            key={route.file}
+            group={sessions.find((s) => s.file === route.file)}
+            loadGroupItems={loadGroupItems}
+            onBack={() => navigate({ view: 'reports' })}
+            onUpdateGroup={updateGroup}
+          />
+        );
       case 'profile':
         return (
           <ProfileView
@@ -181,6 +207,7 @@ export function MedicalConditionsPage() {
             uploadFile={uploadFile}
             loadGenerated={loadGenerated}
             clearData={clearData}
+            sessions={sessions}
           />
         );
       case 'reference':
@@ -210,11 +237,21 @@ export function MedicalConditionsPage() {
     }
   })();
 
+  const blockedRoutes = hasValidationErrors && (route.view === 'panels' || route.view === 'panel' || route.view === 'all');
+  if (blockedRoutes) {
+    navigate({ view: 'reports' });
+  }
+
   return (
     <div className="mc-page">
-      <NavBar route={route} navigate={navigate} />
+      <NavBar route={route} navigate={navigate} hasValidationErrors={hasValidationErrors} />
       {sharedLinkError && (
         <div style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>{sharedLinkError}</div>
+      )}
+      {hasValidationErrors && (route.view === 'reports' || route.view === 'report') && (
+        <div style={{ fontSize: 13, color: '#ea4335', marginBottom: 16 }}>
+          Errors in diagnostic reports must be resolved before accessing other sections.
+        </div>
       )}
       {view}
       <Popup

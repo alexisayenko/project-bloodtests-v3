@@ -15,11 +15,11 @@ The wrapper of a lab-data interchange file: the JSON object that carries a set o
   "sex": "female",
   "birthYear": 1972,
   "notes": "Rebuilt from the lab PDFs, March 2026.",
-  "reports": [ /* LabReport objects, specified below */ ]
+  "diagnosticReports": [ /* DiagnosticReport objects, specified below */ ]
 }
 ```
 
-Eight keys: `schema` and `reports` are required, `generatedAt`, `contentHash`, `subject`, `sex`, `birthYear` and `notes` are optional. This page specifies the envelope only.
+Eight keys: `schema` and `diagnosticReports` are required, `generatedAt`, `contentHash`, `subject`, `sex`, `birthYear` and `notes` are optional. This page specifies the envelope only.
 
 The split follows from who writes the file: a hand-written or hand-edited file must be valid without computing a hash, and the two provenance fields plus `subject`, `sex` and `birthYear` are conveniences the converter fills in, not things a reader needs to function.
 
@@ -41,7 +41,7 @@ Date-only is insufficient: a file gets regenerated more than once a day, and two
 
 **Optional** — when absent, a reader skips change detection and re-imports the file.
 
-The `sha256:` prefix plus lowercase hex of `JSON.stringify(reports)` — the **reports array only**, never the whole file, so the field never has to hash itself.
+The `sha256:` prefix plus lowercase hex of `JSON.stringify(diagnosticReports)` — the **diagnosticReports array only**, never the whole file, so the field never has to hash itself.
 
 Purpose is **change detection**: *has this file changed since I last imported it?* It is not corruption protection — HTTPS and `JSON.parse` already cover transport integrity.
 
@@ -85,13 +85,13 @@ Caveat: anything written here travels with the file, so it is visible to whoever
 
 Scope is the **envelope only** for now. Per-report and per-observation notes are deliberately deferred, though the likely real value is at the observation level — "was not fasting", "two weeks after flu", "different lab, method changed" — which is the context that makes an odd value readable a year later. Adding them later is not a breaking change and does not bump [`schema`](#schema).
 
-## `reports`
+## `diagnosticReports`
 
-**Required.** Array of LabReport objects, specified below — see [lab report](../product/concepts/lab-report.md) for the product-level noun.
+**Required.** Array of DiagnosticReport objects, specified below — see [lab report](../product/concepts/lab-report.md) for the product-level noun.
 
 The [Observation](../product/concepts/observation.md) shape inside a report is specified below.
 
-## LabReport
+## DiagnosticReport
 
 One report from one lab, covering one sample.
 
@@ -263,7 +263,7 @@ Precedence: **show the lab's verdict when present, otherwise compute from `refer
 
 **Optional** — when absent, the report-level [`specimen`](#specimen) applies.
 
-Overrides the LabReport default for this one observation, with the same `material` / `additive` shape and the same controlled vocabularies.
+Overrides the DiagnosticReport default for this one observation, with the same `material` / `additive` shape and the same controlled vocabularies.
 
 ### `method`
 

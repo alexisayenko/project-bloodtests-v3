@@ -112,6 +112,188 @@ describe('parseUploadedResults — canonical Draws shape', () => {
   });
 });
 
+describe('parseUploadedResults — v3 envelope', () => {
+  it('parses v3 envelope with diagnosticReports', () => {
+    const groups = parseUploadedResults({
+      schema: 1,
+      diagnosticReports: [
+        {
+          lab: 'Quest Diagnostics',
+          collectedAt: '2026-01-10T00:00:00Z',
+          observations: [
+            {
+              loinc: '718-7',
+              name: 'Hemoglobin',
+              value: 14.2,
+              unit: 'g/dL',
+              referenceRanges: [{ low: 13, high: 17 }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.date).toBe('2026-01-10');
+    expect(groups[0]!.place).toBe('Quest Diagnostics');
+    expect(groups[0]!.items[0]).toMatchObject({
+      loinc: '718-7',
+      analysis: 'Hemoglobin',
+      value: 14.2,
+      unit: 'g/dL',
+      refMin: 13,
+      refMax: 17,
+    });
+  });
+
+  it('extracts date from ISO timestamp', () => {
+    const groups = parseUploadedResults({
+      schema: 1,
+      diagnosticReports: [
+        {
+          lab: 'Lab A',
+          collectedAt: '2024-06-15T14:30:00Z',
+          observations: [
+            {
+              name: 'Test',
+              value: 100,
+              unit: 'mg/dL',
+            },
+          ],
+        },
+      ],
+    });
+    expect(groups[0]!.date).toBe('2024-06-15');
+  });
+
+  it('handles missing loinc code', () => {
+    const groups = parseUploadedResults({
+      schema: 1,
+      diagnosticReports: [
+        {
+          lab: 'Lab A',
+          collectedAt: '2026-01-10T00:00:00Z',
+          observations: [
+            {
+              name: 'Unknown Test',
+              value: 50,
+              unit: 'units',
+            },
+          ],
+        },
+      ],
+    });
+    expect(groups[0]!.items[0]!.loinc).toBe('');
+    expect(groups[0]!.items[0]!.analysis).toBe('Unknown Test');
+  });
+
+  it('handles reference ranges with text', () => {
+    const groups = parseUploadedResults({
+      schema: 1,
+      diagnosticReports: [
+        {
+          lab: 'Lab A',
+          collectedAt: '2026-01-10T00:00:00Z',
+          observations: [
+            {
+              loinc: '2093-3',
+              name: 'Total Cholesterol',
+              value: 186.65,
+              unit: 'mg/dL',
+              referenceRanges: [{ high: 200, text: '< 200.00 Desirable' }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(groups[0]!.items[0]!.refText).toBe('< 200.00 Desirable');
+    expect(groups[0]!.items[0]!.refMax).toBe(200);
+  });
+
+  it('handles comparator in observation', () => {
+    const groups = parseUploadedResults({
+      schema: 1,
+      diagnosticReports: [
+        {
+          lab: 'Lab A',
+          collectedAt: '2026-01-10T00:00:00Z',
+          observations: [
+            {
+              name: 'Test',
+              value: 0.5,
+              comparator: '<',
+              rawValue: '<0.5',
+              unit: 'ng/mL',
+            },
+          ],
+        },
+      ],
+    });
+    expect(groups[0]!.items[0]).toMatchObject({
+      value: 0.5,
+      valueQualifier: '<',
+      rawValue: '<0.5',
+    });
+  });
+
+  it('sorts multiple reports by date, newest first', () => {
+    const groups = parseUploadedResults({
+      schema: 1,
+      diagnosticReports: [
+        {
+          lab: 'Lab A',
+          collectedAt: '2025-06-01T00:00:00Z',
+          observations: [{ name: 'Test', value: 100, unit: 'U' }],
+        },
+        {
+          lab: 'Lab B',
+          collectedAt: '2026-01-10T00:00:00Z',
+          observations: [{ name: 'Test', value: 100, unit: 'U' }],
+        },
+      ],
+    });
+    expect(groups.map((g) => g.date)).toEqual(['2026-01-10', '2025-06-01']);
+  });
+
+  it('rejects v3 with empty diagnosticReports', () => {
+    expect(() =>
+      parseUploadedResults({
+        schema: 1,
+        diagnosticReports: [],
+      })
+    ).toThrow(UploadParseError);
+  });
+
+  it('rejects v3 with invalid collectedAt timestamp', () => {
+    expect(() =>
+      parseUploadedResults({
+        schema: 1,
+        diagnosticReports: [
+          {
+            lab: 'Lab A',
+            collectedAt: 'not-a-date',
+            observations: [{ name: 'Test', value: 100, unit: 'U' }],
+          },
+        ],
+      })
+    ).toThrow(/invalid collectedAt timestamp/);
+  });
+
+  it('rejects v3 with missing observations array', () => {
+    expect(() =>
+      parseUploadedResults({
+        schema: 1,
+        diagnosticReports: [
+          {
+            lab: 'Lab A',
+            collectedAt: '2026-01-10T00:00:00Z',
+            // missing observations
+          },
+        ] as any,
+      })
+    ).toThrow(/missing observations array/);
+  });
+});
+
 describe('parseUploadedResults — rejects', () => {
   it('empty array', () => {
     expect(() => parseUploadedResults([])).toThrow(UploadParseError);

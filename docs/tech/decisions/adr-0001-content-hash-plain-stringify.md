@@ -24,7 +24,7 @@ sorting keys and fixing number formatting — standardized as JCS,
 ## Decision
 
 **`contentHash` is `sha256:` plus lowercase hex of
-`JSON.stringify(reports)`** — plain serialization, not a
+`JSON.stringify(diagnosticReports)`** — plain serialization, not a
 canonical one.
 
 The failure mode is benign: a false "changed" costs one

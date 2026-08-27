@@ -4,7 +4,7 @@ import { useData } from '../../data/DataContext';
 import { formatDate, isOutOfRange, isNearOutOfRange } from '../../utils/format';
 import { getPanelName, getPanelAnalyses } from '../../utils/analysis';
 import { ResultRow } from './ResultRow';
-import type { ResultGroup, Result } from '../../types';
+import type { DiagnosticReport, Result } from '../../types';
 
 type ResultsView = 'sessions' | 'out-of-range' | 'near-range';
 
@@ -15,7 +15,7 @@ interface PanelGroup {
 }
 
 interface Props {
-  sessions: ResultGroup[];
+  sessions: DiagnosticReport[];
   loading: boolean;
   loadGroupItems: (sessionId: string) => Promise<Result[]>;
 }

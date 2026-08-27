@@ -38,6 +38,11 @@ JSON than two self-owned apps need. Borrowing costs nothing,
 because FHIR is a set of JSON shapes rather than a rival file
 format.
 
+This format's own [`DiagnosticReport`](../interchange-format.md#diagnosticreport) —
+one report from one lab, covering one sample — takes its name from
+FHIR's resource of the same name, borrowing the name but not its
+reference-heavy shape.
+
 Because the shapes match, a later export to real FHIR is a
 mapping exercise rather than a redesign.
 

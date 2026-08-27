@@ -1,11 +1,11 @@
-import type { ResultGroup } from '../types';
+import type { DiagnosticReport } from '../types';
 import { SHORT_LABELS } from '../components/conditions/markers';
 
 // Fabricates a few sessions of plausible-looking results for every marker in
 // SHORT_LABELS. Each LOINC gets a stable synthetic reference range (seeded by a
 // hash of the code, so regenerating keeps ranges consistent), and each value is
 // drawn near that range with roughly a 1-in-6 chance of landing outside it.
-export function generateTestData(): ResultGroup[] {
+export function generateTestData(): DiagnosticReport[] {
   const hash = (s: string) => {
     let h = 0;
     for (const c of s) h = (h * 31 + (c.codePointAt(0) ?? 0)) >>> 0;

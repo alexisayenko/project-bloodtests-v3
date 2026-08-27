@@ -33,6 +33,11 @@ export function formatMonthYear(dateStr: string): string {
   return `${month} ${year}`;
 }
 
+export function formatFullDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // The optimal (green-zone) range implied by an index's cut-points, formatted
 // like a lab reference range -- same orientation `zone()` uses to color a cell.
 export function greenRangeOf(def: IndexDef): string {
