@@ -54,19 +54,42 @@ function catalogNameText(a: Analysis): string {
 // counts as a match; only a near-zero overlap is flagged as a mismatch.
 const MISMATCH_THRESHOLD = 0.2;
 
-function suggestionsFor(item: Result, entries: Analysis[]): CrossCheckSuggestion[] {
+// Rarity (IDF) weight per token across the catalog: "index"/"total"/"serum"
+// appear everywhere and should barely count; "HDL" or "prothrombin" pin the
+// analyte. Weight = 1/log2(2+df).
+function tokenWeights(entries: Analysis[]): Map<string, number> {
+  const df = new Map<string, number>();
+  for (const a of entries) {
+    for (const t of new Set(tokensOf(catalogNameText(a)))) {
+      df.set(t, (df.get(t) ?? 0) + 1);
+    }
+  }
+  const weights = new Map<string, number>();
+  for (const [t, n] of df) weights.set(t, 1 / Math.log2(2 + n));
+  return weights;
+}
+
+function suggestionsFor(item: Result, entries: Analysis[], weights: Map<string, number>): CrossCheckSuggestion[] {
   const name = latinPart(item.analysis);
   if (!name) return [];
   const unit = item.unit?.trim().toLowerCase();
+  const queryTokens = tokensOf(name);
+  const weightOf = (t: string) => weights.get(t) ?? 1;
+  const totalWeight = queryTokens.reduce((s, t) => s + weightOf(t), 0);
+  if (totalWeight === 0) return [];
   return entries
     .map((a) => {
-      let score = tokenOverlap(name, catalogNameText(a));
+      const officialTokens = new Set(tokensOf(catalogNameText(a)));
+      let score = queryTokens.filter((t) => officialTokens.has(t)).reduce((s, t) => s + weightOf(t), 0) / totalWeight;
       if (score > 0 && unit && catalogNameText(a).toLowerCase().includes(unit)) score += 0.1;
       return { loinc: a.loinc, name: a.displayName || a.longCommonName, score };
     })
-    .filter((s) => s.score > 0.2)
+    .filter((s) => s.score > 0.3)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    .slice(0, 3)
+    // When the best candidate clearly dominates, weaker share-a-token hits
+    // (e.g. "Total Cholesterol" for an "HDL Cholesterol" row) are noise.
+    .filter((s, _i, ranked) => s.score >= ranked[0]!.score * 0.75);
 }
 
 export function crossCheckLocal(
@@ -75,14 +98,15 @@ export function crossCheckLocal(
 ): CrossCheckResult[] {
   const entries = catalogEntries(catalog);
   const byCode = new Map(entries.map((a) => [a.loinc, a]));
+  const weights = tokenWeights(entries);
 
   return items.map((item) => {
     const code = item.loinc?.trim() ?? '';
     if (!code) {
-      return { status: 'no-code' as const, suggestions: suggestionsFor(item, entries) };
+      return { status: 'no-code' as const, suggestions: suggestionsFor(item, entries, weights) };
     }
     if (!LOINC_RE.test(code)) {
-      return { status: 'malformed' as const };
+      return { status: 'malformed' as const, suggestions: suggestionsFor(item, entries, weights) };
     }
     const entry = byCode.get(code);
     if (!entry) {

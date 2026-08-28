@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { Result, DiagnosticReport } from '../../types';
 import { fmtNum } from '../../utils/format';
 import { validateDiagnosticReports, groupHasErrors } from '../../data/validateDiagnosticReports';
@@ -7,7 +7,6 @@ import {
   crossCheckLocal,
   fetchNlmLoinc,
   latinPart,
-  tokenOverlap,
   type CrossCheckResult,
   type NlmEntry,
 } from '../../data/loincCheck';
@@ -48,7 +47,11 @@ export function DiagnosticReportDetailView({
   const [nlmSuggestions, setNlmSuggestions] = useState<Record<number, NlmEntry[]>>({});
   const items = draftItems ?? group?.items ?? loadedItems;
 
-  const allGroups = useMemo<DiagnosticReport[]>(() => (group ? [group] : []), [group]);
+  // Validate what's on screen: the draft while editing, the stored group otherwise.
+  const allGroups = useMemo<DiagnosticReport[]>(
+    () => (group ? [{ ...group, items: items ?? group.items }] : []),
+    [group, items]
+  );
   const issues = useMemo(() => validateDiagnosticReports(allGroups), [allGroups]);
   const hasErrors = groupHasErrors(group?.file ?? '', issues);
 
@@ -159,39 +162,6 @@ export function DiagnosticReportDetailView({
         </span>
         {group ? `${group.place} · ${formatFullDate(group.date)}` : 'Diagnostic Report'}
       </h1>
-      {errorCount > 0 || warningCount > 0 ? (
-        <div style={{ fontSize: 13, marginBottom: 16 }}>
-          <div style={{ color: '#666', marginBottom: 8 }}>
-            {errorCount > 0 && <span style={{ color: '#ea4335', fontWeight: 600 }}>{errorCount} error{errorCount !== 1 ? 's' : ''}</span>}
-            {errorCount > 0 && warningCount > 0 && <span>, </span>}
-            {warningCount > 0 && <span style={{ color: '#fbbc04', fontWeight: 600 }}>{warningCount} warning{warningCount !== 1 ? 's' : ''}</span>}
-          </div>
-          {issues.filter((i) => i.groupFile === group?.file && i.level === 'error').length > 0 && (
-            <div style={{ color: '#ea4335', marginBottom: 8 }}>
-              {issues
-                .filter((i) => i.groupFile === group?.file && i.level === 'error')
-                .map((issue, idx) => (
-                  <div key={idx} style={{ fontSize: 12 }}>
-                    Row {issue.resultIndex! + 1}: {issue.message}
-                  </div>
-                ))}
-            </div>
-          )}
-          {issues.filter((i) => i.groupFile === group?.file && i.level === 'warning').length > 0 && (
-            <div style={{ color: '#fbbc04' }}>
-              {issues
-                .filter((i) => i.groupFile === group?.file && i.level === 'warning')
-                .map((issue, idx) => (
-                  <div key={idx} style={{ fontSize: 12 }}>
-                    Row {issue.resultIndex! + 1}: {issue.message}
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div style={{ fontSize: 13, color: '#34a853', marginBottom: 16 }}>No issues</div>
-      )}
       {!items || items.length === 0 ? (
         <div style={{ color: '#888', fontSize: 14 }}>No results recorded on this report.</div>
       ) : (
@@ -229,63 +199,87 @@ export function DiagnosticReportDetailView({
                 {items.map((item, i) => {
                   const itemIssues = issues.filter((issue) => issue.groupFile === group?.file && issue.resultIndex === i);
                   const itemHasError = itemIssues.some((issue) => issue.level === 'error');
+                  const itemHasWarning = itemIssues.some((issue) => issue.level === 'warning');
+                  const nameMismatch = checkResults?.[i]?.status === 'mismatch';
+                  const dotColor = itemHasError ? '#ea4335' : itemHasWarning || nameMismatch ? '#fbbc04' : '#34a853';
+                  const dotTitle =
+                    [...itemIssues.map((issue) => issue.message), ...(nameMismatch ? ['Printed name differs from the LOINC name'] : [])].join('; ') || 'OK';
                   const check = checkResults?.[i];
                   const resolvedName = resolvedNameOf(item, check);
                   const nlmResolvedName = check?.status === 'unknown-code' ? nlmByCode[item.loinc] : undefined;
-                  const nlmNameMatches =
-                    nlmResolvedName != null && tokenOverlap(latinPart(item.analysis), nlmResolvedName) >= 0.2;
                   const chipSuggestions =
-                    check?.status === 'no-code'
+                    check?.status === 'no-code' || check?.status === 'malformed'
                       ? check.suggestions?.length
                         ? check.suggestions
                         : (nlmSuggestions[i] ?? [])
                       : [];
+                  const linkedName = resolvedName ?? nlmResolvedName;
                   return (
-                    <tr key={`${item.loinc}-${i}`}>
+                    <Fragment key={`${item.loinc}-${i}`}>
+                    <tr>
                       <td style={td}>
-                        {itemHasError && (
-                          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ea4335' }} title="Error" />
-                        )}
+                        <span
+                          style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: dotColor }}
+                          title={dotTitle}
+                        />
                       </td>
+                      <td style={td}>{item.analysis}</td>
                       <td style={td}>
-                        {item.analysis}
-                        {resolvedName && (
-                          <div style={{ fontSize: 11, color: '#888' }}>{resolvedName}</div>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input
+                            type="text"
+                            value={item.loinc}
+                            onChange={(e) => handleEditItem(i, 'loinc', e.currentTarget.value)}
+                            onBlur={() => {}}
+                            style={{ width: 80, border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
+                          />
+                          {linkedName && (
+                            <a
+                              href={`https://loinc.org/${item.loinc}/`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontSize: 13, color: '#1971c2', whiteSpace: 'nowrap', textDecoration: 'none' }}
+                            >
+                              {linkedName}
+                            </a>
+                          )}
+                        </div>
                       </td>
                       <td style={td}>
                         <input
                           type="text"
-                          value={item.loinc}
-                          onChange={(e) => handleEditItem(i, 'loinc', e.currentTarget.value)}
+                          value={item.rawValue || (item.value != null ? String(item.value) : '')}
+                          onChange={(e) => handleEditItem(i, 'value', e.currentTarget.value)}
                           onBlur={() => {}}
-                          style={{ width: '100%', border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
+                          style={{ width: 70, border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
                         />
-                        {check?.status === 'match' && (
-                          <div style={{ fontSize: 11, color: '#34a853' }}>✓ matches {check.loincName}</div>
-                        )}
-                        {check?.status === 'mismatch' && (
-                          <div style={{ fontSize: 11, color: '#f59f00' }}>
-                            ⚠ code is {check.loincName} — printed name differs
-                          </div>
-                        )}
-                        {check?.status === 'malformed' && (
-                          <div style={{ fontSize: 11, color: '#ea4335' }}>✗ not a LOINC code</div>
-                        )}
-                        {check?.status === 'unknown-code' &&
-                          (nlmResolvedName != null ? (
-                            nlmNameMatches ? (
-                              <div style={{ fontSize: 11, color: '#34a853' }}>✓ matches {nlmResolvedName}</div>
-                            ) : (
-                              <div style={{ fontSize: 11, color: '#f59f00' }}>
-                                ⚠ code is {nlmResolvedName} — printed name differs
-                              </div>
-                            )
-                          ) : (
-                            <div style={{ fontSize: 11, color: '#ea4335' }}>✗ unknown code</div>
-                          ))}
-                        {check?.status === 'no-code' && chipSuggestions.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                      </td>
+                      <td style={td}>
+                        <input
+                          type="text"
+                          value={item.unit}
+                          onChange={(e) => handleEditItem(i, 'unit', e.currentTarget.value)}
+                          onBlur={() => {}}
+                          style={{ width: 80, border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
+                        />
+                      </td>
+                      <td style={td}>{referenceRangeOf(item)}</td>
+                      <td style={td}>{item.method}</td>
+                    </tr>
+                    {!itemHasError && (itemHasWarning || nameMismatch) && (
+                      <tr>
+                        <td colSpan={7} style={{ ...td, paddingTop: 0, fontSize: 12, color: '#b8860b' }}>
+                          {[
+                            ...itemIssues.filter((issue) => issue.level === 'warning').map((issue) => issue.message),
+                            ...(nameMismatch ? ['Printed name differs from the LOINC name'] : []),
+                          ].join(' · ')}
+                        </td>
+                      </tr>
+                    )}
+                    {chipSuggestions.length > 0 && (
+                      <tr>
+                        <td colSpan={7} style={{ ...td, paddingTop: 0 }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {chipSuggestions.map((s) => (
                               <span
                                 key={s.loinc}
@@ -305,29 +299,10 @@ export function DiagnosticReportDetailView({
                               </span>
                             ))}
                           </div>
-                        )}
-                      </td>
-                      <td style={td}>
-                        <input
-                          type="text"
-                          value={item.rawValue || (item.value != null ? String(item.value) : '')}
-                          onChange={(e) => handleEditItem(i, 'value', e.currentTarget.value)}
-                          onBlur={() => {}}
-                          style={{ width: '100%', border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
-                        />
-                      </td>
-                      <td style={td}>
-                        <input
-                          type="text"
-                          value={item.unit}
-                          onChange={(e) => handleEditItem(i, 'unit', e.currentTarget.value)}
-                          onBlur={() => {}}
-                          style={{ width: '100%', border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
-                        />
-                      </td>
-                      <td style={td}>{referenceRangeOf(item)}</td>
-                      <td style={td}>{item.method}</td>
-                    </tr>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                   );
                 })}
               </tbody>
@@ -363,6 +338,13 @@ export function DiagnosticReportDetailView({
           {nlmState === 'failed' && (
             <div style={{ fontSize: 12, color: '#ea4335', marginBottom: 16 }}>
               NLM lookup failed — check your network and try again.
+            </div>
+          )}
+          {(errorCount > 0 || warningCount > 0) && (
+            <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>
+              {errorCount > 0 && <span style={{ color: '#ea4335', fontWeight: 600 }}>{errorCount} error{errorCount !== 1 ? 's' : ''}</span>}
+              {errorCount > 0 && warningCount > 0 && <span>, </span>}
+              {warningCount > 0 && <span style={{ color: '#fbbc04', fontWeight: 600 }}>{warningCount} warning{warningCount !== 1 ? 's' : ''}</span>}
             </div>
           )}
           {draftItems && (
