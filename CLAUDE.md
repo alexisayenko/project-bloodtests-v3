@@ -75,12 +75,17 @@ reports" feedback), and a "Back up your database" card (Export JSON /
 Import JSON (replaces) / Clear behind a divider);
 `#reports/<file>` detail allows inline editing of each observation's
 LOINC / value / unit, saved to localStorage via `updateGroup`, and
-carries a "Cross-check LOINCs" button (`loincCheck.ts`): an offline pass
-against the local analyte catalog badges each code ✓ match / ⚠
-printed-name-differs / ✗ unknown, shows the official LOINC name in grey
-under the printed name (printed name kept as provenance; resolved names
-are session-only, never stored) and offers clickable code-suggestion
-chips for codeless rows; a second-stage "Check online (NLM)" button,
+carries a "Cross-check LOINCs" button (`loincCheck.ts`): an offline
+resolver derives each row's LOINC from printed name + unit (ADR-0004;
+Latin-name pass, then catalog `lang` translations, unit hard-selecting
+among unit variants) and treats a printed code as evidence only — ✓
+derivation agrees / ⚠ confident derivation contradicts it (warning
+names both codes; unit-labeled suggestion chips, plus an "Apply
+suggestions" button applying every confident fix through the edit
+draft) / ✗ unknown with no derivation — shows the official LOINC name
+in grey under the printed name (printed name kept as provenance;
+resolved names are session-only, never stored); a second-stage "Check
+online (NLM)" button,
 offered only for rows the offline pass couldn't resolve, sends test
 names — never values — to clinicaltables.nlm.nih.gov, the single
 explicit-opt-in exception to the everything-stays-local rule), All
@@ -115,7 +120,7 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (237 tests across 14 files, 1 skipped: index
+Vitest suites in `web/test/` (254 tests across 14 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — v3 envelope and v2
 shapes — and import-replace, diagnostic-report validation, LOINC
 cross-check, export

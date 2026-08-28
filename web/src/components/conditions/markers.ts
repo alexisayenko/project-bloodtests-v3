@@ -28,7 +28,7 @@ export const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '2991-8': { short: 'FT', unit: 'pg/mL' },
   '10501-5': { short: 'LH', unit: 'mIU/mL' },
   '15067-2': { short: 'FSH', unit: 'mIU/mL' },
-  '15081-3': { short: 'PRL', unit: 'ng/mL' },
+  '15081-3': { short: 'PRL', unit: 'mIU/L' },
   '2942-1': { short: 'SHBG', unit: 'nmol/L' },
   '2243-4': { short: 'E2', unit: 'pg/mL' },
   '1848-1': { short: 'DHT', unit: 'ng/dL' },

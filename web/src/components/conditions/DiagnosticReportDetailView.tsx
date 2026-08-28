@@ -7,10 +7,11 @@ import {
   crossCheckLocal,
   fetchNlmLoinc,
   latinPart,
+  selectByUnit,
   type CrossCheckResult,
   type NlmEntry,
 } from '../../data/loincCheck';
-import { ALSO_REFS } from './markers';
+import { ALSO_REFS, ALIAS_TO_PRIMARY } from './markers';
 import { formatFullDate, pressable } from './ui';
 
 const th = {
@@ -106,10 +107,9 @@ export function DiagnosticReportDetailView({
     setDraftItems(null);
   };
 
-  const handleCrossCheck = () => {
-    if (!items) return;
-    // Expand the catalog with unit-variant aliases (ALSO_REFS): labs report
-    // e.g. SHBG as 13967-5 (nmol/L) while the catalog keys it as 2942-1.
+  // Catalog expanded with unit-variant aliases (ALSO_REFS): labs report
+  // e.g. SHBG as 13967-5 (nmol/L) while the catalog keys it as 2942-1.
+  const expandedCatalog = useMemo(() => {
     const base = Object.values(analysesCatalog);
     const byCode = new Map(base.map((a) => [a.loinc, a]));
     const aliases = Object.entries(ALSO_REFS).flatMap(([primary, refs]) => {
@@ -119,7 +119,39 @@ export function DiagnosticReportDetailView({
         .filter((r) => !byCode.has(r.loinc))
         .map((r) => ({ ...canonical, loinc: r.loinc, longCommonName: r.longCommonName }));
     });
-    setCheckResults(crossCheckLocal(items, [...base, ...aliases]));
+    return [...base, ...aliases];
+  }, [analysesCatalog]);
+
+  const handleCrossCheck = () => {
+    if (!items) return;
+    setCheckResults(crossCheckLocal(items, expandedCatalog));
+    setNlmState('idle');
+    setNlmByCode({});
+    setNlmSuggestions({});
+  };
+
+  // Rows where the name+unit derivation confidently points at a different
+  // code than the one currently stored.
+  const confidentFixes = useMemo(() => {
+    if (!checkResults || !items) return new Map<number, string>();
+    const fixes = new Map<number, string>();
+    checkResults.forEach((r, i) => {
+      const top = r.suggestions?.[0];
+      if (r.confident && top && top.loinc !== items[i]!.loinc.trim()) fixes.set(i, top.loinc);
+    });
+    return fixes;
+  }, [checkResults, items]);
+
+  // Applies every confident suggestion through the draft path (Save/Cancel
+  // still gate persistence), then re-runs the cross-check on the result.
+  const handleApplySuggestions = () => {
+    if (!items || confidentFixes.size === 0) return;
+    const updated = items.map((item, i) => {
+      const fix = confidentFixes.get(i);
+      return fix ? { ...item, loinc: fix } : item;
+    });
+    setDraftItems(updated);
+    setCheckResults(crossCheckLocal(updated, expandedCatalog));
     setNlmState('idle');
     setNlmByCode({});
     setNlmSuggestions({});
@@ -152,7 +184,7 @@ export function DiagnosticReportDetailView({
     for (const { r, i } of unresolvedRows) {
       if (r.status !== 'no-code') continue;
       const found = result.byName[latinPart(items[i]!.analysis)];
-      if (found?.length) perRow[i] = found;
+      if (found?.length) perRow[i] = selectByUnit(found, items[i]!.unit).slice(0, 3);
     }
     setNlmSuggestions(perRow);
     setNlmState(result.status === 'ok' ? 'done' : 'failed');
@@ -178,7 +210,7 @@ export function DiagnosticReportDetailView({
         <div style={{ color: '#888', fontSize: 14 }}>No results recorded on this report.</div>
       ) : (
         <>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
             <button
               onClick={handleCrossCheck}
               style={{
@@ -193,6 +225,22 @@ export function DiagnosticReportDetailView({
             >
               Cross-check LOINCs
             </button>
+            {confidentFixes.size > 0 && (
+              <button
+                onClick={handleApplySuggestions}
+                style={{
+                  padding: '6px 16px',
+                  backgroundColor: '#1971c2',
+                  color: 'white',
+                  border: '1.5px solid #1971c2',
+                  borderRadius: 999,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                Apply suggestions ({confidentFixes.size})
+              </button>
+            )}
           </div>
           <div style={{ overflowX: 'auto', marginBottom: 16 }}>
             <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
@@ -212,15 +260,20 @@ export function DiagnosticReportDetailView({
                   const itemIssues = issues.filter((issue) => issue.groupFile === group?.file && issue.resultIndex === i);
                   const itemHasError = itemIssues.some((issue) => issue.level === 'error');
                   const itemHasWarning = itemIssues.some((issue) => issue.level === 'warning');
-                  const nameMismatch = checkResults?.[i]?.status === 'mismatch';
+                  const check = checkResults?.[i];
+                  const nameMismatch = check?.status === 'mismatch';
+                  const mismatchMsg = !nameMismatch
+                    ? null
+                    : check.derived
+                      ? `printed code ${item.loinc.trim()}${check.loincName ? ` is ${check.loincName}` : ''} — name+unit resolve to ${check.derived.loinc} ${check.derived.name}`
+                      : 'Printed name differs from the LOINC name';
                   const dotColor = itemHasError ? '#ea4335' : itemHasWarning || nameMismatch ? '#fbbc04' : '#34a853';
                   const dotTitle =
-                    [...itemIssues.map((issue) => issue.message), ...(nameMismatch ? ['Printed name differs from the LOINC name'] : [])].join('; ') || 'OK';
-                  const check = checkResults?.[i];
+                    [...itemIssues.map((issue) => issue.message), ...(mismatchMsg ? [mismatchMsg] : [])].join('; ') || 'OK';
                   const resolvedName = resolvedNameOf(item, check);
                   const nlmResolvedName = check?.status === 'unknown-code' ? nlmByCode[item.loinc] : undefined;
                   const chipSuggestions =
-                    check?.status === 'no-code' || check?.status === 'malformed'
+                    check?.status === 'no-code' || check?.status === 'malformed' || check?.status === 'mismatch'
                       ? check.suggestions?.length
                         ? check.suggestions
                         : (nlmSuggestions[i] ?? [])
@@ -283,7 +336,7 @@ export function DiagnosticReportDetailView({
                         <td colSpan={7} style={{ ...td, paddingTop: 0, fontSize: 12, color: '#b8860b' }}>
                           {[
                             ...itemIssues.filter((issue) => issue.level === 'warning').map((issue) => issue.message),
-                            ...(nameMismatch ? ['Printed name differs from the LOINC name'] : []),
+                            ...(mismatchMsg ? [mismatchMsg] : []),
                           ].join(' · ')}
                         </td>
                       </tr>
@@ -292,24 +345,36 @@ export function DiagnosticReportDetailView({
                       <tr>
                         <td colSpan={7} style={{ ...td, paddingTop: 0 }}>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {chipSuggestions.map((s) => (
-                              <span
-                                key={s.loinc}
-                                {...pressable(() => handleEditItem(i, 'loinc', s.loinc))}
-                                title={s.name}
-                                style={{
-                                  fontSize: 11,
-                                  color: '#1971c2',
-                                  border: '1px solid #1971c2',
-                                  borderRadius: 999,
-                                  padding: '1px 8px',
-                                  cursor: 'pointer',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {s.loinc} {s.name}
-                              </span>
-                            ))}
+                            {chipSuggestions.map((s) => {
+                              // Show the unit only where it disambiguates: on a
+                              // known unit-variant code, or when two chips share a name.
+                              const unitLabel =
+                                s.unit &&
+                                (s.loinc in ALIAS_TO_PRIMARY ||
+                                  s.loinc in ALSO_REFS ||
+                                  chipSuggestions.some((o) => o !== s && o.name === s.name))
+                                  ? ` · ${s.unit}`
+                                  : '';
+                              return (
+                                <span
+                                  key={s.loinc}
+                                  {...pressable(() => handleEditItem(i, 'loinc', s.loinc))}
+                                  title={s.name}
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#1971c2',
+                                    border: '1px solid #1971c2',
+                                    borderRadius: 999,
+                                    padding: '1px 8px',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {s.loinc} {s.name}
+                                  {unitLabel}
+                                </span>
+                              );
+                            })}
                           </div>
                         </td>
                       </tr>
