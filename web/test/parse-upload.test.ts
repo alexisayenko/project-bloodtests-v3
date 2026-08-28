@@ -288,7 +288,7 @@ describe('parseUploadedResults — v3 envelope', () => {
             collectedAt: '2026-01-10T00:00:00Z',
             // missing observations
           },
-        ] as any,
+        ],
       })
     ).toThrow(/missing observations array/);
   });

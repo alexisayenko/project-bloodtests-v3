@@ -14,7 +14,6 @@ const th = {
 } as const;
 const td = { padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' } as const;
 
-const FIELD_LABEL = { fontWeight: 600, fontSize: 13, marginBottom: 4 } as const;
 const FIELD_INPUT = {
   border: '1px solid #ccc',
   borderRadius: 4,
