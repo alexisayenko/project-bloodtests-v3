@@ -1,4 +1,5 @@
-import type { Result, DiagnosticReport } from '../types';
+import type { DiagnosticReport } from '../types';
+import { LOINC_RE } from './loincCheck';
 
 export interface ValidationIssue {
   groupFile: string;
@@ -18,17 +19,40 @@ export function validateDiagnosticReports(groups: DiagnosticReport[]): Validatio
       const item = items[i];
 
       const hasValue = item.value != null || (item.rawValue && item.rawValue.trim() !== '');
-      if (!item.loinc || !item.analysis || !hasValue || !item.unit) {
+      if (!item.analysis || !hasValue) {
         const missing = [];
-        if (!item.loinc) missing.push('LOINC');
         if (!item.analysis) missing.push('test name');
         if (!hasValue) missing.push('result value');
-        if (!item.unit) missing.push('unit');
         issues.push({
           groupFile: group.file,
           resultIndex: i,
           level: 'error',
           message: `Missing required field: ${missing.join(', ')}`,
+        });
+      }
+
+      if (!item.loinc) {
+        issues.push({
+          groupFile: group.file,
+          resultIndex: i,
+          level: 'warning',
+          message: `No LOINC code — this observation won't appear in panels or All Observations`,
+        });
+      } else if (!LOINC_RE.test(item.loinc)) {
+        issues.push({
+          groupFile: group.file,
+          resultIndex: i,
+          level: 'error',
+          message: `'${item.loinc}' is not a LOINC code (expected digits-checkdigit, e.g. 2093-3)`,
+        });
+      }
+
+      if (!item.unit) {
+        issues.push({
+          groupFile: group.file,
+          resultIndex: i,
+          level: 'warning',
+          message: `No unit`,
         });
       }
 

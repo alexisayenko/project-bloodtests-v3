@@ -74,16 +74,28 @@ JSON — merges by session id, with "Adding…" progress and "✓ Added N
 reports" feedback), and a "Back up your database" card (Export JSON /
 Import JSON (replaces) / Clear behind a divider);
 `#reports/<file>` detail allows inline editing of each observation's
-LOINC / value / unit, saved to localStorage via `updateGroup`), All
+LOINC / value / unit, saved to localStorage via `updateGroup`, and
+carries a "Cross-check LOINCs" button (`loincCheck.ts`): an offline pass
+against the local analyte catalog badges each code ✓ match / ⚠
+printed-name-differs / ✗ unknown, shows the official LOINC name in grey
+under the printed name (printed name kept as provenance; resolved names
+are session-only, never stored) and offers clickable code-suggestion
+chips for codeless rows; a second-stage "Check online (NLM)" button,
+offered only for rows the offline pass couldn't resolve, sends test
+names — never values — to clinicaltables.nlm.nih.gov, the single
+explicit-opt-in exception to the everything-stays-local rule), All
 Observations (every uploaded result in one table), Monitoring Panels
 (the default/entry route), Reference Book (Indices Descriptions: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Physiology: HP Axis page with v2's
 homepage-derived feedback-loop cascades) — each its own URL hash so
 browser back/forward works. Validation
-(`validateDiagnosticReports.ts`) marks an observation missing LOINC,
-name, value-or-rawValue, or unit as an error and a missing reference
-range as a warning; while errors exist, Monitoring Panels and All
+(`validateDiagnosticReports.ts`) marks an observation missing its name
+or value-or-rawValue, or carrying a non-empty code that isn't
+LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like
+"900101"), as an error; an empty LOINC (the observation won't appear in
+panels or All Observations), a missing unit, and a missing reference
+range are warnings; while errors exist, Monitoring Panels and All
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable). Upload
 accepts the v3 interchange envelope (`{ schema: 1, diagnosticReports }`;
@@ -103,9 +115,10 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (216 tests across 13 files, 1 skipped: index
+Vitest suites in `web/test/` (237 tests across 14 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — v3 envelope and v2
-shapes — and import-replace, diagnostic-report validation, export
+shapes — and import-replace, diagnostic-report validation, LOINC
+cross-check, export
 envelope, share-link and shared-meta, explore-model, markers, routing,
 ui helpers, format utils). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a

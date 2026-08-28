@@ -4,7 +4,7 @@ LOINC-coded blood-test monitoring app. Three-step workflow: generate lab-results
 
 ## Overview
 
-React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker to `blood.isayenko.net`. All data stays local — nothing leaves your device except through optional share links.
+React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker to `blood.isayenko.net`. All data stays local — nothing leaves your device except through optional share links and the explicit-opt-in "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov.
 
 **Workflow:**
 
@@ -97,8 +97,8 @@ survive.
 
 - **Upload:** v3 envelope JSON (schema version 1) with DiagnosticReport array; v2 canonical-draws and two legacy array shapes are also accepted. Parser in `web/src/data/parseUpload.ts`.
 - **Export:** v3 envelope with `generatedAt`, `contentHash` for change detection, and optional subject/sex/birthYear/notes metadata; some fields aren't written yet — see [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md) for exactly what's implemented.
-- **Validation:** Two tiers — errors disable Monitoring Panels and All Observations (redirecting to Diagnostic Reports) until fixed; warnings are informational. See [`docs/tech/README.md#upload--edit-workflow`](docs/tech/README.md#upload--edit-workflow).
-- **LOINC:** All matching/joins use LOINC only; names are provenance. A missing code is a validation error, fixable by inline edit in the Diagnostic Report detail view. *Planned:* Phase 4 will suggest codes from lab-printed names.
+- **Validation:** Two tiers — errors (missing name or value, or a non-LOINC-shaped code) disable Monitoring Panels and All Observations (redirecting to Diagnostic Reports) until fixed; warnings (empty LOINC, missing unit or reference range) are informational. See [`docs/tech/README.md#upload--edit-workflow`](docs/tech/README.md#upload--edit-workflow).
+- **LOINC:** All matching/joins use LOINC only; names are provenance. A missing code is a warning (the observation just won't appear in panels), fixable by inline edit in the Diagnostic Report detail view; a "Cross-check LOINCs" pass verifies codes against the local catalog, suggests codes for codeless rows, and can optionally query the NLM online for the rest.
 - **Terminology:** Names borrowed from FHIR (DiagnosticReport, Observation) for alignment but data model is simplified; see [ADR-0002](docs/tech/decisions/adr-0002-borrow-fhir-shapes-not-fhir.md).
 
 ## Documentation

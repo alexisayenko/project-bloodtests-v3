@@ -40,11 +40,27 @@ describe('validateDiagnosticReports', () => {
     expect(issues).toHaveLength(0);
   });
 
-  it('reports error when loinc is missing', () => {
+  it('reports warning when loinc is missing', () => {
     const groups = [createGroup({ items: [createResult({ loinc: '' })] })];
     const issues = validateDiagnosticReports(groups);
     expect(issues).toHaveLength(1);
+    expect(issues[0]?.level).toBe('warning');
+    expect(issues[0]?.message).toContain("won't appear in panels");
+  });
+
+  it('reports error when loinc is not a valid LOINC code', () => {
+    const groups = [createGroup({ items: [createResult({ loinc: '900101' })] })];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues).toHaveLength(1);
     expect(issues[0]?.level).toBe('error');
+    expect(issues[0]?.message).toContain("'900101' is not a LOINC code");
+  });
+
+  it('accepts well-formed LOINC codes of varying length', () => {
+    for (const loinc of ['2093-3', '1-8', '1234567-0']) {
+      const issues = validateDiagnosticReports([createGroup({ items: [createResult({ loinc })] })]);
+      expect(issues).toHaveLength(0);
+    }
   });
 
   it('reports error when analysis is missing', () => {
@@ -74,11 +90,12 @@ describe('validateDiagnosticReports', () => {
     expect(issues[0]?.message).toContain('result value');
   });
 
-  it('reports error when unit is missing', () => {
+  it('reports warning when unit is missing', () => {
     const groups = [createGroup({ items: [createResult({ unit: '' })] })];
     const issues = validateDiagnosticReports(groups);
     expect(issues).toHaveLength(1);
-    expect(issues[0]?.level).toBe('error');
+    expect(issues[0]?.level).toBe('warning');
+    expect(issues[0]?.message).toBe('No unit');
   });
 
   it('reports warning when both refMin/refMax are null', () => {

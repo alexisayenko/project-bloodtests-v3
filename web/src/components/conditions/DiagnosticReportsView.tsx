@@ -48,10 +48,11 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
    Watch out for:
    - A multi-page or multi-section document (e.g. "Hormones" then "Immunology") from one draw is ONE report — same lab + same draw date/time means one diagnosticReports entry, never one per section or page. Conversely, one PDF containing several draw dates is several reports — split by draw date.
    - Footnote or flag markers printed next to results (superscript numbers, asterisks, arrows) are not part of the value or the test name — never read them into either.
-   - Test names stay exactly as printed even when not in English — never translate them.
+   - Test names stay exactly as printed even when not in English — never translate them. A name printed across several lines (or in two languages) becomes one single-line string joined with single spaces — never put a line break inside "name".
+   - A result the report marks as pending — "Not ready", "Pending", "To follow", or an empty result cell — is not a result: skip that observation entirely and mention to me that it was skipped, so I can re-import it from the follow-up report later.
    Keep asking me for the next report until I say I'm done. If a report is unclear or a value is illegible, ask me about that specific value — never guess a number.
 
-4. For every test result, include its LOINC code (the universal lab-test identifier from loinc.org). If the report itself prints LOINC codes (often a small code column like "2093-3" next to each test), use those verbatim — they always win over your own knowledge. Otherwise include a code only when you can look it up or already know it with high confidence. If you don't know the code, or aren't sure, set "loinc" to an empty string ("") rather than guessing — the app will let you fill in missing codes yourself afterward. Never invent or guess a code: a wrong one is worse than a blank one. When in doubt, leave it empty.
+4. For every test result, include its LOINC code (the universal lab-test identifier from loinc.org). If the report itself prints LOINC codes (often a small code column like "2093-3" next to each test), use those verbatim — they always win over your own knowledge. But only a code matching the LOINC pattern — 1-7 digits, a hyphen, one check digit (e.g. "2093-3") — counts as a LOINC: a printed code without that shape (e.g. "900101") is the lab's internal code, never a LOINC — don't put it anywhere, and treat that test as having no printed code. Otherwise include a code only when you can look it up or already know it with high confidence. If you don't know the code, or aren't sure, set "loinc" to an empty string ("") rather than guessing — the app will let you fill in missing codes yourself afterward. Never invent or guess a code: a wrong one is worse than a blank one. When in doubt, leave it empty.
 
 5. Build ONE JSON object in exactly this shape:
 {
@@ -96,7 +97,7 @@ Field rules — apply silently, do not ask me about any of these:
    - "method": the assay/method as printed (e.g. "CHOD-POD"), only if stated.
    - Never invent a test, value, unit, range, or code that isn't on the report I gave you.
 
-6. Before printing, self-check silently: count the results printed on each report and confirm the JSON has exactly that many observations for it, each with its value (or rawValue) filled in — if any is missing, go back and fix it, asking me only about illegible ones.
+6. Before producing the file, self-check silently: count the results printed on each report and confirm the JSON has exactly that many observations for it (minus any pending ones you skipped), each with its value (or rawValue) filled in — if any is missing, go back and fix it, asking me only about illegible ones. Then list for me every draw date + lab you included, one line each, and ask me to confirm no report I sent is missing before you continue.
 
 7. Deliver the JSON as a downloadable file, not as text in the chat:
    - Create an actual .json file named with the draw date (e.g. "blood-results-2026-08-19.json") and give me a direct download link to it. Use whatever file-creation ability you have (code interpreter, canvas, artifacts, file output).
