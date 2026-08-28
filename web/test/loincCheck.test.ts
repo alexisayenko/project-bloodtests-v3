@@ -97,6 +97,11 @@ describe('normalizeUnit', () => {
     expect(normalizeUnit('µg/dL')).toBe('ug/dl');
   });
 
+  it('treats mcg and µg as the same unit', () => {
+    expect(normalizeUnit('mcg/dL')).toBe('ug/dl');
+    expect(normalizeUnit('mcg/dL')).toBe(normalizeUnit('μg/dL'));
+  });
+
   it('handles exponent-style counts', () => {
     expect(normalizeUnit('x10^3/μL')).toBe('x10^3/ul');
   });
@@ -167,6 +172,22 @@ describe('resolveLoinc', () => {
       prolactinUnits
     );
     expect(res.candidates[0]?.loinc).toBe('2842-3');
+    expect(res.confident).toBe(true);
+  });
+
+  // Regression: curated tables spell micrograms "mcg", labs print "μg" —
+  // that must read as agreement, not a contradiction (real case: Zinc and
+  // DHEA-S rows got zero suggestions).
+  it('treats a curated mcg unit as agreeing with a printed µg unit', () => {
+    const zincCatalog: Analysis[] = [
+      { loinc: '5763-8', longCommonName: 'Zinc [Mass/volume] in Serum or Plasma', displayName: 'Zinc (Zn)', lang: {} },
+    ];
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Zinc (Zn)', unit: 'μg/dL' }),
+      zincCatalog,
+      { '5763-8': 'mcg/dL' }
+    );
+    expect(res.candidates[0]?.loinc).toBe('5763-8');
     expect(res.confident).toBe(true);
   });
 
