@@ -10,6 +10,7 @@ import {
   type CrossCheckResult,
   type NlmEntry,
 } from '../../data/loincCheck';
+import { ALSO_REFS } from './markers';
 import { formatFullDate, pressable } from './ui';
 
 const th = {
@@ -107,7 +108,18 @@ export function DiagnosticReportDetailView({
 
   const handleCrossCheck = () => {
     if (!items) return;
-    setCheckResults(crossCheckLocal(items, Object.values(analysesCatalog)));
+    // Expand the catalog with unit-variant aliases (ALSO_REFS): labs report
+    // e.g. SHBG as 13967-5 (nmol/L) while the catalog keys it as 2942-1.
+    const base = Object.values(analysesCatalog);
+    const byCode = new Map(base.map((a) => [a.loinc, a]));
+    const aliases = Object.entries(ALSO_REFS).flatMap(([primary, refs]) => {
+      const canonical = byCode.get(primary);
+      if (!canonical) return [];
+      return refs
+        .filter((r) => !byCode.has(r.loinc))
+        .map((r) => ({ ...canonical, loinc: r.loinc, longCommonName: r.longCommonName }));
+    });
+    setCheckResults(crossCheckLocal(items, [...base, ...aliases]));
     setNlmState('idle');
     setNlmByCode({});
     setNlmSuggestions({});
