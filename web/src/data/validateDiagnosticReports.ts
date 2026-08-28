@@ -1,5 +1,5 @@
 import type { DiagnosticReport } from '../types';
-import { LOINC_RE } from './loincCheck';
+import { LOINC_RE, DEFAULT_UNITS, normalizeUnit } from './loincCheck';
 
 export interface ValidationIssue {
   groupFile: string;
@@ -54,6 +54,16 @@ export function validateDiagnosticReports(groups: DiagnosticReport[]): Validatio
           level: 'warning',
           message: `No unit`,
         });
+      } else if (item.loinc && LOINC_RE.test(item.loinc)) {
+        const expected = DEFAULT_UNITS[item.loinc];
+        if (expected && normalizeUnit(expected) !== normalizeUnit(item.unit)) {
+          issues.push({
+            groupFile: group.file,
+            resultIndex: i,
+            level: 'warning',
+            message: `Unit '${item.unit}' unexpected for ${item.loinc} (expected ${expected})`,
+          });
+        }
       }
 
       const hasRefRange = item.refMin != null && item.refMax != null;

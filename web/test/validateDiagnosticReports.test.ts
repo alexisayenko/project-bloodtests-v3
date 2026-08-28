@@ -34,6 +34,23 @@ const createGroup = (overrides?: Partial<DiagnosticReport>): DiagnosticReport =>
 });
 
 describe('validateDiagnosticReports', () => {
+  it('warns when the unit contradicts the curated unit for the code', () => {
+    const groups = [createGroup({ items: [createResult({ loinc: '15081-3', analysis: 'Prolactin', unit: 'ng/mL', refText: '1-2' })] })];
+    const issues = validateDiagnosticReports(groups);
+    const unitIssue = issues.find((i) => i.message.includes('unexpected for 15081-3'));
+    expect(unitIssue?.level).toBe('warning');
+    expect(unitIssue?.message).toContain('mIU/L');
+  });
+
+  it('accepts the curated unit for the code, across spellings', () => {
+    const groups = [
+      createGroup({ items: [createResult({ loinc: '15081-3', analysis: 'Prolactin', unit: 'mIU/L', refText: '1-2' })] }),
+      createGroup({ file: 'f2', items: [createResult({ loinc: '5763-8', analysis: 'Zinc', unit: 'μg/dL', refText: '1-2' })] }),
+    ];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
+  });
+
   it('returns no issues for a valid complete record', () => {
     const groups = [createGroup()];
     const issues = validateDiagnosticReports(groups);
@@ -57,7 +74,8 @@ describe('validateDiagnosticReports', () => {
   });
 
   it('accepts well-formed LOINC codes of varying length', () => {
-    for (const loinc of ['2093-3', '1-8', '1234567-0']) {
+    // 718-7 keeps the default g/dL unit consistent; the others have no curated unit.
+    for (const loinc of ['718-7', '1-8', '1234567-0']) {
       const issues = validateDiagnosticReports([createGroup({ items: [createResult({ loinc })] })]);
       expect(issues).toHaveLength(0);
     }

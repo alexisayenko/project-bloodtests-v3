@@ -34,7 +34,7 @@ export function normalizeUnit(unit: string | undefined | null): string {
 
 // Known reference unit per LOINC, from the curated marker tables — this is what
 // lets the row's unit pick the right variant of a multi-code analyte.
-const DEFAULT_UNITS: Record<string, string> = {
+export const DEFAULT_UNITS: Record<string, string> = {
   ...Object.fromEntries(Object.entries(SHORT_LABELS).map(([loinc, v]) => [loinc, v.unit])),
   ...Object.fromEntries(
     Object.values(ALSO_REFS)
