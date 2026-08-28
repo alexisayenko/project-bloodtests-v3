@@ -27,6 +27,7 @@ export function normalizeUnit(unit: string | undefined | null): string {
   return (unit ?? '')
     .toLowerCase()
     .replace(/[μµ]/g, 'u')
+    .replace(/mcg/g, 'ug')
     .replace(/\s+/g, '')
     .replace(/\.+$/, '');
 }
