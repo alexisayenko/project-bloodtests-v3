@@ -66,7 +66,7 @@ export function ResultsPage({ sessions, loading, loadGroupItems }: Props) {
     }
   }, [sessions, expandedSessions, view]);
 
-  const getSessionItems = (g: ResultGroup): Result[] | null => {
+  const getSessionItems = (g: DiagnosticReport): Result[] | null => {
     return g.items || loadedItems[g.file] || null;
   };
 
@@ -117,7 +117,7 @@ export function ResultsPage({ sessions, loading, loadGroupItems }: Props) {
   }, [sessions]);
 
   // Get sessions that have matching results for current filter
-  const getVisibleSessions = useCallback((): ResultGroup[] => {
+  const getVisibleSessions = useCallback((): DiagnosticReport[] => {
     if (view === 'sessions') return sessions;
     return sessions.filter(g => {
       if (!g.items) return false;
@@ -127,7 +127,7 @@ export function ResultsPage({ sessions, loading, loadGroupItems }: Props) {
 
   const visibleSessions = getVisibleSessions();
 
-  const renderSessionCard = (g: ResultGroup) => {
+  const renderSessionCard = (g: DiagnosticReport) => {
     const isExpanded = expandedSessions[g.file];
     const allItems = getSessionItems(g);
     const filteredItems = allItems ? filterResults(allItems) : null;

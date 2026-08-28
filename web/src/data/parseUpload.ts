@@ -160,7 +160,7 @@ function v3ToResult(obs: V3Observation): Result {
  * Convert v3 DiagnosticReport to v2 DiagnosticReport shape.
  */
 function v3ToGroup(report: V3DiagnosticReport, index: number): DiagnosticReport {
-  if (!report.diagnosticReports && !Array.isArray(report.observations)) {
+  if (!Array.isArray(report.observations)) {
     throw new UploadParseError(`DiagnosticReport at index ${index} is missing observations array`);
   }
 
