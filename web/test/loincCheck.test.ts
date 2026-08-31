@@ -3,6 +3,7 @@ import {
   LOINC_RE,
   latinPart,
   normalizeUnit,
+  canonicalUnit,
   tokenOverlap,
   resolveLoinc,
   crossCheckLocal,
@@ -89,12 +90,22 @@ describe('latinPart', () => {
 
 describe('normalizeUnit', () => {
   it('lowercases', () => {
-    expect(normalizeUnit('mIU/L')).toBe('miu/l');
+    expect(normalizeUnit('mIU/L')).toBe('mu/l');
   });
 
   it('maps mu variants to u', () => {
-    expect(normalizeUnit('μIU/mL')).toBe('uiu/ml');
+    expect(normalizeUnit('μIU/mL')).toBe('uu/ml');
     expect(normalizeUnit('µg/dL')).toBe('ug/dl');
+  });
+
+  it('treats IU and U as the same unit', () => {
+    expect(normalizeUnit('µU/mL')).toBe(normalizeUnit('μIU/mL'));
+    expect(normalizeUnit('mIU/L')).toBe(normalizeUnit('mU/L'));
+  });
+
+  it('strips a trailing question mark from uncertain curated units', () => {
+    expect(normalizeUnit('fL?')).toBe(normalizeUnit('fl'));
+    expect(normalizeUnit('x10^3/uL?')).toBe('x10^3/ul');
   });
 
   it('treats mcg and µg as the same unit', () => {
@@ -112,6 +123,34 @@ describe('normalizeUnit', () => {
 
   it('treats undefined as empty', () => {
     expect(normalizeUnit(undefined)).toBe('');
+  });
+});
+
+describe('canonicalUnit', () => {
+  it('rewrites metric-prefix /mL units to the equivalent /L form', () => {
+    expect(canonicalUnit('μIU/mL')).toBe('mu/l');
+    expect(canonicalUnit('pg/mL')).toBe('ng/l');
+    expect(canonicalUnit('ng/mL')).toBe('ug/l');
+    expect(canonicalUnit('mg/mL')).toBe('g/l');
+    expect(canonicalUnit('mIU/mL')).toBe('u/l');
+    expect(canonicalUnit('nmol/mL')).toBe('umol/l');
+  });
+
+  it('makes μIU/mL, µU/mL and mIU/L all compare equal', () => {
+    expect(canonicalUnit('μIU/mL')).toBe(canonicalUnit('mIU/L'));
+    expect(canonicalUnit('µU/mL')).toBe(normalizeUnit('mIU/L'));
+    expect(canonicalUnit('µU/mL')).toBe(normalizeUnit('mU/L'));
+  });
+
+  it('leaves /dL, /uL and prefixless numerators alone', () => {
+    expect(canonicalUnit('ng/dL')).toBe('ng/dl');
+    expect(canonicalUnit('x10^3/μL')).toBe('x10^3/ul');
+    expect(canonicalUnit('IU/mL')).toBe('u/ml');
+    expect(canonicalUnit('g/mL')).toBe('g/ml');
+  });
+
+  it('reads an uncertain curated unit as agreeing with the plain one', () => {
+    expect(canonicalUnit('fL?')).toBe(canonicalUnit('fl'));
   });
 });
 
@@ -229,6 +268,172 @@ describe('resolveLoinc', () => {
   });
 });
 
+describe('resolveLoinc on real lab-report names', () => {
+  const labCatalog: Analysis[] = [
+    {
+      loinc: '3016-3',
+      longCommonName: 'Thyrotropin [Units/volume] in Serum or Plasma',
+      displayName: 'Thyroid-stimulating hormone (TSH)',
+      lang: {},
+    },
+    {
+      loinc: '3024-7',
+      longCommonName: 'Thyroxine (T4) free [Mass/volume] in Serum or Plasma',
+      displayName: 'Free Thyroxine (FT4)',
+      lang: {},
+    },
+    {
+      loinc: '718-7',
+      longCommonName: 'Hemoglobin [Mass/volume] in Blood',
+      displayName: 'Hemoglobin (HGB)',
+      lang: {},
+    },
+    {
+      loinc: '2143-6',
+      longCommonName: 'Cortisol [Mass/volume] in Serum or Plasma',
+      displayName: 'Cortisol',
+      lang: {},
+    },
+    {
+      loinc: '2243-4',
+      longCommonName: 'Estradiol (E2) [Mass/volume] in Serum or Plasma',
+      displayName: 'Estradiol (E2)',
+      lang: {},
+    },
+  ];
+  const labUnits = {
+    '3016-3': 'mIU/L',
+    '3024-7': 'ng/dL',
+    '718-7': 'g/dL',
+    '2143-6': 'µg/dL',
+    '2243-4': 'pg/mL',
+  };
+
+  it('resolves "TSH 3rd" μIU/ml confidently despite the noise token and /mL spelling', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'TSH 3rd', unit: 'μIU/ml' }),
+      labCatalog,
+      labUnits
+    );
+    expect(res.candidates[0]?.loinc).toBe('3016-3');
+    expect(res.confident).toBe(true);
+  });
+
+  it('resolves the British "Haemoglobin (Hb)" to Hemoglobin', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Haemoglobin (Hb)', unit: 'g/dL' }),
+      labCatalog,
+      labUnits
+    );
+    expect(res.candidates[0]?.loinc).toBe('718-7');
+    expect(res.confident).toBe(true);
+  });
+
+  it('resolves the misspelled "CORTIZOL" to Cortisol', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'CORTIZOL', unit: 'µg/dl' }),
+      labCatalog,
+      labUnits
+    );
+    expect(res.candidates[0]?.loinc).toBe('2143-6');
+    expect(res.confident).toBe(true);
+  });
+
+  it('resolves "FT4 (Thyroxin free)" to Free Thyroxine', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'FT4 (Thyroxin free)', unit: 'ng/dL' }),
+      labCatalog,
+      labUnits
+    );
+    expect(res.candidates[0]?.loinc).toBe('3024-7');
+    expect(res.confident).toBe(true);
+  });
+
+  it('resolves the British "Oestradiol" to Estradiol, pg/mL agreeing with curated pg/mL', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Oestradiol', unit: 'pg/ml' }),
+      labCatalog,
+      labUnits
+    );
+    expect(res.candidates[0]?.loinc).toBe('2243-4');
+    expect(res.confident).toBe(true);
+  });
+
+  // A ×100 unit conflict (ng/L vs ng/dL) must block confidence but NOT hide
+  // the candidate — the strong name hit still surfaces as a suggestion.
+  it('keeps FT4 as a suggestion when ng/L contradicts curated ng/dL, without confidence', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'FT4 (Thyroxin free)', unit: 'ng/L' }),
+      labCatalog,
+      labUnits
+    );
+    expect(res.candidates[0]?.loinc).toBe('3024-7');
+    expect(res.confident).toBe(false);
+  });
+
+  // IDF noise guard: common tokens ("factor", "index") plus an unknown one
+  // must not surface unrelated analytes, fuzzy matching included.
+  it('suggests nothing for "Risk Factor Index"', () => {
+    const noiseCatalog: Analysis[] = [
+      {
+        loinc: '3236-2',
+        longCommonName: 'Tumor necrosis factor.alpha [Mass/volume] in Serum or Plasma',
+        displayName: 'TNF-alpha',
+        lang: {},
+      },
+      {
+        loinc: '5964-2',
+        longCommonName: 'Prothrombin time (PT) actual/normal in Platelet poor plasma by Coagulation assay',
+        displayName: 'Prothrombin Time (PT)',
+        lang: {},
+      },
+      {
+        loinc: '3289-6',
+        longCommonName: 'Coagulation factor II activity actual/normal in Platelet poor plasma',
+        displayName: 'Factor II Activity',
+        lang: {},
+      },
+      {
+        loinc: '41770-1',
+        longCommonName: 'Free androgen index in Serum or Plasma',
+        displayName: 'Free Androgen Index (FAI)',
+        lang: {},
+      },
+      {
+        loinc: '47690-5',
+        longCommonName: 'Insulin resistance index in Serum or Plasma',
+        displayName: 'HOMA-IR Index',
+        lang: {},
+      },
+    ];
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Risk Factor Index', unit: '' }),
+      noiseCatalog,
+      {}
+    );
+    expect(res.candidates).toEqual([]);
+    expect(res.confident).toBe(false);
+  });
+
+  it('treats a printed unit as agreeing with an uncertain curated unit ("fL?")', () => {
+    const rdwCatalog: Analysis[] = [
+      {
+        loinc: '21000-5',
+        longCommonName: 'Erythrocyte distribution width [Entitic volume] by Automated count',
+        displayName: 'RDW-SD',
+        lang: {},
+      },
+    ];
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'RDW-SD', unit: 'fl' }),
+      rdwCatalog,
+      { '21000-5': 'fL?' }
+    );
+    expect(res.candidates[0]?.loinc).toBe('21000-5');
+    expect(res.confident).toBe(true);
+  });
+});
+
 describe('crossCheckLocal', () => {
   it('matches a known code with an agreeing printed name', () => {
     const [res] = crossCheckLocal([createResult()], catalog);
@@ -273,6 +478,53 @@ describe('crossCheckLocal', () => {
     expect(res?.derived).toEqual({ loinc: '3051-0', name: 'Free T3' });
     expect(res?.loincName).toBe('Thyrotropin');
     expect(res?.suggestions?.[0]?.loinc).toBe('3051-0');
+  });
+
+  // Real case: the token "insulin" from "Insulin-like growth factor"
+  // corroborated a wrong printed IGF-1 code on an Insulin row.
+  it('demotes a printed IGF-1 code on an "Insulin total" µU/mL row', () => {
+    const igfCatalog: Analysis[] = [
+      {
+        loinc: '2484-4',
+        longCommonName: 'Insulin-like growth factor 1 [Mass/volume] in Serum or Plasma',
+        displayName: 'IGF-1 (Somatomedin C)',
+        lang: {},
+      },
+      {
+        loinc: '20448-7',
+        longCommonName: 'Insulin [Units/volume] in Serum or Plasma',
+        displayName: 'Insulin',
+        lang: {},
+      },
+    ];
+    const [res] = crossCheckLocal(
+      [createResult({ loinc: '2484-4', analysis: 'Insulin total', unit: 'µU/mL' })],
+      igfCatalog,
+      { '2484-4': 'ng/mL', '20448-7': 'µIU/mL' }
+    );
+    expect(res?.status).toBe('mismatch');
+    expect(res?.confident).toBe(true);
+    expect(res?.derived?.loinc).toBe('20448-7');
+  });
+
+  // British spelling is an official LOINC language variant — a correct code
+  // must not be flagged just because the row prints "Haemoglobin".
+  it('matches a correct code against a British-spelled printed name', () => {
+    const hgbCatalog: Analysis[] = [
+      {
+        loinc: '718-7',
+        longCommonName: 'Hemoglobin [Mass/volume] in Blood',
+        displayName: 'Hemoglobin (HGB)',
+        lang: {},
+      },
+    ];
+    const [res] = crossCheckLocal(
+      [createResult({ loinc: '718-7', analysis: 'Haemoglobin (Hb)', unit: 'g/dL' })],
+      hgbCatalog,
+      { '718-7': 'g/dL' }
+    );
+    expect(res?.status).toBe('match');
+    expect(res?.loincName).toBe('Hemoglobin (HGB)');
   });
 
   it('flags mismatch with derivation even when the printed code is not in the catalog', () => {

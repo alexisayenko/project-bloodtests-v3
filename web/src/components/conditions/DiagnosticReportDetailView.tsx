@@ -47,6 +47,7 @@ export function DiagnosticReportDetailView({
   const [nlmState, setNlmState] = useState<'idle' | 'loading' | 'done' | 'failed'>('idle');
   const [nlmByCode, setNlmByCode] = useState<Record<string, string | null>>({});
   const [nlmSuggestions, setNlmSuggestions] = useState<Record<number, NlmEntry[]>>({});
+  const [autoFilledCount, setAutoFilledCount] = useState(0);
   const items = draftItems ?? group?.items ?? loadedItems;
 
   // Validate what's on screen: the draft while editing, the stored group otherwise.
@@ -124,34 +125,27 @@ export function DiagnosticReportDetailView({
 
   const handleCrossCheck = () => {
     if (!items) return;
-    setCheckResults(crossCheckLocal(items, expandedCatalog));
-    setNlmState('idle');
-    setNlmByCode({});
-    setNlmSuggestions({});
-  };
-
-  // Rows where the name+unit derivation confidently points at a different
-  // code than the one currently stored.
-  const confidentFixes = useMemo(() => {
-    if (!checkResults || !items) return new Map<number, string>();
+    const results = crossCheckLocal(items, expandedCatalog);
+    // A confident derivation is applied immediately (draft-gated by
+    // Save/Cancel) — the user shouldn't have to pick between codes the
+    // resolver already decided between.
     const fixes = new Map<number, string>();
-    checkResults.forEach((r, i) => {
+    results.forEach((r, i) => {
       const top = r.suggestions?.[0];
       if (r.confident && top && top.loinc !== items[i]!.loinc.trim()) fixes.set(i, top.loinc);
     });
-    return fixes;
-  }, [checkResults, items]);
-
-  // Applies every confident suggestion through the draft path (Save/Cancel
-  // still gate persistence), then re-runs the cross-check on the result.
-  const handleApplySuggestions = () => {
-    if (!items || confidentFixes.size === 0) return;
-    const updated = items.map((item, i) => {
-      const fix = confidentFixes.get(i);
-      return fix ? { ...item, loinc: fix } : item;
-    });
-    setDraftItems(updated);
-    setCheckResults(crossCheckLocal(updated, expandedCatalog));
+    if (fixes.size > 0) {
+      const updated = items.map((item, i) => {
+        const fix = fixes.get(i);
+        return fix ? { ...item, loinc: fix } : item;
+      });
+      setDraftItems(updated);
+      setCheckResults(crossCheckLocal(updated, expandedCatalog));
+      setAutoFilledCount(fixes.size);
+    } else {
+      setCheckResults(results);
+      setAutoFilledCount(0);
+    }
     setNlmState('idle');
     setNlmByCode({});
     setNlmSuggestions({});
@@ -225,21 +219,10 @@ export function DiagnosticReportDetailView({
             >
               Cross-check LOINCs
             </button>
-            {confidentFixes.size > 0 && (
-              <button
-                onClick={handleApplySuggestions}
-                style={{
-                  padding: '6px 16px',
-                  backgroundColor: '#1971c2',
-                  color: 'white',
-                  border: '1.5px solid #1971c2',
-                  borderRadius: 999,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                Apply suggestions ({confidentFixes.size})
-              </button>
+            {autoFilledCount > 0 && (
+              <span style={{ fontSize: 13, color: '#34a853' }}>
+                ✓ {autoFilledCount} code{autoFilledCount === 1 ? '' : 's'} filled automatically — review and Save
+              </span>
             )}
           </div>
           <div style={{ overflowX: 'auto', marginBottom: 16 }}>

@@ -9,6 +9,9 @@ export interface CrossCheckSuggestion {
   loinc: string;
   name: string;
   score: number;
+  // Name-overlap score before the unit adjustment — the rank floor uses this,
+  // so a unit contradiction dents the ranking but can't hide a strong name hit.
+  baseScore?: number;
   unit?: string;
 }
 
@@ -22,14 +25,28 @@ export interface CrossCheckResult {
   derived?: { loinc: string; name: string };
 }
 
-// "mIU/L" ≈ "miu/l", "μIU/mL" ≈ "uiu/ml", "x10^3/μL" ≈ "x10^3/ul", "mg/dL." ≈ "mg/dl".
+// "mIU/L" ≈ "mu/l", "μIU/mL" ≈ "uu/ml", "x10^3/μL" ≈ "x10^3/ul", "mg/dL." ≈ "mg/dl";
+// IU and U are interchangeable lab spellings ("µU/mL" ≡ "µIU/mL"), and a
+// curated unit marked uncertain ("fL?") reads as the unit itself.
 export function normalizeUnit(unit: string | undefined | null): string {
   return (unit ?? '')
     .toLowerCase()
     .replace(/[μµ]/g, 'u')
     .replace(/mcg/g, 'ug')
+    .replace(/iu/g, 'u')
     .replace(/\s+/g, '')
-    .replace(/\.+$/, '');
+    .replace(/[.?]+$/, '');
+}
+
+// μIU/mL ≡ mIU/L, pg/mL ≡ ng/L: a metric prefix over /mL is the same quantity
+// as the prefix shifted up 1000× over /L — fold to the /L spelling so the two
+// compare equal. /dL, /uL and prefixless numerators (IU/mL) are left alone.
+const PREFIX_UP: Record<string, string> = { p: 'n', n: 'u', u: 'm', m: '' };
+
+export function canonicalUnit(unit: string | undefined | null): string {
+  const u = normalizeUnit(unit);
+  const m = /^([pnum])(\p{L}+)\/ml$/u.exec(u);
+  return m ? `${PREFIX_UP[m[1]!]}${m[2]}/l` : u;
 }
 
 // Known reference unit per LOINC, from the curated marker tables — this is what
@@ -53,11 +70,87 @@ export function latinPart(name: string): string {
     .trim();
 }
 
+// British ae/oe digraphs fold to the American spelling (haemoglobin →
+// hemoglobin, oestradiol → estradiol) so en-GB printouts tokenize like the
+// catalog's en-US names.
 function tokensOf(text: string): string[] {
   return text
     .toLowerCase()
+    .replace(/ae|oe/g, 'e')
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length >= 2);
+}
+
+// --- Fuzzy token equality (lab typos: CORTIZOL, Thyroxin) ---
+
+// Two tokens count as equal when identical, or within Damerau-Levenshtein
+// distance 1 for length ≥ 5 (both sides), or distance 2 for length ≥ 9.
+// Short tokens get no slack — "hb" must never equal "hgb" by accident.
+const FUZZY1_MIN_LEN = 5;
+const FUZZY2_MIN_LEN = 9;
+
+function fuzzyCap(a: string, b: string): number {
+  const shorter = Math.min(a.length, b.length);
+  if (shorter >= FUZZY2_MIN_LEN) return 2;
+  if (shorter >= FUZZY1_MIN_LEN) return 1;
+  return 0;
+}
+
+// Optimal-string-alignment Damerau-Levenshtein, early-exiting once a whole
+// row exceeds the cap.
+function editDistanceWithin(a: string, b: string, cap: number): boolean {
+  if (cap <= 0) return false;
+  if (Math.abs(a.length - b.length) > cap) return false;
+  let prev2: number[] = [];
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur: number[] = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let d = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d = Math.min(d, prev2[j - 2]! + 1);
+      }
+      cur[j] = d;
+      if (d < rowMin) rowMin = d;
+    }
+    if (rowMin > cap) return false;
+    prev2 = prev;
+    prev = cur;
+  }
+  return prev[b.length]! <= cap;
+}
+
+function tokensFuzzyEqual(a: string, b: string): boolean {
+  return a === b || editDistanceWithin(a, b, fuzzyCap(a, b));
+}
+
+// Catalog vocabulary grouped by token length, so a fuzzy lookup only compares
+// against tokens whose length is within the allowed edit distance.
+function groupVocabByLength(weights: Map<string, number>): Map<number, string[]> {
+  const byLen = new Map<number, string[]>();
+  for (const t of weights.keys()) {
+    const group = byLen.get(t.length);
+    if (group) group.push(t);
+    else byLen.set(t.length, [t]);
+  }
+  return byLen;
+}
+
+function fuzzyVocabHits(token: string, vocabByLen: Map<number, string[]>): string[] {
+  const hits: string[] = [];
+  for (let len = token.length - 2; len <= token.length + 2; len++) {
+    const group = vocabByLen.get(len);
+    if (!group) continue;
+    const shorter = Math.min(token.length, len);
+    const cap = shorter >= FUZZY2_MIN_LEN ? 2 : shorter >= FUZZY1_MIN_LEN ? 1 : 0;
+    if (cap === 0 || Math.abs(token.length - len) > cap) continue;
+    for (const v of group) {
+      if (v !== token && editDistanceWithin(token, v, cap)) hits.push(v);
+    }
+  }
+  return hits;
 }
 
 // Any-script tokenizer for the translation pass — Greek/Cyrillic printed names
@@ -69,12 +162,16 @@ function unicodeTokens(text: string): string[] {
     .filter((t) => t.length >= 2);
 }
 
-// Fraction of `printed` tokens found among `official` tokens (0..1).
+// Fraction of `printed` tokens found among `official` tokens (0..1), with
+// fuzzy equality so "Haemoglobin"/"CORTIZOL" still overlap their entries.
 export function tokenOverlap(printed: string, official: string): number {
   const printedTokens = tokensOf(printed);
   if (printedTokens.length === 0) return 0;
-  const officialTokens = new Set(tokensOf(official));
-  const matched = printedTokens.filter((t) => officialTokens.has(t)).length;
+  const officialTokens = tokensOf(official);
+  const officialSet = new Set(officialTokens);
+  const matched = printedTokens.filter(
+    (t) => officialSet.has(t) || officialTokens.some((o) => tokensFuzzyEqual(t, o))
+  ).length;
   return matched / printedTokens.length;
 }
 
@@ -93,6 +190,8 @@ const MISMATCH_THRESHOLD = 0.2;
 // Rarity (IDF) weight per token across the catalog: "index"/"total"/"serum"
 // appear everywhere and should barely count; "HDL" or "prothrombin" pin the
 // analyte. Weight = 1/log2(2+df).
+const UNKNOWN_TOKEN_WEIGHT = 0.25;
+
 function tokenWeights(entries: Analysis[]): Map<string, number> {
   const df = new Map<string, number>();
   for (const a of entries) {
@@ -115,9 +214,16 @@ function unitAdjust(base: number, rowUnit: string, candUnit: string): number {
   return candUnit === rowUnit ? base * 1.3 : base * 0.3;
 }
 
+// Rank floor applies to the PRE-unit-adjust name score: a strong name hit
+// whose curated unit contradicts the row's (e.g. FT4 ng/L vs ng/dL) must
+// still surface as a suggestion — the penalty only demotes it from confident.
+// 0.45 (not lower) keeps common-token junk out: "Risk Factor Index" matching
+// TNF-alpha on "factor" alone stays under the floor.
+const RANK_FLOOR = 0.45;
+
 function rankCandidates(scored: CrossCheckSuggestion[]): CrossCheckSuggestion[] {
   return scored
-    .filter((s) => s.score > 0.3)
+    .filter((s) => (s.baseScore ?? s.score) > RANK_FLOOR)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
     // When the best candidate clearly dominates, weaker share-a-token hits
@@ -134,20 +240,36 @@ function stageLatin(
 ): CrossCheckSuggestion[] {
   const name = latinPart(item.analysis);
   if (!name) return [];
-  const rowUnit = normalizeUnit(item.unit);
+  const rowUnit = canonicalUnit(item.unit);
   const queryTokens = tokensOf(name);
-  const weightOf = (t: string) => weights.get(t) ?? 1;
-  const totalWeight = queryTokens.reduce((s, t) => s + weightOf(t), 0);
+  const vocabByLen = groupVocabByLength(weights);
+  // Per query token: every catalog token it counts as (itself + fuzzy hits)
+  // and its weight. A fuzzy-known token borrows its best match's weight; a
+  // token the whole catalog has never seen ("3rd", "total") can't
+  // discriminate anything, so it barely counts instead of diluting the score.
+  const tokenInfo = new Map(
+    queryTokens.map((t) => {
+      const hits = fuzzyVocabHits(t, vocabByLen);
+      const weight =
+        weights.get(t) ??
+        (hits.length > 0 ? Math.max(...hits.map((h) => weights.get(h)!)) : UNKNOWN_TOKEN_WEIGHT);
+      return [t, { matches: [t, ...hits], weight }] as const;
+    })
+  );
+  const totalWeight = queryTokens.reduce((s, t) => s + tokenInfo.get(t)!.weight, 0);
   if (totalWeight === 0) return [];
   return rankCandidates(
     entries.map((a) => {
       const officialTokens = new Set(tokensOf(catalogNameText(a)));
       const base =
-        queryTokens.filter((t) => officialTokens.has(t)).reduce((s, t) => s + weightOf(t), 0) / totalWeight;
+        queryTokens
+          .filter((t) => tokenInfo.get(t)!.matches.some((m) => officialTokens.has(m)))
+          .reduce((s, t) => s + tokenInfo.get(t)!.weight, 0) / totalWeight;
       return {
         loinc: a.loinc,
         name: a.displayName || a.longCommonName,
-        score: unitAdjust(base, rowUnit, normalizeUnit(unitByLoinc[a.loinc])),
+        score: unitAdjust(base, rowUnit, canonicalUnit(unitByLoinc[a.loinc])),
+        baseScore: base,
         unit: unitByLoinc[a.loinc],
       };
     })
@@ -158,7 +280,7 @@ function stageLatin(
 function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string, string>): CrossCheckSuggestion[] {
   const queryTokens = unicodeTokens(item.analysis);
   if (queryTokens.length === 0) return [];
-  const rowUnit = normalizeUnit(item.unit);
+  const rowUnit = canonicalUnit(item.unit);
   return rankCandidates(
     entries.map((a) => {
       const langTokens = new Set(unicodeTokens(Object.values(a.lang ?? {}).join(' ')));
@@ -167,7 +289,8 @@ function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string
       return {
         loinc: a.loinc,
         name: a.displayName || a.longCommonName,
-        score: unitAdjust(base, rowUnit, normalizeUnit(unitByLoinc[a.loinc])),
+        score: unitAdjust(base, rowUnit, canonicalUnit(unitByLoinc[a.loinc])),
+        baseScore: base,
         unit: unitByLoinc[a.loinc],
       };
     })
@@ -187,8 +310,8 @@ function isConfident(
   const [top, second] = candidates;
   if (!top || top.score < 0.7) return false;
   if (second && top.score < second.score + 0.25) return false;
-  const rowUnit = normalizeUnit(item.unit);
-  const candUnit = normalizeUnit(unitByLoinc[top.loinc]);
+  const rowUnit = canonicalUnit(item.unit);
+  const candUnit = canonicalUnit(unitByLoinc[top.loinc]);
   return !rowUnit || !candUnit || rowUnit === candUnit;
 }
 
@@ -287,14 +410,14 @@ export interface NlmLookupResult {
 
 // EXAMPLE_UCUM_UNITS can list several units ("mg/dL;mmol/L").
 function nlmUnitMatches(entry: NlmEntry, rowUnit: string): boolean {
-  return (entry.unit ?? '').split(/[;,]/).some((u) => normalizeUnit(u) === rowUnit);
+  return (entry.unit ?? '').split(/[;,]/).some((u) => canonicalUnit(u) === rowUnit);
 }
 
 // The same unit selection as the local ladder, for NLM name-search results:
 // entries agreeing with the row's unit win; ones contradicting it are dropped
 // once any agreeing entry exists (unknown-unit entries are kept as fallback).
 export function selectByUnit(entries: NlmEntry[], rowUnit: string | undefined): NlmEntry[] {
-  const unit = normalizeUnit(rowUnit);
+  const unit = canonicalUnit(rowUnit);
   if (!unit) return entries;
   const matching = entries.filter((e) => nlmUnitMatches(e, unit));
   if (matching.length === 0) return entries;
