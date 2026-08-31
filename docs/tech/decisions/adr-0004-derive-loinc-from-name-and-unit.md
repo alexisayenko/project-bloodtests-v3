@@ -63,6 +63,17 @@ entry, as before.
 The chatbot prompt transcribes a code only when the report prints
 one (and only if LOINC-shaped); otherwise `loinc` is `""`.
 
+*Update 2026-08-31:* the unit table is no longer strictly
+one-unit-per-code — `ALLOWED_UNITS` accepts extra units per code
+where LOINC fixes the quantity kind but not the scale (Estradiol
+1848-1 pg/mL alongside the curated primary), and
+`SUPPLEMENTARY_UNITS` supplies units for catalog analytes outside
+the curated table. The cross-check also collapses members of one
+alias group: a printed code that is an alias of the confidently
+derived code counts as a match, and alias-group members merge into
+one suggestion whose kept code is chosen by the row's unit
+(same-scale groups fall back to the primary).
+
 ## Consequences
 
 - Codes the report never printed now arrive blank and get filled

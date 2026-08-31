@@ -51,6 +51,22 @@ describe('validateDiagnosticReports', () => {
     expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
   });
 
+  it('accepts every allowed unit for a code with a unit set (DHT ng/dL and pg/mL)', () => {
+    const groups = [
+      createGroup({ items: [createResult({ loinc: '1848-1', analysis: 'DHT', unit: 'ng/dL', refText: '1-2' })] }),
+      createGroup({ file: 'f2', items: [createResult({ loinc: '1848-1', analysis: 'DHT', unit: 'pg/mL', refText: '1-2' })] }),
+    ];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
+  });
+
+  it('warns listing all accepted units when none match', () => {
+    const groups = [createGroup({ items: [createResult({ loinc: '1848-1', analysis: 'DHT', unit: 'nmol/L', refText: '1-2' })] })];
+    const issue = validateDiagnosticReports(groups).find((i) => i.message.includes('unexpected for 1848-1'));
+    expect(issue?.level).toBe('warning');
+    expect(issue?.message).toContain('expected ng/dL or pg/mL');
+  });
+
   it('returns no issues for a valid complete record', () => {
     const groups = [createGroup()];
     const issues = validateDiagnosticReports(groups);

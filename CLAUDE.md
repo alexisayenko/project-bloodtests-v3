@@ -78,7 +78,11 @@ LOINC / value / unit, saved to localStorage via `updateGroup`, and
 carries a "Cross-check LOINCs" button (`loincCheck.ts`): an offline
 resolver derives each row's LOINC from printed name + unit (ADR-0004;
 Latin-name pass, then catalog `lang` translations, unit hard-selecting
-among unit variants) and treats a printed code as evidence only — ✓
+among unit variants; per-code allowed-unit sets (`ALLOWED_UNITS`)
+drive the validation unit warning — it fires only when a unit is
+outside the code's accepted set, listing that set — and alias-group
+members collapse into one suggestion, the kept code picked by the
+row's unit) and treats a printed code as evidence only — ✓
 derivation agrees / ⚠ confident derivation contradicts it (warning
 names both codes; unit-labeled suggestion chips, plus an "Apply
 suggestions" button applying every confident fix through the edit
@@ -120,7 +124,7 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (254 tests across 14 files, 1 skipped: index
+Vitest suites in `web/test/` (286 tests across 14 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — v3 envelope and v2
 shapes — and import-replace, diagnostic-report validation, LOINC
 cross-check, export

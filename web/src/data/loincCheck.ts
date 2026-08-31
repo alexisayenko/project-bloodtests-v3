@@ -1,5 +1,5 @@
 import type { Result, Analysis } from '../types';
-import { SHORT_LABELS, ALSO_REFS } from '../components/conditions/markers';
+import { SHORT_LABELS, ALSO_REFS, ALIAS_TO_PRIMARY } from '../components/conditions/markers';
 
 export const LOINC_RE = /^\d{1,7}-\d$/;
 
@@ -49,9 +49,17 @@ export function canonicalUnit(unit: string | undefined | null): string {
   return m ? `${PREFIX_UP[m[1]!]}${m[2]}/l` : u;
 }
 
+// Conventional units for catalog analytes absent from the curated marker
+// tables — without an entry a candidate takes no unit penalty, so e.g. IGF-1
+// ("Insulin-like growth factor") survives against Insulin on a µIU/mL row.
+export const SUPPLEMENTARY_UNITS: Record<string, string> = {
+  '2484-4': 'ng/mL',
+};
+
 // Known reference unit per LOINC, from the curated marker tables — this is what
 // lets the row's unit pick the right variant of a multi-code analyte.
 export const DEFAULT_UNITS: Record<string, string> = {
+  ...SUPPLEMENTARY_UNITS,
   ...Object.fromEntries(Object.entries(SHORT_LABELS).map(([loinc, v]) => [loinc, v.unit])),
   ...Object.fromEntries(
     Object.values(ALSO_REFS)
@@ -59,6 +67,28 @@ export const DEFAULT_UNITS: Record<string, string> = {
       .map((ref) => [ref.loinc, ref.unit])
   ),
 };
+
+// A LOINC code fixes the kind of quantity, not the scale — LOINC's own example
+// units for 1848-1 (DHT) list both ng/dL and pg/mL. Extra accepted units per
+// code, beyond the curated primary in DEFAULT_UNITS.
+export const ALLOWED_UNITS: Record<string, string[]> = {
+  '1848-1': ['pg/mL'],
+};
+
+// Every known unit for a code (curated primary first, then extras), canonicalized.
+function knownUnits(loinc: string, unitByLoinc: Record<string, string>): string[] {
+  return [unitByLoinc[loinc], ...(ALLOWED_UNITS[loinc] ?? [])]
+    .filter((u): u is string => Boolean(u))
+    .map((u) => canonicalUnit(u));
+}
+
+// undefined — we know nothing about the code's units; true — the unit matches
+// the DEFAULT_UNITS entry or any ALLOWED_UNITS member; false otherwise.
+export function unitAllowed(loinc: string, unit: string): boolean | undefined {
+  const known = knownUnits(loinc, DEFAULT_UNITS);
+  if (known.length === 0) return undefined;
+  return known.includes(canonicalUnit(unit));
+}
 
 // Keeps only whitespace-separated words whose letters are all Latin-script,
 // so bilingual lab printouts like "Γλυκόζη Glucose Serum" reduce to "Glucose Serum".
@@ -204,14 +234,14 @@ function tokenWeights(entries: Analysis[]): Map<string, number> {
   return weights;
 }
 
-// A candidate whose known unit agrees with the row's is boosted; one whose
-// known unit contradicts it is heavily penalized — the unit hard-selects among
+// A candidate whose known units include the row's is boosted; one whose known
+// units all contradict it is heavily penalized — the unit hard-selects among
 // same-named variants (e.g. Prolactin mIU/L vs ng/mL).
-function unitAdjust(base: number, rowUnit: string, candUnit: string): number {
-  if (base <= 0 || !rowUnit || !candUnit) return base;
+function unitAdjust(base: number, rowUnit: string, candUnits: string[]): number {
+  if (base <= 0 || !rowUnit || candUnits.length === 0) return base;
   // Multiplicative, so the unit signal scales with name similarity instead of
   // lifting a weak name hit past a strong one.
-  return candUnit === rowUnit ? base * 1.3 : base * 0.3;
+  return candUnits.includes(rowUnit) ? base * 1.3 : base * 0.3;
 }
 
 // Rank floor applies to the PRE-unit-adjust name score: a strong name hit
@@ -221,14 +251,69 @@ function unitAdjust(base: number, rowUnit: string, candUnit: string): number {
 // TNF-alpha on "factor" alone stays under the floor.
 const RANK_FLOOR = 0.45;
 
-function rankCandidates(scored: CrossCheckSuggestion[]): CrossCheckSuggestion[] {
-  return scored
+// A primary and its own ALSO_REFS aliases are one analyte, not competing
+// suggestions — collapse them into a single candidate. The kept code is the
+// group member whose known unit matches the row's (the unit picks the variant;
+// panels still join via ALIAS_TO_PRIMARY, so e.g. SHBG nmol/L keeps 13967-5).
+// When the unit doesn't discriminate (no row unit, or several members match),
+// fall back to the primary — but only for same-scale groups (one shared
+// canonical unit, e.g. Glucose 2339-0/2345-7 both mg/dL). Different-scale
+// variants with no deciding unit (Prolactin mIU/L vs ng/mL on a unitless row)
+// stay separate: only the unit tells them apart.
+function collapseAliasGroups(
+  ranked: CrossCheckSuggestion[],
+  rowUnit: string,
+  unitByLoinc: Record<string, string>
+): CrossCheckSuggestion[] {
+  const groups = new Map<string, CrossCheckSuggestion[]>();
+  for (const s of ranked) {
+    const primary = ALIAS_TO_PRIMARY[s.loinc] ?? s.loinc;
+    const group = groups.get(primary);
+    if (group) group.push(s);
+    else groups.set(primary, [s]);
+  }
+  const out: CrossCheckSuggestion[] = [];
+  for (const [primary, members] of groups) {
+    if (members.length === 1) {
+      out.push(members[0]!);
+      continue;
+    }
+    const matching = rowUnit
+      ? members.filter((m) => knownUnits(m.loinc, unitByLoinc).includes(rowUnit))
+      : [];
+    let kept: CrossCheckSuggestion | undefined;
+    if (matching.length === 1) {
+      kept = matching[0];
+    } else {
+      const units = new Set(members.flatMap((m) => knownUnits(m.loinc, unitByLoinc)));
+      if (units.size <= 1) kept = members.find((m) => m.loinc === primary) ?? members[0];
+    }
+    if (!kept) {
+      out.push(...members);
+      continue;
+    }
+    out.push({
+      ...kept,
+      score: Math.max(...members.map((m) => m.score)),
+      baseScore: Math.max(...members.map((m) => m.baseScore ?? m.score)),
+    });
+  }
+  return out.sort((a, b) => b.score - a.score);
+}
+
+function rankCandidates(
+  scored: CrossCheckSuggestion[],
+  rowUnit: string,
+  unitByLoinc: Record<string, string>
+): CrossCheckSuggestion[] {
+  const ranked = scored
     .filter((s) => (s.baseScore ?? s.score) > RANK_FLOOR)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
     // When the best candidate clearly dominates, weaker share-a-token hits
     // (e.g. "Total Cholesterol" for an "HDL Cholesterol" row) are noise.
-    .filter((s, _i, ranked) => s.score >= ranked[0]!.score * 0.75);
+    .filter((s, _i, all) => s.score >= all[0]!.score * 0.75);
+  return collapseAliasGroups(ranked, rowUnit, unitByLoinc);
 }
 
 // Ladder stage a: Latin part of the printed name vs catalog English names.
@@ -268,11 +353,13 @@ function stageLatin(
       return {
         loinc: a.loinc,
         name: a.displayName || a.longCommonName,
-        score: unitAdjust(base, rowUnit, canonicalUnit(unitByLoinc[a.loinc])),
+        score: unitAdjust(base, rowUnit, knownUnits(a.loinc, unitByLoinc)),
         baseScore: base,
         unit: unitByLoinc[a.loinc],
       };
-    })
+    }),
+    rowUnit,
+    unitByLoinc
   );
 }
 
@@ -289,11 +376,13 @@ function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string
       return {
         loinc: a.loinc,
         name: a.displayName || a.longCommonName,
-        score: unitAdjust(base, rowUnit, canonicalUnit(unitByLoinc[a.loinc])),
+        score: unitAdjust(base, rowUnit, knownUnits(a.loinc, unitByLoinc)),
         baseScore: base,
         unit: unitByLoinc[a.loinc],
       };
-    })
+    }),
+    rowUnit,
+    unitByLoinc
   );
 }
 
@@ -311,8 +400,8 @@ function isConfident(
   if (!top || top.score < 0.7) return false;
   if (second && top.score < second.score + 0.25) return false;
   const rowUnit = canonicalUnit(item.unit);
-  const candUnit = canonicalUnit(unitByLoinc[top.loinc]);
-  return !rowUnit || !candUnit || rowUnit === candUnit;
+  const candUnits = knownUnits(top.loinc, unitByLoinc);
+  return !rowUnit || candUnits.length === 0 || candUnits.includes(rowUnit);
 }
 
 function resolveWith(
@@ -360,7 +449,10 @@ export function crossCheckLocal(
     const top = candidates[0];
     // The derivation is the authority: a printed code is only evidence.
     if (confident && top) {
-      if (top.loinc === code) {
+      // A printed alias of the derived code (or vice versa) is the same
+      // analyte — panels fold it via ALIAS_TO_PRIMARY — so it's a match.
+      const primaryOf = (c: string) => ALIAS_TO_PRIMARY[c] ?? c;
+      if (top.loinc === code || primaryOf(top.loinc) === primaryOf(code)) {
         return { status: 'match' as const, loincName: loincName ?? top.name, confident: true };
       }
       return {
@@ -408,9 +500,12 @@ export interface NlmLookupResult {
   byName: Record<string, NlmEntry[]>;
 }
 
-// EXAMPLE_UCUM_UNITS can list several units ("mg/dL;mmol/L").
+// EXAMPLE_UCUM_UNITS can list several units ("mg/dL;mmol/L"); our own
+// ALLOWED_UNITS extras for the entry's code count as agreement too.
 function nlmUnitMatches(entry: NlmEntry, rowUnit: string): boolean {
-  return (entry.unit ?? '').split(/[;,]/).some((u) => canonicalUnit(u) === rowUnit);
+  return [...(entry.unit ?? '').split(/[;,]/), ...(ALLOWED_UNITS[entry.loinc] ?? [])].some(
+    (u) => canonicalUnit(u) === rowUnit
+  );
 }
 
 // The same unit selection as the local ladder, for NLM name-search results:

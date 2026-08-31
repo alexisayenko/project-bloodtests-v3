@@ -29,7 +29,9 @@ export const SHORT_LABELS: Record<string, { short: string; unit: string }> = {
   '10501-5': { short: 'LH', unit: 'mIU/mL' },
   '15067-2': { short: 'FSH', unit: 'mIU/mL' },
   '15081-3': { short: 'PRL', unit: 'mIU/L' },
-  '2942-1': { short: 'SHBG', unit: 'nmol/L' },
+  // 2942-1 is the Mass/volume SHBG code — the nmol/L (Moles/volume) code is
+  // its 13967-5 alias in ALSO_REFS.
+  '2942-1': { short: 'SHBG', unit: 'µg/mL' },
   '2243-4': { short: 'E2', unit: 'pg/mL' },
   '1848-1': { short: 'DHT', unit: 'ng/dL' },
   '2191-5': { short: 'DHEA-S', unit: 'mcg/dL' },
@@ -175,6 +177,7 @@ export const ALSO_REFS: Record<string, LoincRef[]> = {
     { label: 'IFCC unit', loinc: '59261-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by IFCC protocol', unit: 'mmol/mol' },
   ],
   '2777-1': [{ label: 'whole blood', loinc: '2774-8', longCommonName: 'Phosphate [Mass/volume] in Blood', unit: 'mg/dL' }],
+  '2339-0': [{ label: 'serum/plasma', loinc: '2345-7', longCommonName: 'Glucose [Mass/volume] in Serum or Plasma', unit: 'mg/dL' }],
   '15081-3': [{ label: 'Mass/volume variant', loinc: '2842-3', longCommonName: 'Prolactin [Mass/volume] in Serum or Plasma', unit: 'ng/mL' }],
   '3094-0': [{ label: 'Urea', loinc: '3091-6', longCommonName: 'Urea [Mass/volume] in Serum or Plasma', unit: 'mg/dL' }],
   '1848-1': [{ label: 'nmol/L unit', loinc: '15057-3', longCommonName: 'Androstanolone (Dihydrotestosterone) [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],

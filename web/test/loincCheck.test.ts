@@ -8,6 +8,7 @@ import {
   resolveLoinc,
   crossCheckLocal,
   selectByUnit,
+  unitAllowed,
 } from '../src/data/loincCheck';
 import type { Analysis, Result } from '../src/types';
 
@@ -564,6 +565,133 @@ describe('crossCheckLocal', () => {
     const map = new Map(catalog.map((a) => [a.loinc, a]));
     const [res] = crossCheckLocal([createResult()], map);
     expect(res?.status).toBe('match');
+  });
+});
+
+describe('unitAllowed', () => {
+  it('returns undefined for a code with no known units', () => {
+    expect(unitAllowed('9999999-9', 'mg/dL')).toBeUndefined();
+  });
+
+  it('accepts the curated primary unit', () => {
+    expect(unitAllowed('1848-1', 'ng/dL')).toBe(true);
+  });
+
+  it('accepts an ALLOWED_UNITS extra across spellings', () => {
+    expect(unitAllowed('1848-1', 'pg/ml')).toBe(true);
+  });
+
+  it('rejects a unit outside the set', () => {
+    expect(unitAllowed('1848-1', 'nmol/L')).toBe(false);
+  });
+});
+
+describe('per-code allowed unit sets and alias collapsing', () => {
+  // LOINC 1848-1's own example units list both ng/dL and pg/mL.
+  const dhtCatalog: Analysis[] = [
+    {
+      loinc: '1848-1',
+      longCommonName: 'Androstanolone (Dihydrotestosterone) [Mass/volume] in Serum or Plasma',
+      displayName: 'Dihydrotestosterone (DHT)',
+      lang: {},
+    },
+  ];
+
+  it('treats a pg/mL DHT row as unit agreement for 1848-1', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Dihydrotestosterone (DHT)', unit: 'pg/mL' }),
+      dhtCatalog
+    );
+    expect(res.candidates[0]?.loinc).toBe('1848-1');
+    expect(res.confident).toBe(true);
+  });
+
+  it('treats a ng/dL DHT row as unit agreement for 1848-1', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Dihydrotestosterone (DHT)', unit: 'ng/dL' }),
+      dhtCatalog
+    );
+    expect(res.candidates[0]?.loinc).toBe('1848-1');
+    expect(res.confident).toBe(true);
+  });
+
+  const glucoseCatalog: Analysis[] = [
+    {
+      loinc: '2339-0',
+      longCommonName: 'Glucose [Mass/volume] in Blood',
+      displayName: 'Glucose Serum',
+      lang: {},
+    },
+    {
+      loinc: '2345-7',
+      longCommonName: 'Glucose [Mass/volume] in Serum or Plasma',
+      displayName: 'Glucose (Serum/Plasma)',
+      lang: {},
+    },
+  ];
+
+  it('collapses a primary and its same-scale alias into one confident primary candidate', () => {
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Glucose, Fasting', unit: 'mg/dL' }),
+      glucoseCatalog
+    );
+    expect(res.candidates.map((c) => c.loinc)).toEqual(['2339-0']);
+    expect(res.confident).toBe(true);
+  });
+
+  it('counts a row printing the alias code of the derived analyte as a match', () => {
+    const [res] = crossCheckLocal(
+      [createResult({ loinc: '2345-7', analysis: 'Glucose, Fasting', unit: 'mg/dL' })],
+      glucoseCatalog
+    );
+    expect(res?.status).toBe('match');
+  });
+
+  // The row's unit picks the variant kept from an alias group: nmol/L is the
+  // Moles/volume alias 13967-5, not the Mass/volume primary 2942-1.
+  it('keeps the nmol/L alias code for an SHBG nmol/L row', () => {
+    const shbgCatalog: Analysis[] = [
+      {
+        loinc: '2942-1',
+        longCommonName: 'Sex hormone binding globulin [Mass/volume] in Serum or Plasma',
+        displayName: 'SHBG',
+        lang: {},
+      },
+      {
+        loinc: '13967-5',
+        longCommonName: 'Sex hormone binding globulin [Moles/volume] in Serum or Plasma',
+        displayName: 'SHBG',
+        lang: {},
+      },
+    ];
+    const res = resolveLoinc(createResult({ loinc: '', analysis: 'SHBG', unit: 'nmol/L' }), shbgCatalog);
+    expect(res.candidates.map((c) => c.loinc)).toEqual(['13967-5']);
+    expect(res.confident).toBe(true);
+  });
+
+  // SUPPLEMENTARY_UNITS gives IGF-1 a unit, so "Insulin-like growth factor"'s
+  // shared "insulin" token can't survive a µIU/mL row unpenalized.
+  it('resolves "Insulin, Fasting" µIU/mL to Insulin alone, IGF-1 penalized out', () => {
+    const insulinCatalog: Analysis[] = [
+      {
+        loinc: '20448-7',
+        longCommonName: 'Insulin [Units/volume] in Serum or Plasma',
+        displayName: 'Insulin',
+        lang: {},
+      },
+      {
+        loinc: '2484-4',
+        longCommonName: 'Insulin-like growth factor 1 [Mass/volume] in Serum or Plasma',
+        displayName: 'IGF-1 (Somatomedin C)',
+        lang: {},
+      },
+    ];
+    const res = resolveLoinc(
+      createResult({ loinc: '', analysis: 'Insulin, Fasting', unit: 'µIU/mL' }),
+      insulinCatalog
+    );
+    expect(res.candidates.map((c) => c.loinc)).toEqual(['20448-7']);
+    expect(res.confident).toBe(true);
   });
 });
 
