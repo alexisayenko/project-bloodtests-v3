@@ -17,7 +17,7 @@
     "react-dom": "^19.2.4",
     "recharts": "^3.8.1",
     "uplot": "^1.6.32",
-    "zod": "^3.25.76"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
