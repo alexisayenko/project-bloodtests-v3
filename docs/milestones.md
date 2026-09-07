@@ -10,6 +10,14 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-07 — Panel Detail gains a "Charts" tab: the panel's markers
+  as a 3D stacked-ribbon chart (one marker per depth plane, each
+  normalized to its own observed min/max so mixed units share one
+  chart; alias LOINCs merged into one series per test; checkbox picker
+  up to 8 markers with stable colors; drag to rotate, wheel/pinch to
+  zoom, double-click to reset). Engine ported from project-moodtracker's
+  `chart3d-stacked.js`/`chart3d-camera.js`, generalized from 8 fixed
+  slots to N series.
 - 2026-08-26 — FAI (Free Androgen Index) added to the Hypogonadism panel
   alongside cFT, graded heuristic (Vermeulen's own paper calls FAI
   SHBG-biased and unreliable; cFT is preferred); first nav tab renamed

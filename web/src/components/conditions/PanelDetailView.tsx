@@ -6,9 +6,17 @@ import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { ObservationTable, IndexTable } from './ResultTables';
 import { LabExploreView } from './LabExploreView';
+import { PanelChartsView } from '../analytics/PanelChartsView';
+import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
 
-type DetailTab = 'analysis' | 'in-range';
+type DetailTab = 'analysis' | 'in-range' | 'charts';
+
+const TAB_LABELS: Record<DetailTab, string> = {
+  analysis: 'Analysis',
+  'in-range': "What's in range",
+  charts: 'Charts',
+};
 
 export function PanelDetailView({
   name,
@@ -85,7 +93,7 @@ export function PanelDetailView({
         {name}
       </h1>
       <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
-        {(['analysis', 'in-range'] as const).map((tab) => (
+        {(['analysis', 'in-range', 'charts'] as const).map((tab) => (
           <div
             key={tab}
             {...pressable(() => setDetailTab(tab))}
@@ -100,12 +108,12 @@ export function PanelDetailView({
               cursor: 'pointer',
             }}
           >
-            {tab === 'analysis' ? 'Analysis' : "What's in range"}
+            {TAB_LABELS[tab]}
           </div>
         ))}
       </div>
 
-      {detailTab === 'analysis' ? (
+      {detailTab === 'analysis' && (
         <div>
           <ControlsBar {...controls} />
           {dates.length === 0 ? (
@@ -134,7 +142,8 @@ export function PanelDetailView({
             </>
           )}
         </div>
-      ) : (
+      )}
+      {detailTab === 'in-range' && (
         <LabExploreView
           conditions={[{ name, tests }]}
           allResults={allResults}
@@ -142,6 +151,11 @@ export function PanelDetailView({
           currentPanel={name}
           resultsByDate={resultsByDate}
         />
+      )}
+      {detailTab === 'charts' && (
+        <LangProvider>
+          <PanelChartsView tests={tests} allResults={allResults} />
+        </LangProvider>
       )}
     </>
   );

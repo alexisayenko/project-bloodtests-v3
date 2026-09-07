@@ -22,6 +22,10 @@ Entry point → panel detail, with a historical values table.
   (every marker as % of its own reference range, plus the panel's
   computed indices normalized against their own ok/warn/bad
   cut-points) instead of the values table
+- **Branches:** "Charts" tab shows the panel's markers as a 3D
+  stacked-ribbon chart (one marker per depth plane, each normalized to
+  its own observed range; checkbox picker up to 8 markers; drag to
+  rotate, scroll to zoom)
 - **Exit / success:** viewer sees an observation's historical values
   and reference range
 

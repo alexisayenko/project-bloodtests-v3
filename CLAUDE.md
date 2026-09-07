@@ -57,7 +57,21 @@ across panels groups under every relevant one), zoom, autoscale, and a
 domain-agnostic uPlot-based charting engine) and driven by the
 `buildExploreModel` adapter in `exploreModel.ts`, mounted via
 `LabExploreView.tsx`; deliberately generic-only (no medication overlays,
-reference-band overrides, or data-quality flagging). Persistent top nav
+reference-band overrides, or data-quality flagging). Panel Detail also
+carries a "Charts" tab (`PanelChartsView`): the panel's markers as a 3D
+stacked-ribbon chart, one marker per depth plane, each normalized to
+its own observed min/max so mixed units share one chart; alias LOINCs
+merge into one series per test (canonical code = the test's `loinc`),
+a checkbox picker selects up to 8 markers with stable per-marker
+colors, plus a translucent/opaque toggle, drag to rotate, wheel/pinch
+to zoom, double-click to reset. The engine
+(`web/src/components/analytics/chart3d-stacked-core.ts`,
+`chart3d-camera.ts`) is ported from project-moodtracker's
+`chart3d-stacked.js`/`chart3d-camera.js`, generalized from 8 fixed
+slots to N series; `StackedBiomarkerChart3D.tsx` mounts it and
+`StackedBiomarkerSection.tsx` owns selection and the picker. The
+legacy, unwired `AnalyticsPage` reuses the same section behind a List /
+Compare-in-3D toggle (`BiomarkerCharts.tsx`). Persistent top nav
 across five sections — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
