@@ -2,16 +2,18 @@
 
 The wrapper of a lab-data interchange file: the JSON object that carries a set of lab reports for one person between systems.
 
+Machine-readable form of this page: [`https://blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json) (source: `web/public/schema/bloodtests-3.schema.json`), JSON Schema draft 2020-12. It describes **version 3 only**, and so does the upload parser: the two now agree, and nothing else is read; see [`schema`](#schema). Objects in it are deliberately open (no `additionalProperties: false`), because adding an optional field is not a breaking change here and [`identifiers`](#identifiers) is specified to pass unrecognised lab keys through. `web/test/envelope-schema.test.ts` holds it to the exporter's output and to this page's fields.
+
 > **Status: partially implemented.** This page is the full spec; the app implements a subset of it.
 >
-> - **Upload** (`web/src/data/parseUpload.ts`) accepts the v3 envelope but reads only `schema` and `diagnosticReports`. Per report it reads `lab`, `collectedAt` (date part only), `observations`, and `identifiers` — the first of `visit`/`order`/`accession` is folded into the session id so two same-day same-lab draws don't collide on merge (it isn't stored beyond that). Per observation it reads `loinc`, `name`, `value`, `comparator`, `rawValue`, `unit`, `method`, and `referenceRanges` — flattened to a single min/max pair plus display text. Still **ignored on upload**: `generatedAt`, `contentHash` (never verified), `subject`, `sex`, `birthYear`, `notes`; per-report `issuedAt` and `specimen`; per-observation `interpretation` and `specimen`; range `label`/`appliesTo`/`ageLow`/`ageHigh` (kept only as display text, not used for range selection).
-> - **Export** (`web/src/utils/exportData.ts`) writes `schema`, `generatedAt` (always), `contentHash` (sha256 of `JSON.stringify(diagnosticReports)`, per [ADR-0001](decisions/adr-0001-content-hash-plain-stringify.md)), `subject`/`sex`/`birthYear`/`notes` when set in the Diagnostic Reports "Database details" card (kept in localStorage under `bloodtests_envelope_meta_v1`; empty fields omitted), and `diagnosticReports` — per report `lab`, `collectedAt` (stored date at `T00:00:00Z`), `observations`; per observation `loinc`, `name`, and when present `value`, `rawValue`, `unit`, `method`, and a single `{ low, high, text }` reference range. **Never written yet**: per-report `issuedAt`/`identifiers`/`specimen`; per-observation `comparator`, `interpretation`, `specimen`, and multi-band/`label`/`appliesTo`/age-banded ranges.
+> - **Upload** (`web/src/data/parseUpload.ts`) accepts the v3 envelope and **nothing else** — no `schema: 1`, no project-bloodtests-v2 canonical draws, no legacy flat or grouped shapes; anything else fails with "Unrecognized JSON shape". Older files are converted first with `npm run convert:v3` (see [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md)). It reads only `schema` (`3`) and `diagnosticReports`. Per report it reads `lab`, `collectedAt` (date part only), `observations`, and `identifiers` — the first of `visit`/`order`/`accession` is folded into the session id so two same-day same-lab draws don't collide on merge (it isn't stored beyond that). Per observation it reads `loinc`, `rawName`, `value`, `comparator`, `rawValue`, `unit`, `method`, and `referenceRanges` — flattened to a single min/max pair plus display text. Still **ignored on upload**: `generatedAt`, `contentHash` (never verified), `subject`, `sex`, `birthYear`, `notes`; per-report `issuedAt` and `specimen`; per-observation `interpretation`, `specimen` and `rawUnit`; range `label`/`appliesTo`/`ageLow`/`ageHigh` (kept only as display text, not used for range selection).
+> - **Export** (`web/src/utils/exportData.ts`) writes `schema`, `generatedAt` (always), `contentHash` (sha256 of `JSON.stringify(diagnosticReports)`, per [ADR-0001](decisions/adr-0001-content-hash-plain-stringify.md)), `subject`/`sex`/`birthYear`/`notes` when set in the Diagnostic Reports "Database details" card (kept in localStorage under `bloodtests_envelope_meta_v1`; empty fields omitted), and `diagnosticReports` — per report `lab`, `collectedAt` (stored date at `T00:00:00Z`), `observations`; per observation `loinc`, `rawName`, and when present `value`, `rawValue`, `unit`, `method`, and a single `{ low, high, text }` reference range. **Never written yet**: per-report `issuedAt`/`identifiers`/`specimen`; per-observation `comparator`, `interpretation`, `specimen`, `rawUnit`, and multi-band/`label`/`appliesTo`/age-banded ranges.
 
 ## Shape
 
 ```json
 {
-  "schema": 1,
+  "schema": 3,
   "generatedAt": "2026-08-26T21:14:09Z",
   "contentHash": "sha256:<hex>",
   "subject": "p-7fa3",
@@ -31,6 +33,10 @@ The split follows from who writes the file: a hand-written or hand-edited file m
 ## `schema`
 
 **Required.** A plain integer, not semver. A reader has exactly one question — *can I read this?* — and a single number answers it; a three-part version invites comparison logic nobody needs.
+
+**Current value: `3`, and the only accepted one.** `1` — the number the same shape carried before the renumber to match the project version — is **no longer accepted on import**; nor is `2`, which was never issued, nor any other number. A file stamped `1` (an earlier export, a share-link payload under `web/public/d/`, old dev data) is converted once, offline, with `npm run convert:v3 -- <file>`; the converter reads every legacy shape the app has dropped. See [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md), which supersedes [ADR-0006](decisions/adr-0006-envelope-schema-numbered-3.md)'s "`1` stays accepted".
+
+The value lives in one place — `web/src/data/envelopeSchema.ts` (`SCHEMA_VERSION`) — read by the exporter and the upload parser alike.
 
 Bump only on a **breaking** change: a field removed, renamed, or given a new meaning. Adding an optional field is not breaking, and does not bump.
 
@@ -170,9 +176,9 @@ This format is not a standard and does not try to be one. It does borrow, and th
 
 **HL7** — [Health Level Seven International](https://www.hl7.org), the standards body behind healthcare data exchange. Context only: this format implements none of its wire protocols, and nothing here is an HL7 message.
 
-**FHIR** — [Fast Healthcare Interoperability Resources](https://hl7.org/fhir), HL7's modern standard, itself JSON-based. Worth stating plainly: FHIR is a set of JSON shapes, not a rival file format, so borrowing from it costs nothing. This format takes the shape of three of its answers — [`referenceRanges`](#referenceranges) as a list with applicability (`Observation.referenceRange`), [`comparator`](#comparator) for printed values like `< 0.01` (`Quantity.comparator`), and [`interpretation`](#interpretation) codes (`Observation.interpretation`) — while deliberately **not** adopting FHIR wholesale: every FHIR field is a CodeableConcept bound to a terminology system, roughly an order of magnitude more JSON than two self-owned apps need. The practical consequence of matching shapes is that exporting to real FHIR later is a mapping exercise rather than a redesign, which matters the day data has to come in from or go out to a hospital, Apple Health, or a doctor. See [ADR-0002](decisions/adr-0002-borrow-fhir-shapes-not-fhir.md), which also states what would force revisiting it.
+**FHIR** — [Fast Healthcare Interoperability Resources](https://hl7.org/fhir), HL7's modern standard, itself JSON-based. Worth stating plainly: FHIR is a set of JSON shapes, not a rival file format, so borrowing from it costs nothing. This format takes the shape of three of its answers — [`referenceRanges`](#referenceranges) as a list with applicability (`Observation.referenceRange`), [`comparator`](#comparator) for printed values like `< 0.01` (`Quantity.comparator`), and [`interpretation`](#interpretation) codes (`Observation.interpretation`) — while deliberately **not** adopting FHIR wholesale: every FHIR field is a CodeableConcept bound to a terminology system, roughly an order of magnitude more JSON than two self-owned apps need. The practical consequence of matching shapes is that exporting to real FHIR later is a mapping exercise rather than a redesign, which matters the day data has to come in from or go out to a hospital, Apple Health, or a doctor. See [ADR-0002](decisions/adr-0002-borrow-fhir-shapes-not-fhir.md), which also states what would force revisiting it, and [ADR-0008](decisions/adr-0008-fhir-shaped-envelope-not-fhir.md) on why the envelope around those shapes is FHIR-*shaped* rather than a FHIR document — the file is one person's reports in one flat wrapper, not a `Bundle` of `Patient` / `DiagnosticReport` / `Observation` resources joined by reference.
 
-**UCUM** — [Unified Code for Units of Measure](https://unitsofmeasure.org), the standard FHIR uses for units. This format does **not** use it: [`unit`](#unit) is stored as the lab printed it, because the point is to record what the report said, not to normalize it. UCUM is what units would map to on the day they need to be machine-comparable.
+**UCUM** — [Unified Code for Units of Measure](https://unitsofmeasure.org), the standard FHIR uses for units. No field in this format holds a UCUM code: [`unit`](#unit) is stored as the lab printed it, because the point is to record what the report said, not to normalize it. UCUM is settled as the vocabulary units map to when they need to be machine-comparable, and the app already derives one in memory to check a unit against its code (see [A wrong unit here is usually a wrong `loinc`](#a-wrong-unit-here-is-usually-a-wrong-loinc)) — but nothing writes it to a file, and won't until [`rawUnit`](#rawunit) starts being written. See [ADR-0007](decisions/adr-0007-ucum-as-the-unit-vocabulary.md) and the [unit](../product/concepts/unit.md) concept.
 
 **SNOMED CT** — [the clinical terminology](https://www.snomed.org) behind coded results and specimen types, and the standard vocabulary for values like specimen material. This format uses plain controlled strings instead — `serum`, `plasma`, `citrate` — for the same simplicity reason it declines FHIR's CodeableConcepts.
 
@@ -183,11 +189,12 @@ One measured result — one analyte, one number (or one printed word), with what
 ```json
 {
   "loinc": "2093-3",
-  "name": "Total Cholesterol",
+  "rawName": "Total Cholesterol",
   "value": 186.65,
   "comparator": "<",
   "rawValue": "< 0.01",
   "unit": "mg/dL",
+  "rawUnit": "mg/dl",
   "referenceRanges": [
     { "low": 200, "label": "Desirable", "text": "< 200.00 Desirable" },
     { "low": 200, "high": 239, "label": "Borderline" },
@@ -208,9 +215,13 @@ Mapping a lab's printed test name to a LOINC code happens when the file is **bui
 
 Where no LOINC exists for a test at all — post-Soviet measures such as the prothrombin index have none — that observation is left out of the file rather than given an invented code. A made-up code is worse than a missing row, because it joins.
 
-### `name`
+### `rawName`
 
-**Required.** The test name as the lab printed it, a plain string. It is human-readable provenance — what the row said on paper — and it is never used for matching; see [`loinc`](#loinc).
+**Required.** The test name exactly as the lab printed it, a plain string. It is human-readable provenance — what the row said on paper — and it is never used for matching; see [`loinc`](#loinc).
+
+It is called `rawName`, not `name`, because there is no `name` to sit beside it: the canonical name is **derived from the LOINC code at display time and deliberately never stored**, so nothing in the file ever holds an authored or normalized name. That makes the pairing different from [`rawValue`](#rawvalue) beside [`value`](#value), where both halves are stored — here the raw half is the only half, and the field name says so rather than letting `name` imply a canonical string the format does not carry.
+
+Renamed from `name` in [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md), while the format was still fed by one producer.
 
 ### `value`
 
@@ -235,6 +246,28 @@ The result exactly as printed, including the non-numeric ones — `Negative`, `n
 **Optional** — when absent, a reader must not assume a unit, and must not compare the number to a range in a different one.
 
 The unit as printed. No conversion happens here: converted values belong nowhere in this file, only what the lab reported. A reader that wants other units converts at display time, from the reported pair.
+
+Printed and canonical are two different things, and today this field holds only the printed one — the product-level distinction is the [unit](../product/concepts/unit.md) concept, and the canonical vocabulary it will eventually hold is settled as UCUM in [ADR-0007](decisions/adr-0007-ucum-as-the-unit-vocabulary.md). Nothing rewrites this field today; the app's `canonicalUnit` helper folds spellings **only** to compare a row's unit against a LOINC code's allowed set, never to change what is stored.
+
+#### A wrong unit here is usually a wrong `loinc`
+
+A file can carry a unit that is not merely spelled oddly but measures the wrong *kind* of thing for the code beside it — `mmol/L`, a substance-per-volume unit, stored under Cholesterol's `[Mass/volume]` code `2093-3`. That is now detectable offline, without a network call and without a UCUM parser: `web/src/data/unitNormalization.ts` reads the printed unit into UCUM and compares its dimension against the units the code accepts, and `web/src/data/massMolarSiblings.ts` holds the curated `[Mass/volume]` ↔ `[Moles/volume]` LOINC pairs for the analytes where labs routinely differ.
+
+The remedy is the sibling **code** — `14647-2` for the example above — never a converted number: converting would produce a figure no lab printed, which is exactly what [ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md) rules out. `value`, `rawValue`, `unit` and `referenceRanges` stay as the report had them; only [`loinc`](#loinc) is wrong, and only `loinc` changes.
+
+To repair an envelope in bulk, offline: `node scripts/recode-molar.mjs <input.json>` from `web/`. It takes a file already stamped `schema: 3` (run `npm run convert:v3` first otherwise), writes `<input>.recoded.json` unless `-o` says otherwise (`--force` overwrites), and validates the result against the published schema with Ajv before writing it. It has **no npm alias**, unlike `npm run convert:v3` — invoke it by path.
+
+### `rawUnit`
+
+**Optional, and not implemented** — upload ignores it, export never writes it, and nothing in the app reads it today.
+
+The unit exactly as the lab printed it, kept as provenance for the day a normalization pass rewrites [`unit`](#unit) to a canonical form. `unit` would then hold the normalized string and `rawUnit` what the paper said, so the rewrite is auditable and reversible rather than lossy.
+
+The canonical form is UCUM — decided in [ADR-0007](decisions/adr-0007-ucum-as-the-unit-vocabulary.md), with the product-level reasoning on the [unit](../product/concepts/unit.md) concept page and the work tracked as [task-0011](../tasks/task-0011.md).
+
+The pairing is the format's existing one, twice over: [`rawValue`](#rawvalue) preserves a printed `< 0.01` that [`value`](#value) plus [`comparator`](#comparator) parse lossily, and [`rawName`](#rawname) preserves each observation's printed test name against the official LOINC name the app resolves at display time. In each pair the parsed field is what code computes on, and the raw one is the record of what was read.
+
+It is specified ahead of use rather than added later because the normalization it guards against is the change that would otherwise destroy the printed string in place — by which point no reader could tell a normalized unit from a printed one. Until something normalizes, `unit` already holds the printed string and this field is redundant: a writer should leave it out while the two cannot differ.
 
 ### `referenceRanges`
 

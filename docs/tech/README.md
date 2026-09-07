@@ -8,9 +8,15 @@ Product / business / UX live in their own sections.
 
 - [`interchange-format.md`](interchange-format.md) — envelope of
   the lab-data interchange file (spec; partially implemented —
-  see its status note).
-- [`decisions/`](decisions/) — ADRs, one file per decision
-  (`adr-NNNN-<slug>.md`, numbered independently of v2).
+  see its status note). Its machine-readable form is published at
+  [`blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json)
+  (JSON Schema draft 2020-12, source `web/public/schema/`,
+  version 3 only), held to the exporter's output by
+  `web/test/envelope-schema.test.ts`.
+- [`decisions/README.md`](decisions/README.md) — the ADR index
+  (nine records, `adr-NNNN-<slug>.md`, numbered independently of
+  v2), with a per-ADR row and a note on which doc each decision
+  governs. The index is the single list — don't duplicate it here.
 
 ## Upload & Edit Workflow
 
@@ -19,7 +25,7 @@ The core user journey for data ingestion and local editing:
 1. **Build JSON** — User or a chatbot generates v3-format lab data JSON (using the envelope specified in [`interchange-format.md`](interchange-format.md)). The copyable chatbot prompt lives on the Diagnostic Reports page's "Add a report" card (step 1, expandable); it instructs the chatbot to prefer lab-printed LOINC codes over its own knowledge (but only codes matching the LOINC pattern — a lab-internal code like "900101" is treated as no printed code), keep one draw as one report, ignore footnote/flag markers, never translate test names (a multi-line or bilingual name collapses to one single-line string), skip pending results ("Not ready" / "Pending" / an empty cell) with a notice so they can be re-imported later, normalize decimal commas, preserve special-character units (μ, ×10⁹/L), silently self-check observation counts and then list every draw date + lab for the user to confirm nothing is missing, and deliver a downloadable UTF-8 .json file rather than dumping JSON into the chat (a fenced code block only as fallback).
 
 2. **Upload** — File is imported into the app:
-   - Parser (`web/src/data/parseUpload.ts`) validates v3 JSON structure (and still accepts v2 canonical-draws and two legacy array shapes).
+   - Parser (`web/src/data/parseUpload.ts`) validates v3 JSON structure and accepts nothing else — `schema: 1`, v2 canonical-draws and the two legacy array shapes were dropped in [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md); an older file is converted first with `npm run convert:v3`.
    - **Validation tiers** (`web/src/data/validateDiagnosticReports.ts`): an observation missing its test name or a value (numeric `value` *or* non-empty `rawValue`), or carrying a non-empty code that isn't LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like "900101"), is an **error**; an empty LOINC (the observation won't appear in panels or All Observations), a missing unit, and a missing reference range (no min+max pair and no reference text) are **warnings**. While any error exists, Monitoring Panels and All Observations are disabled in the nav and their routes redirect to Diagnostic Reports; Get Started and Reference Book stay reachable. Warnings are informational only.
    - Get Started's "Import JSON" button, the identical button on Diagnostic Reports' "Back up your database" card, and share-link imports replace all stored sessions (import-replace model); the "Add a report" card's step-3 **Add** button (with "Adding…" progress and "✓ Added N reports" feedback) and generated test data merge by session id instead. A v3 report's `identifiers` (visit/order/accession) feed the session id, so two same-day same-lab draws no longer collide and replace each other on merge.
    - All data stays local in `localStorage` — nothing reaches a server.
@@ -38,6 +44,41 @@ The core user journey for data ingestion and local editing:
    - Ready to share or version control.
 
 **Data privacy:** Everything stays client-side. No file ever reaches a server except optionally via a share link on a Cloudflare Worker (read-only, no reverse lookup); the one other explicit-opt-in exception is the "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov. The format itself carries no identity — see [`interchange-format.md#subject`](interchange-format.md#subject).
+
+## Unit normalization
+
+Built, tested, and wired into no view yet — a subsystem the app owns
+but does not use. `web/src/data/unitNormalization.ts` runs three pure
+stages: printed unit → canonical Latin spelling (Cyrillic and
+Ukrainian unit tables, superscript folding, micro and multiplication
+signs), Latin → UCUM code, then a check of that code's dimension
+against the observation's LOINC. `normalizeObservationUnit` returns
+all three in one result, alongside `convertValue` and
+`canonicalUnitFor`. Nothing is stored: the printed value and unit stay
+authoritative, a canonical form is derived per call, and an
+unrecognized unit returns undefined rather than a guess — the tables
+are a curated subset, not a UCUM parser, with the NLM UCUM library the
+upgrade path ([task-0008](../tasks/task-0008.md)).
+
+The case worth naming is mass versus molar. A `mmol/L` result stored
+under Cholesterol's `[Mass/volume]` code `2093-3` is a **code** error,
+not a number to convert, so the check suggests the analyte's
+`[Moles/volume]` sibling `14647-2` — the rule
+[ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)
+sets, with UCUM fixed as the vocabulary by
+[ADR-0007](decisions/adr-0007-ucum-as-the-unit-vocabulary.md).
+`web/src/data/massMolarSiblings.ts` holds 20 curated pairs (the
+mass/molar factor recorded as data, never applied); their molar codes
+were added to `web/public/data/analyses.json` (124 → 139 entries) and
+registered in `ALSO_REFS` / `ALIAS_TO_PRIMARY` against the mass
+primary, so a molar code folds into the same panel row, badge and
+chart series without touching panels, tables or charts. To repair an
+existing file, `node scripts/recode-molar.mjs <input.json>` from
+`web/` rewrites `loinc` and nothing else — see
+[`interchange-format.md`](interchange-format.md#a-wrong-unit-here-is-usually-a-wrong-loinc).
+Product-level reasoning is the [unit](../product/concepts/unit.md)
+concept; remaining work (UI wiring, catalog consolidation) is
+[task-0011](../tasks/task-0011.md).
 
 ## Common slots
 

@@ -139,16 +139,49 @@ panels or All Observations), a missing unit, and a missing reference
 range are warnings; while errors exist, Monitoring Panels and All
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable). Upload
-accepts the v3 interchange envelope (`{ schema: 1, diagnosticReports }`;
+accepts the v3 interchange envelope and nothing else
+(`{ schema: 3, diagnosticReports }` — `SCHEMA_VERSION` in
+`data/envelopeSchema.ts`; the earlier `schema: 1`, v2's
+canonical-draws and the two legacy shapes were all dropped in
+ADR-0009, and old files go through `npm run convert:v3`
+(`scripts/convert-to-v3.mjs`), which keeps every legacy branch;
 other envelope fields ignored for now, though a report's `identifiers`
 (visit/order/accession) feeds the session id so two same-day same-lab
-draws don't collide on merge) plus v2's canonical-draws and two
-legacy shapes; export (`exportData.ts`) writes a v3 envelope —
+draws don't collide on merge). Each observation's printed test name
+lives in `rawName`, never `name` — the canonical name is derived from
+the LOINC code at display time and deliberately never stored. Export (`exportData.ts`) writes a v3 envelope —
 `schema`, `generatedAt`, `contentHash` (sha256 of the diagnosticReports
 array only), subject/sex/birthYear/notes when set, and
 reduced reports — as `blood-tests-export-<yyyymmdd>.json`; see
 `docs/tech/interchange-format.md` for exactly which envelope fields are
-implemented. The original
+implemented, and `web/public/schema/bloodtests-3.schema.json` (served at
+`blood.isayenko.net/schema/`, draft 2020-12, objects open, version-3 only —
+as is the parser, since ADR-0009) for the machine-readable form; the envelope's
+TypeScript types are generated from that schema by `npm run schema:types`
+(`scripts/generate-envelope-types.mjs` → `data/envelopeTypes.ts`), with a
+drift test failing CI on an ungenerated schema edit. Unit normalization is
+built but not yet wired into any view: `data/unitNormalization.ts` runs three
+pure stages — printed unit (Cyrillic and Ukrainian unit tables, superscripts,
+micro-sign and multiplication-sign folding) to a canonical Latin spelling,
+Latin to a UCUM code, then a LOINC-versus-unit dimension check — plus
+`convertValue` / `canonicalUnitFor` and a `normalizeObservationUnit`
+orchestrator returning all three stages in one reviewable result. The printed
+value and unit stay authoritative; a canonical form is derived per call and
+never stored, and an unrecognized unit returns undefined rather than a guess.
+A molar unit under a mass-concentration code is treated as a *code* error, so
+the check suggests the analyte's `[Moles/volume]` sibling from the 20 curated
+pairs in `data/massMolarSiblings.ts` (each with the mass/molar factor as data
+only) instead of converting the number (ADR-0003; UCUM as the target
+vocabulary is ADR-0007). Those molar codes were added to the analyte catalog
+(`web/public/data/analyses.json`, 124 → 139 entries) and registered in
+`ALSO_REFS` / `ALIAS_TO_PRIMARY` (`markers.ts`) against their mass primary, so
+a molar code folds into the same panel row, badge and chart series as the mass
+one with no changes to panels, tables or charts. Two Ajv-validated offline
+Node scripts sit beside the app: `npm run convert:v3`
+(`scripts/convert-to-v3.mjs`, above) and `node scripts/recode-molar.mjs <file>`
+— no npm alias — which rewrites only the `loinc` of an observation whose mass
+code carries a molar unit, leaving value, unit and reference ranges exactly as
+printed. The original
 upload/panels/results/analytics flow still exists in
 `web/src/components/` but isn't currently wired into `App.tsx` (and is
 excluded from eslint, Sonar, and coverage until it returns or moves to
@@ -156,11 +189,15 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (297 tests across 15 files, 1 skipped: index
-golden-masters ported from v2, upload parsing — v3 envelope and v2
-shapes — and import-replace, diagnostic-report validation, LOINC
-cross-check, export
-envelope, share-link and shared-meta, explore-model, markers, routing,
+Vitest suites in `web/test/` (352 tests across 18 files, 1 skipped: index
+golden-masters ported from v2, upload parsing — the v3 envelope, and
+every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
+cross-check, unit normalization (Latin/UCUM stages, dimension check,
+conversion), export
+envelope, published JSON Schema conformance and generated-type drift (ajv and
+json-schema-to-typescript, devDependencies only —
+nothing schema-related is bundled), share-link and shared-meta,
+explore-model, markers, routing,
 scheduling, ui helpers, format utils). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a
 SonarCloud scan (CI-based, `SONAR_TOKEN` secret; Automatic Analysis is
@@ -178,4 +215,9 @@ weekly npm (minor+patch grouped) and github-actions bumps.
 - [README.md](README.md) — repo entry point + structure
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
-  panel, lab report, computed index, companion observation (planned)
+  panel, lab report, computed index, companion observation (planned),
+  unit (derivation built, not wired into any view)
+- [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
+  (nine records; ADR-0005–0008 recorded 2026-09-07)
+- [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
+  envelope spec, and its published JSON Schema

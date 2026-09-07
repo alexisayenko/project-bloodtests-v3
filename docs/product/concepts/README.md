@@ -17,7 +17,8 @@ and constraints.
 Current concepts: [observation](observation.md),
 [monitoring panel](monitoring-panel.md),
 [diagnostic report](lab-report.md), [computed index](computed-index.md),
-[companion observation](companion-observation.md) (planned).
+[companion observation](companion-observation.md) (planned),
+[unit](unit.md) (normalization planned).
 
 ## What a concept is not
 

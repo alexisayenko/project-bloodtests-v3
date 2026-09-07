@@ -11,6 +11,32 @@ field on each task ties back to an entry there.
 
 ---
 
+## Current tasks
+
+Statuses are authoritative in each file's frontmatter; this table is
+the index.
+
+| Task | Title | Status |
+| --- | --- | --- |
+| [task-0001](task-0001.md) | Build the diagnostic-reports import, edit, export and LOINC workflow | done |
+| [task-0002](task-0002.md) | Round-trip envelope metadata on import | to do |
+| [task-0003](task-0003.md) | Add the interchange JSON Schema file to the repo | done |
+| [task-0004](task-0004.md) | Use sex and birth year to select sex- and age-banded reference ranges | to do |
+| [task-0005](task-0005.md) | Test the chatbot prompt against every lab format in the history | in progress |
+| [task-0006](task-0006.md) | Match LOINC suggestions against catalog translations | done |
+| [task-0007](task-0007.md) | Derive LOINC from printed name and unit, demote printed codes to evidence | done |
+| [task-0008](task-0008.md) | Adopt UCUM for unit validation and conversion | to do |
+| [task-0009](task-0009.md) | Per-code allowed-unit sets and alias-group collapse | done |
+| [task-0010](task-0010.md) | Research companion observations (draw-together pairs) | to do |
+| [task-0011](task-0011.md) | Normalize units to UCUM | in progress |
+
+Per-concern roll-ups (`C1.md`, …) are described under
+[Rolling reports](#rolling-reports); none exist yet, because
+[`../concerns.md`](../concerns.md) still carries placeholder concern
+names and no task sets a `concern`.
+
+---
+
 ## When a task must exist
 
 Before starting a feature, bugfix, refactor, or any substantive
