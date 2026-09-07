@@ -10,6 +10,27 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-07 — One place to look up a LOINC code. Everything the app
+  knew about a code was spread across four tables — the catalog in
+  `web/public/data/analyses.json`, `SHORT_LABELS` and `ALSO_REFS` in
+  `markers.ts`, and three unit maps in `loincCheck.ts` — and they had
+  drifted: two hand-copied LOINC names disagreed with the catalog's
+  own, Zinc was in it twice under two display names, and 21 codes the
+  product shows a badge for had no entry at all, so the LOINC
+  cross-check could never derive them. The facts now live on the
+  catalog entry (`short`, `unit`, `allowedUnits`, and `aliasOf` /
+  `aliasLabel` on a unit or method variant), the lookup maps are
+  derived from it at load in `web/src/data/analyteCatalog.ts`, and
+  `PANEL_DEFS` moved out of TypeScript into
+  `web/public/data/monitoring-panels.json` — separating the two panel
+  layers, the laboratory's groups (`panels.json`) from the product's
+  composition over them. A new draft 2020-12 schema
+  (`web/public/schema/analytes-1.schema.json`, closed objects, unlike
+  the interchange envelope's open ones) and
+  `web/test/reference-data.test.ts` hold all three files to shape, so
+  a malformed edit fails the suite instead of being ignored at
+  runtime
+  ([ADR-0010](tech/decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md)).
 - 2026-09-07 — Units get a derivation, not a rewrite:
   `web/src/data/unitNormalization.ts` maps a printed unit (Cyrillic
   and Ukrainian tables, superscripts, micro and multiplication signs)

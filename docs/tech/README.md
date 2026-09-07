@@ -14,9 +14,39 @@ Product / business / UX live in their own sections.
   version 3 only), held to the exporter's output by
   `web/test/envelope-schema.test.ts`.
 - [`decisions/README.md`](decisions/README.md) — the ADR index
-  (nine records, `adr-NNNN-<slug>.md`, numbered independently of
+  (ten records, `adr-NNNN-<slug>.md`, numbered independently of
   v2), with a per-ADR row and a note on which doc each decision
   governs. The index is the single list — don't duplicate it here.
+
+## Reference data
+
+Three files under `web/public/data/`, all of them data and none of
+them mirrored in TypeScript
+([ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md)):
+
+- **`analyses.json`** — the analyte catalog, and the single source of
+  truth for everything the app knows about a LOINC code: names and
+  translations, popup prose, `short` badge label, expected `unit`,
+  `allowedUnits`, and `aliasOf` / `aliasLabel` on a unit or method
+  variant of another code. See the
+  [observation](../product/concepts/observation.md) concept.
+- **`panels.json`** — the laboratory groups: how a lab orders and
+  prints a set of analytes.
+- **`monitoring-panels.json`** — the product's Monitoring Panels,
+  composed over those groups (`panelId` / `panelIds` / `loincs`, then
+  `excludeLoincs` and `extraLoincs`). See the
+  [monitoring panel](../product/concepts/monitoring-panel.md) concept.
+
+`web/src/data/analyteCatalog.ts` imports the catalog and derives every
+lookup map the app uses from it — short labels, expected and allowed
+units, and the reverse alias map (primary → its variants) — so none of
+them can drift from the file. `buildConditions` in
+`web/src/components/conditions/markers.ts` resolves a Monitoring Panel
+against the groups and the catalog. All three files are described by
+[`blood.isayenko.net/schema/analytes-1.schema.json`](https://blood.isayenko.net/schema/analytes-1.schema.json)
+(source `web/public/schema/analytes-1.schema.json`) and validated with
+ajv by `web/test/reference-data.test.ts`; unlike the interchange
+envelope, its objects are closed, so a mistyped key fails the suite.
 
 ## Upload & Edit Workflow
 
@@ -70,15 +100,17 @@ sets, with UCUM fixed as the vocabulary by
 `web/src/data/massMolarSiblings.ts` holds 20 curated pairs (the
 mass/molar factor recorded as data, never applied); their molar codes
 were added to `web/public/data/analyses.json` (124 → 139 entries) and
-registered in `ALSO_REFS` / `ALIAS_TO_PRIMARY` against the mass
-primary, so a molar code folds into the same panel row, badge and
-chart series without touching panels, tables or charts. To repair an
+carry `aliasOf` pointing at the mass primary, so a molar code folds
+into the same panel row, badge and chart series without touching
+panels, tables or charts. To repair an
 existing file, `node scripts/recode-molar.mjs <input.json>` from
 `web/` rewrites `loinc` and nothing else — see
 [`interchange-format.md`](interchange-format.md#a-wrong-unit-here-is-usually-a-wrong-loinc).
 Product-level reasoning is the [unit](../product/concepts/unit.md)
-concept; remaining work (UI wiring, catalog consolidation) is
-[task-0011](../tasks/task-0011.md).
+concept; remaining work (UI wiring) is
+[task-0011](../tasks/task-0011.md) — the catalog consolidation it
+also asked for landed with
+[ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md).
 
 ## Common slots
 

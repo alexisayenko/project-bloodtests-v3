@@ -25,6 +25,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0007](adr-0007-ucum-as-the-unit-vocabulary.md) | UCUM as the canonical unit vocabulary | accepted · 2026-09-07 |
 | [ADR-0008](adr-0008-fhir-shaped-envelope-not-fhir.md) | A FHIR-shaped envelope, not a FHIR document | accepted · 2026-09-07 |
 | [ADR-0009](adr-0009-v3-only-and-rawname.md) | v3-only upload, and observation `name` renamed to `rawName` | accepted · 2026-09-07 |
+| [ADR-0010](adr-0010-analyte-catalog-is-the-source-of-truth.md) | The analyte catalog is the source of truth, and panels have two layers | accepted · 2026-09-07 |
 
 ## Where each one bites
 
@@ -35,6 +36,13 @@ Each record opens with `# ADR-NNNN: <title>` and a
   [`../interchange-format.md`](../interchange-format.md).
 - **LOINC resolution** — 0004, implemented in
   `web/src/data/loincCheck.ts`.
+- **Reference data** — 0010, implemented in
+  `web/public/data/analyses.json` (the analyte catalog) and
+  `web/public/data/monitoring-panels.json`, derived in
+  `web/src/data/analyteCatalog.ts`; see the
+  [observation](../../product/concepts/observation.md) and
+  [monitoring panel](../../product/concepts/monitoring-panel.md)
+  concepts.
 - **Relations between markers** — 0005, still unbuilt; see the
   [companion observation](../../product/concepts/companion-observation.md)
   concept and [task-0010](../../tasks/task-0010.md).

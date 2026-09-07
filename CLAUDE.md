@@ -20,7 +20,25 @@ monetization.]
 
 React 19 + TypeScript + Vite, in `web/`. No backend — panel/analyte
 reference data ships as static JSON (`web/public/data/`), uploaded lab
-results are parsed client-side and kept in `localStorage`. A read-only
+results are parsed client-side and kept in `localStorage`. That
+reference data is the single source of truth and is never mirrored in
+TypeScript (ADR-0010): `analyses.json` is the analyte catalog, one
+entry per LOINC carrying its names, translations and popup prose plus
+`short` (badge label), `unit` (expected unit), `allowedUnits`, and
+`aliasOf`/`aliasLabel` on a unit or method variant of another code;
+`web/src/data/analyteCatalog.ts` imports it and derives every lookup
+map from it at load (`SHORT_LABELS`, `DEFAULT_UNITS`, `ALLOWED_UNITS`,
+and the reverse alias map `ALSO_REFS` / `ALIAS_TO_PRIMARY`), so none
+can drift. Panels have two layers: `panels.json` holds the laboratory
+groups (how a lab orders and prints a set), `monitoring-panels.json`
+holds the product's Monitoring Panels composed over them
+(`panelId`/`panelIds`/`loincs`, then `excludeLoincs`/`extraLoincs`,
+array order = render order), with `buildConditions` (`markers.ts`) as
+the resolver — it maps LOINCs one-to-one and does not fold aliases, so
+Insulin Resistance still excludes HbA1c's IFCC code `59261-8` despite
+its `aliasOf`. All three files are described by
+`web/public/schema/analytes-1.schema.json` (draft 2020-12, closed
+objects) and validated with ajv by `web/test/reference-data.test.ts`. A read-only
 share link, `/?data=<guid>`, fetches `/d/<guid>.data.json` and imports it
 through the same parse path as an upload, then strips the param; in
 parallel it fetches an optional `/d/<guid>.meta.json` per-link
@@ -173,10 +191,10 @@ the check suggests the analyte's `[Moles/volume]` sibling from the 20 curated
 pairs in `data/massMolarSiblings.ts` (each with the mass/molar factor as data
 only) instead of converting the number (ADR-0003; UCUM as the target
 vocabulary is ADR-0007). Those molar codes were added to the analyte catalog
-(`web/public/data/analyses.json`, 124 → 139 entries) and registered in
-`ALSO_REFS` / `ALIAS_TO_PRIMARY` (`markers.ts`) against their mass primary, so
-a molar code folds into the same panel row, badge and chart series as the mass
-one with no changes to panels, tables or charts. Two Ajv-validated offline
+(`web/public/data/analyses.json`, 124 → 139 entries) and carry `aliasOf`
+against their mass primary, so a molar code folds into the same panel row,
+badge and chart series as the mass one with no changes to panels, tables or
+charts. Two Ajv-validated offline
 Node scripts sit beside the app: `npm run convert:v3`
 (`scripts/convert-to-v3.mjs`, above) and `node scripts/recode-molar.mjs <file>`
 — no npm alias — which rewrites only the `loinc` of an observation whose mass
@@ -189,14 +207,18 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (352 tests across 18 files, 1 skipped: index
+Vitest suites in `web/test/` (360 tests across 19 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, unit normalization (Latin/UCUM stages, dimension check,
 conversion), export
 envelope, published JSON Schema conformance and generated-type drift (ajv and
 json-schema-to-typescript, devDependencies only —
-nothing schema-related is bundled), share-link and shared-meta,
+nothing schema-related is bundled), reference-data conformance
+(analyses / panels / monitoring-panels against
+`analytes-1.schema.json`, plus catalog consistency: no duplicate
+LOINC, every `aliasOf` resolving, every `short` carrying a unit),
+share-link and shared-meta,
 explore-model, markers, routing,
 scheduling, ui helpers, format utils). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a
