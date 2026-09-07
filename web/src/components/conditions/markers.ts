@@ -176,13 +176,36 @@ export const ALSO_REFS: Record<string, LoincRef[]> = {
     { label: 'by calculation', loinc: '17855-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by calculation', unit: '%' },
     { label: 'IFCC unit', loinc: '59261-8', longCommonName: 'Hemoglobin A1c/Hemoglobin.total in Blood by IFCC protocol', unit: 'mmol/mol' },
   ],
-  '2777-1': [{ label: 'whole blood', loinc: '2774-8', longCommonName: 'Phosphate [Mass/volume] in Blood', unit: 'mg/dL' }],
-  '2339-0': [{ label: 'serum/plasma', loinc: '2345-7', longCommonName: 'Glucose [Mass/volume] in Serum or Plasma', unit: 'mg/dL' }],
+  '2777-1': [
+    { label: 'whole blood', loinc: '2774-8', longCommonName: 'Phosphate [Mass/volume] in Blood', unit: 'mg/dL' },
+    { label: 'mmol/L unit', loinc: '14879-1', longCommonName: 'Phosphate [Moles/volume] in Serum or Plasma', unit: 'mmol/L' },
+  ],
+  '2339-0': [
+    { label: 'serum/plasma', loinc: '2345-7', longCommonName: 'Glucose [Mass/volume] in Serum or Plasma', unit: 'mg/dL' },
+    { label: 'mmol/L unit', loinc: '15074-8', longCommonName: 'Glucose [Moles/volume] in Blood', unit: 'mmol/L' },
+  ],
   '15081-3': [{ label: 'Mass/volume variant', loinc: '2842-3', longCommonName: 'Prolactin [Mass/volume] in Serum or Plasma', unit: 'ng/mL' }],
-  '3094-0': [{ label: 'Urea', loinc: '3091-6', longCommonName: 'Urea [Mass/volume] in Serum or Plasma', unit: 'mg/dL' }],
+  '3094-0': [
+    { label: 'Urea', loinc: '3091-6', longCommonName: 'Urea [Mass/volume] in Serum or Plasma', unit: 'mg/dL' },
+    { label: 'mmol/L unit', loinc: '14937-7', longCommonName: 'Urea nitrogen [Moles/volume] in Serum or Plasma', unit: 'mmol/L' },
+  ],
   '1848-1': [{ label: 'nmol/L unit', loinc: '15057-3', longCommonName: 'Androstanolone (Dihydrotestosterone) [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
   '2143-6': [{ label: 'nmol/L unit', loinc: '14675-3', longCommonName: 'Cortisol [Moles/volume] in Serum or Plasma', unit: 'nmol/L' }],
   '3024-7': [{ label: 'pmol/L unit', loinc: '14920-3', longCommonName: 'Thyroxine (T4) free [Moles/volume] in Serum or Plasma', unit: 'pmol/L' }],
+  // Mass/volume primaries whose [Moles/volume] sibling (massMolarSiblings.ts) a
+  // lab may report instead — aliased so the molar code folds into the same
+  // panel row, badge and chart series as the mass code.
+  '2093-3': [{ label: 'mmol/L unit', loinc: '14647-2', longCommonName: 'Cholesterol [Moles/volume] in Serum or Plasma', unit: 'mmol/L' }],
+  '2085-9': [{ label: 'mmol/L unit', loinc: '14646-4', longCommonName: 'Cholesterol in HDL [Moles/volume] in Serum or Plasma', unit: 'mmol/L' }],
+  '13457-7': [{ label: 'mmol/L unit', loinc: '22748-8', longCommonName: 'Cholesterol in LDL [Moles/volume] in Serum or Plasma', unit: 'mmol/L' }],
+  '2571-8': [{ label: 'mmol/L unit', loinc: '14927-8', longCommonName: 'Triglyceride [Moles/volume] in Serum or Plasma', unit: 'mmol/L' }],
+  '1975-2': [{ label: 'umol/L unit', loinc: '14631-6', longCommonName: 'Bilirubin.total [Moles/volume] in Serum or Plasma', unit: 'umol/L' }],
+  '1968-7': [{ label: 'umol/L unit', loinc: '14629-0', longCommonName: 'Bilirubin.direct [Moles/volume] in Serum or Plasma', unit: 'umol/L' }],
+  '1971-1': [{ label: 'umol/L unit', loinc: '14630-8', longCommonName: 'Bilirubin.indirect [Moles/volume] in Serum or Plasma', unit: 'umol/L' }],
+  '17861-6': [{ label: 'mmol/L unit', loinc: '2000-8', longCommonName: 'Calcium [Moles/volume] in Serum or Plasma', unit: 'mmol/L' }],
+  '2160-0': [{ label: 'umol/L unit', loinc: '14682-9', longCommonName: 'Creatinine [Moles/volume] in Serum or Plasma', unit: 'umol/L' }],
+  '3084-1': [{ label: 'umol/L unit', loinc: '14933-6', longCommonName: 'Urate [Moles/volume] in Serum or Plasma', unit: 'umol/L' }],
+  '19123-9': [{ label: 'mmol/L unit', loinc: '2601-3', longCommonName: 'Magnesium [Moles/volume] in Serum or Plasma', unit: 'mmol/L' }],
 };
 
 // Reverse of ALSO_REFS: alias LOINC → the primary LOINC whose badge/row it

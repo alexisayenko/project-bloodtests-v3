@@ -54,6 +54,9 @@ export function canonicalUnit(unit: string | undefined | null): string {
 // ("Insulin-like growth factor") survives against Insulin on a µIU/mL row.
 export const SUPPLEMENTARY_UNITS: Record<string, string> = {
   '2484-4': 'ng/mL',
+  '30341-2': 'mm/hr', // Erythrocyte [Sedimentation Rate] in Blood
+  '5894-1': '%', // Prothrombin time (PT) actual/Normal — the Quick percentage
+  '3243-3': 'sec', // Thrombin time
 };
 
 // Known reference unit per LOINC, from the curated marker tables — this is what
@@ -73,6 +76,8 @@ export const DEFAULT_UNITS: Record<string, string> = {
 // code, beyond the curated primary in DEFAULT_UNITS.
 export const ALLOWED_UNITS: Record<string, string[]> = {
   '1848-1': ['pg/mL'],
+  '30341-2': ['mm/h'],
+  '3243-3': ['s'],
 };
 
 // Every known unit for a code (curated primary first, then extras), canonicalized.

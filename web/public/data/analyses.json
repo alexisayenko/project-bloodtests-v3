@@ -50,6 +50,21 @@
     }
   },
   {
+    "loinc": "14647-2",
+    "longCommonName": "Cholesterol [Moles/volume] in Serum or Plasma",
+    "displayName": "Total Cholesterol",
+    "lang": {
+      "ru-RU": "Холестерин",
+      "uk-UA": "Холестерин"
+    },
+    "info": {
+      "description": "Waxy fat-like substance found in all cells, essential for hormone and cell membrane production.",
+      "scientific": "Cholesterol is a 27-carbon sterol lipid that is an essential structural component of cell membranes and serves as the precursor for steroid hormones, bile acids, and vitamin D. It is synthesized endogenously in the liver via the mevalonate pathway and is also obtained from dietary sources. Cholesterol is transported in the blood within lipoprotein particles including LDL, HDL, and VLDL. Total cholesterol measurement is used as an initial screening tool for dyslipidemia and cardiovascular disease risk assessment, with elevated levels associated with accelerated atherosclerosis.",
+      "why": "Assesses cardiovascular disease risk and guides lipid-lowering therapy.",
+      "frequency": "Every 4-6 years; annually if at elevated risk"
+    }
+  },
+  {
     "loinc": "789-8",
     "longCommonName": "Erythrocytes [#/volume] in Blood by Automated count",
     "displayName": "Red Blood Cells (RBC)",
@@ -209,6 +224,35 @@
     }
   },
   {
+    "loinc": "15074-8",
+    "longCommonName": "Glucose [Moles/volume] in Blood",
+    "displayName": "Glucose Serum",
+    "lang": {
+      "ru-RU": "Глюкоза натощак",
+      "uk-UA": "Глюкоза натще"
+    },
+    "info": {
+      "description": "Your body's primary fuel — the sugar that every cell burns for energy. Blood glucose reflects the real-time balance between what you eat, what your cells consume, and how effectively insulin is doing its job. Measuring it fasting reveals how well your body maintains this balance overnight without food.",
+      "why": "Screens for diabetes and prediabetes and monitors glycemic control.",
+      "frequency": "Annually; every 3 months if diabetic",
+      "scientific": "Glucose (C6H12O6) is a simple monosaccharide and monomer of carbohydrates. Glucose provides energy for cellular processes and aids metabolism within the body. When food is ingested, the carbohydrates within the food are broken down into glucose molecules. Blood glucose content is significant in determining an individual’s overall state of health. An elevated blood glucose level is called hyperglycemia and a deficient blood glucose level is called hypoglycemia. Type 1 diabetes is caused by the immune system attacking pancreatic beta cells and Type 2 diabetes is caused by insulin resistance.",
+      "lang": {
+        "ru-RU": {
+          "description": "Основное топливо вашего организма — сахар, который каждая клетка сжигает для получения энергии. Уровень глюкозы в крови отражает баланс в реальном времени между тем, что вы едите, что потребляют ваши клетки, и тем, насколько эффективно инсулин выполняет свою работу. Измерение натощак показывает, насколько хорошо организм поддерживает этот баланс за ночь без пищи.",
+          "scientific": "Глюкоза (C₆H₁₂O₆) — это простой моносахарид и мономер углеводов. Глюкоза обеспечивает энергию для клеточных процессов и участвует в метаболизме. При приёме пищи углеводы расщепляются до молекул глюкозы. Содержание глюкозы в крови является важным показателем общего состояния здоровья. Повышенный уровень глюкозы в крови называется гипергликемией, а пониженный — гипогликемией. Сахарный диабет 1-го типа вызван атакой иммунной системы на бета-клетки поджелудочной железы, а 2-го типа — инсулинорезистентностью.",
+          "why": "Скрининг диабета и предиабета, мониторинг гликемического контроля.",
+          "frequency": "Ежегодно; каждые 3 месяца при диабете"
+        },
+        "uk-UA": {
+          "description": "Основне паливо вашого організму — цукор, який кожна клітина спалює для отримання енергії. Рівень глюкози в крові відображає баланс у реальному часі між тим, що ви їсте, що споживають ваші клітини, і тим, наскільки ефективно інсулін виконує свою роботу. Вимірювання натще показує, наскільки добре організм підтримує цей баланс протягом ночі без їжі.",
+          "scientific": "Глюкоза (C₆H₁₂O₆) — це простий моносахарид і мономер вуглеводів. Глюкоза забезпечує енергію для клітинних процесів та бере участь у метаболізмі. При прийомі їжі вуглеводи розщеплюються до молекул глюкози. Вміст глюкози в крові є важливим показником загального стану здоров’я. Підвищений рівень глюкози в крові називається гіперглікемією, а знижений — гіпоглікемією. Цукровий діабет 1-го типу спричинений атакою імунної системи на бета-клітини підшлункової залози, а 2-го типу — інсулінорезистентністю.",
+          "why": "Скринінг діабету та предіабету, моніторинг глікемічного контролю.",
+          "frequency": "Щорічно; кожні 3 місяці при діабеті"
+        }
+      }
+    }
+  },
+  {
     "loinc": "17855-8",
     "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood by DCCT",
     "displayName": "HbA1c (DCCT)",
@@ -239,6 +283,21 @@
     }
   },
   {
+    "loinc": "14646-4",
+    "longCommonName": "Cholesterol in HDL [Moles/volume] in Serum or Plasma",
+    "displayName": "HDL-Cholesterol",
+    "lang": {
+      "ru-RU": "Холестерин ЛПВП",
+      "uk-UA": "Холестерин ЛПВЩ"
+    },
+    "info": {
+      "description": "\"Good\" cholesterol that helps remove other forms of cholesterol from the bloodstream.",
+      "scientific": "High-density lipoprotein cholesterol (HDL-C) represents the cholesterol content carried within HDL particles, which are the smallest and densest of the plasma lipoproteins. HDL mediates reverse cholesterol transport, the process by which excess cholesterol is removed from peripheral tissues and macrophage foam cells and delivered to the liver for biliary excretion. HDL also possesses anti-inflammatory, antioxidant, and antithrombotic properties that contribute to atheroprotection. Low HDL-C levels are an independent risk factor for coronary artery disease, and HDL-C is a key component of cardiovascular risk assessment algorithms.",
+      "why": "Assesses cardiovascular risk; higher levels are protective against heart disease.",
+      "frequency": "Every 4-6 years; annually if at elevated risk"
+    }
+  },
+  {
     "loinc": "2571-8",
     "longCommonName": "Triglycerides [Mass/volume] in Serum or Plasma",
     "displayName": "Triglycerides",
@@ -254,8 +313,38 @@
     }
   },
   {
+    "loinc": "14927-8",
+    "longCommonName": "Triglyceride [Moles/volume] in Serum or Plasma",
+    "displayName": "Triglycerides",
+    "lang": {
+      "ru-RU": "Триглицериды",
+      "uk-UA": "Тригліцериди"
+    },
+    "info": {
+      "description": "The most common type of fat in the body, stored from excess calories.",
+      "scientific": "Triglycerides are glycerol esters of three fatty acid chains that represent the principal form of energy storage in adipose tissue and serve as a major source of fatty acid fuel for peripheral tissues. They are transported in plasma within chylomicrons (dietary origin) and very-low-density lipoproteins (VLDL, hepatic origin). Elevated fasting triglyceride levels are associated with increased cardiovascular disease risk, metabolic syndrome, insulin resistance, and, at very high levels (>500 mg/dL), acute pancreatitis. Triglyceride measurement is an essential component of the standard lipid panel used for cardiovascular risk stratification.",
+      "why": "Evaluates cardiovascular risk and screens for metabolic syndrome.",
+      "frequency": "Every 4-6 years; annually if at elevated risk"
+    }
+  },
+  {
     "loinc": "13457-7",
     "longCommonName": "LDL Cholesterol [Mass/volume] in Serum or Plasma by calculation",
+    "displayName": "LDL-Cholesterol",
+    "lang": {
+      "ru-RU": "Холестерин ЛПНП",
+      "uk-UA": "Холестерин ЛПНЩ"
+    },
+    "info": {
+      "description": "\"Bad\" cholesterol that contributes to plaque buildup in arteries.",
+      "scientific": "Low-density lipoprotein cholesterol (LDL-C) represents the cholesterol content of LDL particles, which are the primary carriers of cholesterol to peripheral tissues. LDL particles can penetrate the arterial endothelium where they undergo oxidative modification and are taken up by macrophages, initiating foam cell formation and atherosclerotic plaque development. LDL-C is the primary therapeutic target for cardiovascular risk reduction as established by multiple randomized clinical trials demonstrating that lowering LDL-C reduces major adverse cardiovascular events. LDL-C is most commonly estimated using the Friedewald equation: LDL-C = Total Cholesterol - HDL-C - (Triglycerides/5).",
+      "why": "Primary target for cardiovascular risk reduction and lipid-lowering therapy.",
+      "frequency": "Every 4-6 years; annually if on statin therapy or at elevated risk"
+    }
+  },
+  {
+    "loinc": "22748-8",
+    "longCommonName": "Cholesterol in LDL [Moles/volume] in Serum or Plasma",
     "displayName": "LDL-Cholesterol",
     "lang": {
       "ru-RU": "Холестерин ЛПНП",
@@ -457,8 +546,48 @@
     }
   },
   {
+    "loinc": "14629-0",
+    "longCommonName": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+    "displayName": "Direct Bilirubin",
+    "lang": {
+      "ru-RU": "Билирубин прямой",
+      "uk-UA": "Білірубін прямий"
+    },
+    "info": {
+      "description": "Bilirubin that the liver has already processed and made water-soluble, ready to be dumped into bile and excreted. When this fraction rises, it means the liver did its job of processing bilirubin, but something is blocking its exit — typically a bile duct obstruction or liver disease preventing excretion. High direct bilirubin with dark urine is a classic sign of obstructive jaundice.",
+      "scientific": "Direct (conjugated) bilirubin is the water-soluble glucuronide conjugate of bilirubin formed in hepatocytes by the enzyme UDP-glucuronosyltransferase (UGT1A1). After conjugation, direct bilirubin is actively secreted into bile canaliculi for excretion into the intestine. Elevated direct bilirubin in serum indicates impaired hepatocellular excretion or mechanical obstruction of the biliary system, as seen in obstructive jaundice, intrahepatic cholestasis, hepatitis, and drug-induced liver injury. The ratio of direct to total bilirubin helps differentiate conjugated (post-hepatic) from unconjugated (pre-hepatic or hepatic) causes of hyperbilirubinemia.",
+      "why": "Helps differentiate obstructive from hepatocellular causes of jaundice.",
+      "frequency": "As clinically indicated",
+      "lang": {
+        "ru-RU": {
+          "description": "Билирубин, уже обработанный печенью и ставший водорастворимым, готовый к выбросу с жёлчью. Когда эта фракция повышается, значит печень свою работу сделала, но что-то блокирует выход — обычно обструкция жёлчного протока или заболевание печени, препятствующее экскреции. Высокий прямой билирубин с тёмной мочой — классический признак механической желтухи."
+        }
+      }
+    }
+  },
+  {
     "loinc": "1975-2",
     "longCommonName": "Bilirubin.total [Mass/volume] in Serum or Plasma",
+    "displayName": "Total Bilirubin",
+    "lang": {
+      "ru-RU": "Билирубин общий",
+      "uk-UA": "Білірубін загальний"
+    },
+    "info": {
+      "description": "The yellow pigment your body produces when it recycles old red blood cells — the liver processes it and excretes it through bile, which is what gives stool its brown color. When bilirubin builds up in the blood, it turns your skin and eyes yellow (jaundice). The total level tells you something is wrong; the split between direct and indirect tells you where the problem is.",
+      "scientific": "Bilirubin is a yellow tetrapyrrole pigment produced from the catabolism of heme, primarily from senescent erythrocyte hemoglobin degradation in the reticuloendothelial system. Total bilirubin comprises unconjugated (indirect) bilirubin, which is lipid-soluble and transported bound to albumin, and conjugated (direct) bilirubin, which is water-soluble after hepatic glucuronidation. Elevated total bilirubin manifests clinically as jaundice and may result from increased bilirubin production (hemolysis), impaired hepatic conjugation (Gilbert syndrome, neonatal jaundice), or decreased biliary excretion (cholestasis, biliary obstruction). Total bilirubin measurement is a standard component of liver function assessment.",
+      "why": "Evaluates liver function, bile duct obstruction, and hemolytic conditions.",
+      "frequency": "Annually, or as clinically indicated",
+      "lang": {
+        "ru-RU": {
+          "description": "Жёлтый пигмент, который вырабатывает организм при переработке старых эритроцитов — печень обрабатывает его и выводит с жёлчью, благодаря чему стул имеет коричневый цвет. Когда билирубин накапливается в крови, кожа и глаза желтеют (желтуха). Общий уровень говорит, что что-то не так; соотношение прямого и непрямого — где именно проблема."
+        }
+      }
+    }
+  },
+  {
+    "loinc": "14631-6",
+    "longCommonName": "Bilirubin.total [Moles/volume] in Serum or Plasma",
     "displayName": "Total Bilirubin",
     "lang": {
       "ru-RU": "Билирубин общий",
@@ -492,8 +621,38 @@
     }
   },
   {
+    "loinc": "14937-7",
+    "longCommonName": "Urea nitrogen [Moles/volume] in Serum or Plasma",
+    "displayName": "Urea (BUN)",
+    "lang": {
+      "ru-RU": "Мочевина",
+      "uk-UA": "Сечовина"
+    },
+    "info": {
+      "description": "Waste product from protein metabolism filtered by the kidneys.",
+      "scientific": "Blood urea nitrogen (BUN) represents the nitrogen content of urea, the principal end product of protein catabolism and amino acid deamination synthesized in the liver via the urea cycle. Urea is freely filtered by the glomeruli, with approximately 40-50% being passively reabsorbed in the tubules, making it an imperfect but clinically useful marker of renal function. Elevated BUN (azotemia) may be prerenal (dehydration, heart failure, high protein intake), renal (acute or chronic kidney disease), or postrenal (urinary tract obstruction). The BUN-to-creatinine ratio helps distinguish among these etiologies, with a ratio greater than 20:1 suggesting prerenal causes.",
+      "why": "Assesses kidney function and hydration status.",
+      "frequency": "Annually, or as clinically indicated"
+    }
+  },
+  {
     "loinc": "2160-0",
     "longCommonName": "Creatinine [Mass/volume] in Serum or Plasma",
+    "displayName": "Creatinine",
+    "lang": {
+      "ru-RU": "Креатинин",
+      "uk-UA": "Креатинін"
+    },
+    "info": {
+      "description": "Waste product from muscle metabolism used as a key marker of kidney function.",
+      "scientific": "Creatinine is a breakdown product of creatine phosphate from skeletal muscle metabolism, produced at a relatively constant rate proportional to muscle mass. It is freely filtered by the glomeruli and secreted to a minor extent by the proximal tubules, with negligible reabsorption, making it a reliable endogenous marker of glomerular filtration rate (GFR). Serum creatinine is the most widely used laboratory test for assessing renal function and staging chronic kidney disease. Creatinine-based GFR estimation equations (CKD-EPI, MDRD) incorporate age, sex, and race to improve accuracy, though muscle mass extremes, diet, and certain medications can affect interpretation.",
+      "why": "Evaluates kidney filtration capacity and monitors renal disease progression.",
+      "frequency": "Annually, or as clinically indicated"
+    }
+  },
+  {
+    "loinc": "14682-9",
+    "longCommonName": "Creatinine [Moles/volume] in Serum or Plasma",
     "displayName": "Creatinine",
     "lang": {
       "ru-RU": "Креатинин",
@@ -567,6 +726,35 @@
   {
     "loinc": "3024-7",
     "longCommonName": "Thyroxine Free [Mass/volume] in Serum or Plasma",
+    "displayName": "Free T4 (FT4)",
+    "lang": {
+      "ru-RU": "Тироксин свободный (Т4 св.)",
+      "uk-UA": "Тироксин вільний (Т4 віл.)"
+    },
+    "info": {
+      "description": "The thyroid’s main output — a reservoir hormone that circulates in the blood waiting to be converted into active T3 where the body needs it. Free T4 measures only the unbound, available fraction, giving a true picture of thyroid supply regardless of protein changes from pregnancy, medications, or liver conditions.",
+      "scientific": "Free T4 is the metabolically active fraction of thyroxine and is the precursor of triiodothyronine (T3). Free T4 is a sensitive test for thyroid function and is increased with hyperthyroidism and decreased with hypothyroidism. Free T4 is not affected by changes in thyroxine-binding proteins.",
+      "why": "Confirms thyroid dysfunction when TSH is abnormal and monitors thyroid therapy.",
+      "frequency": "As clinically indicated; with TSH when monitoring thyroid disease",
+      "lang": {
+        "ru-RU": {
+          "description": "Основной продукт щитовидной железы — гормон-резерв, который циркулирует в крови и превращается в активный Т3 там, где это нужно организму. Свободный Т4 измеряет только несвязанную, доступную фракцию, давая истинную картину обеспечения тиреоидными гормонами независимо от изменений белков при беременности, приёме лекарств или заболеваниях печени.",
+          "scientific": "Свободный Т4 — метаболически активная фракция тироксина, являющаяся предшественником трийодтиронина (Т3). Свободный Т4 — чувствительный тест функции щитовидной железы: его уровень повышается при гипертиреозе и снижается при гипотиреозе. На уровень свободного Т4 не влияют изменения концентрации тироксинсвязывающих белков.",
+          "why": "Подтверждает дисфункцию щитовидной железы при отклонениях ТТГ и используется для мониторинга тиреоидной терапии.",
+          "frequency": "По клиническим показаниям; совместно с ТТГ при мониторинге заболеваний щитовидной железы"
+        },
+        "uk-UA": {
+          "description": "Основний продукт щитоподібної залози — гормон-резерв, що циркулює у крові й перетворюється на активний Т3 там, де це потрібно організму. Вільний Т4 вимірює лише незв'язану, доступну фракцію, даючи справжню картину забезпечення тиреоїдними гормонами незалежно від змін білків при вагітності, прийомі ліків чи захворюваннях печінки.",
+          "scientific": "Вільний Т4 — метаболічно активна фракція тироксину, що є попередником трийодтироніну (Т3). Вільний Т4 — чутливий тест функції щитоподібної залози: його рівень підвищується при гіпертиреозі та знижується при гіпотиреозі. На рівень вільного Т4 не впливають зміни концентрації тироксинзв'язувальних білків.",
+          "why": "Підтверджує дисфункцію щитоподібної залози при відхиленнях ТТГ та використовується для моніторингу тиреоїдної терапії.",
+          "frequency": "За клінічними показаннями; разом із ТТГ при моніторингу захворювань щитоподібної залози"
+        }
+      }
+    }
+  },
+  {
+    "loinc": "14920-3",
+    "longCommonName": "Thyroxine (T4) free [Moles/volume] in Serum or Plasma",
     "displayName": "Free T4 (FT4)",
     "lang": {
       "ru-RU": "Тироксин свободный (Т4 св.)",
@@ -886,6 +1074,26 @@
   {
     "loinc": "1971-1",
     "longCommonName": "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
+    "displayName": "Indirect Bilirubin (IBIL)",
+    "lang": {
+      "ru-RU": "Билирубин непрямой",
+      "uk-UA": "Білірубін непрямий"
+    },
+    "info": {
+      "description": "Raw, unprocessed bilirubin that's still traveling to the liver — it's fat-soluble and bound to albumin in the blood. When this fraction is elevated, either too many red blood cells are being destroyed (hemolysis) or the liver can't keep up with processing. Some people have a harmless genetic condition called Gilbert's syndrome that mildly elevates indirect bilirubin without any liver disease.",
+      "scientific": "Indirect (unconjugated) bilirubin is the lipid-soluble form of bilirubin that has not yet undergone hepatic glucuronidation and circulates tightly bound to serum albumin. It is produced from the enzymatic degradation of heme by heme oxygenase and biliverdin reductase in the reticuloendothelial system. Elevated indirect bilirubin is characteristic of conditions involving increased bilirubin production (hemolytic anemias, ineffective erythropoiesis), impaired hepatic uptake, or defective conjugation (Gilbert syndrome, Crigler-Najjar syndrome). Indirect bilirubin is calculated by subtracting direct bilirubin from total bilirubin.",
+      "why": "Helps identify hemolytic anemia and Gilbert syndrome as causes of elevated bilirubin.",
+      "frequency": "As clinically indicated",
+      "lang": {
+        "ru-RU": {
+          "description": "Сырой, необработанный билирубин, всё ещё направляющийся в печень — он жирорастворим и связан с альбумином в крови. Когда эта фракция повышена, либо слишком много эритроцитов разрушается (гемолиз), либо печень не справляется с переработкой. У некоторых людей есть безвредное генетическое состояние — синдром Жильбера, — слегка повышающее непрямой билирубин без какого-либо заболевания печени."
+        }
+      }
+    }
+  },
+  {
+    "loinc": "14630-8",
+    "longCommonName": "Bilirubin.indirect [Moles/volume] in Serum or Plasma",
     "displayName": "Indirect Bilirubin (IBIL)",
     "lang": {
       "ru-RU": "Билирубин непрямой",
@@ -1384,6 +1592,21 @@
     }
   },
   {
+    "loinc": "2000-8",
+    "longCommonName": "Calcium [Moles/volume] in Serum or Plasma",
+    "displayName": "Calcium (Ca)",
+    "lang": {
+      "ru-RU": "Кальций",
+      "uk-UA": "Кальцій"
+    },
+    "info": {
+      "description": "Mineral essential for bone structure, muscle contraction, nerve function, and blood clotting.",
+      "scientific": "Calcium is the most abundant mineral in the human body, with approximately 99% stored in bone and teeth as hydroxyapatite crystals, and the remaining 1% in blood and soft tissues. In serum, calcium exists in three forms: protein-bound (primarily to albumin, ~40%), complexed with anions (~10%), and free ionized (~50%), the latter being the physiologically active fraction. Calcium is essential for bone mineralization, muscle contraction, nerve impulse transmission, blood coagulation, and intracellular signaling. Serum calcium homeostasis is tightly regulated by parathyroid hormone, calcitonin, and 1,25-dihydroxyvitamin D acting on bone, kidney, and intestine.",
+      "why": "Screens for parathyroid disorders, bone disease, and kidney problems.",
+      "frequency": "Annually, or as clinically indicated"
+    }
+  },
+  {
     "loinc": "1994-3",
     "longCommonName": "Calcium.ionized [Moles/volume] in Serum or Plasma",
     "displayName": "Ionized Calcium (iCa)",
@@ -1429,8 +1652,38 @@
     }
   },
   {
+    "loinc": "14879-1",
+    "longCommonName": "Phosphate [Moles/volume] in Serum or Plasma",
+    "displayName": "Phosphorus (P)",
+    "lang": {
+      "ru-RU": "Фосфор",
+      "uk-UA": "Фосфор"
+    },
+    "info": {
+      "description": "Mineral essential for bone structure, energy production, and cell membrane integrity.",
+      "scientific": "Phosphorus (measured as inorganic phosphate in serum) is the second most abundant mineral in the body, with approximately 85% in bone and teeth, 14% in soft tissues, and less than 1% in extracellular fluid. It is essential for bone mineralization as a component of hydroxyapatite, energy metabolism (ATP, creatine phosphate), nucleic acid structure, cell membrane phospholipids, and acid-base buffering. Serum phosphate is regulated by parathyroid hormone (which promotes renal excretion), fibroblast growth factor 23 (FGF23), and 1,25-dihydroxyvitamin D (which enhances intestinal absorption). Hyperphosphatemia occurs in chronic kidney disease and hypoparathyroidism, while hypophosphatemia is seen in refeeding syndrome, hyperparathyroidism, and vitamin D deficiency.",
+      "why": "Evaluates bone metabolism, parathyroid function, and kidney disease.",
+      "frequency": "Annually, or as clinically indicated"
+    }
+  },
+  {
     "loinc": "19123-9",
     "longCommonName": "Magnesium [Mass/volume] in Serum or Plasma",
+    "displayName": "Magnesium (Mg)",
+    "lang": {
+      "ru-RU": "Магний",
+      "uk-UA": "Магній"
+    },
+    "info": {
+      "description": "Mineral involved in over 300 enzymatic reactions including energy production and muscle function.",
+      "scientific": "Magnesium is the fourth most abundant cation in the body and the second most abundant intracellular cation, with approximately 60% stored in bone, 39% in intracellular compartments, and only 1% in extracellular fluid. It is an essential cofactor for over 300 enzymatic reactions, including those involving ATP utilization, protein and nucleic acid synthesis, ion channel regulation, and neuromuscular function. Magnesium deficiency can cause neuromuscular irritability (tremor, tetany, seizures), cardiac arrhythmias, hypokalemia, and hypocalcemia resistant to correction until magnesium is repleted. Serum magnesium may not accurately reflect total body stores since it represents less than 1% of total magnesium.",
+      "why": "Detects deficiency causing muscle cramps, arrhythmias, and fatigue.",
+      "frequency": "Annually, or as clinically indicated"
+    }
+  },
+  {
+    "loinc": "2601-3",
+    "longCommonName": "Magnesium [Moles/volume] in Serum or Plasma",
     "displayName": "Magnesium (Mg)",
     "lang": {
       "ru-RU": "Магний",
@@ -1586,6 +1839,21 @@
   {
     "loinc": "3084-1",
     "longCommonName": "Urate [Mass/volume] in Serum or Plasma",
+    "displayName": "Uric Acid",
+    "lang": {
+      "ru-RU": "Мочевая кислота",
+      "uk-UA": "Сечова кислота"
+    },
+    "info": {
+      "description": "End product of purine metabolism excreted by the kidneys.",
+      "scientific": "Uric acid is the end product of purine nucleotide catabolism in humans, formed by the oxidation of hypoxanthine and xanthine by the enzyme xanthine oxidase. Unlike most mammals, humans lack the enzyme uricase and therefore cannot further degrade uric acid to the more soluble allantoin, leading to higher circulating levels. Hyperuricemia results from overproduction (high purine diet, cell turnover, enzymatic defects) or underexcretion (renal insufficiency, diuretics) and can lead to monosodium urate crystal deposition causing gouty arthritis, tophi, and urate nephropathy. Elevated uric acid is also independently associated with hypertension, metabolic syndrome, chronic kidney disease, and cardiovascular disease.",
+      "why": "Diagnoses gout, monitors kidney function, and assesses cardiovascular risk.",
+      "frequency": "Annually, or as clinically indicated"
+    }
+  },
+  {
+    "loinc": "14933-6",
+    "longCommonName": "Urate [Moles/volume] in Serum or Plasma",
     "displayName": "Uric Acid",
     "lang": {
       "ru-RU": "Мочевая кислота",
