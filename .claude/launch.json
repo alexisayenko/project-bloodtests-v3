@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "web"],
       "port": 5173
+    },
+    {
+      "name": "blood-tests-web-wsl",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["--", "bash", "-lc", "cd /mnt/c/Alex/project-bloodtests-v3/web && npm run dev"],
+      "port": 5173
     }
   ]
 }
