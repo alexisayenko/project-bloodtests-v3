@@ -28,11 +28,11 @@ const session = (partial: Partial<DiagnosticReport>): DiagnosticReport => ({
 });
 
 describe('buildExportEnvelope', () => {
-  it('creates an envelope with schema 1 and contentHash', async () => {
+  it('creates an envelope with schema 3 and contentHash', async () => {
     const sessions = [session({})];
     const envelope = await buildExportEnvelope(sessions);
 
-    expect(envelope.schema).toBe(1);
+    expect(envelope.schema).toBe(3);
     expect(envelope.contentHash).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(envelope.diagnosticReports.length).toBe(1);
   });
@@ -57,7 +57,7 @@ describe('buildExportEnvelope', () => {
     expect(report.collectedAt).toBe('2026-08-26T00:00:00Z');
     expect(report.observations.length).toBe(2);
     expect(report.observations[0].loinc).toBe('2093-3');
-    expect(report.observations[0].name).toBe('Cholesterol');
+    expect(report.observations[0].rawName).toBe('Cholesterol');
     expect(report.observations[0].value).toBe(180);
   });
 
@@ -148,7 +148,7 @@ describe('buildExportEnvelope', () => {
     const obs = envelope.diagnosticReports[0].observations[0];
 
     expect(obs.loinc).toBe('2093-3');
-    expect(obs.name).toBe('Total Cholesterol');
+    expect(obs.rawName).toBe('Total Cholesterol');
     expect(obs.value).toBe(186.65);
     expect(obs.rawValue).toBe('186.65');
     expect(obs.unit).toBe('mg/dL');

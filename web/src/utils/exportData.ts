@@ -1,43 +1,20 @@
 import type { Result, DiagnosticReport as DiagnosticReportType } from '../types';
 import type { EnvelopeMeta } from '../data/envelopeMeta';
+import { SCHEMA_VERSION } from '../data/envelopeSchema';
+import type {
+  InterchangeEnvelope,
+  InterchangeObservation,
+  InterchangeReferenceRange,
+  InterchangeReport,
+} from '../data/envelopeTypes';
 
-interface DiagnosticReportObservation {
-  loinc: string;
-  name: string;
-  value?: number;
-  unit?: string;
-  referenceRanges?: Array<{
-    low?: number;
-    high?: number;
-    text?: string;
-    label?: string;
-  }>;
-  interpretation?: string;
-  method?: string;
-  rawValue?: string;
-}
+/** `generatedAt` is optional in the format but this exporter always stamps it. */
+type StampedEnvelope = InterchangeEnvelope & { generatedAt: string };
 
-interface DiagnosticReport {
-  lab: string;
-  collectedAt: string;
-  observations: DiagnosticReportObservation[];
-}
-
-interface ExportEnvelope {
-  schema: 1;
-  generatedAt: string;
-  contentHash: string;
-  subject?: string;
-  sex?: string;
-  birthYear?: number;
-  notes?: string;
-  diagnosticReports: DiagnosticReport[];
-}
-
-function resultToObservation(result: Result): DiagnosticReportObservation {
-  const obs: DiagnosticReportObservation = {
+function resultToObservation(result: Result): InterchangeObservation {
+  const obs: InterchangeObservation = {
     loinc: result.loinc,
-    name: result.analysis || 'Unknown Test',
+    rawName: result.analysis || 'Unknown Test',
   };
 
   if (result.value !== null) {
@@ -53,13 +30,12 @@ function resultToObservation(result: Result): DiagnosticReportObservation {
   }
 
   if (result.refMin !== null || result.refMax !== null) {
-    obs.referenceRanges = [
-      {
-        ...(result.refMin !== null && { low: result.refMin }),
-        ...(result.refMax !== null && { high: result.refMax }),
-        ...(result.refText && { text: result.refText }),
-      },
-    ];
+    const range: InterchangeReferenceRange = {
+      ...(result.refMin !== null && { low: result.refMin }),
+      ...(result.refMax !== null && { high: result.refMax }),
+      ...(result.refText && { text: result.refText }),
+    };
+    obs.referenceRanges = [range];
   }
 
   if (result.method) {
@@ -69,7 +45,7 @@ function resultToObservation(result: Result): DiagnosticReportObservation {
   return obs;
 }
 
-async function computeSha256Hash(data: DiagnosticReport[]): Promise<string> {
+async function computeSha256Hash(data: InterchangeReport[]): Promise<string> {
   const jsonString = JSON.stringify(data);
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(jsonString);
@@ -85,8 +61,8 @@ async function computeSha256Hash(data: DiagnosticReport[]): Promise<string> {
 export async function buildExportEnvelope(
   sessions: DiagnosticReportType[],
   meta?: EnvelopeMeta
-): Promise<ExportEnvelope> {
-  const diagnosticReports: DiagnosticReport[] = sessions
+): Promise<StampedEnvelope> {
+  const diagnosticReports: InterchangeReport[] = sessions
     .filter((session) => session.items && session.items.length > 0)
     .map((session) => ({
       lab: session.place || 'Unknown Lab',
@@ -96,8 +72,8 @@ export async function buildExportEnvelope(
 
   const contentHash = await computeSha256Hash(diagnosticReports);
 
-  const envelope: ExportEnvelope = {
-    schema: 1,
+  const envelope: StampedEnvelope = {
+    schema: SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
     contentHash,
     diagnosticReports,
@@ -122,7 +98,7 @@ export async function buildExportEnvelope(
   return envelope;
 }
 
-export function downloadExportFile(envelope: ExportEnvelope): void {
+export function downloadExportFile(envelope: InterchangeEnvelope): void {
   const jsonString = JSON.stringify(envelope, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

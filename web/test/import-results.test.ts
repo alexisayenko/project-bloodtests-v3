@@ -21,8 +21,16 @@ function installLocalStorageStub(): void {
 
 const stored = (): DiagnosticReport[] => JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY) ?? '[]');
 
-const FIRST = [{ date: '2026-01-10', place: 'Lab A', loinc: '718-7', value: 14.2, unit: 'g/dL' }];
-const SECOND = [{ date: '2025-06-01', place: 'Lab B', loinc: '2339-0', value: 95, unit: 'mg/dL' }];
+const report = (lab: string, date: string, loinc: string, rawName: string, value: number) => ({
+  lab,
+  collectedAt: `${date}T00:00:00Z`,
+  observations: [{ loinc, rawName, value }],
+});
+
+const envelope = (...reports: ReturnType<typeof report>[]) => ({ schema: 3, diagnosticReports: reports });
+
+const FIRST = envelope(report('Lab A', '2026-01-10', '718-7', 'Hemoglobin', 14.2));
+const SECOND = envelope(report('Lab B', '2025-06-01', '2339-0', 'Glucose', 95));
 
 describe('importResults', () => {
   beforeEach(() => {
@@ -40,8 +48,7 @@ describe('importResults', () => {
 
   it('replaces via the share-link path the same way', () => {
     importResults(FIRST);
-    const shared = [{ date: '2024-02-02', place: 'Shared', items: [{ loinc: '718-7', value: 13 }] }];
-    importResults(shared);
+    importResults(envelope(report('Shared', '2024-02-02', '718-7', 'Hemoglobin', 13)));
     expect(stored().map((g) => g.file)).toEqual(['2024-02-02__shared']);
   });
 
@@ -53,7 +60,12 @@ describe('importResults', () => {
   });
 
   it('keeps every session of the incoming file, newest first', () => {
-    const groups = importResults([...FIRST, ...SECOND]);
+    const groups = importResults(
+      envelope(
+        report('Lab A', '2026-01-10', '718-7', 'Hemoglobin', 14.2),
+        report('Lab B', '2025-06-01', '2339-0', 'Glucose', 95)
+      )
+    );
     expect(groups.map((g) => g.date)).toEqual(['2026-01-10', '2025-06-01']);
   });
 });

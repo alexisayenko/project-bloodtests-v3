@@ -47,7 +47,7 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
    Watch out for:
    - A multi-page or multi-section document (e.g. "Hormones" then "Immunology") from one draw is ONE report — same lab + same draw date/time means one diagnosticReports entry, never one per section or page. Conversely, one PDF containing several draw dates is several reports — split by draw date.
    - Footnote or flag markers printed next to results (superscript numbers, asterisks, arrows) are not part of the value or the test name — never read them into either.
-   - Test names stay exactly as printed even when not in English — never translate them. A name printed across several lines (or in two languages) becomes one single-line string joined with single spaces — never put a line break inside "name".
+   - Test names stay exactly as printed even when not in English — never translate them. A name printed across several lines (or in two languages) becomes one single-line string joined with single spaces — never put a line break inside "rawName".
    - A result the report marks as pending — "Not ready", "Pending", "To follow", or an empty result cell — is not a result: skip that observation entirely and mention to me that it was skipped, so I can re-import it from the follow-up report later.
    Keep asking me for the next report until I say I'm done. If a report is unclear or a value is illegible, ask me about that specific value — never guess a number.
 
@@ -55,7 +55,7 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
 
 5. Build ONE JSON object in exactly this shape:
 {
-  "schema": 1,
+  "schema": 3,
   "sex": "female",
   "birthYear": 1975,
   "diagnosticReports": [
@@ -65,7 +65,7 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
       "observations": [
         {
           "loinc": "2093-3",
-          "name": "Total Cholesterol",
+          "rawName": "Total Cholesterol",
           "value": 186.65,
           "unit": "mg/dL",
           "referenceRanges": [
@@ -77,8 +77,10 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
   ]
 }
 
+The same shape as a JSON Schema, if you can validate against one: https://blood.isayenko.net/schema/bloodtests-3.schema.json — the rules below are complete on their own, so don't fetch it unless validating is free for you.
+
 Field rules — apply silently, do not ask me about any of these:
-   - "schema": always the literal number 1.
+   - "schema": always the literal number 3.
    - "sex" / "birthYear": include only if I gave them in step 2; otherwise omit both keys entirely.
    - "diagnosticReports": one object per report/draw I send you, even multiple reports from the same day and lab.
    - "lab": the lab/clinic name as printed; use "Unknown Lab" if the report doesn't state one.
@@ -86,7 +88,7 @@ Field rules — apply silently, do not ask me about any of these:
    - "identifiers": only add this object, with only the keys "visit" / "order" / "accession", when the report prints its own report-level reference number. Never put a patient ID, medical record number, or national ID here or anywhere else in the file.
    - "observations": one entry per test result on the report — include every result, whether or not you know its LOINC.
    - "loinc": the code exactly as the report prints it when it prints one (see step 4), otherwise an empty string "" — always include the key, never omit it, and never fill it from your own knowledge.
-   - "name": the test name exactly as printed (required).
+   - "rawName": the test name exactly as printed (required). The key is "rawName", not "name" — the app derives the canonical name from the LOINC code itself, so this field only ever holds what the paper said.
    - "value": the numeric result as a JSON number (required for all numeric results — always include when the report prints a number). Normalize decimal commas to dots ("2,149" → 2.149) and drop thousands separators — JSON numbers only. Omit this key only if the result is purely qualitative text like "Negative" or "Not Detected".
    - "comparator": one of "<", "<=", ">=", ">" — only when the report prints a value with that qualifier (e.g. "<0.5"); pair it with "value" holding the bare number (0.5).
    - "rawValue": the result exactly as printed, whenever it's non-numeric (e.g. "Negative", "Not Detected") or worth keeping verbatim alongside a comparator.

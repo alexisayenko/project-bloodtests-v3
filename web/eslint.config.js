@@ -15,6 +15,9 @@ export default defineConfig([
     'src/components/results',
     'src/components/upload',
     'src/components/analytics',
+    // Generated from public/schema/bloodtests-3.schema.json by
+    // scripts/generate-envelope-types.mjs — never hand-edited.
+    'src/data/envelopeTypes.ts',
   ]),
   {
     files: ['**/*.{ts,tsx}'],
