@@ -51,6 +51,21 @@ describe('validateDiagnosticReports', () => {
     expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
   });
 
+  it('does not warn on a Cyrillic spelling of the code\'s own unit', () => {
+    const groups = [
+      createGroup({ items: [createResult({ loinc: '2951-2', analysis: 'Sodium', unit: 'ммоль/л', refText: '1-2' })] }),
+      createGroup({ file: 'f2', items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'мкмоль/л', refText: '1-2' })] }),
+    ];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
+  });
+
+  it('still warns on a Cyrillic unit that is wrong for the code', () => {
+    const groups = [createGroup({ items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'ммоль/л', refText: '1-2' })] })];
+    const issue = validateDiagnosticReports(groups).find((i) => i.message.includes('unexpected for 14682-9'));
+    expect(issue?.level).toBe('warning');
+  });
+
   it('accepts every allowed unit for a code with a unit set (DHT ng/dL and pg/mL)', () => {
     const groups = [
       createGroup({ items: [createResult({ loinc: '1848-1', analysis: 'DHT', unit: 'ng/dL', refText: '1-2' })] }),
@@ -65,6 +80,53 @@ describe('validateDiagnosticReports', () => {
     const issue = validateDiagnosticReports(groups).find((i) => i.message.includes('unexpected for 1848-1'));
     expect(issue?.level).toBe('warning');
     expect(issue?.message).toContain('expected ng/dL or pg/mL');
+  });
+
+  it('names the mass/molar sibling code when the unit measures the wrong quantity', () => {
+    const groups = [
+      createGroup({
+        items: [createResult({ loinc: '2093-3', analysis: 'Cholesterol', value: 4.8, unit: 'mmol/L', refText: '1-2' })],
+      }),
+    ];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.level).toBe('warning');
+    expect(issues[0]?.message).toBe(
+      `Unit 'mmol/L' measures a different quantity than 2093-3 — 14647-2 is the same analyte on that scale (change the code, not the value)`
+    );
+  });
+
+  it('reads the Cyrillic spelling of a molar unit as the same code problem', () => {
+    const groups = [
+      createGroup({
+        items: [createResult({ loinc: '2160-0', analysis: 'Creatinine', value: 72, unit: 'мкмоль/л', refText: '1-2' })],
+      }),
+    ];
+    const issue = validateDiagnosticReports(groups)[0];
+    expect(issue?.message).toContain('14682-9 is the same analyte on that scale');
+  });
+
+  it('warns when the unit is in neither the Latin nor the UCUM tables', () => {
+    const groups = [createGroup({ items: [createResult({ loinc: '1234567-0', unit: 'blorp/L' })] })];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.level).toBe('warning');
+    expect(issues[0]?.message).toBe(
+      `Unit 'blorp/L' is not in the unit tables — left exactly as printed, and not comparable across units`
+    );
+  });
+
+  it('adds no unit warning to a report whose units all normalize', () => {
+    const groups = [
+      createGroup({
+        items: [
+          createResult({ loinc: '718-7', unit: 'g/dL' }),
+          createResult({ loinc: '2093-3', analysis: 'Cholesterol', value: 186, unit: 'mg/dL', refText: '1-2' }),
+          createResult({ loinc: '2160-0', analysis: 'Creatinine', value: 0.9, unit: 'mg/dL', refText: '1-2' }),
+        ],
+      }),
+    ];
+    expect(validateDiagnosticReports(groups)).toHaveLength(0);
   });
 
   it('returns no issues for a valid complete record', () => {

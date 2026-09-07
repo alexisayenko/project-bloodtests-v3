@@ -143,14 +143,23 @@ function foldSuperscripts(text: string): string {
   );
 }
 
-// Lowercase, whitespace-free, micro-sign folded to "u", multiplication signs
-// (Latin x, ×, Cyrillic х) folded to "x", caret and star exponents unified,
+/**
+ * Superscript exponents ("x10³" → "x10^3"), micro sign and Greek mu (µ/μ/Μ →
+ * "u") and multiplication signs (×, Cyrillic х/Х → "x") folded onto the ASCII
+ * spellings every table here — and the analyte catalog — is written in. Case is
+ * left alone, so a caller that needs its own casing keeps it.
+ */
+export function foldUnitGlyphs(text: string): string {
+  return foldSuperscripts(String(text ?? '').trim())
+    .replace(/[µμΜ]/g, 'u')
+    .replace(/[×хХ]/g, 'x');
+}
+
+// Lowercase, whitespace-free, glyphs folded, caret and star exponents unified,
 // and the trailing "." / "?" the curated tables carry ("fL?") dropped.
 function clean(printed: string): string {
-  return foldSuperscripts(String(printed ?? '').trim())
+  return foldUnitGlyphs(printed)
     .toLowerCase()
-    .replace(/[µμ]/g, 'u')
-    .replace(/[×х]/g, 'x')
     .replace(/\s+/g, '')
     .replace(/10[*^](\d)/g, '10^$1')
     .replace(/[.?]+$/, '');

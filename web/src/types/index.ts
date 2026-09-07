@@ -76,6 +76,12 @@ export interface Result {
   refMin: number | null;
   refMax: number | null;
   method: string;
+  /**
+   * The same reading in the code's canonical UCUM unit, derived at import for
+   * comparability. `value`/`unit` above stay exactly as the lab printed them,
+   * and this field is never written to the interchange envelope.
+   */
+  canonical?: { value: number; unit: string };
 }
 
 export interface DiagnosticReport {

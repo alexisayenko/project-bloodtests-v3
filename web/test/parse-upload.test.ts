@@ -219,6 +219,52 @@ describe('parseUploadedResults — v3 envelope', () => {
   });
 });
 
+describe('parseUploadedResults — unit normalization at import', () => {
+  const envelope = (observations: unknown[]) => ({
+    schema: 3,
+    diagnosticReports: [{ lab: 'Lab A', collectedAt: '2026-01-10T00:00:00Z', observations }],
+  });
+
+  it('attaches the canonical form without touching the printed value or unit', () => {
+    const item = parseUploadedResults(
+      envelope([{ loinc: '2093-3', rawName: 'Cholesterol', value: 1.86, unit: 'g/L' }])
+    )[0]!.items![0]!;
+    expect(item.value).toBe(1.86);
+    expect(item.unit).toBe('g/L');
+    expect(item.canonical?.unit).toBe('mg/dL');
+    expect(item.canonical?.value).toBeCloseTo(186, 6);
+  });
+
+  it('reads a Cyrillic printed unit into the canonical UCUM spelling', () => {
+    const item = parseUploadedResults(
+      envelope([{ loinc: '2160-0', rawName: 'Creatinine', value: 0.9, unit: 'мг/дл' }])
+    )[0]!.items![0]!;
+    expect(item.unit).toBe('мг/дл');
+    expect(item.canonical?.unit).toBe('mg/dL');
+    expect(item.canonical?.value).toBeCloseTo(0.9, 9);
+  });
+
+  it('attaches nothing when a molar value sits under a mass code', () => {
+    const item = parseUploadedResults(
+      envelope([{ loinc: '2093-3', rawName: 'Cholesterol', value: 4.8, unit: 'mmol/L' }])
+    )[0]!.items![0]!;
+    expect(item.value).toBe(4.8);
+    expect(item.unit).toBe('mmol/L');
+    expect(item.canonical).toBeUndefined();
+  });
+
+  it('attaches nothing for an unmappable unit or an uncurated code', () => {
+    const items = parseUploadedResults(
+      envelope([
+        { loinc: '718-7', rawName: 'Hemoglobin', value: 14.2, unit: 'blorp/L' },
+        { loinc: '1234567-0', rawName: 'Something', value: 1, unit: 'mg/dL' },
+      ])
+    )[0]!.items!;
+    expect(items[0]!.canonical).toBeUndefined();
+    expect(items[1]!.canonical).toBeUndefined();
+  });
+});
+
 describe('parseUploadedResults — rejects everything that is not a v3 envelope', () => {
   it.each([1, 2, 99])('an envelope stamped schema %i', (version) => {
     expect(() =>

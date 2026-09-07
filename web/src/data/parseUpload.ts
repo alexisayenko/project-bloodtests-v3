@@ -1,5 +1,6 @@
 import type { Result, DiagnosticReport } from '../types';
 import { isAcceptedSchemaVersion } from './envelopeSchema';
+import { normalizeObservationUnit } from './unitNormalization';
 import type {
   InterchangeEnvelope,
   InterchangeObservation,
@@ -12,7 +13,9 @@ import type {
  * One shape is accepted: the v3 interchange envelope,
  * `{ schema: 3, diagnosticReports: [...] }` — what this project's export
  * pipeline and the chatbot prompt both produce. Each DiagnosticReport maps
- * to a DiagnosticReport, with observations transformed into results.
+ * to a DiagnosticReport, with observations transformed into results. This is
+ * the one place unit normalization runs — every import route (chatbot JSON,
+ * Import JSON, share link) passes through here.
  *
  * Older files (envelopes stamped `schema: 1`, project-bloodtests-v2's
  * canonical draws, and the flat/grouped legacy shapes) are no longer read
@@ -38,9 +41,25 @@ function extractDateFromISO(isoString: string): string {
   return match ? match[1] : '';
 }
 
+/**
+ * Import-time unit normalization: derives the canonical form and attaches it
+ * alongside the printed pair, which is left untouched. Where the unit can't be
+ * placed, or contradicts the code, nothing is attached — the contradiction is
+ * reported as a warning by `validateDiagnosticReports` instead.
+ */
+function withCanonicalUnit(result: Result): Result {
+  if (!result.loinc || !result.unit) return result;
+  const { canonical } = normalizeObservationUnit({
+    loinc: result.loinc,
+    unit: result.unit,
+    ...(result.value !== null && { value: result.value }),
+  });
+  return canonical ? { ...result, canonical } : result;
+}
+
 function v3ToResult(obs: InterchangeObservation): Result {
   const refMin = obs.referenceRanges?.find((r) => r.high != null || r.low != null);
-  return {
+  return withCanonicalUnit({
     loinc: obs.loinc || '',
     analysis: obs.rawName || '',
     symbol: '',
@@ -56,7 +75,7 @@ function v3ToResult(obs: InterchangeObservation): Result {
     refMin: refMin?.low ?? null,
     refMax: refMin?.high ?? null,
     method: obs.method || '',
-  };
+  });
 }
 
 function v3ToGroup(report: InterchangeReport, index: number): DiagnosticReport {

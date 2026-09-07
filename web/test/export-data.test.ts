@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildExportEnvelope, downloadExportFile } from '../src/utils/exportData';
+import { parseUploadedResults } from '../src/data/parseUpload';
 import type { Result, DiagnosticReport } from '../src/types';
 
 const result = (partial: Partial<Result>): Result => ({
@@ -25,6 +26,54 @@ const session = (partial: Partial<DiagnosticReport>): DiagnosticReport => ({
   items: [result({})],
   itemCount: 1,
   ...partial,
+});
+
+describe('buildExportEnvelope — import-time normalization leaves it untouched', () => {
+  const source = {
+    schema: 3,
+    diagnosticReports: [
+      {
+        lab: 'Lab A',
+        collectedAt: '2026-01-10T00:00:00Z',
+        observations: [
+          { loinc: '2093-3', rawName: 'Cholesterol', value: 1.86, rawValue: '1.86', unit: 'g/L' },
+          { loinc: '2160-0', rawName: 'Creatinine', value: 0.9, rawValue: '0,9', unit: 'мг/дл' },
+          { loinc: '718-7', rawName: 'Hemoglobin', value: 14.2, rawValue: '14.2', unit: 'g/dL' },
+        ],
+      },
+    ],
+  };
+
+  it('writes bytes identical to an export of the same reports without a canonical form', async () => {
+    const normalized = parseUploadedResults(source);
+    expect(normalized[0]!.items!.some((item) => item.canonical !== undefined)).toBe(true);
+
+    const stripped = normalized.map((group) => ({
+      ...group,
+      items: group.items!.map((item) => {
+        const copy = { ...item };
+        delete copy.canonical;
+        return copy;
+      }),
+    }));
+
+    const [withCanonical, withoutCanonical] = await Promise.all([
+      buildExportEnvelope(normalized),
+      buildExportEnvelope(stripped),
+    ]);
+
+    expect(JSON.stringify(withCanonical.diagnosticReports, null, 2)).toBe(
+      JSON.stringify(withoutCanonical.diagnosticReports, null, 2)
+    );
+    expect(withCanonical.contentHash).toBe(withoutCanonical.contentHash);
+  });
+
+  it('keeps the printed unit in the envelope, never the canonical one', async () => {
+    const envelope = await buildExportEnvelope(parseUploadedResults(source));
+    const observations = envelope.diagnosticReports[0]!.observations;
+    expect(observations.map((obs) => obs.unit)).toEqual(['g/L', 'мг/дл', 'g/dL']);
+    expect(observations.every((obs) => !('canonical' in obs))).toBe(true);
+  });
 });
 
 describe('buildExportEnvelope', () => {

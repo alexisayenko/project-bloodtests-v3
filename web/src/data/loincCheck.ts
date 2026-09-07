@@ -1,5 +1,6 @@
 import type { Result, Analysis } from '../types';
 import { ALIAS_TO_PRIMARY, ALLOWED_UNITS, DEFAULT_UNITS } from './analyteCatalog';
+import { foldUnitGlyphs, toLatinUnit } from './unitNormalization';
 
 export const LOINC_RE = /^\d{1,7}-\d$/;
 
@@ -25,13 +26,14 @@ export interface CrossCheckResult {
   derived?: { loinc: string; name: string };
 }
 
-// "mIU/L" ≈ "mu/l", "μIU/mL" ≈ "uu/ml", "x10^3/μL" ≈ "x10^3/ul", "mg/dL." ≈ "mg/dl";
+// "mIU/L" ≈ "mu/l", "μIU/mL" ≈ "uu/ml", "x10³/µL" ≈ "x10^3/ul", "mg/dL." ≈ "mg/dl";
 // IU and U are interchangeable lab spellings ("µU/mL" ≡ "µIU/mL"), and a
-// curated unit marked uncertain ("fL?") reads as the unit itself.
+// curated unit marked uncertain ("fL?") reads as the unit itself. The
+// superscript / micro / multiplication folding is unitNormalization's, shared
+// rather than tabulated twice.
 export function normalizeUnit(unit: string | undefined | null): string {
-  return (unit ?? '')
+  return foldUnitGlyphs(unit ?? '')
     .toLowerCase()
-    .replace(/[μµ]/g, 'u')
     .replace(/mcg/g, 'ug')
     .replace(/iu/g, 'u')
     .replace(/\s+/g, '')
@@ -43,8 +45,19 @@ export function normalizeUnit(unit: string | undefined | null): string {
 // compare equal. /dL, /uL and prefixless numerators (IU/mL) are left alone.
 const PREFIX_UP: Record<string, string> = { p: 'n', n: 'u', u: 'm', m: '' };
 
+const CYRILLIC_RE = /\p{Script=Cyrillic}/u;
+
+// A Cyrillic printed unit ("ммоль/л", "МЕ/мл", "тыс/мкл") matches nothing in the
+// catalog, so transliterate it first. Only Cyrillic input takes this path.
+function latinizeUnit(printed: string): string {
+  if (!CYRILLIC_RE.test(printed)) return printed;
+  return toLatinUnit(printed) ?? printed;
+}
+
 export function canonicalUnit(unit: string | undefined | null): string {
-  const u = normalizeUnit(unit);
+  // toLatinUnit and plain lab spellings both yield a bare "10^3/uL" where the
+  // catalog writes count units "x10^3/uL", so the multiplier goes back on.
+  const u = normalizeUnit(latinizeUnit(unit ?? '')).replace(/^10\^/, 'x10^');
   const m = /^([pnum])(\p{L}+)\/ml$/u.exec(u);
   return m ? `${PREFIX_UP[m[1]!]}${m[2]}/l` : u;
 }

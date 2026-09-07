@@ -10,6 +10,7 @@ import {
   selectByUnit,
   unitAllowed,
 } from '../src/data/loincCheck';
+import { ALLOWED_UNITS, DEFAULT_UNITS } from '../src/data/analyteCatalog';
 import type { Analysis, Result } from '../src/types';
 
 const createResult = (overrides?: Partial<Result>): Result => ({
@@ -152,6 +153,49 @@ describe('canonicalUnit', () => {
 
   it('reads an uncertain curated unit as agreeing with the plain one', () => {
     expect(canonicalUnit('fL?')).toBe(canonicalUnit('fl'));
+  });
+
+  it('folds a Cyrillic printed unit onto its Latin key', () => {
+    expect(canonicalUnit('ммоль/л')).toBe(canonicalUnit('mmol/L'));
+    expect(canonicalUnit('мкмоль/л')).toBe(canonicalUnit('umol/L'));
+    expect(canonicalUnit('МЕ/мл')).toBe(canonicalUnit('IU/mL'));
+    expect(canonicalUnit('мкМЕ/мл')).toBe(canonicalUnit('uIU/mL'));
+    expect(canonicalUnit('Ед/л')).toBe(canonicalUnit('U/L'));
+    expect(canonicalUnit('г/дл')).toBe(canonicalUnit('g/dL'));
+    expect(canonicalUnit('мм/ч')).toBe(canonicalUnit('mm/h'));
+  });
+
+  it('folds Ukrainian МО spellings onto the same key as МЕ', () => {
+    expect(canonicalUnit('МО/л')).toBe(canonicalUnit('IU/L'));
+    expect(canonicalUnit('мМО/л')).toBe(canonicalUnit('mIU/L'));
+  });
+
+  it('keeps the catalog x-multiplier on a Cyrillic count unit', () => {
+    expect(canonicalUnit('×10⁹/л')).toBe('x10^9/l');
+    expect(canonicalUnit('тыс/мкл')).toBe(canonicalUnit('x10^3/uL'));
+  });
+
+  it('leaves an untranslatable Cyrillic unit exactly as normalizeUnit had it', () => {
+    expect(canonicalUnit('усл.ед')).toBe(normalizeUnit('усл.ед'));
+  });
+
+  it('folds superscript exponents and the micro sign onto the catalog spelling', () => {
+    expect(canonicalUnit('x10³/µL')).toBe(canonicalUnit('x10^3/uL'));
+    expect(canonicalUnit('x10⁶/µL')).toBe(canonicalUnit('x10^6/uL'));
+    expect(canonicalUnit('×10⁹/л')).toBe(canonicalUnit('x10^9/L'));
+    expect(canonicalUnit('10^9/L')).toBe(canonicalUnit('x10^9/L'));
+  });
+
+  // unitAllowed canonicalises both the printed unit and the catalog's own, so a
+  // catalog unit's key must be a fixed point: were it not, a lab printing a unit
+  // exactly as the catalog spells its key would still fail to match.
+  const catalogUnits = [
+    ...new Set([...Object.values(DEFAULT_UNITS), ...Object.values(ALLOWED_UNITS).flat(), '']),
+  ];
+
+  it.each(catalogUnits)('canonicalises the catalog unit %j to a stable key', (unit) => {
+    const key = canonicalUnit(unit);
+    expect(canonicalUnit(key)).toBe(key);
   });
 });
 
@@ -583,6 +627,29 @@ describe('unitAllowed', () => {
 
   it('rejects a unit outside the set', () => {
     expect(unitAllowed('1848-1', 'nmol/L')).toBe(false);
+  });
+
+  it('accepts a Cyrillic spelling of an allowed unit', () => {
+    expect(unitAllowed('2951-2', 'ммоль/л')).toBe(true);
+    expect(unitAllowed('14682-9', 'мкмоль/л')).toBe(true);
+    expect(unitAllowed('20448-7', 'мкМЕ/мл')).toBe(true);
+    expect(unitAllowed('777-3', 'тыс/мкл')).toBe(true);
+  });
+
+  it('still rejects a Cyrillic unit that is genuinely wrong for the code', () => {
+    expect(unitAllowed('2951-2', 'мг/дл')).toBe(false);
+    expect(unitAllowed('14682-9', 'ммоль/л')).toBe(false);
+  });
+
+  it('accepts a count unit printed with superscripts and the micro sign', () => {
+    expect(unitAllowed('6690-2', 'x10³/µL')).toBe(true);
+    expect(unitAllowed('777-3', 'x10³/µL')).toBe(true);
+    expect(unitAllowed('789-8', 'x10⁶/µL')).toBe(true);
+  });
+
+  it('still rejects a genuinely wrong unit for a count code', () => {
+    expect(unitAllowed('6690-2', 'x10⁶/µL')).toBe(false);
+    expect(unitAllowed('789-8', 'mg/dL')).toBe(false);
   });
 });
 
