@@ -63,15 +63,33 @@ stacked-ribbon chart, one marker per depth plane, each normalized to
 its own observed min/max so mixed units share one chart; alias LOINCs
 merge into one series per test (canonical code = the test's `loinc`),
 a checkbox picker selects up to 8 markers with stable per-marker
-colors, plus a translucent/opaque toggle, drag to rotate, wheel/pinch
-to zoom, double-click to reset. The engine
+colors, plus a translucent/opaque toggle, a time-window selector (All
+time / 1 week / 1 month / 1 year, anchored to the latest date; ‹›
+pans by a day or by a window width, clamped to the data extent;
+out-of-window points are dropped before per-series normalization, as
+in the mood tracker), drag to rotate, wheel/pinch to zoom,
+double-click to reset; the time axis stretches to the page width (the
+room's x half-extent is fitted per draw so the projected room spans
+~90% of the canvas; height fixed at 420px). The engine
 (`web/src/components/analytics/chart3d-stacked-core.ts`,
 `chart3d-camera.ts`) is ported from project-moodtracker's
 `chart3d-stacked.js`/`chart3d-camera.js`, generalized from 8 fixed
 slots to N series; `StackedBiomarkerChart3D.tsx` mounts it and
 `StackedBiomarkerSection.tsx` owns selection and the picker. The
 legacy, unwired `AnalyticsPage` reuses the same section behind a List /
-Compare-in-3D toggle (`BiomarkerCharts.tsx`). Persistent top nav
+Compare-in-3D toggle (`BiomarkerCharts.tsx`). Panel Detail's Analysis
+tab (the default: Observations and Indices tables) adds a "Scheduled"
+column, set apart at the right of both tables — a single-click toggle
+per row (`role=checkbox`, ✓ in primary blue); scheduling an index also
+schedules its input observations, unscheduling it leaves them, and
+toggling an observation re-derives every index (scheduled iff all its
+inputs are); global state in localStorage `bloodtests_scheduled_v1`
+(`{loincs, indices}`), logic in `scheduled.ts`. Selecting an index
+row there marks each input observation with a blue • in a fixed 10px
+gutter left of its name, and selecting an observation marks each index
+that uses it; the gutter is reserved on every row so names never shift
+(All Observations indents names by the same 13px, no marks there).
+Persistent top nav
 across five sections — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
@@ -138,12 +156,12 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (286 tests across 14 files, 1 skipped: index
+Vitest suites in `web/test/` (297 tests across 15 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — v3 envelope and v2
 shapes — and import-replace, diagnostic-report validation, LOINC
 cross-check, export
 envelope, share-link and shared-meta, explore-model, markers, routing,
-ui helpers, format utils). CI
+scheduling, ui helpers, format utils). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a
 SonarCloud scan (CI-based, `SONAR_TOKEN` secret; Automatic Analysis is
 off). Coverage metric is scoped to the testable logic —

@@ -17,3 +17,5 @@ A ratio or estimate the product derives from one or more observations' results o
 ## Where it lives today
 
 `INDEX_DEFS` in `web/src/data/computedIndices.ts` (formula, cut-points, unit conversion, clinical text), rendered per panel in `MedicalConditionsPage.tsx`. Ported from `project-bloodtests-v2`'s `engine/src/indices/*.ts`; indices requiring age or sex (eGFR, FIB-4) were left out -- v3 has no user profile to source them from.
+
+On Panel Detail's Analysis tab an index can be scheduled (`scheduled.ts`) -- its scheduled state follows its inputs (on iff every input observation is scheduled; scheduling it schedules those inputs), and selecting its row marks those inputs with a • beside their names.

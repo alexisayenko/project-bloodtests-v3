@@ -10,6 +10,23 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-07 — Charts tab gains a time-window selector (All time /
+  1 week / 1 month / 1 year, anchored to the latest date; ‹› pans by a
+  day or by a window width, clamped to the data extent; out-of-window
+  points dropped before per-series normalization, as in the mood
+  tracker) and its time axis now stretches to the page width (room x
+  half-extent fitted per draw so the projected room spans ~90% of the
+  canvas; height fixed at 420px). Panel Detail's Analysis tab gains a
+  "Scheduled" column, set apart at the right of both the Observations
+  and Indices tables — a single-click toggle per row (✓ in primary
+  blue); scheduling an index also schedules its input observations,
+  unscheduling it leaves them, toggling an observation re-derives every
+  index (scheduled iff all its inputs are); global state in
+  localStorage `bloodtests_scheduled_v1` (`scheduled.ts`). Selecting
+  an index row now marks each input observation with a blue • in a
+  fixed gutter left of its name, and selecting an observation marks
+  each index that uses it; the gutter is reserved on every row so
+  names never shift. Deployed to `blood.isayenko.net` the same day.
 - 2026-09-07 — Panel Detail gains a "Charts" tab: the panel's markers
   as a 3D stacked-ribbon chart (one marker per depth plane, each
   normalized to its own observed min/max so mixed units share one

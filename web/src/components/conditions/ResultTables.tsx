@@ -3,11 +3,17 @@ import { SI_US_UNIT, computeIndex, toUnit, zone, type IndexDef } from '../../dat
 import { LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
 import { ZONE_BG, SELECTED_ZONE_BG, formatMonthYear, pressable, cellBg, isCellArmed, type SelectedCell } from './ui';
 import { hasReference, type ResultEntry } from './resultsLookup';
+import { indexInputLoincs, isIndexScheduled, isRowScheduled, type Scheduled } from './scheduled';
 import type { Result } from '../../types';
 
 const DATE_COL_WIDTH = 96;
 // Shared across observations and both indices tables so they line up as one block.
 const LABEL_COL_WIDTH = 140;
+// The Scheduled column sits after an empty spacer column so it reads as a
+// separate block from the date grid while staying in the same table (exact
+// row alignment for free).
+const GAP_COL_WIDTH = 16;
+const SCHEDULED_COL_WIDTH = 96;
 
 const th = {
   width: DATE_COL_WIDTH,
@@ -17,8 +23,26 @@ const th = {
   whiteSpace: 'nowrap',
 } as const;
 const td = { width: DATE_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' } as const;
+const gapCell = { width: GAP_COL_WIDTH, padding: 0, border: 'none' } as const;
+const scheduledTh = {
+  ...th,
+  width: SCHEDULED_COL_WIDTH,
+  textAlign: 'center',
+  borderLeft: '1px solid #ddd',
+  borderRight: '1px solid #ddd',
+} as const;
+const scheduledTd = {
+  ...td,
+  width: SCHEDULED_COL_WIDTH,
+  textAlign: 'center',
+  borderLeft: '1px solid #ddd',
+  borderRight: '1px solid #ddd',
+  color: '#1971c2',
+  fontWeight: 600,
+  userSelect: 'none',
+} as const;
 
-function TableHead({ label, dates }: Readonly<{ label: string; dates: string[] }>) {
+function TableHead({ label, dates, scheduling }: Readonly<{ label: string; dates: string[]; scheduling: boolean }>) {
   return (
     <thead>
       <tr>
@@ -28,8 +52,47 @@ function TableHead({ label, dates }: Readonly<{ label: string; dates: string[] }
             {formatMonthYear(date)}
           </th>
         ))}
+        {scheduling && (
+          <>
+            <th style={gapCell} />
+            <th style={scheduledTh}>Scheduled</th>
+          </>
+        )}
       </tr>
     </thead>
+  );
+}
+
+/** Single-click toggle marking a row for the next draw -- no arming step, unlike the value cells. */
+function ScheduledCell({ checked, label, onToggle }: Readonly<{ checked: boolean; label: string; onToggle: () => void }>) {
+  return (
+    <>
+      <td style={gapCell} />
+      <td
+        {...pressable(onToggle)}
+        role="checkbox"
+        aria-checked={checked}
+        aria-label={`Schedule ${label}`}
+        title={checked ? 'Scheduled -- click to unschedule' : 'Click to schedule'}
+        style={scheduledTd}
+      >
+        {checked ? '✓' : ''}
+      </td>
+    </>
+  );
+}
+
+/** The selected row on the other side of an index/input relation, by name and every LOINC it answers for. */
+export type Relation = { name: string; loincs: string[] };
+
+const overlaps = (a: string[], b: string[]) => a.some((x) => b.includes(x));
+
+/** Fixed-width gutter before every name, so marking a row never shifts the text next to it. */
+function RelationMark({ label }: Readonly<{ label: string | undefined }>) {
+  return (
+    <span aria-label={label} style={{ display: 'inline-block', width: 10, marginRight: 3, color: '#1971c2' }}>
+      {label && '•'}
+    </span>
   );
 }
 
@@ -49,6 +112,10 @@ export type ObservationTableProps = {
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   /** Show the lab's raw string (qualifiers like "<0.1") when no unit conversion applies. */
   preferRaw?: boolean;
+  /** When set, appends the Scheduled toggle column (Panel Detail only). */
+  scheduling?: { scheduled: Scheduled; onToggle: (loincs: string[]) => void };
+  /** The selected computed index: rows answering for any of its input `loincs` get a mark before their name (Panel Detail only). */
+  inputsOf?: Relation;
 };
 
 /** One observation row's cells across the visible dates. */
@@ -97,17 +164,18 @@ function ObservationCells({
 }
 
 export function ObservationTable(props: Readonly<ObservationTableProps>) {
-  const { label, rows, visibleDates, unitSystem, selectedLoinc, onSelect, onOpenPopup } = props;
+  const { label, rows, visibleDates, unitSystem, selectedLoinc, onSelect, onOpenPopup, scheduling, inputsOf } = props;
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
-        <TableHead label={label} dates={visibleDates} />
+        <TableHead label={label} dates={visibleDates} scheduling={!!scheduling} />
         <tbody>
           {rows.map((test) => {
             const selected = selectedLoinc === test.loinc;
             const marker = LOINC_TO_MARKER[test.loinc];
             const siUsUnit = marker ? SI_US_UNIT[marker] : undefined;
             const displayUnit = siUsUnit ? siUsUnit[unitSystem] : test.unit;
+            const rowLoincs = testLoincs(test);
             return (
               <tr key={test.loinc} style={{ background: selected ? '#eaf3fb' : undefined }}>
                 <td
@@ -117,10 +185,18 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
                   })}
                   style={{ ...td, width: LABEL_COL_WIDTH }}
                 >
+                  <RelationMark label={inputsOf && overlaps(rowLoincs, inputsOf.loincs) ? `input of ${inputsOf.name}` : undefined} />
                   <span style={{ fontWeight: 600 }}>{test.short}</span>
                   {displayUnit && `, ${displayUnit}`}
                 </td>
                 <ObservationCells {...props} test={test} selected={selected} />
+                {scheduling && (
+                  <ScheduledCell
+                    checked={isRowScheduled(scheduling.scheduled, rowLoincs)}
+                    label={test.short}
+                    onToggle={() => scheduling.onToggle(rowLoincs)}
+                  />
+                )}
               </tr>
             );
           })}
@@ -131,7 +207,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
 }
 
 export function IndexTable({
-  defs, visibleDates, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup,
+  defs, visibleDates, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup, scheduling, usedBy,
 }: Readonly<{
   defs: IndexDef[];
   visibleDates: string[];
@@ -144,11 +220,15 @@ export function IndexTable({
   onSelectCell: (key: string, date: string) => void;
   /** Second click on an already-armed cell: open the simple value popup for that specific date's value. */
   onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
+  /** When set, appends the Scheduled toggle column; scheduling an index also schedules its inputs. */
+  scheduling?: { scheduled: Scheduled; onToggle: (key: string) => void };
+  /** The selected observation: indices reading any of its `loincs` get a mark before their name (Panel Detail only). */
+  usedBy?: Relation;
 }>) {
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
-        <TableHead label="Indices" dates={visibleDates} />
+        <TableHead label="Indices" dates={visibleDates} scheduling={!!scheduling} />
         <tbody>
           {defs.map((def) => {
             const selected = selectedLoinc === def.key;
@@ -161,6 +241,7 @@ export function IndexTable({
                   })}
                   style={{ ...td, width: LABEL_COL_WIDTH }}
                 >
+                  <RelationMark label={usedBy && overlaps(indexInputLoincs(def.key), usedBy.loincs) ? `uses ${usedBy.name}` : undefined} />
                   <span style={{ fontWeight: 600 }}>{def.nameCompact}</span>
                   {def.unit && `, ${def.unit}`}
                 </td>
@@ -189,6 +270,13 @@ export function IndexTable({
                     </td>
                   );
                 })}
+                {scheduling && (
+                  <ScheduledCell
+                    checked={isIndexScheduled(scheduling.scheduled, def.key)}
+                    label={def.nameCompact}
+                    onToggle={() => scheduling.onToggle(def.key)}
+                  />
+                )}
               </tr>
             );
           })}

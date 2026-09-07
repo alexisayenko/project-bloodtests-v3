@@ -104,6 +104,15 @@ rationale per rule so future-us can revisit.
   popup its row label opens (formula, evidence level, references).
   Clicking a different cell re-arms instead
   of opening; the row label still opens on a single click.
+- **Relation marks:** selecting an Analysis row marks its related rows
+  — an index's input observations, or the indices an observation feeds
+  — with a blue • in a fixed gutter left of the name. The gutter is
+  reserved on every row (All Observations too, though it shows no
+  marks) so a mark never shifts the text beside it.
+- **Scheduled column:** a per-row single-click toggle (`role=checkbox`,
+  ✓ in primary blue), set apart at the right of both Analysis tables
+  by a spacer column so it reads as a separate concern from the dated
+  value cells. Panel Detail only.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
 - **Tab placement:** top (web) — both the section nav and the
   Analysis/What's-in-range/Charts tabs use the same top,

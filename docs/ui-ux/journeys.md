@@ -18,13 +18,21 @@ Entry point → panel detail, with a historical values table.
 - **Entry:** Monitoring Panels (panel grid)
 - **Screens (in order):** Monitoring Panels → panel detail (Analysis
   tab)
+- **Branches:** on the Analysis tab, selecting an index row marks each
+  of its input observations with a blue • left of the name; selecting
+  an observation marks each index that uses it
+- **Branches:** the Analysis tab's "Scheduled" column (right of both
+  tables) toggles a row into the global scheduled set with one click;
+  scheduling an index also schedules its inputs, and an index reads
+  scheduled once all its inputs are
 - **Branches:** "What's in range" tab shows a normalized-overlay chart
   (every marker as % of its own reference range, plus the panel's
   computed indices normalized against their own ok/warn/bad
   cut-points) instead of the values table
 - **Branches:** "Charts" tab shows the panel's markers as a 3D
   stacked-ribbon chart (one marker per depth plane, each normalized to
-  its own observed range; checkbox picker up to 8 markers; drag to
+  its own observed range; checkbox picker up to 8 markers; time window
+  All time / 1 week / 1 month / 1 year with ‹› panning; drag to
   rotate, scroll to zoom)
 - **Exit / success:** viewer sees an observation's historical values
   and reference range

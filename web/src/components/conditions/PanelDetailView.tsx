@@ -5,6 +5,7 @@ import { COMPUTED_LOINCS, INDEX_LOINCS, testLoincs, type Observation } from './m
 import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { ObservationTable, IndexTable } from './ResultTables';
+import { indexInputLoincs, useScheduled } from './scheduled';
 import { LabExploreView } from './LabExploreView';
 import { PanelChartsView } from '../analytics/PanelChartsView';
 import { LangProvider } from '../../i18n/LangContext';
@@ -50,10 +51,15 @@ export function PanelDetailView({
   onBack: () => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
+  const { scheduled, onToggleRow, onToggleIndex } = useScheduled();
 
   const observations = tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
   const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc) && !COMPUTED_LOINCS.has(t.loinc));
   const computedForPanel = INDEX_DEFS.filter((d) => d.panels.includes(name));
+  const selectedIndex = computedForPanel.find((d) => d.key === selectedLoinc);
+  const inputsOf = selectedIndex && { name: selectedIndex.name, loincs: indexInputLoincs(selectedIndex.key) };
+  const selectedObservation = observations.find((t) => t.loinc === selectedLoinc);
+  const usedBy = selectedObservation && { name: selectedObservation.short, loincs: testLoincs(selectedObservation) };
 
   const dates = useMemo(() => {
     const computedInputLoincs = new Set(
@@ -82,6 +88,7 @@ export function PanelDetailView({
     selectedCell,
     onSelectCell,
     onOpenResultPopup,
+    scheduling: { scheduled, onToggle: onToggleRow },
   };
 
   return (
@@ -120,7 +127,7 @@ export function PanelDetailView({
             <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
           ) : (
             <>
-              <ObservationTable label="Observations" rows={observations} {...tableProps} />
+              <ObservationTable label="Observations" rows={observations} {...tableProps} inputsOf={inputsOf} />
               {(indices.length > 0 || computedForPanel.length > 0) && (
                 <div style={{ marginTop: 16 }}>
                   {indices.length > 0 && <ObservationTable label="Indices" rows={indices} {...tableProps} />}
@@ -135,6 +142,8 @@ export function PanelDetailView({
                       selectedCell={selectedCell}
                       onSelectCell={onSelectCell}
                       onOpenIndexResultPopup={onOpenIndexResultPopup}
+                      scheduling={{ scheduled, onToggle: onToggleIndex }}
+                      usedBy={usedBy}
                     />
                   )}
                 </div>
