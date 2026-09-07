@@ -106,8 +106,8 @@ rationale per rule so future-us can revisit.
   of opening; the row label still opens on a single click.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
 - **Tab placement:** top (web) — both the section nav and the
-  Analysis/What's-in-range tabs use the same top, underlined-active
-  style.
+  Analysis/What's-in-range/Charts tabs use the same top,
+  underlined-active style.
 - [TODO: gesture conventions — long-press, swipe-to-delete.]
 
 ### Voice & copy

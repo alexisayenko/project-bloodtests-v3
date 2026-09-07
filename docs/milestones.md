@@ -17,7 +17,7 @@ events accumulate enough to warrant their own pages — see
   up to 8 markers with stable colors; drag to rotate, wheel/pinch to
   zoom, double-click to reset). Engine ported from project-moodtracker's
   `chart3d-stacked.js`/`chart3d-camera.js`, generalized from 8 fixed
-  slots to N series.
+  slots to N series. Deployed to `blood.isayenko.net` the same day.
 - 2026-08-26 — FAI (Free Androgen Index) added to the Hypogonadism panel
   alongside cFT, graded heuristic (Vermeulen's own paper calls FAI
   SHBG-biased and unreliable; cFT is preferred); first nav tab renamed
