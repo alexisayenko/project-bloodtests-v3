@@ -9,7 +9,7 @@ A panel does not imply the user has been diagnosed with the condition it's named
 - **Name** — the condition or organ system it monitors (e.g. "Fatty Liver").
 - **Observations** — the list of [observations](observation.md) belonging to this panel (by LOINC code).
 
-An observation can belong to more than one panel — e.g. Amylase informs both Fatty Liver and Pancreatic Function.
+An observation can belong to more than one panel — e.g. Amylase informs both Fatty Liver and Pancreatic Function. Soft draw-together pairs (e.g. Ferritin with Iron / Transferrin / TIBC) are deliberately not panels — they are per-marker and condition-independent, so they're modeled as [companion observations](companion-observation.md) instead.
 
 ## What it is not
 

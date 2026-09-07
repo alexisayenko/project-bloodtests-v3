@@ -178,4 +178,4 @@ weekly npm (minor+patch grouped) and github-actions bumps.
 - [README.md](README.md) — repo entry point + structure
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
-  panel, lab report, computed index
+  panel, lab report, computed index, companion observation (planned)
