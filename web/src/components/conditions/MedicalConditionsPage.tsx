@@ -22,7 +22,7 @@ import type { ResultEntry } from './resultsLookup';
 // The app shell: owns the route, the flattened results, the shared table
 // settings and the popup, and renders one view component per section.
 export function MedicalConditionsPage() {
-  const { analysesCatalog, panels } = useData();
+  const { analysesCatalog, panels, monitoringPanels } = useData();
   const { sessions, loadGroupItems, loadGenerated, uploadFile, updateGroup, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
@@ -56,7 +56,10 @@ export function MedicalConditionsPage() {
     setDateOrder(seeded.dateOrder);
   }
 
-  const conditions = useMemo(() => buildConditions(panels, analysesCatalog), [panels, analysesCatalog]);
+  const conditions = useMemo(
+    () => buildConditions(panels, analysesCatalog, monitoringPanels),
+    [panels, analysesCatalog, monitoringPanels]
+  );
   const allowedPanels = panelAllowlist(sharedMeta);
   const shownConditions = useMemo(() => visiblePanels(conditions, allowedPanels), [conditions, allowedPanels]);
 

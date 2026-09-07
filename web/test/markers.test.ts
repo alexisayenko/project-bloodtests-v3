@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, isEchoRedundant, testLoincs } from '../src/components/conditions/markers';
+import { isEchoRedundant, testLoincs } from '../src/components/conditions/markers';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, DEFAULT_UNITS, SHORT_LABELS } from '../src/data/analyteCatalog';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
-import { DEFAULT_UNITS } from '../src/data/loincCheck';
 
 describe('isEchoRedundant (short-label echo suppression)', () => {
   it('suppresses when the full name contains the short label', () => {

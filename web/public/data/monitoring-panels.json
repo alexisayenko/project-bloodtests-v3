@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Hypogonadism",
+    "panelId": "hpg-axis",
+    "extraLoincs": ["1751-7", "2276-4", "11580-8", "5763-8", "1989-3", "4548-4"]
+  },
+  {
+    "name": "Hypothyroidism",
+    "panelId": "thyroid",
+    "extraLoincs": ["1989-3"]
+  },
+  {
+    "name": "Adrenal",
+    "panelId": "hpa-axis",
+    "extraLoincs": ["2191-5"]
+  },
+  {
+    "name": "Insulin Resistance",
+    "panelId": "glucose-metabolism",
+    "excludeLoincs": ["1798-8", "3040-3", "59261-8"],
+    "extraLoincs": ["2571-8", "2085-9"]
+  },
+  {
+    "name": "Cardiovascular Risk",
+    "panelIds": ["cardiovascular-inflammatory", "lipid-metabolism"]
+  },
+  {
+    "name": "Fatty Liver",
+    "panelId": "liver-function",
+    "extraLoincs": ["777-3", "2571-8", "4548-4", "2339-0"]
+  },
+  {
+    "name": "Kidney Function",
+    "panelId": "kidney-function",
+    "extraLoincs": ["2951-2", "2823-3", "2075-0", "17861-6", "2777-1", "1751-7", "2339-0", "9318-7"]
+  },
+  {
+    "name": "Anemia",
+    "panelId": "iron-metabolism",
+    "extraLoincs": ["787-2", "785-6", "786-4", "788-0", "2132-9", "2284-8"]
+  },
+  {
+    "name": "Bone and Mineral Metabolism",
+    "panelId": "vitamins-minerals-electrolytes",
+    "extraLoincs": ["2697-1", "41171-0", "77370-5", "9622-2", "17838-4", "6768-6", "1751-7"]
+  },
+  {
+    "name": "Pancreatic Function",
+    "loincs": ["1798-8", "3040-3"],
+    "extraLoincs": ["25907-7", "2339-0", "4548-4", "20448-7", "2571-8", "17861-6", "6768-6", "2324-2", "1975-2", "1968-7", "1986-9"]
+  },
+  {
+    "name": "FBC",
+    "panelId": "fbc"
+  }
+]

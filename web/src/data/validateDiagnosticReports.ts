@@ -1,5 +1,6 @@
 import type { DiagnosticReport } from '../types';
-import { LOINC_RE, DEFAULT_UNITS, ALLOWED_UNITS, unitAllowed } from './loincCheck';
+import { LOINC_RE, unitAllowed } from './loincCheck';
+import { DEFAULT_UNITS, ALLOWED_UNITS } from './analyteCatalog';
 
 export interface ValidationIssue {
   groupFile: string;

@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blood.isayenko.net/schema/analytes-1.schema.json",
+  "title": "AnalyteCatalog",
+  "description": "The app's reference data, schema 1: the analyte catalog in web/public/data/analyses.json, plus the two panel layers it is composed into — the laboratory groups in panels.json (referenced as #/$defs/labPanel) and the product's Monitoring Panels in monitoring-panels.json (#/$defs/monitoringPanel). The catalog is the single source of truth for everything the app knows about a LOINC code, so every fact about a code — its names, its badge label, its expected unit, the further units accepted for it, and whether it is a variant of another code — lives on one entry here and nowhere in TypeScript. Unlike the interchange envelope, this is app-internal data with no outside authors and no forward-compatibility promise: the objects are therefore CLOSED, so a mistyped key fails the conformance suite instead of being silently ignored at runtime.",
+  "type": "array",
+  "minItems": 1,
+  "items": { "$ref": "#/$defs/analyte" },
+  "$defs": {
+    "loinc": {
+      "type": "string",
+      "pattern": "^\\d{1,7}-\\d$",
+      "description": "A LOINC code in its printed form: digits, a hyphen, then the check digit. The same shape the parser validates uploaded observations against, which is what keeps a lab-internal code like \"900101\" out of the catalog."
+    },
+    "lang": {
+      "type": "object",
+      "description": "Translations keyed by BCP 47 tag. English is not a key here: it is the `displayName`/`name` field itself, so an entry can never carry a translation without carrying the original.",
+      "propertyNames": { "pattern": "^[a-z]{2}-[A-Z]{2}$" },
+      "additionalProperties": { "type": "string", "minLength": 1 },
+      "minProperties": 1
+    },
+    "analyte": {
+      "type": "object",
+      "title": "Analyte",
+      "description": "One LOINC code the app knows about. Present in the catalog means the LOINC cross-check may derive this code from a printed name, so an entry is added when the product genuinely measures the analyte — not as a place to park a label.",
+      "required": ["loinc", "longCommonName", "displayName", "lang"],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "short": ["unit"],
+        "allowedUnits": ["unit"],
+        "aliasOf": ["aliasLabel", "unit"],
+        "aliasLabel": ["aliasOf"]
+      },
+      "properties": {
+        "loinc": { "$ref": "#/$defs/loinc" },
+        "longCommonName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required. LOINC's own long common name, verbatim — the authority on what the code means, and what the cross-check shows in grey under a printed name."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required. The human name the app prints. Short enough for a table cell, unlike longCommonName."
+        },
+        "short": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. The badge label in Monitoring Panels and All Observations (\"HbA1c\", \"TSH\"). Absent means the app falls back to displayName, so a code carries one only where an abbreviation is genuinely what a reader looks for. Requires `unit`: a badge without a reference unit could not be range-checked.",
+          "$comment": "Was SHORT_LABELS in markers.ts."
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. The unit this code is expected in, as printed rather than in UCUM. A LOINC fixes the kind of quantity but not the scale, so this is what lets a row's unit pick the right variant of a multi-code analyte. Absent means the app knows nothing about the code's units and never warns about them.",
+          "$comment": "Was DEFAULT_UNITS/SUPPLEMENTARY_UNITS in loincCheck.ts."
+        },
+        "allowedUnits": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Optional. Further units accepted for this code beyond `unit` — LOINC's own example units for 1848-1 (DHT) list both ng/dL and pg/mL. The validation warning fires only for a unit outside `unit` plus this set.",
+          "$comment": "Was ALLOWED_UNITS in loincCheck.ts."
+        },
+        "aliasOf": {
+          "$ref": "#/$defs/loinc",
+          "description": "Optional. The primary code this entry is a unit or method variant of. The primary owns the row, the badge and the chart series; a result uploaded under this code folds into it. Must name an entry that is not itself an alias.",
+          "$comment": "Was ALSO_REFS/ALIAS_TO_PRIMARY in markers.ts."
+        },
+        "aliasLabel": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. How this variant differs from its primary, in the words shown on the chip beside the row: \"nmol/L unit\", \"whole blood\", \"IFCC unit\". Meaningless without `aliasOf`."
+        },
+        "lang": { "$ref": "#/$defs/lang" },
+        "info": { "$ref": "#/$defs/analyteInfo" }
+      }
+    },
+    "analyteInfo": {
+      "type": "object",
+      "title": "AnalyteInfo",
+      "description": "The prose the marker popup shows. Optional throughout: a code the app can chart is useful long before anyone has written about it.",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "scientific": { "type": "string", "minLength": 1 },
+        "why": { "type": "string", "minLength": 1 },
+        "frequency": { "type": "string", "minLength": 1 },
+        "lang": {
+          "type": "object",
+          "description": "Per-language overrides of the fields above. A language may translate only some of them.",
+          "propertyNames": { "pattern": "^[a-z]{2}-[A-Z]{2}$" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "description": { "type": "string", "minLength": 1 },
+              "scientific": { "type": "string", "minLength": 1 },
+              "why": { "type": "string", "minLength": 1 },
+              "frequency": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "labPanel": {
+      "type": "object",
+      "title": "LabPanel",
+      "description": "One laboratory group: the way a lab orders and prints a set of analytes (\"Full Blood Count\", \"Lipid Metabolism\"). This layer describes the laboratory's world, not the product's — Monitoring Panels are composed over it. A group states its LOINCs either flat in `loincs` or split into printed `sections`, never both.",
+      "required": ["id", "name", "lang"],
+      "additionalProperties": false,
+      "oneOf": [{ "required": ["loincs"] }, { "required": ["sections"] }],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Required. Stable slug a Monitoring Panel definition refers to by `panelId`/`panelIds`."
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "icon": { "type": "string", "minLength": 1 },
+        "iconFile": { "type": "string", "minLength": 1 },
+        "iconOld": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The inline SVG this group's icon used before it became a file. Kept as provenance."
+        },
+        "lang": { "$ref": "#/$defs/lang" },
+        "loincs": { "$ref": "#/$defs/loincList" },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "lang", "loincs"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "lang": { "$ref": "#/$defs/lang" },
+              "loincs": { "$ref": "#/$defs/loincList" }
+            }
+          }
+        }
+      }
+    },
+    "monitoringPanel": {
+      "type": "object",
+      "title": "MonitoringPanel",
+      "description": "One card in the Monitoring Panels grid: the product's own grouping, expressed as a composition over the laboratory groups. Exactly one source of LOINCs — `panelId`, `panelIds` or a literal `loincs` — then `excludeLoincs` drops what the clinical question does not need and `extraLoincs` pulls in what it does, in that order. Array order here is the order the cards render in.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "oneOf": [{ "required": ["panelId"] }, { "required": ["panelIds"] }, { "required": ["loincs"] }],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required. The card's title, and the key computed indices name their panels by."
+        },
+        "panelId": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Take every LOINC from this one laboratory group."
+        },
+        "panelIds": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": "Take every LOINC from these laboratory groups, concatenated in order. Two or more — a single group is `panelId`."
+        },
+        "loincs": {
+          "$ref": "#/$defs/loincList",
+          "description": "State the starting LOINCs outright, for a panel no single laboratory group corresponds to."
+        },
+        "excludeLoincs": {
+          "$ref": "#/$defs/loincList",
+          "description": "Dropped from the LOINCs taken above, before `extraLoincs` is appended. Needed even for a code that has an `aliasOf` primary in the panel: the grid resolves LOINCs one-to-one and does not fold aliases, so an unexcluded variant would render its own second row."
+        },
+        "extraLoincs": {
+          "$ref": "#/$defs/loincList",
+          "description": "Appended after exclusion — the analytes this clinical question needs that the laboratory group does not order together."
+        }
+      }
+    },
+    "loincList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/loinc" }
+    }
+  }
+}

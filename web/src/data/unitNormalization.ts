@@ -17,7 +17,7 @@
 // Every function here is pure: no argument is mutated, nothing is stored, and
 // the untouched printed pair is always part of the result.
 
-import { DEFAULT_UNITS, ALLOWED_UNITS } from './loincCheck';
+import { DEFAULT_UNITS, ALLOWED_UNITS } from './analyteCatalog';
 import { MASS_MOLAR_SIBLINGS, SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from './massMolarSiblings';
 import type { MassMolarSibling } from './massMolarSiblings';
 
@@ -417,8 +417,8 @@ export function convertValue(
 
 /**
  * The UCUM unit this project treats as canonical for a code — its curated
- * reference unit (markers.ts via loincCheck's DEFAULT_UNITS, with the sibling
- * table covering the molar twins), expressed in UCUM.
+ * reference unit (the analyte catalog's DEFAULT_UNITS, with the sibling table
+ * covering the molar twins), expressed in UCUM.
  */
 export function canonicalUnitFor(loinc: string): string | undefined {
   const primary = expectedUnitsFor(loinc)[0];

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { getLatest, getStatus, hasReference, type LatestByLoinc } from '../src/components/conditions/resultsLookup';
 import { generateTestData } from '../src/data/generateTestData';
-import { buildConditions, PANEL_DEFS, SHORT_LABELS } from '../src/components/conditions/markers';
+import { buildConditions, SHORT_LABELS } from '../src/components/conditions/markers';
+import { MONITORING_PANELS } from './dataFiles';
 import { HP_AXIS_HTML } from '../src/components/conditions/hpAxisContent';
 import type { Result } from '../src/types';
 
@@ -84,7 +85,7 @@ describe('buildConditions', () => {
   ];
 
   it('resolves panelId panels plus extraLoincs', () => {
-    const conditions = buildConditions(panels, {});
+    const conditions = buildConditions(panels, {}, MONITORING_PANELS);
     const hypo = conditions.find((c) => c.name === 'Hypogonadism')!;
     expect(hypo.tests.map((t) => t.loinc)).toEqual(
       expect.arrayContaining(['14913-8', '2991-8', '1751-7', '4548-4'])
@@ -92,7 +93,7 @@ describe('buildConditions', () => {
   });
 
   it('reads section-based panels and applies excludeLoincs', () => {
-    const conditions = buildConditions(panels, {});
+    const conditions = buildConditions(panels, {}, MONITORING_PANELS);
     expect(conditions.find((c) => c.name === 'Hypothyroidism')!.tests.map((t) => t.loinc)).toContain('11580-8');
     const ir = conditions.find((c) => c.name === 'Insulin Resistance')!;
     expect(ir.tests.map((t) => t.loinc)).not.toContain('1798-8'); // excluded (pancreatic)
@@ -100,13 +101,15 @@ describe('buildConditions', () => {
   });
 
   it('always yields one condition per panel definition', () => {
-    expect(buildConditions([], {}).map((c) => c.name)).toEqual(PANEL_DEFS.map((d) => d.name));
+    expect(buildConditions([], {}, MONITORING_PANELS).map((c) => c.name)).toEqual(MONITORING_PANELS.map((d) => d.name));
   });
 
   it('short labels win over catalog display names', () => {
-    const conditions = buildConditions(panels, {
-      '14913-8': { loinc: '14913-8', displayName: 'Testosterone (Total)', longCommonName: 'x' },
-    });
+    const conditions = buildConditions(
+      panels,
+      { '14913-8': { loinc: '14913-8', displayName: 'Testosterone (Total)', longCommonName: 'x' } },
+      MONITORING_PANELS
+    );
     const t = conditions.find((c) => c.name === 'Hypogonadism')!.tests.find((x) => x.loinc === '14913-8')!;
     expect(t.short).toBe('T');
     expect(t.full).toBe('Testosterone (Total)');

@@ -1,5 +1,5 @@
 import type { Result, Analysis } from '../types';
-import { SHORT_LABELS, ALSO_REFS, ALIAS_TO_PRIMARY } from '../components/conditions/markers';
+import { ALIAS_TO_PRIMARY, ALLOWED_UNITS, DEFAULT_UNITS } from './analyteCatalog';
 
 export const LOINC_RE = /^\d{1,7}-\d$/;
 
@@ -49,38 +49,7 @@ export function canonicalUnit(unit: string | undefined | null): string {
   return m ? `${PREFIX_UP[m[1]!]}${m[2]}/l` : u;
 }
 
-// Conventional units for catalog analytes absent from the curated marker
-// tables — without an entry a candidate takes no unit penalty, so e.g. IGF-1
-// ("Insulin-like growth factor") survives against Insulin on a µIU/mL row.
-export const SUPPLEMENTARY_UNITS: Record<string, string> = {
-  '2484-4': 'ng/mL',
-  '30341-2': 'mm/hr', // Erythrocyte [Sedimentation Rate] in Blood
-  '5894-1': '%', // Prothrombin time (PT) actual/Normal — the Quick percentage
-  '3243-3': 'sec', // Thrombin time
-};
-
-// Known reference unit per LOINC, from the curated marker tables — this is what
-// lets the row's unit pick the right variant of a multi-code analyte.
-export const DEFAULT_UNITS: Record<string, string> = {
-  ...SUPPLEMENTARY_UNITS,
-  ...Object.fromEntries(Object.entries(SHORT_LABELS).map(([loinc, v]) => [loinc, v.unit])),
-  ...Object.fromEntries(
-    Object.values(ALSO_REFS)
-      .flat()
-      .map((ref) => [ref.loinc, ref.unit])
-  ),
-};
-
-// A LOINC code fixes the kind of quantity, not the scale — LOINC's own example
-// units for 1848-1 (DHT) list both ng/dL and pg/mL. Extra accepted units per
-// code, beyond the curated primary in DEFAULT_UNITS.
-export const ALLOWED_UNITS: Record<string, string[]> = {
-  '1848-1': ['pg/mL'],
-  '30341-2': ['mm/h'],
-  '3243-3': ['s'],
-};
-
-// Every known unit for a code (curated primary first, then extras), canonicalized.
+// Every known unit for a code (catalog reference unit first, then extras), canonicalized.
 function knownUnits(loinc: string, unitByLoinc: Record<string, string>): string[] {
   return [unitByLoinc[loinc], ...(ALLOWED_UNITS[loinc] ?? [])]
     .filter((u): u is string => Boolean(u))
