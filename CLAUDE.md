@@ -153,8 +153,13 @@ browser back/forward works. Validation
 or value-or-rawValue, or carrying a non-empty code that isn't
 LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like
 "900101"), as an error; an empty LOINC (the observation won't appear in
-panels or All Observations), a missing unit, and a missing reference
-range are warnings; while errors exist, Monitoring Panels and All
+panels or All Observations), a missing unit, a missing reference
+range, a printed unit whose dimension contradicts the code's property
+when `massMolarSiblings.ts` knows the sibling code to move to (the
+message names printed unit, current code and sibling — the value is
+never converted, ADR-0003), and, lower-severity, a unit that resolves
+to neither a Latin spelling nor a UCUM code (the rows whose curated
+tables need extending) are warnings; while errors exist, Monitoring Panels and All
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable). Upload
 accepts the v3 interchange envelope and nothing else
@@ -167,7 +172,15 @@ other envelope fields ignored for now, though a report's `identifiers`
 (visit/order/accession) feeds the session id so two same-day same-lab
 draws don't collide on merge). Each observation's printed test name
 lives in `rawName`, never `name` — the canonical name is derived from
-the LOINC code at display time and deliberately never stored. Export (`exportData.ts`) writes a v3 envelope —
+the LOINC code at display time and deliberately never stored.
+`parseUpload.ts` is also the single place unit normalization runs
+(`unitNormalization.ts`, over every observation of every import route):
+the printed value and unit are kept exactly as read, and where the unit
+places cleanly and the conversion to the code's canonical UCUM unit is
+known, the derived pair is attached to the in-memory `Result` as
+`canonical` — an optional, clearly derived field that nothing treats as
+lab-reported and the exporter's field-by-field mapping never emits, so
+an import-then-export round trip is byte-identical. Export (`exportData.ts`) writes a v3 envelope —
 `schema`, `generatedAt`, `contentHash` (sha256 of the diagnosticReports
 array only), subject/sex/birthYear/notes when set, and
 reduced reports — as `blood-tests-export-<yyyymmdd>.json`; see
@@ -207,7 +220,7 @@ excluded from eslint, Sonar, and coverage until it returns or moves to
 
 ## Quality
 
-Vitest suites in `web/test/` (360 tests across 19 files, 1 skipped: index
+Vitest suites in `web/test/` (370 tests across 19 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, unit normalization (Latin/UCUM stages, dimension check,

@@ -10,6 +10,29 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-07 — Normalization moves to the front door. Unit
+  normalization now runs at import, in `web/src/data/parseUpload.ts` —
+  the single route every JSON file takes, whether it arrives as
+  chatbot output, an Import JSON button or a share-link payload — and
+  not in a report view, where it would have run once per look. The
+  question left open in [task-0011](tasks/task-0011.md) answered
+  itself once the rule was that nothing is rewritten: the printed
+  `value` and `unit` are kept exactly as the lab reported them, and
+  the canonical UCUM pair is attached beside them on the in-memory
+  row as an optional `canonical` field, present only where the
+  conversion is known. Being derived rather than reported, it never
+  reaches the interchange envelope: the exporter's field-by-field
+  mapping ignores it, and a test now holds an import-then-export
+  round trip byte-identical. The two cases normalization cannot
+  settle on its own become warnings on the Diagnostic Reports table's
+  existing dot instead — a molar value under a mass code, named with
+  the sibling code to move to and never converted
+  ([ADR-0003](tech/decisions/adr-0003-store-only-what-the-lab-printed.md)),
+  and, lower-severity, a unit that resolves to neither a Latin
+  spelling nor a UCUM code, which is how the curated tables learn
+  what they are missing. Loading a real un-recoded export raised the
+  sibling warning on 8 of its 10 reports; the offline-recoded copy of
+  the same file raises none.
 - 2026-09-07 — One place to look up a LOINC code. Everything the app
   knew about a code was spread across four tables — the catalog in
   `web/public/data/analyses.json`, `SHORT_LABELS` and `ALSO_REFS` in
