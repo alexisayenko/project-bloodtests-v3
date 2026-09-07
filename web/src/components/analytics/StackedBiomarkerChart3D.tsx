@@ -6,6 +6,7 @@ import {
   initStackedChart3D,
   parseObservationDate,
   type OpacityMode,
+  type WindowKind,
   type StackedChart3DHandle,
   type StackedSeriesInput,
 } from './chart3d-stacked-core';
@@ -46,13 +47,14 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<StackedChart3DHandle | null>(null);
   const [opacityMode, setOpacityMode] = useState<OpacityMode>('translucent');
+  const [windowKind, setWindowKind] = useState<WindowKind>('all');
   const initialOpacityMode = useRef(opacityMode);
 
   // The canvas element itself is always mounted (see the empty-state overlay
   // below, rendered alongside rather than instead of it) so this effect's
   // empty dependency array is safe -- the engine is created exactly once per
-  // mount and torn down on unmount; series/opacity changes flow through the
-  // handle's own setters, not through re-running this effect.
+  // mount and torn down on unmount; series/opacity/window changes flow
+  // through the handle's own setters, not through re-running this effect.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -68,6 +70,10 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
     handleRef.current?.setOpacityMode(opacityMode);
   }, [opacityMode]);
 
+  useEffect(() => {
+    handleRef.current?.setWindowKind(windowKind);
+  }, [windowKind]);
+
   const series = useMemo<StackedSeriesInput[]>(() => entries.map((entry) => ({
     id: entry.loinc,
     label: nameFor?.(entry.loinc) ?? getAnalysisName(entry.loinc, analysesCatalog, lang),
@@ -81,6 +87,8 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
   useEffect(() => {
     handleRef.current?.update(series);
   }, [series]);
+
+  const panDisabled = windowKind === 'all';
 
   return (
     <div className="stacked-chart-3d">
@@ -100,6 +108,23 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
         >
           Reset view
         </button>
+        <select
+          className="stacked-chart-3d-select"
+          aria-label="Time window"
+          value={windowKind}
+          onChange={(e) => setWindowKind(e.target.value as WindowKind)}
+        >
+          <option value="all">All time</option>
+          <option value="week">1 week</option>
+          <option value="month">1 month</option>
+          <option value="year">1 year</option>
+        </select>
+        <div className="stacked-chart-3d-pan" role="group" aria-label="Pan time window">
+          <button type="button" disabled={panDisabled} aria-label="Back one window" onClick={() => handleRef.current?.panByWindowWidth(-1)}>&laquo;</button>
+          <button type="button" disabled={panDisabled} aria-label="Back one day" onClick={() => handleRef.current?.panByDay(-1)}>&lsaquo;</button>
+          <button type="button" disabled={panDisabled} aria-label="Forward one day" onClick={() => handleRef.current?.panByDay(1)}>&rsaquo;</button>
+          <button type="button" disabled={panDisabled} aria-label="Forward one window" onClick={() => handleRef.current?.panByWindowWidth(1)}>&raquo;</button>
+        </div>
       </div>
       <div className="stacked-chart-3d-canvas-wrap">
         <canvas ref={canvasRef} className="stacked-chart-3d-canvas" />

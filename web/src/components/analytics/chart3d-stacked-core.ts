@@ -11,11 +11,8 @@
 //     plain state and calls back into this engine.
 //   - No DOM controls wired in-engine (opacity/window/pan/edit/debug
 //     buttons) -- the host component renders its own controls and calls
-//     `setOpacityMode`/`resetView` on the returned handle.
-//   - No time-window (week/month/year) paging -- callers pass whichever
-//     series/points they want plotted; the engine always shows their full
-//     combined time extent. Not part of what was asked to be ported, and
-//     keeping it out keeps the surface small (see task notes).
+//     `setOpacityMode`/`setWindowKind`/`panBy*`/`resetView` on the
+//     returned handle.
 //   - No edit-mode drag-to-reorder of series/depth slots or "hidden but
 //     shown" series -- which biomarkers appear is entirely decided by what
 //     the caller includes in `update()`, so there is no separate hidden
@@ -25,8 +22,15 @@
 // normalized against its OWN observed min/max within the shared visible
 // time range (mirrors buildHealthSeries in the source -- the same shape of
 // problem: wildly different units/scales plotted on one chart), the ribbon
-// face/edge/point rendering, PATH_STEPS subdivision, and the depth-sorted
-// painter's algorithm.
+// face/edge/point rendering, PATH_STEPS subdivision, the depth-sorted
+// painter's algorithm, and the time window (all / week / month / year,
+// pannable by a day or a window width, clamped to the data extent).
+//
+// One departure from the source: the time axis follows the canvas width.
+// Height and depth keep the source's min(W, H)-based scales, but the room's
+// x half-extent is stretched on every draw until the projected room spans
+// X_FILL of the canvas width (see fitXHalf), so a wide card isn't mostly
+// empty and a narrow one doesn't overflow.
 
 import {
   DEG,
@@ -67,6 +71,29 @@ const PATH_STEPS = 6;
 // point on one date) sits at the axis midpoint rather than an edge.
 const X_CENTER = 0;
 
+// The y and z axes span -1..1 in world space; the time axis spans
+// -xHalf..xHalf, stretched per draw so the projected room fills X_FILL of
+// the canvas width, within these bounds.
+const X_HALF_MIN = 1;
+const X_HALF_MAX = 6;
+const X_FILL = 0.9;
+
+export type WindowKind = "all" | "week" | "month" | "year";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WINDOW_DAYS: Record<Exclude<WindowKind, "all">, number> = { week: 7, month: 30, year: 365 };
+const WINDOW_LABELS: Record<Exclude<WindowKind, "all">, string> = {
+  week: "one-week",
+  month: "one-month",
+  year: "one-year",
+};
+
+const startOfDay = (ms: number) => {
+  const day = new Date(ms);
+  day.setHours(0, 0, 0, 0);
+  return day.getTime();
+};
+
 const FACE_ALPHA = {
   translucent: { front: 0.55, back: 0.35, top: 0.75 },
   opaque: { front: 1, back: 1, top: 1 },
@@ -93,6 +120,9 @@ export interface StackedChart3DOptions {
 export interface StackedChart3DHandle {
   update: (series: StackedSeriesInput[]) => void;
   setOpacityMode: (mode: OpacityMode) => void;
+  setWindowKind: (kind: WindowKind) => void;
+  panByWindowWidth: (direction: 1 | -1) => void;
+  panByDay: (direction: 1 | -1) => void;
   resetView: () => void;
   destroy: () => void;
 }
@@ -142,6 +172,9 @@ export const initStackedChart3D = (
     return {
       update: () => {},
       setOpacityMode: () => {},
+      setWindowKind: () => {},
+      panByWindowWidth: () => {},
+      panByDay: () => {},
       resetView: () => {},
       destroy: () => {},
     };
@@ -155,6 +188,13 @@ export const initStackedChart3D = (
   let timeLast = 0;
   let hasPlottableData = false;
   let rafPending = false;
+
+  // "all" is the series' own combined extent; any other kind is a pannable
+  // [windowStart, windowEnd] that points get clipped to instead. Not
+  // persisted, as in the source: every mount starts on "all".
+  let windowKind: WindowKind = "all";
+  let windowStart = 0;
+  let windowEnd = 0;
 
   const camera: OrbitCamera3D = createOrbitCamera3D(canvas, {
     defaultYaw: DEFAULT_YAW,
@@ -173,10 +213,13 @@ export const initStackedChart3D = (
 
   const updateAria = () => {
     const pointCount = series.reduce((sum, s) => sum + s.values.length, 0);
+    const windowText = windowKind === "all"
+      ? "Showing all time."
+      : `Showing a ${WINDOW_LABELS[windowKind]} window, ${fmtDate(timeFirst)} to ${fmtDate(timeLast)}.`;
     canvas.setAttribute(
       "aria-label",
       `Biomarkers compared in 3D — time left to right, value bottom to top, each biomarker on `
-        + `its own depth plane. ${pointCount} ${pointCount === 1 ? "point" : "points"} plotted `
+        + `its own depth plane. ${windowText} ${pointCount} ${pointCount === 1 ? "point" : "points"} plotted `
         + `across ${series.length} ${series.length === 1 ? "biomarker" : "biomarkers"}. `
         + `Drag to rotate, scroll or pinch to zoom, double-click or double-tap to reset.`,
     );
@@ -196,6 +239,36 @@ export const initStackedChart3D = (
     };
   };
 
+  type Params = ReturnType<typeof projectionParams>;
+
+  const ROOM_CORNERS = [
+    [-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1],
+    [-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1],
+  ] as const;
+
+  let xHalf = X_HALF_MIN;
+
+  // Perspective makes the projected width only roughly proportional to
+  // xHalf, so this iterates a few times from the last draw's value. Zoom is
+  // factored out of the measurement so it still magnifies on top instead of
+  // being cancelled by the fit.
+  const fitXHalf = (W: number, p: Params) => {
+    const zoom = camera.getZoom();
+    for (let i = 0; i < 3; i += 1) {
+      let minX = Infinity;
+      let maxX = -Infinity;
+      for (const [x, y, z] of ROOM_CORNERS) {
+        const { sx } = project(x * xHalf, y, z, p.cx, p.cy, p.scaleX, p.scaleY, p.scaleZ, p.refScale);
+        minX = Math.min(minX, sx);
+        maxX = Math.max(maxX, sx);
+      }
+      const width = (maxX - minX) / zoom;
+      if (!(width > 0)) break;
+      xHalf = Math.min(X_HALF_MAX, Math.max(X_HALF_MIN, xHalf * ((X_FILL * W) / width)));
+    }
+    return xHalf;
+  };
+
   const draw = () => {
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
@@ -206,8 +279,10 @@ export const initStackedChart3D = (
     ctx.clearRect(0, 0, W, H);
     if (!hasPlottableData) return;
 
-    const { cx, cy, scaleX, scaleY, scaleZ, refScale } = projectionParams(rect);
-    const P = (x: number, y: number, z: number) => project(x, y, z, cx, cy, scaleX, scaleY, scaleZ, refScale);
+    const params = projectionParams(rect);
+    const xh = fitXHalf(W, params);
+    const P = (x: number, y: number, z: number) =>
+      project(x * xh, y, z, params.cx, params.cy, params.scaleX, params.scaleY, params.scaleZ, params.refScale);
 
     ctx.lineWidth = 1;
 
@@ -392,11 +467,13 @@ export const initStackedChart3D = (
   // macros; here, e.g. glucose in mg/dL next to a hormone in pg/mL)
   // plotted on one chart. A flat (min === max) or empty series still
   // renders (valueT defaults to 0.5, or an empty ribbon) rather than
-  // dividing by zero.
+  // dividing by zero. Points are pre-filtered to the visible window by
+  // applyWindow(), so normalization is against the window only.
   const buildSeries = (input: StackedSeriesInput, index: number, count: number, span: number): PlotSeries => {
     const zOffset = zOffsetFor(index, count);
     const points = input.points
       .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.value))
+      .filter((p) => p.t >= timeFirst && p.t <= timeLast)
       .sort((a, b) => a.t - b.t);
 
     if (points.length === 0) {
@@ -422,20 +499,42 @@ export const initStackedChart3D = (
     };
   };
 
-  const recompute = () => {
-    const allTimes = rawSeries.flatMap((s) =>
+  const computeOverallRange = (): { min: number; max: number } | null => {
+    const times = rawSeries.flatMap((s) =>
       s.points.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.value)).map((p) => p.t));
-    if (allTimes.length === 0) {
-      timeFirst = 0;
-      timeLast = 0;
-    } else {
-      timeFirst = Math.min(...allTimes);
-      timeLast = Math.max(...allTimes);
+    if (times.length === 0) return null;
+    return { min: Math.min(...times), max: Math.max(...times) };
+  };
+
+  // Same clamp as the source: the window's near edge may not pass the data's
+  // boundary (windowEnd never earlier than the first date, windowStart never
+  // later than the last), so panning to an extreme still leaves the boundary
+  // date in view rather than sailing into empty space.
+  const clampWindow = () => {
+    const overall = computeOverallRange();
+    if (!overall) return;
+    const width = windowEnd - windowStart;
+    if (windowEnd < overall.min) {
+      windowEnd = overall.min;
+      windowStart = windowEnd - width;
+    } else if (windowStart > overall.max) {
+      windowStart = overall.max;
+      windowEnd = windowStart + width;
     }
+  };
+
+  const applyWindow = () => {
+    if (windowKind === "all") {
+      const overall = computeOverallRange();
+      timeFirst = overall ? overall.min : 0;
+      timeLast = overall ? overall.max : 0;
+    } else {
+      timeFirst = windowStart;
+      timeLast = windowEnd;
+    }
+
     const span = timeLast - timeFirst;
     const count = Math.max(rawSeries.length, 1);
-    // See HALF_WIDTH_RATIO above: keeps ribbons from touching regardless of
-    // how many series are plotted.
     halfWidth = Math.min(HALF_WIDTH_MAX, (2 / count) * HALF_WIDTH_RATIO);
 
     series = rawSeries.map((s, i) => buildSeries(s, i, count, span));
@@ -445,14 +544,48 @@ export const initStackedChart3D = (
     scheduleDraw();
   };
 
+  // Unlike the source, the series set changes at runtime (biomarkers toggled
+  // on/off), which can move the data extent out from under a fixed window --
+  // so re-clamp here too, not only on pans.
   const update = (nextSeries: StackedSeriesInput[]) => {
     rawSeries = nextSeries;
-    recompute();
+    if (windowKind !== "all") clampWindow();
+    applyWindow();
   };
 
   const setOpacityMode = (mode: OpacityMode) => {
     opacityMode = mode;
     scheduleDraw();
+  };
+
+  // Switching into a fixed window (from "all" or another width) always
+  // re-anchors windowEnd to the latest data date; only panning moves it after.
+  const setWindowKind = (kind: WindowKind) => {
+    windowKind = kind;
+    if (kind !== "all") {
+      const overall = computeOverallRange();
+      windowEnd = startOfDay(overall ? overall.max : Date.now());
+      windowStart = windowEnd - WINDOW_DAYS[kind] * DAY_MS;
+      clampWindow();
+    }
+    applyWindow();
+  };
+
+  const panByWindowWidth = (direction: 1 | -1) => {
+    if (windowKind === "all") return;
+    const width = windowEnd - windowStart;
+    windowStart += direction * width;
+    windowEnd += direction * width;
+    clampWindow();
+    applyWindow();
+  };
+
+  const panByDay = (direction: 1 | -1) => {
+    if (windowKind === "all") return;
+    windowStart += direction * DAY_MS;
+    windowEnd += direction * DAY_MS;
+    clampWindow();
+    applyWindow();
   };
 
   const destroy = () => {
@@ -464,5 +597,13 @@ export const initStackedChart3D = (
   updateAria();
   scheduleDraw();
 
-  return { update, setOpacityMode, resetView: camera.resetView, destroy };
+  return {
+    update,
+    setOpacityMode,
+    setWindowKind,
+    panByWindowWidth,
+    panByDay,
+    resetView: camera.resetView,
+    destroy,
+  };
 };
