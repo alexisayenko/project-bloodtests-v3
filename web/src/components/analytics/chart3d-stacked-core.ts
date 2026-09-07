@@ -11,8 +11,8 @@
 //     plain state and calls back into this engine.
 //   - No DOM controls wired in-engine (opacity/window/pan/edit/debug
 //     buttons) -- the host component renders its own controls and calls
-//     `setOpacityMode`/`setWindowKind`/`panBy*`/`resetView` on the
-//     returned handle.
+//     `setOpacityMode`/`setWindowKind`/`setRange`/`panBy*`/`resetView` on
+//     the returned handle.
 //   - No edit-mode drag-to-reorder of series/depth slots or "hidden but
 //     shown" series -- which biomarkers appear is entirely decided by what
 //     the caller includes in `update()`, so there is no separate hidden
@@ -121,6 +121,7 @@ export interface StackedChart3DHandle {
   update: (series: StackedSeriesInput[]) => void;
   setOpacityMode: (mode: OpacityMode) => void;
   setWindowKind: (kind: WindowKind) => void;
+  setRange: (startMs: number, endMs: number) => void;
   panByWindowWidth: (direction: 1 | -1) => void;
   panByDay: (direction: 1 | -1) => void;
   resetView: () => void;
@@ -173,6 +174,7 @@ export const initStackedChart3D = (
       update: () => {},
       setOpacityMode: () => {},
       setWindowKind: () => {},
+      setRange: () => {},
       panByWindowWidth: () => {},
       panByDay: () => {},
       resetView: () => {},
@@ -189,10 +191,11 @@ export const initStackedChart3D = (
   let hasPlottableData = false;
   let rafPending = false;
 
-  // "all" is the series' own combined extent; any other kind is a pannable
+  // "all" is the series' own combined extent; every other mode -- the fixed
+  // widths and the explicit "range" set by setRange -- is a pannable
   // [windowStart, windowEnd] that points get clipped to instead. Not
   // persisted, as in the source: every mount starts on "all".
-  let windowKind: WindowKind = "all";
+  let windowKind: WindowKind | "range" = "all";
   let windowStart = 0;
   let windowEnd = 0;
 
@@ -213,9 +216,14 @@ export const initStackedChart3D = (
 
   const updateAria = () => {
     const pointCount = series.reduce((sum, s) => sum + s.values.length, 0);
-    const windowText = windowKind === "all"
-      ? "Showing all time."
-      : `Showing a ${WINDOW_LABELS[windowKind]} window, ${fmtDate(timeFirst)} to ${fmtDate(timeLast)}.`;
+    let windowText: string;
+    if (windowKind === "all") {
+      windowText = "Showing all time.";
+    } else if (windowKind === "range") {
+      windowText = `Showing ${fmtDate(timeFirst)} to ${fmtDate(timeLast)}.`;
+    } else {
+      windowText = `Showing a ${WINDOW_LABELS[windowKind]} window, ${fmtDate(timeFirst)} to ${fmtDate(timeLast)}.`;
+    }
     canvas.setAttribute(
       "aria-label",
       `Biomarkers compared in 3D — time left to right, value bottom to top, each biomarker on `
@@ -571,6 +579,17 @@ export const initStackedChart3D = (
     applyWindow();
   };
 
+  // An explicit closed interval, clipped and normalized through exactly the
+  // same path as the fixed window widths.
+  const setRange = (startMs: number, endMs: number) => {
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return;
+    windowKind = "range";
+    windowStart = Math.min(startMs, endMs);
+    windowEnd = Math.max(startMs, endMs);
+    clampWindow();
+    applyWindow();
+  };
+
   const panByWindowWidth = (direction: 1 | -1) => {
     if (windowKind === "all") return;
     const width = windowEnd - windowStart;
@@ -601,6 +620,7 @@ export const initStackedChart3D = (
     update,
     setOpacityMode,
     setWindowKind,
+    setRange,
     panByWindowWidth,
     panByDay,
     resetView: camera.resetView,

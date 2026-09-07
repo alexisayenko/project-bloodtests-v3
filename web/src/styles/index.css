@@ -198,13 +198,7 @@ img.panel-icon { display: none; }
   padding: 5px 8px; border-radius: 8px; font-size: 12px; font-weight: 600;
   cursor: pointer; font-family: inherit;
 }
-.stacked-chart-3d-pan { display: inline-flex; gap: 4px; }
-.stacked-chart-3d-pan button {
-  background: var(--gray-100); border: 1px solid var(--gray-200); color: var(--gray-900);
-  width: 28px; padding: 5px 0; border-radius: 8px; font-size: 12px; font-weight: 600;
-  line-height: 1.2; cursor: pointer; font-family: inherit;
-}
-.stacked-chart-3d-pan button:disabled { opacity: 0.4; cursor: default; }
+.stacked-chart-3d-select:disabled { opacity: 0.4; cursor: default; }
 .stacked-chart-3d-canvas-wrap { position: relative; height: 420px; }
 .stacked-chart-3d-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 .stacked-chart-3d-empty {

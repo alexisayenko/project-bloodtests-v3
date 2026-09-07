@@ -6,7 +6,6 @@ import {
   initStackedChart3D,
   parseObservationDate,
   type OpacityMode,
-  type WindowKind,
   type StackedChart3DHandle,
   type StackedSeriesInput,
 } from './chart3d-stacked-core';
@@ -47,7 +46,8 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<StackedChart3DHandle | null>(null);
   const [opacityMode, setOpacityMode] = useState<OpacityMode>('translucent');
-  const [windowKind, setWindowKind] = useState<WindowKind>('all');
+  const [fromYear, setFromYear] = useState<number | null>(null);
+  const [toYear, setToYear] = useState<number | null>(null);
   const initialOpacityMode = useRef(opacityMode);
 
   // The canvas element itself is always mounted (see the empty-state overlay
@@ -70,10 +70,6 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
     handleRef.current?.setOpacityMode(opacityMode);
   }, [opacityMode]);
 
-  useEffect(() => {
-    handleRef.current?.setWindowKind(windowKind);
-  }, [windowKind]);
-
   const series = useMemo<StackedSeriesInput[]>(() => entries.map((entry) => ({
     id: entry.loinc,
     label: nameFor?.(entry.loinc) ?? getAnalysisName(entry.loinc, analysesCatalog, lang),
@@ -88,7 +84,42 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
     handleRef.current?.update(series);
   }, [series]);
 
-  const panDisabled = windowKind === 'all';
+  // Only the years the data actually has -- a gap year stays absent from the
+  // list rather than being filled in.
+  const years = useMemo(() => {
+    const seen = new Set<number>();
+    for (const s of series) for (const p of s.points) seen.add(new Date(p.t).getFullYear());
+    return [...seen].sort((a, b) => a - b);
+  }, [series]);
+
+  const first = years.length > 0 ? years[0] : null;
+  const last = years.length > 0 ? years[years.length - 1] : null;
+  const activeFrom = fromYear != null && years.includes(fromYear) ? fromYear : first;
+  const activeTo = toYear != null && years.includes(toYear) ? toYear : last;
+
+  useEffect(() => {
+    if (activeFrom == null || activeTo == null) return;
+    handleRef.current?.setRange(
+      new Date(activeFrom, 0, 1).getTime(),
+      new Date(activeTo, 11, 31, 23, 59, 59, 999).getTime(),
+    );
+  }, [activeFrom, activeTo, series]);
+
+  const pickFrom = (year: number) => {
+    setFromYear(year);
+    if (activeTo != null && year > activeTo) setToYear(year);
+  };
+
+  const pickTo = (year: number) => {
+    setToYear(year);
+    if (activeFrom != null && year < activeFrom) setFromYear(year);
+  };
+
+  const resetView = () => {
+    handleRef.current?.resetView();
+    setFromYear(null);
+    setToYear(null);
+  };
 
   return (
     <div className="stacked-chart-3d">
@@ -104,27 +135,28 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
         <button
           type="button"
           className="stacked-chart-3d-btn"
-          onClick={() => handleRef.current?.resetView()}
+          onClick={resetView}
         >
           Reset view
         </button>
         <select
           className="stacked-chart-3d-select"
-          aria-label="Time window"
-          value={windowKind}
-          onChange={(e) => setWindowKind(e.target.value as WindowKind)}
+          aria-label="From year"
+          value={activeFrom ?? ''}
+          disabled={years.length === 0}
+          onChange={(e) => pickFrom(Number(e.target.value))}
         >
-          <option value="all">All time</option>
-          <option value="week">1 week</option>
-          <option value="month">1 month</option>
-          <option value="year">1 year</option>
+          {years.map((year) => <option key={year} value={year}>{year}</option>)}
         </select>
-        <div className="stacked-chart-3d-pan" role="group" aria-label="Pan time window">
-          <button type="button" disabled={panDisabled} aria-label="Back one window" onClick={() => handleRef.current?.panByWindowWidth(-1)}>&laquo;</button>
-          <button type="button" disabled={panDisabled} aria-label="Back one day" onClick={() => handleRef.current?.panByDay(-1)}>&lsaquo;</button>
-          <button type="button" disabled={panDisabled} aria-label="Forward one day" onClick={() => handleRef.current?.panByDay(1)}>&rsaquo;</button>
-          <button type="button" disabled={panDisabled} aria-label="Forward one window" onClick={() => handleRef.current?.panByWindowWidth(1)}>&raquo;</button>
-        </div>
+        <select
+          className="stacked-chart-3d-select"
+          aria-label="To year"
+          value={activeTo ?? ''}
+          disabled={years.length === 0}
+          onChange={(e) => pickTo(Number(e.target.value))}
+        >
+          {years.map((year) => <option key={year} value={year}>{year}</option>)}
+        </select>
       </div>
       <div className="stacked-chart-3d-canvas-wrap">
         <canvas ref={canvasRef} className="stacked-chart-3d-canvas" />
