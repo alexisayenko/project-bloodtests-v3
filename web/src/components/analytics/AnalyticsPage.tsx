@@ -1,13 +1,8 @@
 import { useMemo } from 'react';
 import { useLang } from '../../i18n/LangContext';
 import { useResultsContext } from '../../data/ResultsContext';
-import { BiomarkerChart } from './BiomarkerChart';
+import { BiomarkerCharts, type LoincEntry } from './BiomarkerCharts';
 import type { Result } from '../../types';
-
-interface LoincEntry {
-  loinc: string;
-  results: { date: string; result: Result }[];
-}
 
 export function AnalyticsPage() {
   const { t } = useLang();
@@ -34,11 +29,7 @@ export function AnalyticsPage() {
   return (
     <div>
       <h2 className="section-title">{t('navAnalytics')}</h2>
-      <div className="card-list">
-        {byLoinc.map(e => (
-          <BiomarkerChart key={e.loinc} loinc={e.loinc} results={e.results} />
-        ))}
-      </div>
+      <BiomarkerCharts entries={byLoinc} />
     </div>
   );
 }

@@ -19,12 +19,13 @@ interface DataPoint {
 interface Props {
   loinc: string;
   results: { date: string; result: Result }[];
+  title?: string;
 }
 
-export function BiomarkerChart({ loinc, results }: Props) {
+export function BiomarkerChart({ loinc, results, title }: Props) {
   const { lang } = useLang();
   const { analysesCatalog } = useData();
-  const name = getAnalysisName(loinc, analysesCatalog, lang);
+  const name = title ?? getAnalysisName(loinc, analysesCatalog, lang);
   const unit = results.find(r => r.result.unit)?.result.unit || '';
 
   const data = useMemo(() => {
