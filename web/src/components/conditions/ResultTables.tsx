@@ -8,32 +8,35 @@ import type { Result } from '../../types';
 
 const DATE_COL_WIDTH = 96;
 // Shared across observations and both indices tables so they line up as one block.
-const LABEL_COL_WIDTH = 140;
+const LABEL_COL_WIDTH = 180;
 // The Scheduled column sits after an empty spacer column so it reads as a
 // separate block from the date grid while staying in the same table (exact
 // row alignment for free).
 const GAP_COL_WIDTH = 16;
 const SCHEDULED_COL_WIDTH = 96;
 
+// Fixed layout only kicks in with a non-auto table width; every column width
+// then comes from the colgroup, so tables given the same dates share one grid
+// whatever their content.
+const table = { borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', width: '100%' } as const;
+
 const th = {
-  width: DATE_COL_WIDTH,
   textAlign: 'left',
   padding: '8px 12px',
   borderBottom: '1.5px solid #1971c2',
   whiteSpace: 'nowrap',
 } as const;
-const td = { width: DATE_COL_WIDTH, padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' } as const;
-const gapCell = { width: GAP_COL_WIDTH, padding: 0, border: 'none' } as const;
+const td = { padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' } as const;
+const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere' } as const;
+const gapCell = { padding: 0, border: 'none' } as const;
 const scheduledTh = {
   ...th,
-  width: SCHEDULED_COL_WIDTH,
   textAlign: 'center',
   borderLeft: '1px solid #ddd',
   borderRight: '1px solid #ddd',
 } as const;
 const scheduledTd = {
   ...td,
-  width: SCHEDULED_COL_WIDTH,
   textAlign: 'center',
   borderLeft: '1px solid #ddd',
   borderRight: '1px solid #ddd',
@@ -42,11 +45,30 @@ const scheduledTd = {
   userSelect: 'none',
 } as const;
 
+function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling: boolean }>) {
+  return (
+    <colgroup>
+      <col style={{ width: LABEL_COL_WIDTH }} />
+      {dates.map((date) => (
+        <col key={date} style={{ width: DATE_COL_WIDTH }} />
+      ))}
+      {scheduling && (
+        <>
+          <col style={{ width: GAP_COL_WIDTH }} />
+          <col style={{ width: SCHEDULED_COL_WIDTH }} />
+        </>
+      )}
+      {/* Trailing auto column soaks up the leftover width so the grid keeps its px widths. */}
+      <col />
+    </colgroup>
+  );
+}
+
 function TableHead({ label, dates, scheduling }: Readonly<{ label: string; dates: string[]; scheduling: boolean }>) {
   return (
     <thead>
       <tr>
-        <th style={{ ...th, width: LABEL_COL_WIDTH }}>{label}</th>
+        <th style={th}>{label}</th>
         {dates.map((date) => (
           <th key={date} style={th}>
             {formatMonthYear(date)}
@@ -167,7 +189,8 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
   const { label, rows, visibleDates, unitSystem, selectedLoinc, onSelect, onOpenPopup, scheduling, inputsOf } = props;
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+      <table style={table}>
+        <ColGroup dates={visibleDates} scheduling={!!scheduling} />
         <TableHead label={label} dates={visibleDates} scheduling={!!scheduling} />
         <tbody>
           {rows.map((test) => {
@@ -183,7 +206,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
                     onSelect(test.loinc);
                     onOpenPopup(test, e);
                   })}
-                  style={{ ...td, width: LABEL_COL_WIDTH }}
+                  style={labelTd}
                 >
                   <RelationMark label={inputsOf && overlaps(rowLoincs, inputsOf.loincs) ? `input of ${inputsOf.name}` : undefined} />
                   <span style={{ fontWeight: 600 }}>{test.short}</span>
@@ -227,7 +250,8 @@ export function IndexTable({
 }>) {
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+      <table style={table}>
+        <ColGroup dates={visibleDates} scheduling={!!scheduling} />
         <TableHead label="Indices" dates={visibleDates} scheduling={!!scheduling} />
         <tbody>
           {defs.map((def) => {
@@ -239,7 +263,7 @@ export function IndexTable({
                     onSelect(def.key);
                     onOpenPopup(def, e);
                   })}
-                  style={{ ...td, width: LABEL_COL_WIDTH }}
+                  style={labelTd}
                 >
                   <RelationMark label={usedBy && overlaps(indexInputLoincs(def.key), usedBy.loincs) ? `uses ${usedBy.name}` : undefined} />
                   <span style={{ fontWeight: 600 }}>{def.nameCompact}</span>
