@@ -26,18 +26,28 @@ export interface CrossCheckResult {
   derived?: { loinc: string; name: string };
 }
 
+// Trailing "." or "?" only ("mg/dL." → "mg/dl", "fL?" → "fl") — a manual scan
+// instead of a trailing-quantifier regex, which backtracks super-linearly
+// when the string ends in a long run of these chars with no match at $.
+function trimTrailingUnitPunctuation(s: string): string {
+  let end = s.length;
+  while (end > 0 && (s[end - 1] === '.' || s[end - 1] === '?')) end -= 1;
+  return s.slice(0, end);
+}
+
 // "mIU/L" ≈ "mu/l", "μIU/mL" ≈ "uu/ml", "x10³/µL" ≈ "x10^3/ul", "mg/dL." ≈ "mg/dl";
 // IU and U are interchangeable lab spellings ("µU/mL" ≡ "µIU/mL"), and a
 // curated unit marked uncertain ("fL?") reads as the unit itself. The
 // superscript / micro / multiplication folding is unitNormalization's, shared
 // rather than tabulated twice.
 export function normalizeUnit(unit: string | undefined | null): string {
-  return foldUnitGlyphs(unit ?? '')
-    .toLowerCase()
-    .replace(/mcg/g, 'ug')
-    .replace(/iu/g, 'u')
-    .replace(/\s+/g, '')
-    .replace(/[.?]+$/, '');
+  return trimTrailingUnitPunctuation(
+    foldUnitGlyphs(unit ?? '')
+      .toLowerCase()
+      .replaceAll(/mcg/g, 'ug')
+      .replaceAll(/iu/g, 'u')
+      .replace(/\s+/g, '')
+  );
 }
 
 // μIU/mL ≡ mIU/L, pg/mL ≡ ng/L: a metric prefix over /mL is the same quantity
@@ -106,11 +116,36 @@ function tokensOf(text: string): string[] {
 const FUZZY1_MIN_LEN = 5;
 const FUZZY2_MIN_LEN = 9;
 
-function fuzzyCap(a: string, b: string): number {
-  const shorter = Math.min(a.length, b.length);
+function capForShorterLength(shorter: number): number {
   if (shorter >= FUZZY2_MIN_LEN) return 2;
   if (shorter >= FUZZY1_MIN_LEN) return 1;
   return 0;
+}
+
+function fuzzyCap(a: string, b: string): number {
+  return capForShorterLength(Math.min(a.length, b.length));
+}
+
+// One row of the OSA Damerau-Levenshtein matrix.
+function editDistanceRow(
+  a: string,
+  b: string,
+  i: number,
+  prev: number[],
+  prev2: number[]
+): { row: number[]; rowMin: number } {
+  const row: number[] = [i];
+  let rowMin = i;
+  for (let j = 1; j <= b.length; j++) {
+    const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+    let d = Math.min(prev[j]! + 1, row[j - 1]! + 1, prev[j - 1]! + cost);
+    if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+      d = Math.min(d, prev2[j - 2]! + 1);
+    }
+    row[j] = d;
+    if (d < rowMin) rowMin = d;
+  }
+  return { row, rowMin };
 }
 
 // Optimal-string-alignment Damerau-Levenshtein, early-exiting once a whole
@@ -121,20 +156,10 @@ function editDistanceWithin(a: string, b: string, cap: number): boolean {
   let prev2: number[] = [];
   let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
   for (let i = 1; i <= a.length; i++) {
-    const cur: number[] = [i];
-    let rowMin = i;
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      let d = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + cost);
-      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
-        d = Math.min(d, prev2[j - 2]! + 1);
-      }
-      cur[j] = d;
-      if (d < rowMin) rowMin = d;
-    }
+    const { row, rowMin } = editDistanceRow(a, b, i, prev, prev2);
     if (rowMin > cap) return false;
     prev2 = prev;
-    prev = cur;
+    prev = row;
   }
   return prev[b.length]! <= cap;
 }
@@ -160,8 +185,7 @@ function fuzzyVocabHits(token: string, vocabByLen: Map<number, string[]>): strin
   for (let len = token.length - 2; len <= token.length + 2; len++) {
     const group = vocabByLen.get(len);
     if (!group) continue;
-    const shorter = Math.min(token.length, len);
-    const cap = shorter >= FUZZY2_MIN_LEN ? 2 : shorter >= FUZZY1_MIN_LEN ? 1 : 0;
+    const cap = capForShorterLength(Math.min(token.length, len));
     if (cap === 0 || Math.abs(token.length - len) > cap) continue;
     for (const v of group) {
       if (v !== token && editDistanceWithin(token, v, cap)) hits.push(v);
@@ -247,11 +271,7 @@ const RANK_FLOOR = 0.45;
 // canonical unit, e.g. Glucose 2339-0/2345-7 both mg/dL). Different-scale
 // variants with no deciding unit (Prolactin mIU/L vs ng/mL on a unitless row)
 // stay separate: only the unit tells them apart.
-function collapseAliasGroups(
-  ranked: CrossCheckSuggestion[],
-  rowUnit: string,
-  unitByLoinc: Record<string, string>
-): CrossCheckSuggestion[] {
+function groupByAliasPrimary(ranked: CrossCheckSuggestion[]): Map<string, CrossCheckSuggestion[]> {
   const groups = new Map<string, CrossCheckSuggestion[]>();
   for (const s of ranked) {
     const primary = ALIAS_TO_PRIMARY[s.loinc] ?? s.loinc;
@@ -259,22 +279,38 @@ function collapseAliasGroups(
     if (group) group.push(s);
     else groups.set(primary, [s]);
   }
+  return groups;
+}
+
+// The unit picks the variant when it discriminates; otherwise the primary
+// wins, but only for a same-scale group (see collapseAliasGroups above).
+function pickAliasGroupMember(
+  members: CrossCheckSuggestion[],
+  primary: string,
+  rowUnit: string,
+  unitByLoinc: Record<string, string>
+): CrossCheckSuggestion | undefined {
+  const matching = rowUnit
+    ? members.filter((m) => knownUnits(m.loinc, unitByLoinc).includes(rowUnit))
+    : [];
+  if (matching.length === 1) return matching[0];
+  const units = new Set(members.flatMap((m) => knownUnits(m.loinc, unitByLoinc)));
+  return units.size <= 1 ? (members.find((m) => m.loinc === primary) ?? members[0]) : undefined;
+}
+
+function collapseAliasGroups(
+  ranked: CrossCheckSuggestion[],
+  rowUnit: string,
+  unitByLoinc: Record<string, string>
+): CrossCheckSuggestion[] {
+  const groups = groupByAliasPrimary(ranked);
   const out: CrossCheckSuggestion[] = [];
   for (const [primary, members] of groups) {
     if (members.length === 1) {
       out.push(members[0]!);
       continue;
     }
-    const matching = rowUnit
-      ? members.filter((m) => knownUnits(m.loinc, unitByLoinc).includes(rowUnit))
-      : [];
-    let kept: CrossCheckSuggestion | undefined;
-    if (matching.length === 1) {
-      kept = matching[0];
-    } else {
-      const units = new Set(members.flatMap((m) => knownUnits(m.loinc, unitByLoinc)));
-      if (units.size <= 1) kept = members.find((m) => m.loinc === primary) ?? members[0];
-    }
+    const kept = pickAliasGroupMember(members, primary, rowUnit, unitByLoinc);
     if (!kept) {
       out.push(...members);
       continue;
