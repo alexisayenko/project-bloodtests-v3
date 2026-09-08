@@ -37,7 +37,9 @@ function pluralize(n: number): string {
   return n === 1 ? '' : 's';
 }
 
-function applyFieldEdit(item: Result, field: 'loinc' | 'value' | 'unit', newValue: string): Result {
+type EditableField = 'loinc' | 'value' | 'unit';
+
+function applyFieldEdit(item: Result, field: EditableField, newValue: string): Result {
   if (field === 'loinc') return { ...item, loinc: newValue };
   if (field === 'unit') return { ...item, unit: newValue };
   const numVal = Number.parseFloat(newValue);
@@ -197,7 +199,7 @@ interface ReportResultsSectionProps {
   isSaving: boolean;
   onCrossCheck: () => void;
   onNlmCheck: () => void;
-  onEditItem: (index: number, field: 'loinc' | 'value' | 'unit', newValue: string) => void;
+  onEditItem: (index: number, field: EditableField, newValue: string) => void;
   onSave: () => void;
   onCancel: () => void;
 }
@@ -493,7 +495,7 @@ export function DiagnosticReportDetailView({
     };
   }, [group, loadGroupItems]);
 
-  const handleEditItem = (index: number, field: 'loinc' | 'value' | 'unit', newValue: string) => {
+  const handleEditItem = (index: number, field: EditableField, newValue: string) => {
     if (!items) return;
     const updated = [...items];
     updated[index] = applyFieldEdit(updated[index]!, field, newValue);
