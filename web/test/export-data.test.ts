@@ -83,7 +83,7 @@ describe('buildExportEnvelope', () => {
 
     expect(envelope.schema).toBe(3);
     expect(envelope.contentHash).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(envelope.diagnosticReports.length).toBe(1);
+    expect(envelope.diagnosticReports).toHaveLength(1);
   });
 
   it('maps sessions to diagnosticReports', async () => {
@@ -104,7 +104,7 @@ describe('buildExportEnvelope', () => {
 
     expect(report.lab).toBe('Lab A');
     expect(report.collectedAt).toBe('2026-08-26T00:00:00Z');
-    expect(report.observations.length).toBe(2);
+    expect(report.observations).toHaveLength(2);
     expect(report.observations[0].loinc).toBe('2093-3');
     expect(report.observations[0].rawName).toBe('Cholesterol');
     expect(report.observations[0].value).toBe(180);
@@ -115,7 +115,7 @@ describe('buildExportEnvelope', () => {
 
     const envelope = await buildExportEnvelope(sessions);
 
-    expect(envelope.diagnosticReports.length).toBe(1);
+    expect(envelope.diagnosticReports).toHaveLength(1);
   });
 
   it('handles missing lab name with "Unknown Lab"', async () => {
@@ -235,6 +235,7 @@ describe('downloadExportFile', () => {
         href: '',
         download: '',
         click: vi.fn(),
+        remove: vi.fn(),
         tagName: tag,
       })),
       body: {
@@ -253,6 +254,7 @@ describe('downloadExportFile', () => {
       href: '',
       download: '',
       click: vi.fn(),
+      remove: vi.fn(),
     };
     const mockCreateElement = vi.fn(() => mockLink);
     vi.mocked(document).createElement = mockCreateElement;

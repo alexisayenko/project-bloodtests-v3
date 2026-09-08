@@ -37,7 +37,7 @@ function slugify(text: string): string {
  */
 function extractDateFromISO(isoString: string): string {
   if (!isoString || typeof isoString !== 'string') return '';
-  const match = isoString.match(/^(\d{4}-\d{2}-\d{2})/);
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(isoString);
   return match ? match[1] : '';
 }
 
@@ -64,7 +64,7 @@ function v3ToResult(obs: InterchangeObservation): Result {
     analysis: obs.rawName || '',
     symbol: '',
     section: '',
-    value: obs.value != null ? obs.value : null,
+    value: obs.value ?? null,
     rawValue: obs.rawValue || '',
     valueQualifier: obs.comparator || '',
     unit: obs.unit || '',
@@ -96,11 +96,12 @@ function v3ToGroup(report: InterchangeReport, index: number): DiagnosticReport {
   // draws from the same lab on the same date — without it they'd collide on
   // the same session id and silently replace each other on merge.
   const ident = report.identifiers?.visit || report.identifiers?.order || report.identifiers?.accession;
+  const identSuffix = ident ? `__${slugify(String(ident))}` : '';
 
   return {
     date,
     place,
-    file: `${date}__${slugify(place)}${ident ? `__${slugify(String(ident))}` : ''}`,
+    file: `${date}__${slugify(place)}${identSuffix}`,
     items,
     itemCount: items.length,
   };

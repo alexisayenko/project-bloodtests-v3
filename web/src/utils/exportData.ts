@@ -104,7 +104,7 @@ export function downloadExportFile(envelope: InterchangeEnvelope): void {
   const url = URL.createObjectURL(blob);
 
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
+  const dateStr = now.toISOString().split('T')[0].replaceAll('-', '');
   const filename = `blood-tests-export-${dateStr}.json`;
 
   const a = document.createElement('a');
@@ -112,7 +112,7 @@ export function downloadExportFile(envelope: InterchangeEnvelope): void {
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
