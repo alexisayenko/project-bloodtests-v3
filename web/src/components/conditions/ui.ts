@@ -63,6 +63,23 @@ export function loadAnalysisSettings(): AnalysisSettings {
   return { ...DEFAULT_ANALYSIS_SETTINGS };
 }
 
+/** Persist the shared table controls, dropping any value outside the accepted set. */
+export function saveAnalysisSettings(settings: AnalysisSettings): void {
+  const { unitSystem, sampleLimit, dateOrder } = settings;
+  const validLimit =
+    sampleLimit === 'all' || (typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0);
+  const safe: AnalysisSettings = {
+    unitSystem: unitSystem === 'us' ? 'us' : 'si',
+    sampleLimit: validLimit ? sampleLimit : DEFAULT_ANALYSIS_SETTINGS.sampleLimit,
+    dateOrder: dateOrder === 'desc' ? 'desc' : 'asc',
+  };
+  try {
+    localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify(safe));
+  } catch {
+    // storage unavailable (private browsing, quota) -- setting just won't persist
+  }
+}
+
 /** Whether the visitor already made their own choice -- share-link settings only seed when they haven't. */
 export function hasStoredAnalysisSettings(): boolean {
   try {
