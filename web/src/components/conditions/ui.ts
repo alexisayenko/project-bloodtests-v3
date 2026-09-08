@@ -1,7 +1,7 @@
 import { fmtNum } from '../../utils/format';
 import { SI_US_UNIT, convertUnit, type IndexDef } from '../../data/computedIndices';
 import { DEFAULT_UNITS } from '../../data/analyteCatalog';
-import { toLatinUnit } from '../../data/unitNormalization';
+import { toLatinUnit, sameUnitScale } from '../../data/unitNormalization';
 import { LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
@@ -181,16 +181,34 @@ export function displayedResult(
   return { value: result.value, rawValue: result.rawValue, unit: own, converted: false };
 }
 
+/** The spelling most of the readings used; ties go to the earliest column. */
+function mostCommon(units: string[]): string {
+  const counts = new Map<string, number>();
+  for (const unit of units) counts.set(unit, (counts.get(unit) ?? 0) + 1);
+  return units.reduce((best, unit) => ((counts.get(unit) ?? 0) > (counts.get(best) ?? 0) ? unit : best));
+}
+
 /**
  * The single unit a set of displayed cells can be labelled with, or undefined
  * when they disagree -- a row whose readings sit on two scales (a lab that
  * switched from mg/dL to umol/L mid-history) gets no row-level unit at all,
  * and each cell carries its own instead.
+ *
+ * Two spellings of the SAME unit are not a disagreement: uIU/mL and mIU/L are
+ * the identical unit (ratio 1), so a TSH history printed both ways is one
+ * scale and carries one label. That is a comparison of computed scale
+ * (`sameUnitScale`), never of spelling, and it changes no number -- a pair
+ * whose ratio is anything but exactly 1 still splits onto the cells, because
+ * converting to force a shared label is what ADR-0003 rules out. `preferred`
+ * (the row's own catalog/SI-US unit) picks the spelling when it belongs to the
+ * same unit; otherwise the readings' own majority spelling does.
  */
-export function sharedUnit(units: string[]): string | undefined {
+export function sharedUnit(units: string[], preferred?: string): string | undefined {
   const first = units[0];
   if (first === undefined) return undefined;
-  return units.every((u) => u === first) ? first : undefined;
+  if (units.every((u) => u === first)) return first;
+  if (!units.every((u) => sameUnitScale(u, first))) return undefined;
+  return preferred && sameUnitScale(preferred, first) ? preferred : mostCommon(units);
 }
 
 /** One visible date column of an observation row: the reading, if any, as displayed. */
@@ -219,10 +237,11 @@ export function buildRowCells(
     return { date, match, display: match ? displayedResult(marker, match.result, unitSystem) : null };
   });
   const units = cells.map((c) => c.display?.unit).filter((u): u is string => !!u);
-  const shared = sharedUnit(units);
+  const preferred = (marker && SI_US_UNIT[marker]?.[unitSystem]) || test.unit;
+  const shared = sharedUnit(units, preferred);
   return {
     cells,
-    rowUnit: units.length > 0 ? shared : (marker && SI_US_UNIT[marker]?.[unitSystem]) || test.unit,
+    rowUnit: units.length > 0 ? shared : preferred,
     showCellUnits: units.length > 0 && shared === undefined,
   };
 }

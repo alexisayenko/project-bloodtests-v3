@@ -7,6 +7,7 @@ import {
   normalizeObservationUnit,
   convertValue,
   canonicalUnitFor,
+  sameUnitScale,
 } from '../src/data/unitNormalization';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
 
@@ -323,6 +324,53 @@ describe('normalizeObservationUnit — derived canonical form', () => {
     expect(JSON.stringify(input)).toBe(before);
     expect(input.value).toBe(500);
     expect(input.unit).toBe('pg/mL');
+  });
+});
+
+describe('sameUnitScale', () => {
+  it('is true only for two spellings of the identical unit', () => {
+    // Every 1:1 pair the current catalog can actually produce.
+    const identical: [string, string][] = [
+      ['uIU/mL', 'mIU/L'],
+      ['мкМЕ/мл', 'мМЕ/л'],
+      ['mIU/mL', 'IU/L'],
+      ['U/L', 'IU/L'],
+      ['mg/L', 'ug/mL'],
+      ['mg/L', 'mcg/mL'],
+      ['mg/L', 'µg/mL'],
+      ['ng/mL', 'ug/L'],
+      ['g/L', 'mg/mL'],
+    ];
+    for (const [a, b] of identical) {
+      expect([a, b, sameUnitScale(a, b)]).toEqual([a, b, true]);
+      expect(sameUnitScale(b, a)).toBe(true);
+    }
+  });
+
+  it('is false for a genuinely different scale, same dimension included', () => {
+    const different: [string, string][] = [
+      ['mg/dL', 'mmol/L'],
+      ['ug/dL', 'nmol/L'],
+      ['mcg/dL', 'nmol/L'],
+      ['mg/dL', 'g/L'],
+      ['ug/L', 'ug/dL'],
+      ['uIU/mL', 'IU/L'],
+      ['mg/g', 'mmol/mol'],
+    ];
+    for (const [a, b] of different) {
+      expect([a, b, sameUnitScale(a, b)]).toEqual([a, b, false]);
+      expect(sameUnitScale(b, a)).toBe(false);
+    }
+  });
+
+  it('never claims equivalence for a unit it cannot read', () => {
+    expect(sameUnitScale('wibble', 'mIU/L')).toBe(false);
+    expect(sameUnitScale('mIU/L', 'wibble')).toBe(false);
+    expect(sameUnitScale('wibble', 'wibble')).toBe(false);
+    // Unscalable but recognized units (counts, annotations, areas) too.
+    expect(sameUnitScale('x10^3/uL', 'x10^3/uL')).toBe(false);
+    expect(sameUnitScale('%', '%')).toBe(false);
+    expect(sameUnitScale('', 'mIU/L')).toBe(false);
   });
 });
 

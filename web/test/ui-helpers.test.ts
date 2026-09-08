@@ -234,6 +234,26 @@ describe('sharedUnit', () => {
     expect(sharedUnit(['mg/dL', 'umol/L'])).toBeUndefined();
     expect(sharedUnit([])).toBeUndefined();
   });
+
+  it('treats two spellings of the SAME unit as one scale', () => {
+    // uIU/mL = 1e-6 IU / 1e-3 L = mIU/L exactly: one label, no conversion.
+    expect(sharedUnit(['uIU/mL', 'mIU/L', 'mIU/L'], 'mIU/L')).toBe('mIU/L');
+    expect(sharedUnit(['mg/L', 'ug/mL'])).toBe('mg/L');
+    expect(sharedUnit(['ng/mL', 'ug/L', 'ug/L'])).toBe('ug/L');
+  });
+
+  it('still splits when the scales genuinely differ', () => {
+    expect(sharedUnit(['mg/dL', 'mmol/L'], 'mmol/L')).toBeUndefined();
+    expect(sharedUnit(['ug/dL', 'nmol/L'], 'nmol/L')).toBeUndefined();
+    expect(sharedUnit(['ug/L', 'ug/dL'])).toBeUndefined();
+  });
+
+  it('never unifies on a unit it cannot read, and ignores an unrelated preferred', () => {
+    expect(sharedUnit(['wibble', 'mIU/L'], 'mIU/L')).toBeUndefined();
+    // An unrelated preferred unit can't name the row: the readings' own
+    // majority spelling does (ties to the earliest column).
+    expect(sharedUnit(['uIU/mL', 'mIU/L'], 'mg/dL')).toBe('uIU/mL');
+  });
 });
 
 describe('buildRowCells', () => {
@@ -256,6 +276,36 @@ describe('buildRowCells', () => {
     expect(row.rowUnit).toBeUndefined();
     expect(row.showCellUnits).toBe(true);
     expect(row.cells.map((c) => c.display?.unit)).toEqual(['mg/dL', 'umol/L']);
+  });
+
+  it('keeps one label, and every number as printed, when two spellings are one unit', () => {
+    // The real TSH history: one lab printed uIU/mL, the next mIU/L. Same unit.
+    const row = buildRowCells(
+      obs('11580-8'),
+      ['2023-02-01', '2024-01-01', '2026-05-07'],
+      [
+        entry('11580-8', '2023-02-01', 2.72, 'uIU/mL'),
+        entry('11580-8', '2024-01-01', 1.999, 'mIU/L'),
+        entry('11580-8', '2026-05-07', 4.266, 'мМЕ/л'),
+      ],
+      'si'
+    );
+    expect(row.rowUnit).toBe('mIU/L');
+    expect(row.showCellUnits).toBe(false);
+    expect(row.cells.map((c) => c.display?.value)).toEqual([2.72, 1.999, 4.266]);
+  });
+
+  it('still splits magnesium, whose mg/dL and mmol/L readings are two scales', () => {
+    const row = buildRowCells(
+      obs('19123-9'),
+      ['2024-01-01', '2026-05-07'],
+      [entry('19123-9', '2024-01-01', 2.1, 'mg/dL'), entry('2601-3', '2026-05-07', 0.86, 'ммоль/л')],
+      'si'
+    );
+    expect(row.rowUnit).toBeUndefined();
+    expect(row.showCellUnits).toBe(true);
+    expect(row.cells.map((c) => c.display?.unit)).toEqual(['mg/dL', 'mmol/L']);
+    expect(row.cells.map((c) => c.display?.value)).toEqual([2.1, 0.86]);
   });
 
   it('converts a whole SI/US row to one unit, alias readings included', () => {

@@ -378,6 +378,33 @@ function sameKinds(a: TokenKind[], b: TokenKind[]): boolean {
   return a.length === b.length && a.every((kind, i) => kind === b[i]);
 }
 
+// Fold the printed spelling to Latin first: "mcg/dL" is a two-letter prefix
+// that only resolveToken's mc→u rule understands, and the catalog writes the
+// folded form ("ug/dL") anyway.
+function latinScale(unit: string): UnitScale | undefined {
+  const latin = toLatinUnit(unit);
+  return latin === undefined ? undefined : unitScale(latin);
+}
+
+/**
+ * Do two spellings denote the IDENTICAL unit — same kinds in the same order,
+ * and a ratio of exactly one? uIU/mL and mIU/L do (1e-6/1e-3 = 1e-3 = mIU/L),
+ * as do mg/L and ug/mL, or ng/mL and ug/L. A pair that shares a dimension on a
+ * DIFFERENT scale (mg/dL vs g/L, mg/dL vs mmol/L) does not, and an unrecognized
+ * unit never does — the answer is "no", never a throw and never an optimistic
+ * yes.
+ *
+ * Comparing computed scale rather than spelling is the whole point. Nothing is
+ * converted here: callers use it to decide whether ONE label may stand for
+ * several readings whose numbers are already directly comparable.
+ */
+export function sameUnitScale(a: string, b: string): boolean {
+  const left = latinScale(a);
+  const right = latinScale(b);
+  if (!left || !right || !sameKinds(left.kinds, right.kinds)) return false;
+  return Math.abs(left.factor / right.factor - 1) < 1e-9;
+}
+
 /**
  * Convert a value between two UCUM units for one analyte: scale-only within a
  * dimension (g/L ↔ mg/dL, ug/L ↔ ng/mL), or across the mass/molar divide using
