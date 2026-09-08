@@ -2913,8 +2913,20 @@
     "loinc": "13458-5",
     "longCommonName": "Cholesterol in VLDL [Mass/volume] in Serum or Plasma by calculation",
     "displayName": "VLDL Cholesterol",
-    "short": "VLDL",
+    "short": "VLDL-C",
     "unit": "mg/dL",
+    "lang": {
+      "ru-RU": "Холестерин ЛПОНП",
+      "uk-UA": "Холестерин ЛПДНЩ"
+    }
+  },
+  {
+    "loinc": "25371-6",
+    "longCommonName": "Cholesterol in VLDL [Moles/volume] in Serum or Plasma",
+    "displayName": "VLDL Cholesterol",
+    "unit": "mmol/L",
+    "aliasOf": "13458-5",
+    "aliasLabel": "mmol/L unit",
     "lang": {
       "ru-RU": "Холестерин ЛПОНП",
       "uk-UA": "Холестерин ЛПДНЩ"

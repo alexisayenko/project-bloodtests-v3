@@ -12,10 +12,12 @@ import { massPerMolarUnit, molarMassOf } from './molarMasses';
 // `web/public/data/molar-masses.json`. Several pairs share one entry — total,
 // HDL and LDL cholesterol are all cholesterol.
 //
-// The factor is data only — it is what would convert a value in `molar.unit`
-// to `mass.unit`. Nothing in this app converts values on the strength of it:
-// a molar unit under a mass code is a CODE problem, and the remedy is the
-// sibling code, never a rewritten number (ADR-0003).
+// The factor converts a value in `molar.unit` to `mass.unit`. It is never
+// applied to a stored or exported value: a molar unit under a mass code is a
+// CODE problem, and the remedy is the sibling code, never a rewritten number
+// (ADR-0003). Its one use is display-time normalization — the "What's in
+// range" chart places a history that crosses the mass/molar divide onto the
+// one scale its reference band is expressed in (exploreModel.ts).
 
 export interface SiblingCode {
   loinc: string;
@@ -61,6 +63,17 @@ const PAIRS: MassMolarSiblingDef[] = [
       unit: 'mg/dL',
     },
     molar: { loinc: '22748-8', longCommonName: 'Cholesterol in LDL [Moles/volume] in Serum or Plasma', unit: 'mmol/L' },
+    note: 'The mass code is method-specific (by calculation); the molar code is not.',
+  },
+  {
+    analyte: 'Cholesterol in VLDL',
+    molarMass: 'cholesterol',
+    mass: {
+      loinc: '13458-5',
+      longCommonName: 'Cholesterol in VLDL [Mass/volume] in Serum or Plasma by calculation',
+      unit: 'mg/dL',
+    },
+    molar: { loinc: '25371-6', longCommonName: 'Cholesterol in VLDL [Moles/volume] in Serum or Plasma', unit: 'mmol/L' },
     note: 'The mass code is method-specific (by calculation); the molar code is not.',
   },
   {

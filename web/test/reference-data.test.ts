@@ -169,6 +169,15 @@ describe('molar masses are internally consistent', () => {
     }
   });
 
+  it('folds a catalogued molar sibling into its mass code rather than beside it', () => {
+    for (const pair of MASS_MOLAR_SIBLINGS) {
+      if (!ANALYTE_BY_LOINC[pair.molar.loinc] || !ANALYTE_BY_LOINC[pair.mass.loinc]) continue;
+      const primary = ALIAS_TO_PRIMARY[pair.molar.loinc] ?? pair.molar.loinc;
+      const massPrimary = ALIAS_TO_PRIMARY[pair.mass.loinc] ?? pair.mass.loinc;
+      expect([pair.analyte, primary]).toEqual([pair.analyte, massPrimary]);
+    }
+  });
+
   it('derives the conversion factors the app actually uses', () => {
     // Spot-checks in both directions, on the four decimal prefixes in play.
     expect(massPerMolarUnit('cholesterol', 'mg/dL', 'mmol/L')).toBeCloseTo(38.6664, 4);
