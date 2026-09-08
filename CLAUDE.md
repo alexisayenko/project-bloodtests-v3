@@ -72,7 +72,12 @@ never outlives the link it came from: `applySharedMeta` clears before it
 stores, and Clear and every replacing import (`uploadFile`, behind both
 "Import JSON" buttons) call `clearSharedMeta`, so a link without meta
 inherits no allowlist and a stale `showPanels` cannot go on hiding panels
-after the data it belonged to is gone; merges leave it alone. The
+after the data it belonged to is gone; merges leave it alone. Nothing
+migrates a meta stored before that behavior existed, though: such a one
+survives until the visitor clears or replaces their data, and until then
+it goes on filtering the grid and the All Observations panel select with
+nothing on screen to say why — the one real instance was an allowlist
+naming every panel but Hypogonadism, left by a link that had hidden it. The
 payloads are real health data and are gitignored (`web/public/d/*.json`)
 because this repo is public, so a deploy needs them copied in locally
 first. `web/public/_headers` serves `/d/*` as
