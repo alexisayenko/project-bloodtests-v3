@@ -10,6 +10,30 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-08 — One place a mole is weighed. Mass↔molar conversion
+  factors had been typed out by hand in three places, and they had
+  drifted: glucose's divisor was 18.018 in `computedIndices.ts` and
+  18.016 in `massMolarSiblings.ts` — the app disagreeing with itself
+  about what a mole of glucose weighs — while triglyceride's 88.57,
+  the figure online converters quote, turned out not to be reproducible
+  from triolein's molar mass under any published set of atomic weights
+  and to have no findable source. `web/public/data/molar-masses.json`
+  now holds the fact instead of the answer: 17 analytes' **molar
+  masses, never factors**, each computed from a molecular formula and
+  the CIAAW 2021 standard atomic weights the file also tabulates, each
+  citing a retrieved source (a PubChem CID, or CIAAW for an element)
+  whose own reported mass the suite checks against within 0.05%.
+  `molarMasses.ts` scales a mass into whatever factor a unit pair
+  needs, so the sibling table and all eight of the computed indices'
+  constants are derived — glucose is now 18.0156 everywhere and
+  triglyceride 88.545 — and a `basis` field records how true each
+  number is, which forced two conventions into the open: triglyceride
+  is a mixture tabulated on the triolein equivalent, urea nitrogen is
+  two nitrogen atoms rather than any molecule. Re-deriving the
+  constants moved eleven golden-master values by at most 0.07%
+  relative and nothing the UI displays at 2dp
+  ([ADR-0011](tech/decisions/adr-0011-molar-masses-are-data-factors-are-derived.md),
+  [`tech/molar-masses.md`](tech/molar-masses.md)).
 - 2026-09-07 — Normalization moves to the front door. Unit
   normalization now runs at import, in `web/src/data/parseUpload.ts` —
   the single route every JSON file takes, whether it arrives as

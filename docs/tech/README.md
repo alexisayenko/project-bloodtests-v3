@@ -13,16 +13,23 @@ Product / business / UX live in their own sections.
   (JSON Schema draft 2020-12, source `web/public/schema/`,
   version 3 only), held to the exporter's output by
   `web/test/envelope-schema.test.ts`.
+- [`molar-masses.md`](molar-masses.md) — the molar-mass reference
+  data: what `web/public/data/molar-masses.json` stores, the
+  per-analyte table with its citations, the two conventional entries
+  and why they are conventional, and the two hand-typed factors the
+  consolidation corrected
+  ([ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)).
 - [`decisions/README.md`](decisions/README.md) — the ADR index
-  (ten records, `adr-NNNN-<slug>.md`, numbered independently of
+  (eleven records, `adr-NNNN-<slug>.md`, numbered independently of
   v2), with a per-ADR row and a note on which doc each decision
   governs. The index is the single list — don't duplicate it here.
 
 ## Reference data
 
-Three files under `web/public/data/`, all of them data and none of
+Four files under `web/public/data/`, all of them data and none of
 them mirrored in TypeScript
-([ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md)):
+([ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md),
+[ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)):
 
 - **`analyses.json`** — the analyte catalog, and the single source of
   truth for everything the app knows about a LOINC code: names and
@@ -36,17 +43,30 @@ them mirrored in TypeScript
   composed over those groups (`panelId` / `panelIds` / `loincs`, then
   `excludeLoincs` and `extraLoincs`). See the
   [monitoring panel](../product/concepts/monitoring-panel.md) concept.
+- **`molar-masses.json`** — the single source of truth for mass↔molar
+  arithmetic: 17 analytes' molar masses (never factors), each computed
+  from a molecular formula and the CIAAW 2021 atomic weights the file
+  also tabulates, with retrieved citations and a `basis` saying whether
+  the number is exact or conventional. `web/src/data/molarMasses.ts`
+  scales one into the factor a unit pair needs, so the sibling table
+  and the computed indices derive every factor rather than typing one.
+  Described by
+  [`blood.isayenko.net/schema/molar-masses-1.schema.json`](https://blood.isayenko.net/schema/molar-masses-1.schema.json)
+  and detailed in [`molar-masses.md`](molar-masses.md).
 
 `web/src/data/analyteCatalog.ts` imports the catalog and derives every
 lookup map the app uses from it — short labels, expected and allowed
 units, and the reverse alias map (primary → its variants) — so none of
 them can drift from the file. `buildConditions` in
 `web/src/components/conditions/markers.ts` resolves a Monitoring Panel
-against the groups and the catalog. All three files are described by
+against the groups and the catalog. The first three files are described
+by
 [`blood.isayenko.net/schema/analytes-1.schema.json`](https://blood.isayenko.net/schema/analytes-1.schema.json)
-(source `web/public/schema/analytes-1.schema.json`) and validated with
-ajv by `web/test/reference-data.test.ts`; unlike the interchange
-envelope, its objects are closed, so a mistyped key fails the suite.
+(source `web/public/schema/analytes-1.schema.json`) and the fourth by
+its own schema; all four are validated with ajv by
+`web/test/reference-data.test.ts`, which also recomputes every molar
+mass from its formula. Unlike the interchange envelope, these objects
+are closed, so a mistyped key fails the suite.
 
 ## Upload & Edit Workflow
 
@@ -113,8 +133,10 @@ not a number to convert, so the check suggests the analyte's
 [ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)
 sets, with UCUM fixed as the vocabulary by
 [ADR-0007](decisions/adr-0007-ucum-as-the-unit-vocabulary.md).
-`web/src/data/massMolarSiblings.ts` holds 20 curated pairs (the
-mass/molar factor recorded as data, never applied); their molar codes
+`web/src/data/massMolarSiblings.ts` holds 20 curated pairs (each naming
+its analyte's entry in
+[`molar-masses.json`](molar-masses.md) rather than stating a factor;
+the derived factor is recorded as data, never applied); their molar codes
 were added to `web/public/data/analyses.json` (124 → 139 entries) and
 carry `aliasOf` pointing at the mass primary, so a molar code folds
 into the same panel row, badge and chart series without touching
@@ -135,21 +157,17 @@ Build- and dependency-level, and all currently accepted rather than
 scheduled. Format and round-trip gaps are listed separately, under
 [the interchange format](interchange-format.md#known-round-trip-gaps).
 
-- **One oversized entry chunk.** `analyteCatalog.ts` imports
-  `analyses.json` statically, so the catalog is bundled rather than
-  fetched: `npm run build` emits a single ~695 kB entry chunk and Vite
-  prints its "larger than 500 kB" advisory on every build. It is an
-  advisory, not an error, and one chunk of mostly-JSON on a
-  single-page app is a fair trade for a catalog that cannot arrive
-  late — but the warning is real and the fix (a dynamic `import()` of
-  the catalog, or a raised `chunkSizeWarningLimit`) has not been
-  taken, so a genuinely new size regression would hide inside it.
-- **`zod` is a dependency nothing imports.** It sits in `package.json`
-  under `dependencies` and no file in `web/src`, `web/test` or
-  `web/scripts` imports it — envelope validation is ajv against the
-  published JSON Schema, and the generated types come from the same
-  schema. Tree-shaking keeps it out of the bundle, so the cost is an
-  install and a Dependabot surface, not weight.
+- **An oversized entry chunk, now mostly catalog.** The two chart tabs
+  are `React.lazy`-split (`LabExploreView` ≈ 78 kB, `PanelChartsView`
+  ≈ 14 kB), which took the entry chunk from ~698 kB to ~608 kB, still
+  over Vite's "larger than 500 kB" advisory. What is left is largely
+  `analyteCatalog.ts` importing `analyses.json` statically, so the
+  catalog is bundled rather than fetched. It is an advisory, not an
+  error, and a catalog that cannot arrive late is a fair trade on a
+  single-page app — but the warning is real and the remaining fix (a
+  dynamic `import()` of the catalog, or a raised
+  `chunkSizeWarningLimit`) has not been taken, so a genuinely new size
+  regression would hide inside it.
 
 ## Common slots
 

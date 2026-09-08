@@ -173,7 +173,8 @@ docs/
 ├── tech/                               # entry: tech/README.md
 │   ├── decisions/                      # entry: decisions/README.md
 │   │   └── adr-NNNN-<slug>.md          # one file per decision
-│   └── interchange-format.md           # lab-data file envelope (spec)
+│   ├── interchange-format.md           # lab-data file envelope (spec)
+│   └── molar-masses.md                 # mass↔molar reference data
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
 │   ├── performance-guide.md            # end-to-end UX performance
@@ -204,6 +205,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Stack, ADRs, architecture | [`tech/`](tech/) | Anything implementation: framework, hosting, data, payments |
 | Architecture decision records (one file per decision) | [`tech/decisions/README.md`](tech/decisions/README.md) | Asking why an architectural call was made, or recording a new one |
 | Lab-data interchange file envelope (prose spec + published [JSON Schema](https://blood.isayenko.net/schema/bloodtests-3.schema.json)) | [`tech/interchange-format.md`](tech/interchange-format.md) | Reading or writing an exported lab-data file |
+| Molar masses and mass↔molar conversion (per-analyte table + citations) | [`tech/molar-masses.md`](tech/molar-masses.md) | Adding or checking a conversion factor; asking where a mass↔molar number came from |
 | Screens (where the user is) | [`ui-ux/screens/`](ui-ux/screens/) | Building or changing a screen |
 | Journeys (paths across screens) | [`ui-ux/journeys.md`](ui-ux/journeys.md) | Designing or changing a multi-screen flow |
 | UX style standards (visual + interaction) | [`ui-ux/style-guide.md`](ui-ux/style-guide.md) | Picking a color, type, motion, or interaction pattern |

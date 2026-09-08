@@ -26,6 +26,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0008](adr-0008-fhir-shaped-envelope-not-fhir.md) | A FHIR-shaped envelope, not a FHIR document | accepted · 2026-09-07 |
 | [ADR-0009](adr-0009-v3-only-and-rawname.md) | v3-only upload, and observation `name` renamed to `rawName` | accepted · 2026-09-07 |
 | [ADR-0010](adr-0010-analyte-catalog-is-the-source-of-truth.md) | The analyte catalog is the source of truth, and panels have two layers | accepted · 2026-09-07 |
+| [ADR-0011](adr-0011-molar-masses-are-data-factors-are-derived.md) | Molar masses are cited reference data; conversion factors are derived | accepted · 2026-09-08 |
 
 ## Where each one bites
 
@@ -42,7 +43,10 @@ Each record opens with `# ADR-NNNN: <title>` and a
   `web/src/data/analyteCatalog.ts`; see the
   [observation](../../product/concepts/observation.md) and
   [monitoring panel](../../product/concepts/monitoring-panel.md)
-  concepts.
+  concepts. 0011 applies the same rule to mass↔molar arithmetic —
+  `web/public/data/molar-masses.json`, derived in
+  `web/src/data/molarMasses.ts`; see
+  [`../molar-masses.md`](../molar-masses.md).
 - **Relations between markers** — 0005, still unbuilt; see the
   [companion observation](../../product/concepts/companion-observation.md)
   concept and [task-0010](../../tasks/task-0010.md).

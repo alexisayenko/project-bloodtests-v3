@@ -38,7 +38,24 @@ the resolver — it maps LOINCs one-to-one and does not fold aliases, so
 Insulin Resistance still excludes HbA1c's IFCC code `59261-8` despite
 its `aliasOf`. All three files are described by
 `web/public/schema/analytes-1.schema.json` (draft 2020-12, closed
-objects) and validated with ajv by `web/test/reference-data.test.ts`. A read-only
+objects) and validated with ajv by `web/test/reference-data.test.ts`. The same
+pattern carries mass↔molar arithmetic: `web/public/data/molar-masses.json` is
+the single source of truth for it and stores molar masses, never conversion
+factors — 17 analytes, each with the molecular formula its
+`molarMassGPerMol` is computed from, the CIAAW 2021 standard atomic weights the
+file also tabulates, a `basis` of `compound` / `element` / `conventional`, and
+retrieved citations (PubChem CID, or CIAAW for an element) carrying the source's
+own mass as a cross-check; `web/src/data/molarMasses.ts` scales one into the
+factor a given unit pair needs (`massPerMolarUnit` / `molarPerMassUnit`), so
+`massMolarSiblings.ts` and `computedIndices.ts` derive every factor they use
+instead of typing one and "38.6664 mg/dL per mmol/L" cannot drift from
+"cholesterol is 386.664 g/mol" (it had: glucose was 18.018 in one file and
+18.016 in the other). `web/public/schema/molar-masses-1.schema.json` describes
+it in the same closed-object style, and the same test file recomputes each mass
+from its formula and holds it to its sources. See
+[`docs/tech/molar-masses.md`](docs/tech/molar-masses.md) and
+[ADR-0011](docs/tech/decisions/adr-0011-molar-masses-are-data-factors-are-derived.md).
+A read-only
 share link, `/?data=<guid>`, fetches `/d/<guid>.data.json` and imports it
 through the same parse path as an upload, then strips the param; in
 parallel it fetches an optional `/d/<guid>.meta.json` per-link
@@ -96,9 +113,12 @@ room's x half-extent is fitted per draw so the projected room spans
 slots to N series; it still exposes the ported `setWindowKind` /
 `panByWindowWidth` / `panByDay` window controls, which the year selects
 replaced and no caller uses. `StackedBiomarkerChart3D.tsx` mounts it and
-`StackedBiomarkerSection.tsx` owns selection and the picker. The
-legacy, unwired `AnalyticsPage` reuses the same section behind a List /
-Compare-in-3D toggle (`BiomarkerCharts.tsx`). Panel Detail's Analysis
+`StackedBiomarkerSection.tsx` owns selection and the picker. Panel
+Detail's "What's in range" and "Charts" tabs are both `React.lazy`
+call-site imports behind a `<Suspense>`, so uPlot plus the vendored
+lab-explore/chart-kit and the 3D canvas engine each load on first visit
+instead of on first paint (All Observations shares the lab-explore
+chunk). Panel Detail's Analysis
 tab (the default: Observations and Indices tables) adds a "Scheduled"
 column, set apart at the right of both tables — a single-click toggle
 per row (`role=checkbox`, ✓ in primary blue); scheduling an index also
@@ -212,7 +232,8 @@ No confirm-and-apply UI exists yet: normalization surfaces as warnings only,
 never as a suggestion chip (task-0011).
 A molar unit under a mass-concentration code is treated as a *code* error, so
 the check suggests the analyte's `[Moles/volume]` sibling from the 20 curated
-pairs in `data/massMolarSiblings.ts` (each with the mass/molar factor as data
+pairs in `data/massMolarSiblings.ts` (each naming its analyte's entry in
+`molar-masses.json` rather than stating a factor; the derived factor is data
 only) instead of converting the number (ADR-0003; UCUM as the target
 vocabulary is ADR-0007). Those molar codes were added to the analyte catalog
 (`web/public/data/analyses.json`, 124 → 139 entries) and carry `aliasOf`
@@ -223,14 +244,16 @@ Node scripts sit beside the app: `npm run convert:v3`
 (`scripts/convert-to-v3.mjs`, above) and `node scripts/recode-molar.mjs <file>`
 — no npm alias — which rewrites only the `loinc` of an observation whose mass
 code carries a molar unit, leaving value, unit and reference ranges exactly as
-printed. The original
-upload/panels/results flow still exists in `web/src/components/`
-(`layout/`, `panels/`, `results/`, `upload/`, `analytics/`) but isn't
-wired into `App.tsx`, and all five folders stay excluded from eslint,
-Sonar, and coverage until they return or move to `archive/` — with one
-exception that has since crossed the line: Panel Detail's Charts tab
-imports `analytics/PanelChartsView`, so that folder is live code
-carrying a legacy exclusion.
+printed. The original pre-nav upload/panels/results flow has been
+retired to `archive/src/components/` at the repo root (`layout/`,
+`panels/`, `results/`, plus `upload/UploadPage.tsx`, `AnalyticsPage.tsx`,
+`BiomarkerCharts.tsx` and `BiomarkerChart.tsx`) — outside `web/`, so it
+is outside the TS build, Vite's module graph, eslint, Sonar's
+`sonar.sources` and coverage by construction rather than by exclusion
+list. Its shared chart types (`LoincEntry`, `BiomarkerNames`) live on in
+`web/src/components/analytics/types.ts`, and the series palette in
+`palette.ts`, so the still-live Charts tab has no dependency on the
+archive.
 
 ## Known limitations
 
@@ -242,7 +265,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory, unused
 
 ## Quality
 
-Vitest suites in `web/test/` (420 tests across 19 files, 1 skipped: index
+Vitest suites in `web/test/` (429 tests across 19 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, unit normalization (Latin/UCUM stages, dimension check,
@@ -252,7 +275,10 @@ json-schema-to-typescript, devDependencies only —
 nothing schema-related is bundled), reference-data conformance
 (analyses / panels / monitoring-panels against
 `analytes-1.schema.json`, plus catalog consistency: no duplicate
-LOINC, every `aliasOf` resolving, every `short` carrying a unit),
+LOINC, every `aliasOf` resolving, every `short` carrying a unit;
+molar-masses against `molar-masses-1.schema.json`, plus every mass
+recomputed from its formula, agreeing with a cited source within
+0.05%, and every sibling pair naming a tabulated entry),
 share-link and shared-meta,
 explore-model, markers, routing,
 scheduling, ui helpers, format utils). CI
