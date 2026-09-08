@@ -62,17 +62,30 @@ Optional. Useful when the name is still in motion.
 | `serum.im` | candidate (2026-08-25) — short, clinical, memorable |
 | `in-vitro.cc` | candidate (2026-08-25) — lab-diagnostics term, hyphenated |
 | `invitro.im` | candidate (2026-08-25) — same, unhyphenated (note: clashes with Invitro, the large RU/CIS lab chain) |
-| `assay.guru` | dropped (2026-09-08) — playful, assay = lab test, but already registered |
+| `assay.guru` | candidate (2026-08-25) — playful, assay = lab test |
 | `bioanalysis.cc` | candidate (2026-08-25) — descriptive, generic |
 | `markerly.net` | candidate (2026-09-08) — coined from "marker", product-shaped rather than clinical |
 | `markerly.cc` | candidate (2026-09-08) — same on the short TLD |
 | `biomarks.net` | candidate (2026-09-08) — biomarkers, shortened |
 | `biomarks.cc` | candidate (2026-09-08) — same on the short TLD |
 | `bloodtests.cc` | candidate (2026-09-08) — plainly descriptive, matches the repo name |
+| `paneloom.app` | candidate (2026-09-08) — panel + loom: the one name so far that says what the app does to the data, weaving readings from different labs and years into one fabric, rather than naming a lab test |
+| `paneloom.com` | candidate (2026-09-08) — same on the default TLD |
+| `paneloom.net` | candidate (2026-09-08) — same on `.net` |
 
-Registration checked by `whois` on 2026-09-08: every name above was
-unregistered except `assay.guru`. A CLI check can return thin answers on
-niche TLDs, so confirm at a registrar before buying.
+Registration was checked by RDAP (`https://rdap.org/domain/<name>`) on
+2026-09-08, verified against controls first: a known-registered name must
+answer 200 and a nonsense one 404, or the answer means nothing. On that
+basis every name above was unregistered except the two on `.im`, which are
+unchecked: **`.im` has no RDAP service** — its control answered 404 as
+well, so a 404 there means "not covered", not "free". Controls that did
+pass, and so make their TLD's answers meaningful: `nic.cc`, `nic.guru`,
+`nic.net` and `google.app` all answered 200; a nonsense `.com` answered 404.
+
+Do not check these with the `whois` CLI. It does not follow registry
+referrals here: every query, including domains that certainly exist,
+returns IANA's record for the *TLD*, which reads as a hit and produces
+confident nonsense in both directions. Confirm at a registrar before buying.
 
 Two threads run through the list worth settling before one is locked.
 Every name so far is a synonym for "lab test", so none of them says the
