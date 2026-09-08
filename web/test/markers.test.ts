@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildConditions,
+  indexMatchesQuery,
   isEchoRedundant,
+  observationMatchesQuery,
   panelRowLoincs,
   primaryLoinc,
   testLoincs,
@@ -9,6 +11,7 @@ import {
 } from '../src/components/conditions/markers';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, DEFAULT_UNITS, SHORT_LABELS } from '../src/data/analyteCatalog';
 import { MARKER_LOINC } from '../src/data/computedIndices';
+import { INDEX_DEFS } from '../src/data/indexDefs';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
 import { MONITORING_PANELS, PANELS } from './dataFiles';
 
@@ -161,5 +164,77 @@ describe('panelRowLoincs (All Observations panel filter)', () => {
         expect([c.name, key, ALIAS_TO_PRIMARY[key]]).toEqual([c.name, key, undefined]);
       }
     }
+  });
+});
+
+describe('observationMatchesQuery (All Observations text filter)', () => {
+  const hgb: Observation = {
+    short: 'HGB',
+    full: 'Hemoglobin',
+    longCommonName: 'Hemoglobin [Mass/volume] in Blood',
+    loinc: '718-7',
+    also: ALSO_REFS['718-7'],
+  };
+
+  it('matches an empty or whitespace-only query against every row', () => {
+    expect(observationMatchesQuery(hgb, '')).toBe(true);
+    expect(observationMatchesQuery(hgb, '   ')).toBe(true);
+  });
+
+  it('matches the badge label case-insensitively', () => {
+    expect(observationMatchesQuery(hgb, 'hgb')).toBe(true);
+    expect(observationMatchesQuery(hgb, 'HG')).toBe(true);
+  });
+
+  it('matches the displayed name and the official long name', () => {
+    expect(observationMatchesQuery(hgb, 'hemoglob')).toBe(true);
+    expect(observationMatchesQuery(hgb, 'mass/volume')).toBe(true);
+  });
+
+  it('matches the LOINC itself', () => {
+    expect(observationMatchesQuery(hgb, '718-7')).toBe(true);
+  });
+
+  it('matches a Cyrillic name the lab actually printed', () => {
+    expect(observationMatchesQuery(hgb, 'Гемоглобин')).toBe(false);
+    expect(observationMatchesQuery(hgb, 'гемоглобин', ['Гемоглобин'])).toBe(true);
+  });
+
+  it('trims the query before matching', () => {
+    expect(observationMatchesQuery(hgb, '  hgb  ')).toBe(true);
+  });
+
+  it('rejects a query that appears nowhere', () => {
+    expect(observationMatchesQuery(hgb, 'ferritin', ['Гемоглобин'])).toBe(false);
+  });
+
+  it('matches an alias LOINC the row answers for', () => {
+    const chol: Observation = {
+      short: 'TC',
+      full: 'Cholesterol',
+      longCommonName: '',
+      loinc: '2093-3',
+      also: ALSO_REFS['2093-3'],
+    };
+    for (const ref of chol.also ?? []) {
+      expect(observationMatchesQuery(chol, ref.loinc)).toBe(true);
+    }
+  });
+});
+
+describe('indexMatchesQuery (All Observations text filter, index rows)', () => {
+  const def = INDEX_DEFS.find((d) => d.key === 'ka')!;
+
+  it('matches every row on an empty query', () => {
+    expect(indexMatchesQuery(def, ' ')).toBe(true);
+  });
+
+  it('matches the compact and the full index name, case-insensitively', () => {
+    expect(indexMatchesQuery(def, 'ac')).toBe(true);
+    expect(indexMatchesQuery(def, 'atherogenic')).toBe(true);
+  });
+
+  it('rejects a query that names another index', () => {
+    expect(indexMatchesQuery(def, 'homa')).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { MARKER_LOINC } from '../../data/computedIndices';
+import { MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
 import type { Analysis, LoincRef, MonitoringPanelDef, Panel } from '../../types';
@@ -46,6 +46,27 @@ export function primaryLoinc(loinc: string): string {
  */
 export function panelRowLoincs(tests: Observation[]): Set<string> {
   return new Set(tests.flatMap(testLoincs).map(primaryLoinc));
+}
+
+/**
+ * All Observations' free-text filter. Matched against the badge label, the
+ * displayed name, the official long name, every LOINC the row answers for and
+ * every name a lab actually printed for it -- the printed names are what make
+ * "Гемоглобин" and "HGB" find the same row on Cyrillic reports.
+ */
+export function observationMatchesQuery(test: Observation, query: string, printedNames: readonly string[] = []): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [test.short, test.full, test.longCommonName, ...testLoincs(test), ...printedNames].some((s) =>
+    s.toLowerCase().includes(q)
+  );
+}
+
+/** The same filter over a computed index, which has no LOINC or printed name of its own. */
+export function indexMatchesQuery(def: IndexDef, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [def.name, def.nameCompact, def.key].some((s) => s.toLowerCase().includes(q));
 }
 
 /** All LOINCs an observation's row/badge answers for: its own plus its also-refs. */
