@@ -44,8 +44,8 @@ export function normalizeUnit(unit: string | undefined | null): string {
   return trimTrailingUnitPunctuation(
     foldUnitGlyphs(unit ?? '')
       .toLowerCase()
-      .replaceAll(/mcg/g, 'ug')
-      .replaceAll(/iu/g, 'u')
+      .replaceAll('mcg', 'ug')
+      .replaceAll('iu', 'u')
       .replace(/\s+/g, '')
   );
 }
