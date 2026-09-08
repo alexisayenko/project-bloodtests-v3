@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import type { Result } from '../../types';
 import { INDEX_DEFS, MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
 import { COMPUTED_LOINCS, INDEX_LOINCS, testLoincs, type Observation } from './markers';
@@ -6,10 +6,14 @@ import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { ObservationTable, IndexTable } from './ResultTables';
 import { indexInputLoincs, useScheduled } from './scheduled';
-import { LabExploreView } from './LabExploreView';
-import { PanelChartsView } from '../analytics/PanelChartsView';
 import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
+
+// Neither chart tab is the default one, so both are split out of the initial
+// bundle: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit,
+// "Charts" pulls the 3D canvas engine. Each loads on its first visit.
+const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
+const PanelChartsView = lazy(() => import('../analytics/PanelChartsView').then((m) => ({ default: m.PanelChartsView })));
 
 type DetailTab = 'analysis' | 'in-range' | 'charts';
 
@@ -18,6 +22,10 @@ const TAB_LABELS: Record<DetailTab, string> = {
   'in-range': "What's in range",
   charts: 'Charts',
 };
+
+// Matches the muted empty-state text used across these views; the min-height
+// reserves roughly a chart's worth of room so the tab doesn't jump on load.
+const chartFallback = <div style={{ color: '#888', fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
 
 export function PanelDetailView({
   name,
@@ -153,17 +161,21 @@ export function PanelDetailView({
         </div>
       )}
       {detailTab === 'in-range' && (
-        <LabExploreView
-          conditions={[{ name, tests }]}
-          allResults={allResults}
-          unitSystem={controls.unitSystem}
-          currentPanel={name}
-          resultsByDate={resultsByDate}
-        />
+        <Suspense fallback={chartFallback}>
+          <LabExploreView
+            conditions={[{ name, tests }]}
+            allResults={allResults}
+            unitSystem={controls.unitSystem}
+            currentPanel={name}
+            resultsByDate={resultsByDate}
+          />
+        </Suspense>
       )}
       {detailTab === 'charts' && (
         <LangProvider>
-          <PanelChartsView tests={tests} allResults={allResults} />
+          <Suspense fallback={chartFallback}>
+            <PanelChartsView tests={tests} allResults={allResults} />
+          </Suspense>
         </LangProvider>
       )}
     </>

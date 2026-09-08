@@ -1,12 +1,20 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import type { Analysis, Result } from '../../types';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, type Observation } from './markers';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ObservationTable } from './ResultTables';
-import { LabExploreView } from './LabExploreView';
 import type { Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
+
+// Not the default tab, and it pulls uPlot plus the vendored
+// lab-explore/chart-kit -- kept out of the initial bundle, same as in
+// PanelDetailView, which shares this chunk.
+const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
+
+// Matches the muted empty-state text below; the min-height reserves roughly a
+// chart's worth of room so the tab doesn't jump on load.
+const chartFallback = <div style={{ color: '#888', fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
 
 type ObservationsTab = 'analysis' | 'in-range';
 
@@ -127,12 +135,14 @@ export function AllObservationsView({
       </div>
 
       {tab === 'analysis' ? analysisTab : (
-        <LabExploreView
-          conditions={conditions}
-          allResults={allResults}
-          unitSystem={controls.unitSystem}
-          resultsByDate={resultsByDate}
-        />
+        <Suspense fallback={chartFallback}>
+          <LabExploreView
+            conditions={conditions}
+            allResults={allResults}
+            unitSystem={controls.unitSystem}
+            resultsByDate={resultsByDate}
+          />
+        </Suspense>
       )}
     </>
   );
