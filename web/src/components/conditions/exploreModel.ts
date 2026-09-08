@@ -109,42 +109,25 @@ const REF_BAND_OVERRIDES: Record<
 };
 
 /**
- * Builds the <lab-explore> view-model ("What's in range, what isn't" tab)
- * from v3's own data shapes -- a fresh, generic port of v2's
- * exploreFromLabs() eligibility logic (ui/src/explore-model.ts) against
- * Condition[]/ResultEntry[] instead of a LabMatrixModel.
- *
- * Deliberately NOT ported: event overlays, extraMarkers, band overrides, or
- * warn/data-quality flagging -- every marker built here is warn: false.
- *
- * `resultsByDate` is optional and, when present, additionally builds one
- * ExploreMarker per computed index -- their full historical value series, not
- * just the latest draw. Two shapes, matching the two callers:
- *  - `resultsByDate` + `currentPanel` (Panel Detail): only that panel's own
- *    indices (INDEX_DEFS filtered by panels.includes(currentPanel)), and
- *    `panel` on the resulting marker stays a plain string (currentPanel) --
- *    unchanged from before this got a second caller.
- *  - `resultsByDate` alone, no `currentPanel` (All Observations): every
- *    INDEX_DEFS entry, each grouped under ALL of its own declared panels
- *    (`IndexDef.panels`) -- same `string | string[]` multi-panel-membership
- *    convention the raw-observation markers above already use for a test
- *    shared by more than one panel (e.g. `aip` belongs to both 'Insulin
- *    Resistance' and 'Cardiovascular Risk').
+ * ExploreMarker/ExploreNotTaken.panel (see explore-types.ts) stays a plain
+ * string for the common single-membership case -- only a genuinely shared
+ * key takes the array form <lab-explore>'s #buildPicker() fans out across
+ * multiple picker groups.
  */
-export function buildExploreModel(
-  conditions: Condition[],
-  allResults: ResultEntry[],
-  unitSystem: 'si' | 'us',
-  currentPanel?: string,
-  resultsByDate?: Record<string, Record<string, Result>>
-): LabExploreModel {
-  // One entry per distinct test (own LOINC + also-refs folded together via
-  // testLoincs), keyed by EVERY condition that lists it -- so a test shared
-  // by multiple panels (e.g. Albumin, under Hypogonadism, Fatty Liver,
-  // Kidney Function AND Bone and Mineral Metabolism) still gets exactly one
-  // picker badge/series (no colliding keys), but that one badge groups under
-  // all of its panels -- matching PanelsGridView.tsx, which lists the same
-  // marker on every one of its panel cards with no dedup at all.
+function singleOrArray(values: string[]): string | string[] {
+  return values.length === 1 ? values[0]! : values;
+}
+
+/**
+ * One entry per distinct test (own LOINC + also-refs folded together via
+ * testLoincs), keyed by EVERY condition that lists it -- so a test shared by
+ * multiple panels (e.g. Albumin, under Hypogonadism, Fatty Liver, Kidney
+ * Function AND Bone and Mineral Metabolism) still gets exactly one picker
+ * badge/series (no colliding keys), but that one badge groups under all of
+ * its panels -- matching PanelsGridView.tsx, which lists the same marker on
+ * every one of its panel cards with no dedup at all.
+ */
+function collectSeenTests(conditions: Condition[]): Map<string, { test: Observation; panels: string[] }> {
   const seen = new Map<string, { test: Observation; panels: string[] }>();
   for (const condition of conditions) {
     for (const test of condition.tests) {
@@ -163,23 +146,179 @@ export function buildExploreModel(
       }
     }
   }
+  return seen;
+}
 
+function collectByDate(loincs: string[], allResults: ResultEntry[]): Map<string, ResultEntry> {
+  const byDate = new Map<string, ResultEntry>();
+  for (const r of allResults) {
+    if (r.result.value == null || !loincs.includes(r.loinc)) continue;
+    if (!byDate.has(r.date)) byDate.set(r.date, r);
+  }
+  return byDate;
+}
+
+type RefBandOverride = (typeof REF_BAND_OVERRIDES)[string];
+
+type RefBand =
+  | { kind: 'band'; refMinRaw: number | null | undefined; refMaxRaw: number; refFromUnit: string | null | undefined }
+  | { kind: 'degenerate' }
+  | { kind: 'no-upper-bound' };
+
+/**
+ * Needs an upper reference bound; use whichever dated reading most recently
+ * reported one (labs occasionally revise a printed range). Falls back to a
+ * REF_BAND_OVERRIDES entry (see its doc comment) when no dated reading ever
+ * printed an upper bound at all; with neither, the marker HAS real dated
+ * readings but can never be plotted (lower-bound-only reads inverted once
+ * normalized) -- reported as 'no-upper-bound' rather than dropped, so the
+ * caller can distinguish it from a genuinely-never-drawn marker.
+ */
+function resolveRefBand(byDate: Map<string, ResultEntry>, override: RefBandOverride | undefined): RefBand {
+  const withRefMax = Array.from(byDate.values())
+    .filter((e) => e.result.refMax != null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if (withRefMax.length > 0) {
+    const refSource = withRefMax[0]!;
+    const refMaxRaw = refSource.result.refMax!;
+    const refMinRaw = refSource.result.refMin;
+    const refFromUnit = refSource.result.unit;
+    if (refMinRaw != null && refMinRaw === refMaxRaw) return { kind: 'degenerate' };
+    return { kind: 'band', refMinRaw, refMaxRaw, refFromUnit };
+  }
+  if (override) {
+    return { kind: 'band', refMinRaw: override.refMin, refMaxRaw: override.refMax, refFromUnit: override.rawUnit };
+  }
+  return { kind: 'no-upper-bound' };
+}
+
+/**
+ * Builds the ExploreMarker for one test once its reference band is resolved
+ * -- unit selection (SI/US override table, else the band's own printed
+ * unit, else the catalog default), value conversion, the sorted date
+ * series, and (see REF_BAND_OVERRIDES's doc comment) the goodAbove/goodNote
+ * pair a curated override band cites in the tooltip.
+ */
+function buildTestMarker(
+  loinc: string,
+  test: Observation,
+  panel: string | string[],
+  byDate: Map<string, ResultEntry>,
+  band: Extract<RefBand, { kind: 'band' }>,
+  unitSystem: 'si' | 'us',
+  override: RefBandOverride | undefined
+): { marker: ExploreMarker; data: [string, number][] } {
+  const { refMinRaw, refMaxRaw, refFromUnit } = band;
+  const unitMarker = LOINC_TO_MARKER[loinc];
+  const siUsUnit = unitMarker ? SI_US_UNIT[unitMarker] : undefined;
+  const unit = siUsUnit ? siUsUnit[unitSystem] : refFromUnit || test.unit || '';
+  const convert = (value: number, from: string | null | undefined): number =>
+    siUsUnit && unitMarker ? toUnit(value, unitMarker, from, unit) : value;
+
+  const data: [string, number][] = Array.from(byDate.entries())
+    .map(([date, e]): [string, number] => [date, convert(e.result.value!, e.result.unit)])
+    .sort((a, b) => a[0].localeCompare(b[0]));
+
+  const marker: ExploreMarker = {
+    label: test.short,
+    unit,
+    refMin: refMinRaw != null ? convert(refMinRaw, refFromUnit) : 0,
+    refMax: convert(refMaxRaw, refFromUnit),
+    panel,
+    data,
+    warn: false,
+    ...(override
+      ? {
+          goodAbove: convert(override.refMax, refFromUnit),
+          goodNote: `${override.reference.organization} ${override.reference.document}: protective threshold (curated band, not lab-printed)`,
+        }
+      : {}),
+  };
+
+  return { marker, data };
+}
+
+/**
+ * Computed-index markers -- one ExploreMarker per INDEX_DEFS entry, plotting
+ * its full historical value series (not just the latest draw). Two shapes,
+ * matching the two callers:
+ *  - `currentPanel` set (Panel Detail): only that panel's own indices
+ *    (INDEX_DEFS filtered by panels.includes(currentPanel)), and `panel` on
+ *    the resulting marker stays a plain string (currentPanel).
+ *  - `currentPanel` omitted (All Observations): every INDEX_DEFS entry,
+ *    each grouped under ALL of its own declared panels (`IndexDef.panels`)
+ *    -- same `string | string[]` multi-panel-membership convention the
+ *    raw-observation markers use for a test shared by more than one panel
+ *    (e.g. `aip` belongs to both 'Insulin Resistance' and 'Cardiovascular
+ *    Risk').
+ */
+function buildIndexMarkers(
+  resultsByDate: Record<string, Record<string, Result>>,
+  currentPanel: string | undefined
+): { markers: Record<string, ExploreMarker>; notTaken: ExploreNotTaken[] } {
+  const dates = Object.keys(resultsByDate).sort((a, b) => a.localeCompare(b));
+  const defs = currentPanel ? INDEX_DEFS.filter((d) => d.panels.includes(currentPanel)) : INDEX_DEFS;
+  const markers: Record<string, ExploreMarker> = {};
+  const notTaken: ExploreNotTaken[] = [];
+
+  for (const def of defs) {
+    const data: [string, number][] = [];
+    for (const date of dates) {
+      const value = computeIndex(def, resultsByDate[date]!);
+      if (value != null) data.push([date, value]);
+    }
+    const key = INDEX_MARKER_KEY_PREFIX + def.key;
+    const panel: string | string[] = currentPanel ?? singleOrArray(def.panels);
+    if (data.length === 0) {
+      // Never computable from anything on file (e.g. one of its input markers was
+      // never drawn) -- same "not taken" treatment as an observation that was
+      // never drawn: named, disabled, not plotted (0 % would misread as a real
+      // reading sitting right at the bad boundary).
+      notTaken.push({ key, label: def.nameCompact, panel });
+      continue;
+    }
+    markers[key] = {
+      label: def.nameCompact,
+      unit: def.unit,
+      ...refBandFor(def),
+      panel,
+      data,
+      warn: false,
+    };
+  }
+
+  return { markers, notTaken };
+}
+
+/**
+ * Builds the <lab-explore> view-model ("What's in range, what isn't" tab)
+ * from v3's own data shapes -- a fresh, generic port of v2's
+ * exploreFromLabs() eligibility logic (ui/src/explore-model.ts) against
+ * Condition[]/ResultEntry[] instead of a LabMatrixModel.
+ *
+ * Deliberately NOT ported: event overlays, extraMarkers, band overrides, or
+ * warn/data-quality flagging -- every marker built here is warn: false.
+ *
+ * `resultsByDate` is optional and, when present, additionally builds one
+ * ExploreMarker per computed index -- see buildIndexMarkers() for the two
+ * shapes, matching the two callers.
+ */
+export function buildExploreModel(
+  conditions: Condition[],
+  allResults: ResultEntry[],
+  unitSystem: 'si' | 'us',
+  currentPanel?: string,
+  resultsByDate?: Record<string, Record<string, Result>>
+): LabExploreModel {
+  const seen = collectSeenTests(conditions);
   const markers: Record<string, ExploreMarker> = {};
   const notTaken: ExploreNotTaken[] = [];
   const defaultSelection: string[] = [];
 
   for (const [loinc, { test, panels }] of seen) {
-    // ExploreMarker/ExploreNotTaken.panel (see explore-types.ts) stays a
-    // plain string for the common single-panel case -- only a genuinely
-    // shared LOINC takes the array form <lab-explore>'s #buildPicker() fans
-    // out across multiple picker groups.
-    const panel: string | string[] = panels.length === 1 ? panels[0]! : panels;
-    const loincs = testLoincs(test);
-    const byDate = new Map<string, ResultEntry>();
-    for (const r of allResults) {
-      if (r.result.value == null || !loincs.includes(r.loinc)) continue;
-      if (!byDate.has(r.date)) byDate.set(r.date, r);
-    }
+    const panel = singleOrArray(panels);
+    const byDate = collectByDate(testLoincs(test), allResults);
 
     // NEVER TAKEN -- no reading at all, so nothing to plot or normalize.
     if (byDate.size === 0) {
@@ -187,73 +326,20 @@ export function buildExploreModel(
       continue;
     }
 
-    // Needs an upper reference bound; use whichever dated reading most
-    // recently reported one (labs occasionally revise a printed range).
-    const withRefMax = Array.from(byDate.values())
-      .filter((e) => e.result.refMax != null)
-      .sort((a, b) => b.date.localeCompare(a.date));
-
-    let refMinRaw: number | null | undefined;
-    let refMaxRaw: number | undefined;
-    let refFromUnit: string | null | undefined;
     const override = REF_BAND_OVERRIDES[loinc];
-
-    if (withRefMax.length > 0) {
-      const refSource = withRefMax[0]!;
-      refMaxRaw = refSource.result.refMax!;
-      refMinRaw = refSource.result.refMin;
-      refFromUnit = refSource.result.unit;
-      if (refMinRaw != null && refMinRaw === refMaxRaw) continue; // degenerate range
-    } else if (override) {
-      // See REF_BAND_OVERRIDES's doc comment: a real, cited guideline band
-      // stands in for the upper bound this marker's own lab readings never
-      // print, instead of the notTaken/'no upper bound' fallback below.
-      refMinRaw = override.refMin;
-      refMaxRaw = override.refMax;
-      refFromUnit = override.rawUnit;
-    } else {
-      // Lower-bound-only (or no reference at all) reads inverted once
-      // normalized, so it can never be PLOTTED -- excluded from the series,
-      // per v2's documented behavior (e.g. HDL-C, which real labs commonly
-      // print as "> 40 mg/dL" with no upper limit at all, since higher HDL is
-      // protective). But this marker HAS real dated readings on file -- it is
-      // not the "never taken" case above -- so dropping it outright would
-      // silently say "this marker does not exist", which is false. Surfaced
-      // instead as a notTaken chip with a reason (see ExploreNotTaken.reason
-      // in explore-types.ts), distinguishable from a genuinely-never-drawn one.
+    const refBand = resolveRefBand(byDate, override);
+    if (refBand.kind === 'degenerate') continue;
+    if (refBand.kind === 'no-upper-bound') {
+      // See resolveRefBand's doc comment -- has real dated readings, but a
+      // lower-bound-only range can't be plotted, so it's surfaced as a
+      // notTaken chip with a reason (ExploreNotTaken.reason in
+      // explore-types.ts) rather than silently dropped.
       notTaken.push({ key: loinc, label: test.short, panel, reason: 'no upper bound' });
       continue;
     }
 
-    const marker = LOINC_TO_MARKER[loinc];
-    const siUsUnit = marker ? SI_US_UNIT[marker] : undefined;
-    const unit = siUsUnit ? siUsUnit[unitSystem] : refFromUnit || test.unit || '';
-    const convert = (value: number, from: string | null | undefined): number =>
-      siUsUnit && marker ? toUnit(value, marker, from, unit) : value;
-
-    const data: [string, number][] = Array.from(byDate.entries())
-      .map(([date, e]): [string, number] => [date, convert(e.result.value!, e.result.unit)])
-      .sort((a, b) => a[0].localeCompare(b[0]));
-
-    markers[loinc] = {
-      label: test.short,
-      unit,
-      refMin: refMinRaw != null ? convert(refMinRaw, refFromUnit) : 0,
-      refMax: convert(refMaxRaw, refFromUnit),
-      panel,
-      data,
-      warn: false,
-      // goodAbove/goodNote (ExploreMarker) were already designed for exactly
-      // this case -- see explore-types.ts's "e.g. HDL-C >= 60" doc comment --
-      // so a reading at/above the override's own top-of-band cites the NCEP
-      // threshold directly in the tooltip.
-      ...(override
-        ? {
-            goodAbove: convert(override.refMax, refFromUnit),
-            goodNote: `${override.reference.organization} ${override.reference.document}: protective threshold (curated band, not lab-printed)`,
-          }
-        : {}),
-    };
+    const { marker, data } = buildTestMarker(loinc, test, panel, byDate, refBand, unitSystem, override);
+    markers[loinc] = marker;
 
     // Default selection: the current panel's own two-sided-range markers
     // with more than one reading -- mirrors v2's defaultPanel option. When
@@ -265,42 +351,14 @@ export function buildExploreModel(
     // current panel still defaults on even when it also belongs elsewhere --
     // in practice Panel Detail only ever passes one Condition, so `panels`
     // here is always exactly [currentPanel] or doesn't include it at all.
-    if (currentPanel != null && panels.includes(currentPanel) && data.length > 1 && refMinRaw != null)
+    if (currentPanel != null && panels.includes(currentPanel) && data.length > 1 && refBand.refMinRaw != null)
       defaultSelection.push(loinc);
   }
 
-  // Computed indices -- see the doc comment above for the two shapes.
   if (resultsByDate) {
-    const dates = Object.keys(resultsByDate).sort();
-    const defs = currentPanel ? INDEX_DEFS.filter((d) => d.panels.includes(currentPanel)) : INDEX_DEFS;
-    for (const def of defs) {
-      const data: [string, number][] = [];
-      for (const date of dates) {
-        const value = computeIndex(def, resultsByDate[date]!);
-        if (value != null) data.push([date, value]);
-      }
-      const key = INDEX_MARKER_KEY_PREFIX + def.key;
-      // Single-panel context keeps the plain-string `panel` it always had;
-      // the multi-panel (All Observations) context fans an index out across
-      // ALL of its declared panels, same convention as `panel` above.
-      const panel: string | string[] = currentPanel ?? (def.panels.length === 1 ? def.panels[0]! : def.panels);
-      if (data.length === 0) {
-        // Never computable from anything on file (e.g. one of its input markers was
-        // never drawn) -- same "not taken" treatment as an observation that was
-        // never drawn: named, disabled, not plotted (0 % would misread as a real
-        // reading sitting right at the bad boundary).
-        notTaken.push({ key, label: def.nameCompact, panel });
-        continue;
-      }
-      markers[key] = {
-        label: def.nameCompact,
-        unit: def.unit,
-        ...refBandFor(def),
-        panel,
-        data,
-        warn: false,
-      };
-    }
+    const indexMarkers = buildIndexMarkers(resultsByDate, currentPanel);
+    Object.assign(markers, indexMarkers.markers);
+    notTaken.push(...indexMarkers.notTaken);
   }
 
   return {
