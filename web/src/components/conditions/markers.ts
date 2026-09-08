@@ -1,6 +1,6 @@
 import { MARKER_LOINC } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
-import { ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
 import type { Analysis, LoincRef, MonitoringPanelDef, Panel } from '../../types';
 
 export { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
@@ -30,6 +30,22 @@ export const LOINC_TO_MARKER: Record<string, string> = Object.fromEntries(
 export function getPanelLoincs(panel: Panel): string[] {
   if (panel.sections) return panel.sections.flatMap((section) => section.loincs);
   return panel.loincs ?? [];
+}
+
+/** The code a reading folds into for display: an alias resolves to its primary. */
+export function primaryLoinc(loinc: string): string {
+  return ALIAS_TO_PRIMARY[loinc] ?? loinc;
+}
+
+/**
+ * The row keys a panel covers, for filtering an alias-folded table by panel.
+ * buildConditions maps LOINCs one-to-one on purpose, so a panel names whichever
+ * code of an alias group it means (Insulin Resistance keeps HbA1c's NGSP code
+ * and drops the IFCC one); rows fold onto the primary, so both sides must fold
+ * before matching or a reading recorded under the other code is lost.
+ */
+export function panelRowLoincs(tests: Observation[]): Set<string> {
+  return new Set(tests.flatMap(testLoincs).map(primaryLoinc));
 }
 
 /** All LOINCs an observation's row/badge answers for: its own plus its also-refs. */

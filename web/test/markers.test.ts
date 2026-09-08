@@ -1,8 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { isEchoRedundant, testLoincs } from '../src/components/conditions/markers';
+import {
+  buildConditions,
+  isEchoRedundant,
+  panelRowLoincs,
+  primaryLoinc,
+  testLoincs,
+  type Observation,
+} from '../src/components/conditions/markers';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, DEFAULT_UNITS, SHORT_LABELS } from '../src/data/analyteCatalog';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
+import { MONITORING_PANELS, PANELS } from './dataFiles';
 
 describe('isEchoRedundant (short-label echo suppression)', () => {
   it('suppresses when the full name contains the short label', () => {
@@ -102,6 +110,56 @@ describe('mass/molar sibling aliases', () => {
       const pair = MASS_MOLAR_SIBLINGS.find((p) => p.molar.loinc === molar);
       expect(pair, `no sibling entry for ${molar}`).toBeDefined();
       expect([molar, DEFAULT_UNITS[molar]]).toEqual([molar, pair!.molar.unit]);
+    }
+  });
+});
+
+describe('panelRowLoincs (All Observations panel filter)', () => {
+  // The view's buildRows key: every reading folds onto its primary LOINC.
+  const rowKey = (rawLoinc: string) => primaryLoinc(rawLoinc);
+  const test = (loinc: string): Observation => ({
+    short: loinc,
+    full: '',
+    longCommonName: '',
+    loinc,
+    also: ALSO_REFS[loinc],
+  });
+
+  it('primaryLoinc folds an alias and passes an unaliased code through', () => {
+    expect(primaryLoinc('59261-8')).toBe('4548-4');
+    expect(primaryLoinc('4548-4')).toBe('4548-4');
+    expect(primaryLoinc('not-a-code')).toBe('not-a-code');
+  });
+
+  it('matches a reading recorded under a molar alias of a panel’s mass code', () => {
+    const covered = panelRowLoincs([test('2093-3')]);
+    expect(covered.has(rowKey('14647-2'))).toBe(true);
+    expect(covered.has(rowKey('2093-3'))).toBe(true);
+  });
+
+  it('matches when the panel names the alias and the reading uses the primary', () => {
+    const covered = panelRowLoincs([test('14647-2')]);
+    expect(covered.has(rowKey('2093-3'))).toBe(true);
+  });
+
+  it('omits rows the panel does not cover', () => {
+    const covered = panelRowLoincs([test('2093-3')]);
+    expect(covered.has(rowKey('14913-8'))).toBe(false);
+  });
+
+  it('still covers HbA1c under its IFCC code, which the panel itself excludes', () => {
+    const ir = buildConditions(PANELS, {}, MONITORING_PANELS).find((c) => c.name === 'Insulin Resistance')!;
+    expect(ir.tests.map((t) => t.loinc)).not.toContain('59261-8');
+    const covered = panelRowLoincs(ir.tests);
+    expect(covered.has(rowKey('59261-8'))).toBe(true);
+    expect(covered.has(rowKey('4548-4'))).toBe(true);
+  });
+
+  it('every panel’s row keys are primaries, so no row key can miss a fold', () => {
+    for (const c of buildConditions(PANELS, {}, MONITORING_PANELS)) {
+      for (const key of panelRowLoincs(c.tests)) {
+        expect([c.name, key, ALIAS_TO_PRIMARY[key]]).toEqual([c.name, key, undefined]);
+      }
     }
   });
 });

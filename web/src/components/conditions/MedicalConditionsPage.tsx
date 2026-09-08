@@ -188,6 +188,7 @@ export function MedicalConditionsPage() {
           <AllObservationsView
             allResults={allResults}
             conditions={conditions}
+            panelOptions={shownConditions}
             analysesCatalog={analysesCatalog}
             controls={controls}
             selectedLoinc={selectedLoinc}

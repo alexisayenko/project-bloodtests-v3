@@ -227,7 +227,14 @@ lookup is the app's only network call and lives alone in
 `data/loincNlm.ts`, so the privacy exception is a file you can open by
 name; the resolver's domain-free edit-distance matching is likewise its
 own module, `data/fuzzyMatch.ts`, with no tie to the analyte catalog), All
-Observations (every uploaded result in one table), Monitoring Panels
+Observations (every uploaded result in one table, with a "Show
+observations from" select narrowing it to one Monitoring Panel — session
+state, never stored, so a filter cannot go on hiding rows the way a
+stored `showPanels` once did; both the panel's codes and the rows fold
+through `ALIAS_TO_PRIMARY` (`panelRowLoincs`, `markers.ts`) so a reading
+matches its panel whichever of its codes the lab used, while
+`buildConditions` still maps one-to-one; a share link's allowlist limits
+the options but never the table), Monitoring Panels
 (the default/entry route), Reference Book (Indices Descriptions: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Physiology: HP Axis page with v2's
@@ -329,7 +336,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (526 tests across 21 files, 1 skipped: index
+Vitest suites in `web/test/` (532 tests across 21 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the

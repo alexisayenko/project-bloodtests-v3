@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import type { Analysis, Result } from '../../types';
-import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, type Observation } from './markers';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, panelRowLoincs, type Observation } from './markers';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { visibleDatesOf, type SelectedCell } from './ui';
@@ -24,6 +24,20 @@ const OBSERVATIONS_TABS: readonly { id: ObservationsTab; label: string }[] = [
   { id: 'analysis', label: 'Analysis' },
   { id: 'in-range', label: "What's in range" },
 ];
+
+const ALL_PANELS = '';
+
+const PANEL_SELECT = {
+  border: '1.5px solid #1971c2',
+  borderRadius: 9999,
+  padding: '4px 12px',
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  color: '#1971c2',
+  background: 'transparent',
+  cursor: 'pointer',
+} as const;
 
 // Every distinct observation ever uploaded, regardless of panel membership.
 // A result recorded under an also-ref alias (unit-variant LOINC) folds into
@@ -51,6 +65,7 @@ export function AllObservationsView({
   allResults,
   /** Every panel's tests, for the "What's in range" tab's own cross-panel marker picker. */
   conditions,
+  panelOptions,
   analysesCatalog,
   controls,
   selectedLoinc,
@@ -64,6 +79,12 @@ export function AllObservationsView({
 }: Readonly<{
   allResults: ResultEntry[];
   conditions: Condition[];
+  /**
+   * Panels offered in the table's panel filter. A share link's showPanels
+   * allowlist narrows this, so the picker never names a panel the link hid;
+   * the table itself still defaults to every observation.
+   */
+  panelOptions: Condition[];
   analysesCatalog: Record<string, Analysis>;
   controls: ControlsProps;
   selectedLoinc: string | null;
@@ -84,8 +105,18 @@ export function AllObservationsView({
   scheduling: RowScheduling;
 }>) {
   const [tab, setTab] = useState<ObservationsTab>('analysis');
+  // Deliberately not persisted: a stored filter that hides observations would
+  // outlive the session that chose it, with nothing on screen explaining the
+  // gap -- the failure mode the shared-meta showPanels allowlist already had.
+  const [panelFilter, setPanelFilter] = useState<string>(ALL_PANELS);
 
   const rows = useMemo(() => buildRows(allResults, analysesCatalog), [allResults, analysesCatalog]);
+  const activePanel = panelOptions.find((c) => c.name === panelFilter) ?? null;
+  const visibleRows = useMemo(() => {
+    if (!activePanel) return rows;
+    const covered = panelRowLoincs(activePanel.tests);
+    return rows.filter((row) => covered.has(row.loinc));
+  }, [rows, activePanel]);
   const sortedDates = useMemo(
     () => Array.from(new Set(allResults.map((r) => r.date))).sort((a, b) => b.localeCompare(a)),
     [allResults]
@@ -99,12 +130,34 @@ export function AllObservationsView({
     analysisTab = (
       <>
         <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
-          {rows.length} observations across {sortedDates.length} lab reports
+          {activePanel ? `${visibleRows.length} of ${rows.length}` : rows.length} observations across{' '}
+          {sortedDates.length} lab reports
         </div>
         <ControlsBar {...controls} />
+        {panelOptions.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Show observations from</div>
+            <select
+              aria-label="Filter observations by monitoring panel"
+              value={activePanel?.name ?? ALL_PANELS}
+              onChange={(e) => setPanelFilter(e.currentTarget.value)}
+              style={PANEL_SELECT}
+            >
+              <option value={ALL_PANELS}>All panels</option>
+              {panelOptions.map((c) => (
+                <option key={c.name} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {visibleRows.length === 0 ? (
+          <div style={{ color: '#888', fontSize: 14 }}>
+            No uploaded observations belong to {activePanel?.name}.
+          </div>
+        ) : (
         <ObservationTable
           label="Observations"
-          rows={rows}
+          rows={visibleRows}
           visibleDates={allDates}
           allResults={allResults}
           unitSystem={controls.unitSystem}
@@ -117,6 +170,7 @@ export function AllObservationsView({
           scheduling={scheduling}
           preferRaw
         />
+        )}
       </>
     );
   }
