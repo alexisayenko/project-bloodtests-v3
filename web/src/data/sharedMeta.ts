@@ -67,7 +67,8 @@ export function loadStoredSharedMeta(): SharedMeta | null {
 
 export function storeSharedMeta(meta: SharedMeta | null): void {
   try {
-    if (meta) localStorage.setItem(SHARED_META_KEY, JSON.stringify(meta));
+    const sanitized = meta ? parseSharedMeta(meta) : null;
+    if (sanitized) localStorage.setItem(SHARED_META_KEY, JSON.stringify(sanitized));
   } catch {
     // storage unavailable -- the meta is just re-fetched next visit
   }
