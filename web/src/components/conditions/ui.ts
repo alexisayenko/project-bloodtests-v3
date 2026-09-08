@@ -113,6 +113,19 @@ export function pressable(handler: (e: { currentTarget: HTMLElement }) => void) 
   };
 }
 
+/**
+ * The active/inactive look shared by the top nav and the in-page tab strips.
+ * The bold of an active tab is a text-shadow rather than a fontWeight: a real
+ * weight change is wider, so switching tabs would shift its neighbours.
+ */
+export function tabStyle(active: boolean) {
+  return {
+    borderBottom: active ? '2px solid #1971c2' : '2px solid transparent',
+    textShadow: active ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
+    color: active ? '#1971c2' : '#555',
+  };
+}
+
 /** Background for a result cell: reference presence, range status, row selection. */
 export function cellBg(hasRef: boolean, outOfRange: boolean, selected: boolean): string {
   if (!hasRef) return selected ? '#eaf3fb' : 'transparent';

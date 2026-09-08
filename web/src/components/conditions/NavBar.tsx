@@ -1,5 +1,5 @@
 import { NAV_ITEMS, type Route } from './routing';
-import { pressable } from './ui';
+import { pressable, tabStyle } from './ui';
 
 export function NavBar({ route, navigate, hasValidationErrors = false }: Readonly<{ route: Route; navigate: (r: Route) => void; hasValidationErrors?: boolean }>) {
   return (
@@ -10,9 +10,7 @@ export function NavBar({ route, navigate, hasValidationErrors = false }: Readonl
           (item.view === 'panels' && route.view === 'panel') ||
           (item.view === 'reports' && route.view === 'report');
         const isBlocked = hasValidationErrors && (item.view === 'panels' || item.view === 'all');
-        let color = '#555';
-        if (active) color = '#1971c2';
-        else if (isBlocked) color = '#ccc';
+        const tab = tabStyle(active);
         return (
           <div
             key={item.view}
@@ -23,10 +21,9 @@ export function NavBar({ route, navigate, hasValidationErrors = false }: Readonl
             style={{
               padding: '12px 2px',
               marginBottom: -1.5,
-              borderBottom: active ? '2px solid #1971c2' : '2px solid transparent',
               fontSize: 15,
-              textShadow: active ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
-              color,
+              ...tab,
+              color: isBlocked && !active ? '#ccc' : tab.color,
               cursor: isBlocked ? 'not-allowed' : 'pointer',
               opacity: isBlocked ? 0.5 : 1,
             }}

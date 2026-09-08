@@ -120,6 +120,34 @@ function RelationMark({ label }: Readonly<{ label: string | undefined }>) {
   );
 }
 
+type CellPress = (e: { currentTarget: HTMLElement }) => void;
+
+/**
+ * The two-step data-cell interaction shared by observation and index rows: a
+ * first click selects the row and arms the cell, a second click on the armed
+ * cell opens its popup. `onOpen` is undefined for a cell with no value, which
+ * therefore never leaves the arming step.
+ */
+function armedCellHandler({
+  selectedCell, rowKey, date, onSelect, onSelectCell, onOpen,
+}: Readonly<{
+  selectedCell: SelectedCell;
+  rowKey: string;
+  date: string;
+  onSelect: (key: string) => void;
+  onSelectCell: (key: string, date: string) => void;
+  onOpen: CellPress | undefined;
+}>): CellPress {
+  return (e) => {
+    if (onOpen && isCellArmed(selectedCell, rowKey, date)) {
+      onOpen(e);
+    } else {
+      onSelect(rowKey);
+      onSelectCell(rowKey, date);
+    }
+  };
+}
+
 export type ObservationTableProps = {
   label: string;
   rows: Observation[];
@@ -153,15 +181,14 @@ function ObservationCells({
     <>
       {visibleDates.map((date) => {
         const match = allResults.find((r) => r.date === date && rowLoincs.includes(r.loinc)) ?? null;
-        const armed = isCellArmed(selectedCell, test.loinc, date);
-        const handleClick = (e: { currentTarget: HTMLElement }) => {
-          if (armed && match) {
-            onOpenResultPopup(test, match, e);
-          } else {
-            onSelect(test.loinc);
-            onSelectCell(test.loinc, date);
-          }
-        };
+        const handleClick = armedCellHandler({
+          selectedCell,
+          rowKey: test.loinc,
+          date,
+          onSelect,
+          onSelectCell,
+          onOpen: match ? (e) => onOpenResultPopup(test, match, e) : undefined,
+        });
         if (!match) {
           return (
             <td key={date} {...pressable(handleClick)} style={td}>
@@ -273,15 +300,14 @@ export function IndexTable({
                 </td>
                 {visibleDates.map((date) => {
                   const value = computeIndex(def, resultsByDate[date] ?? {});
-                  const armed = isCellArmed(selectedCell, def.key, date);
-                  const handleClick = (e: { currentTarget: HTMLElement }) => {
-                    if (armed && value != null) {
-                      onOpenIndexResultPopup(def, date, value, e);
-                    } else {
-                      onSelect(def.key);
-                      onSelectCell(def.key, date);
-                    }
-                  };
+                  const handleClick = armedCellHandler({
+                    selectedCell,
+                    rowKey: def.key,
+                    date,
+                    onSelect,
+                    onSelectCell,
+                    onOpen: value == null ? undefined : (e) => onOpenIndexResultPopup(def, date, value, e),
+                  });
                   if (value == null) {
                     return (
                       <td key={date} {...pressable(handleClick)} style={td}>

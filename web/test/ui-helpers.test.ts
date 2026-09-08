@@ -11,7 +11,7 @@ import {
   pressable,
   visibleDatesOf,
 } from '../src/components/conditions/ui';
-import { INDEX_DEFS } from '../src/data/computedIndices';
+import { INDEX_DEFS } from '../src/data/indexDefs';
 
 describe('formatMonthYear', () => {
   it('renders "Mon YY"', () => {

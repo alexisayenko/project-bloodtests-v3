@@ -10,7 +10,7 @@ import { ReferenceBookPage } from './ReferenceBookPage';
 import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadAnalysisSettings, saveAnalysisSettings, hasStoredAnalysisSettings, seedAnalysisSettings, popupPosition, type SelectedCell } from './ui';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { NavBar } from './NavBar';
-import { Popup, type PopupState } from './Popup';
+import { Popup, type PopupPosition, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
 import { PanelDetailView } from './PanelDetailView';
@@ -18,6 +18,11 @@ import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
 import type { ResultEntry } from './resultsLookup';
+
+/** A popup's own content, before the opener anchors it to the clicked element. */
+type PopupPayload = {
+  [K in PopupState['kind']]: Omit<Extract<PopupState, { kind: K }>, keyof PopupPosition>;
+}[PopupState['kind']];
 
 // The app shell: owns the route, the flattened results, the shared table
 // settings and the popup, and renders one view component per section.
@@ -121,27 +126,22 @@ export function MedicalConditionsPage() {
     return map;
   }, [allResults]);
 
-  const openPopup = (test: Observation, e: { currentTarget: HTMLElement }) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopup({ kind: 'observation', test, ...popupPosition(rect, POPUP_WIDTH) });
+  const openPopupFrom = (payload: PopupPayload, e: { currentTarget: HTMLElement }) => {
+    const width = payload.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH;
+    setPopup({ ...payload, ...popupPosition(e.currentTarget.getBoundingClientRect(), width) });
   };
 
-  const openIndexPopup = (def: IndexDef, e: { currentTarget: HTMLElement }) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopup({ kind: 'index', def, ...popupPosition(rect, INDEX_POPUP_WIDTH) });
-  };
+  const openPopup = (test: Observation, e: { currentTarget: HTMLElement }) => openPopupFrom({ kind: 'observation', test }, e);
+
+  const openIndexPopup = (def: IndexDef, e: { currentTarget: HTMLElement }) => openPopupFrom({ kind: 'index', def }, e);
+
+  const openResultPopup = (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) =>
+    openPopupFrom({ kind: 'result', test, entry }, e);
+
+  const openIndexResultPopup = (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) =>
+    openPopupFrom({ kind: 'indexResult', def, date, value }, e);
 
   const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
-
-  const openResultPopup = (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopup({ kind: 'result', test, entry, ...popupPosition(rect, POPUP_WIDTH) });
-  };
-
-  const openIndexResultPopup = (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopup({ kind: 'indexResult', def, date, value, ...popupPosition(rect, POPUP_WIDTH) });
-  };
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder };
 

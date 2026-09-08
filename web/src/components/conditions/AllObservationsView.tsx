@@ -2,7 +2,8 @@ import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import type { Analysis, Result } from '../../types';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, type Observation } from './markers';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
-import { pressable, visibleDatesOf, type SelectedCell } from './ui';
+import { TabBar } from './TabBar';
+import { visibleDatesOf, type SelectedCell } from './ui';
 import { ObservationTable } from './ResultTables';
 import type { Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
@@ -17,6 +18,11 @@ const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ defa
 const chartFallback = <div style={{ color: '#888', fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
 
 type ObservationsTab = 'analysis' | 'in-range';
+
+const OBSERVATIONS_TABS: readonly { id: ObservationsTab; label: string }[] = [
+  { id: 'analysis', label: 'Analysis' },
+  { id: 'in-range', label: "What's in range" },
+];
 
 // Every distinct observation ever uploaded, regardless of panel membership.
 // A result recorded under an also-ref alias (unit-variant LOINC) folds into
@@ -113,26 +119,7 @@ export function AllObservationsView({
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>All Observations</h1>
-      <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
-        {(['analysis', 'in-range'] as const).map((t) => (
-          <div
-            key={t}
-            {...pressable(() => setTab(t))}
-            style={{
-              padding: '10px 4px',
-              marginBottom: -2,
-              borderBottom: tab === t ? '2px solid #1971c2' : '2px solid transparent',
-              // Faux-bold via text-shadow, not fontWeight -- see NavBar.tsx's comment:
-              // a real weight change reflows neighboring tabs by a px on switch.
-              textShadow: tab === t ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
-              color: tab === t ? '#1971c2' : '#555',
-              cursor: 'pointer',
-            }}
-          >
-            {t === 'analysis' ? 'Analysis' : "What's in range"}
-          </div>
-        ))}
-      </div>
+      <TabBar tabs={OBSERVATIONS_TABS} active={tab} onChange={setTab} />
 
       {tab === 'analysis' ? analysisTab : (
         <Suspense fallback={chartFallback}>
