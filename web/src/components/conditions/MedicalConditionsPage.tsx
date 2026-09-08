@@ -7,7 +7,7 @@ import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
 import { routeToHash, hashToRoute, type Route } from './routing';
 import { ReferenceBookPage } from './ReferenceBookPage';
-import { POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, loadAnalysisSettings, hasStoredAnalysisSettings, seedAnalysisSettings, popupPosition, type SelectedCell } from './ui';
+import { POPUP_WIDTH, INDEX_POPUP_WIDTH, ANALYSIS_SETTINGS_KEY, DEFAULT_ANALYSIS_SETTINGS, loadAnalysisSettings, hasStoredAnalysisSettings, seedAnalysisSettings, popupPosition, type SelectedCell } from './ui';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { NavBar } from './NavBar';
 import { Popup, type PopupState } from './Popup';
@@ -37,7 +37,24 @@ export function MedicalConditionsPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify({ unitSystem, sampleLimit, dateOrder }));
+      // Sonar's taint tracker only recognizes a sanitizer at the exact
+      // localStorage.setItem call site, so this re-validates each field
+      // here (statically, field-by-field) even though the state setters
+      // already constrain these to the same literal unions -- one of
+      // them can still trace back to a share-link's fetched meta JSON
+      // (see ui.ts's seedAnalysisSettings) rather than a user click.
+      const safeUnitSystem: 'si' | 'us' = unitSystem === 'us' ? 'us' : 'si';
+      const safeSampleLimit: number | 'all' =
+        sampleLimit === 'all'
+          ? 'all'
+          : typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0
+            ? sampleLimit
+            : DEFAULT_ANALYSIS_SETTINGS.sampleLimit;
+      const safeDateOrder: 'asc' | 'desc' = dateOrder === 'desc' ? 'desc' : 'asc';
+      localStorage.setItem(
+        ANALYSIS_SETTINGS_KEY,
+        JSON.stringify({ unitSystem: safeUnitSystem, sampleLimit: safeSampleLimit, dateOrder: safeDateOrder })
+      );
     } catch {
       // storage unavailable (private browsing, quota) -- setting just won't persist
     }

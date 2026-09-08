@@ -35,7 +35,17 @@ export function loadEnvelopeMeta(): EnvelopeMeta {
 
 export function saveEnvelopeMeta(meta: EnvelopeMeta): void {
   try {
-    localStorage.setItem(ENVELOPE_META_KEY, JSON.stringify(sanitizeEnvelopeMeta(meta)));
+    // Sonar's taint tracker only recognizes a sanitizer at the exact
+    // localStorage.setItem call site, so this rebuilds the object here
+    // (field-by-field, statically) rather than delegating to
+    // sanitizeEnvelopeMeta above -- keep the two in sync by hand.
+    const safe: EnvelopeMeta = {};
+    if (typeof meta.generatedAt === 'string') safe.generatedAt = meta.generatedAt;
+    if (typeof meta.subject === 'string') safe.subject = meta.subject;
+    if (meta.sex === 'female' || meta.sex === 'male') safe.sex = meta.sex;
+    if (typeof meta.birthYear === 'number' && Number.isFinite(meta.birthYear)) safe.birthYear = meta.birthYear;
+    if (typeof meta.notes === 'string') safe.notes = meta.notes;
+    localStorage.setItem(ENVELOPE_META_KEY, JSON.stringify(safe));
   } catch {
     // storage unavailable -- metadata just won't persist
   }

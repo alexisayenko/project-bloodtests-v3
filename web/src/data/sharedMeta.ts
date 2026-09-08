@@ -67,8 +67,33 @@ export function loadStoredSharedMeta(): SharedMeta | null {
 
 export function storeSharedMeta(meta: SharedMeta | null): void {
   try {
-    const sanitized = meta ? parseSharedMeta(meta) : null;
-    if (sanitized) localStorage.setItem(SHARED_META_KEY, JSON.stringify(sanitized));
+    if (!meta) return;
+    // Sonar's taint tracker only recognizes a sanitizer at the exact
+    // localStorage.setItem call site, so this rebuilds the object here
+    // (field-by-field, statically) rather than delegating to
+    // parseSharedMeta above -- keep the two in sync by hand.
+    const settingsIn = meta.settings;
+    const unitSystem =
+      settingsIn?.unitSystem === 'si' || settingsIn?.unitSystem === 'us' ? settingsIn.unitSystem : undefined;
+    const sampleLimit =
+      settingsIn?.sampleLimit === 'all'
+        ? ('all' as const)
+        : typeof settingsIn?.sampleLimit === 'number' && Number.isFinite(settingsIn.sampleLimit) && settingsIn.sampleLimit > 0
+          ? settingsIn.sampleLimit
+          : undefined;
+    const dateOrder =
+      settingsIn?.dateOrder === 'asc' || settingsIn?.dateOrder === 'desc' ? settingsIn.dateOrder : undefined;
+
+    const sanitized: SharedMeta = {};
+    if (typeof meta.title === 'string' && meta.title.trim()) sanitized.title = meta.title;
+    if (Array.isArray(meta.showPanels)) {
+      sanitized.showPanels = meta.showPanels.filter((n): n is string => typeof n === 'string');
+    }
+    if (unitSystem !== undefined || sampleLimit !== undefined || dateOrder !== undefined) {
+      sanitized.settings = { unitSystem, sampleLimit, dateOrder };
+    }
+
+    localStorage.setItem(SHARED_META_KEY, JSON.stringify(sanitized));
   } catch {
     // storage unavailable -- the meta is just re-fetched next visit
   }
