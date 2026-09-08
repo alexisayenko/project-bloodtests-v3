@@ -10,6 +10,42 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-08 — Six files fewer reasons to scroll. A decomposition pass
+  split the five largest modules along the seams they had grown:
+  `loincCheck.ts` (584 → 423 lines) gave up the NLM online lookup to
+  `loincNlm.ts` and its edit-distance matching to `fuzzyMatch.ts`;
+  `computedIndices.ts` (495 → 228) gave up `INDEX_DEFS` and the
+  Vermeulen free-testosterone calculation to `indexDefs.ts`, which
+  imports the engine's types one-directionally with no re-export back,
+  so the call sites moved instead of a cycle forming;
+  `DiagnosticReportDetailView.tsx` (598 → 378) gave up its row helpers
+  to `reportDetailHelpers.ts` and its cross-check state to a
+  `useLoincCrossCheck` hook that replaced eight props with one object;
+  and `DiagnosticReportsView.tsx` (450 → 369) gave up the chatbot prompt
+  to `chatbotPrompt.ts`, prose that follows the interchange schema
+  rather than the UI. The split worth naming is `loincNlm.ts`: it is the
+  app's only network call and the one documented exception to
+  everything-stays-local, and it now lives in a file you can open by
+  name. Panel Detail and All Observations also picked up a shared
+  `TabBar`; the section nav deliberately did not, since it differs in
+  container, three-state colors, its blocked state and its route-derived
+  active tab, and shares only `tabStyle`. Two new test files
+  (`report-detail-helpers.test.ts`, `loincNlm.test.ts`) add 45 tests
+  over the extracted helpers; the suite is 470 tests across 21 files.
+- 2026-09-08 — The arithmetic gets a page. The Reference Book gained
+  **Mass ↔ molar conversion** (`#reference/molar-masses`, under a new
+  "Units" heading), rendered entirely from `molarMasses.ts`: why one
+  analyte reports on two scales, the CIAAW weights → formula → g/mol →
+  factor chain worked through cholesterol, the 17-analyte table with its
+  `basis` and its PubChem/CIAAW links, and the two conventional entries
+  quoting the JSON's own notes. Building it found the last hardcoded
+  unit pairs — T3's and DHEA-S's, the two analytes that back a computed
+  index without a sibling pair to read one from — so
+  `computedIndices.ts` now exports `INDEX_UNIT_PAIRS`, the eight pairs
+  its conversions work in, and the page reads those. The auditable chain
+  [ADR-0011](tech/decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)
+  said would make such a page possible is now the page
+  ([`tech/molar-masses.md`](tech/molar-masses.md)).
 - 2026-09-08 — One place a mole is weighed. Mass↔molar conversion
   factors had been typed out by hand in three places, and they had
   drifted: glucose's divisor was 18.018 in `computedIndices.ts` and

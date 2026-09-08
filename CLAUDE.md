@@ -48,7 +48,10 @@ retrieved citations (PubChem CID, or CIAAW for an element) carrying the source's
 own mass as a cross-check; `web/src/data/molarMasses.ts` scales one into the
 factor a given unit pair needs (`massPerMolarUnit` / `molarPerMassUnit`), so
 `massMolarSiblings.ts` and `computedIndices.ts` derive every factor they use
-instead of typing one and "38.6664 mg/dL per mmol/L" cannot drift from
+instead of typing one — the pairs themselves are declared once, in
+`computedIndices.ts`'s exported `INDEX_UNIT_PAIRS` (8 analytes), which the
+Reference Book reads rather than restating T3's and DHEA-S's pairs, as it did
+while those two backed a computed index but no `MASS_MOLAR_SIBLINGS` entry and "38.6664 mg/dL per mmol/L" cannot drift from
 "cholesterol is 386.664 g/mol" (it had: glucose was 18.018 in one file and
 18.016 in the other). `web/public/schema/molar-masses-1.schema.json` describes
 it in the same closed-object style, and the same test file recomputes each mass
@@ -75,11 +78,21 @@ The app shell is `web/src/components/conditions/MedicalConditionsPage.tsx`
 its own sibling view component (`PanelsGridView` / `PanelDetailView` /
 `AllObservationsView` / `DiagnosticReportsView` /
 `DiagnosticReportDetailView` / `ProfileView` / `ReferenceBookPage`, plus shared
-`NavBar` / `ControlsBar` / `ResultTables` / `Popup`), with pure helpers
-in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` and
-`data/generateTestData.ts`. Monitoring Panels grid cards list each
+`NavBar` / `ControlsBar` / `ResultTables` / `Popup` and `TabBar` — the in-page
+tab strip Panel Detail and All Observations both render; `NavBar` deliberately
+does not use it, since it differs in container, three-state colors, its
+blocked/`not-allowed` state and its route-derived active tab, and shares only
+`tabStyle`), with pure helpers
+in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` /
+`reportDetailHelpers.ts` (the report-detail row helpers) and
+`data/generateTestData.ts`; the report detail view's cross-check state lives in
+the `useLoincCrossCheck` hook, which is what it passes around instead of eight
+separate props. Monitoring Panels grid cards list each
 panel's observations and, below a divider, its computed indices
-(`INDEX_DEFS`), both dot-colored by status; Panel Detail has a back
+(`INDEX_DEFS`, in `data/indexDefs.ts` — the clinical definitions, prose and
+citations, split from the engine in `computedIndices.ts` and importing its types
+one-directionally, with no re-export back so no cycle forms), both dot-colored
+by status; Panel Detail has a back
 chevron (‹) before its title, back to the grid. Panel Detail and All
 Observations each carry a "What's in range" tab — a normalized-overlay
 time chart (every marker, and every panel's
@@ -142,7 +155,8 @@ export, plus subject / sex / birth year / notes; persisted under
 localStorage key `bloodtests_envelope_meta_v1`, written into the export
 envelope with empty fields omitted), the reports table with
 error/warning dots, an "Add a report" card (1. copy the expandable
-chatbot prompt, 2. paste into a chatbot, 3. "Add" the chatbot-built
+chatbot prompt — `data/chatbotPrompt.ts`, user-facing prose that follows the
+interchange schema rather than the UI — 2. paste into a chatbot, 3. "Add" the chatbot-built
 JSON — merges by session id, with "Adding…" progress and "✓ Added N
 reports" feedback), and a "Back up your database" card (Export JSON /
 Import JSON (replaces) / Clear behind a divider);
@@ -161,20 +175,34 @@ outside the code's accepted set, listing that set — and alias-group
 members collapse into one suggestion, the kept code picked by the
 row's unit) and treats a printed code as evidence only — ✓
 derivation agrees / ⚠ confident derivation contradicts it (warning
-names both codes; unit-labeled suggestion chips, plus an "Apply
-suggestions" button applying every confident fix through the edit
-draft) / ✗ unknown with no derivation — shows the official LOINC name
+names both codes; running the check applies every confident fix
+straight into the edit draft and reports it as "✓ N codes filled
+automatically — review and Save", re-running the check over the
+updated rows, and leaves unit-labeled suggestion chips on the rows it
+could not settle, each filling that row's LOINC on click — Save/Cancel
+still gate persistence) / ✗ unknown with no derivation — shows the official LOINC name
 in grey under the printed name (printed name kept as provenance;
 resolved names are session-only, never stored); a second-stage "Check
 online (NLM)" button,
 offered only for rows the offline pass couldn't resolve, sends test
 names — never values — to clinicaltables.nlm.nih.gov, the single
-explicit-opt-in exception to the everything-stays-local rule), All
+explicit-opt-in exception to the everything-stays-local rule — that
+lookup is the app's only network call and lives alone in
+`data/loincNlm.ts`, so the privacy exception is a file you can open by
+name; the resolver's domain-free edit-distance matching is likewise its
+own module, `data/fuzzyMatch.ts`, with no tie to the analyte catalog), All
 Observations (every uploaded result in one table), Monitoring Panels
 (the default/entry route), Reference Book (Indices Descriptions: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Physiology: HP Axis page with v2's
-homepage-derived feedback-loop cascades) — each its own URL hash so
+homepage-derived feedback-loop cascades; Units: a "Mass ↔ molar
+conversion" page at `#reference/molar-masses` rendered entirely from
+`molarMasses.ts` — why one analyte reports on two scales, the
+atomic-weights → formula → g/mol → factor chain worked through
+cholesterol, the 17-analyte table with `basis` pills and PubChem/CIAAW
+links, and the conventional cases quoting the JSON's own notes; like
+`HpAxisPage` it lives inside `ReferenceBookPage.tsx`, and `#reference/<key>`
+already routed generically) — each its own URL hash so
 browser back/forward works. Validation
 (`validateDiagnosticReports.ts`) marks an observation missing its name
 or value-or-rawValue, or carrying a non-empty code that isn't
@@ -265,10 +293,11 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (430 tests across 19 files, 1 skipped: index
+Vitest suites in `web/test/` (470 tests across 21 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
-cross-check, unit normalization (Latin/UCUM stages, dimension check,
+cross-check, the NLM lookup's unit selection (pure, no request made), the
+report-detail row helpers, unit normalization (Latin/UCUM stages, dimension check,
 conversion), export
 envelope, published JSON Schema conformance and generated-type drift (ajv and
 json-schema-to-typescript, devDependencies only —

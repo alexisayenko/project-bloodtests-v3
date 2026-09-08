@@ -116,7 +116,11 @@ rationale per rule so future-us can revisit.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
 - **Tab placement:** top (web) — both the section nav and the
   Analysis/What's-in-range/Charts tabs use the same top,
-  underlined-active style.
+  underlined-active style. Only the in-page strip is a shared component
+  (`TabBar`); the section nav keeps its own markup, because it also
+  carries a blocked state, its own spacing and font size, and an active
+  tab derived from the route — it shares the look (`tabStyle`), not the
+  component.
 - [TODO: gesture conventions — long-press, swipe-to-delete.]
 
 ### Voice & copy

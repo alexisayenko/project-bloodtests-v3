@@ -193,8 +193,27 @@ checks:
   triglyceride and glucose mg/dL→mmol/L; testosterone, free T3, free
   T4, cortisol and DHEA-S onto their molar units). All eight are
   derived. One of them, testosterone ng/dL→nmol/L, had been declared
-  twice under two names; it is now declared once.
+  twice under two names; it is now declared once. The *unit pairs* those
+  eight work in are themselves declared once, in the exported
+  `INDEX_UNIT_PAIRS` — which is what the Reference Book page reads. It
+  had hardcoded T3's and DHEA-S's pairs, the two analytes that back a
+  computed index without appearing in `MASS_MOLAR_SIBLINGS` and so had
+  no other written-down pair to read. The clinical definitions that
+  consume the derived factors live in `web/src/data/indexDefs.ts`.
 
 Nothing in the app converts a *stored* value on the strength of any of
 this. Conversion is for comparability — putting two markers of one
 index onto one scale — never for correcting a row.
+
+## Where a reader sees it
+
+The Reference Book's **Mass ↔ molar conversion** page
+(`#reference/molar-masses`, under a "Units" heading) renders this file:
+why one analyte reports on two scales, the atomic weights → formula →
+g/mol → factor chain worked through cholesterol, the full table with its
+`basis` and its PubChem/CIAAW links, and the conventional entries with
+their notes quoted verbatim from the JSON. Nothing on it is typed out in
+the page — it reads `molarMasses.ts`, so the page cannot drift from the
+data the app computes with, which is the point
+[ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)
+anticipated when it kept `molarMassFromFormula` around.
