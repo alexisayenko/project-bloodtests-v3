@@ -10,6 +10,35 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-08 — Numbers and their units stop drifting apart. The bug was
+  broader than it first looked: a table row labelled its cells with the
+  alias group *primary's* unit while each cell printed its own number,
+  and the conversion matched on printed spelling, so `ммоль/л` matched no
+  rule and the number stayed as printed under a converted label. 22 of
+  the catalog's 27 alias entries sit on a different unit from their
+  primary, so 22 pairs were affected. Number and label now move together
+  (`displayedResult` / `sharedUnit` / `buildRowCells` in `ui.ts`,
+  `convertUnit` in `computedIndices.ts`), with per-cell units on a row
+  whose readings sit on two scales. The same divide is now crossed in two
+  more places, both display-only and neither storing anything: the
+  "What's in range" chart puts each reading on the unit its reference
+  band is expressed in (`placeOnBandScale`, factor derived from
+  `molar-masses.json`) and names the readings it had to drop as
+  "not taken" chips rather than thinning the line in silence; and indices
+  read their inputs through `MARKER_CANDIDATE_LOINCS`, expanded from
+  `MARKER_LOINC` through the catalog's alias maps, so a history whose
+  cholesterol and glucose arrived under `[Moles/volume]` codes computes
+  the Cardiovascular Risk set and HOMA-IR — before this it computed none
+  of them. Alongside: two calculated LDL-C rows, `ldlf` (Friedewald) and
+  `ldls` (Sampson/NIH equation 2), each declining outside its own
+  validity range (TG ≥ 400 and > 800 mg/dL) rather than producing a
+  confidently wrong number, with Martin-Hopkins deferred to
+  [task-0012](tasks/task-0012.md); `13458-5` relabelled VLDL → **VLDL-C**
+  to match its HDL-C and LDL-C siblings, with a new molar sibling
+  `25371-6` aliased to it (catalog 159 → 160 entries, sibling pairs
+  20 → 21); and the Scheduled column added to All Observations, its
+  `useScheduled` state moved up into the shell so a row toggled in either
+  place is the same row. The suite is 526 tests across 21 files.
 - 2026-09-08 — Six files fewer reasons to scroll. A decomposition pass
   split the five largest modules along the seams they had grown:
   `loincCheck.ts` (584 → 423 lines) gave up the NLM online lookup to

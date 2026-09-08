@@ -133,12 +133,17 @@ not a number to convert, so the check suggests the analyte's
 [ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)
 sets, with UCUM fixed as the vocabulary by
 [ADR-0007](decisions/adr-0007-ucum-as-the-unit-vocabulary.md).
-`web/src/data/massMolarSiblings.ts` holds 20 curated pairs (each naming
+`web/src/data/massMolarSiblings.ts` holds 21 curated pairs (each naming
 its analyte's entry in
 [`molar-masses.json`](molar-masses.md) rather than stating a factor;
-the derived factor is recorded as data, never applied); their molar codes
+the derived factor is never applied to a stored or exported value — its
+one use is display-time, where the "What's in range" chart places a history
+that crosses the mass/molar divide onto the single scale its reference band
+is expressed in, which is what
+[ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md) means by
+conversion belonging at display time); their molar codes
 were added to `web/public/data/analyses.json` (124 → 139 entries then,
-159 now) and carry `aliasOf` pointing at the mass primary, so a molar
+160 now) and carry `aliasOf` pointing at the mass primary, so a molar
 code folds into the same panel row, badge and chart series without touching
 panels, tables or charts. To repair an
 existing file, `node scripts/recode-molar.mjs <input.json>` from
@@ -160,8 +165,9 @@ scheduled. Format and round-trip gaps are listed separately, under
 - **An oversized entry chunk, now mostly catalog.** The two chart tabs
   are `React.lazy`-split (`LabExploreView` ≈ 78 kB, `PanelChartsView`
   ≈ 14 kB), which took the entry chunk from ~698 kB to ~616 kB raw; it
-  measures ~626 kB raw (~183 kB gzipped) now that the Reference Book has
-  its mass↔molar page, still over Vite's "larger than 500 kB" advisory.
+  measures ~635 kB raw (~185 kB gzipped) now that the Reference Book has
+  its mass↔molar page and `INDEX_DEFS` its two LDL-C estimates, still over
+  Vite's "larger than 500 kB" advisory.
   What is left is largely
   `analyteCatalog.ts` importing `analyses.json` statically, so the
   catalog is bundled rather than fetched. It is an advisory, not an

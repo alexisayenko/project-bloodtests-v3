@@ -110,9 +110,17 @@ rationale per rule so future-us can revisit.
   reserved on every row (All Observations too, though it shows no
   marks) so a mark never shifts the text beside it.
 - **Scheduled column:** a per-row single-click toggle (`role=checkbox`,
-  ✓ in primary blue), set apart at the right of both Analysis tables
-  by a spacer column so it reads as a separate concern from the dated
-  value cells. Panel Detail only.
+  ✓ in primary blue), set apart at the right of the table by a spacer
+  column so it reads as a separate concern from the dated value cells.
+  On Panel Detail's Observations and Indices tables and on All
+  Observations, over one shared set — the same row toggled in either
+  place is the same row.
+- **Unit labels:** the unit sits once in the row's name column when
+  every reading in the row agrees on it. When they don't — a lab that
+  switched scales mid-history, or a molar code folded into its mass
+  primary's row — the row-level unit disappears and each cell carries
+  its own in grey beside the number, so a figure is never shown under
+  another reading's scale.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
 - **Tab placement:** top (web) — both the section nav and the
   Analysis/What's-in-range/Charts tabs use the same top,

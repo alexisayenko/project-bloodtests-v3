@@ -182,12 +182,17 @@ checks:
 
 ## Who uses the factors
 
-- **`web/src/data/massMolarSiblings.ts`** — the 20 curated mass/molar
+- **`web/src/data/massMolarSiblings.ts`** — the 21 curated mass/molar
   LOINC sibling pairs. Each pair now declares only `molarMass: '<id>'`;
-  its `massPerMolarUnit` and `molarMassGPerMol` are derived. The factor
-  stays **data only** — a molar unit under a mass code is a code error,
-  and the remedy is the sibling code, never a rewritten number
-  ([ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)).
+  its `massPerMolarUnit` and `molarMassGPerMol` are derived. The remedy
+  for a molar unit under a mass code is still the sibling code, never a
+  rewritten number
+  ([ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)); the
+  factor's one use is display-time, in the "What's in range" chart's
+  `placeOnBandScale` (`web/src/components/conditions/exploreModel.ts`),
+  which puts every reading on the unit its reference band is expressed in so
+  a history that switched scales plots as one line. Nothing it produces is
+  stored or exported.
 - **`web/src/data/computedIndices.ts`** — the eight conversions an
   index formula needs to get its inputs onto one scale (cholesterol,
   triglyceride and glucose mg/dL→mmol/L; testosterone, free T3, free
@@ -199,11 +204,16 @@ checks:
   had hardcoded T3's and DHEA-S's pairs, the two analytes that back a
   computed index without appearing in `MASS_MOLAR_SIBLINGS` and so had
   no other written-down pair to read. The clinical definitions that
-  consume the derived factors live in `web/src/data/indexDefs.ts`.
+  consume the derived factors live in `web/src/data/indexDefs.ts`. Its
+  same-dimension rescales — testosterone `ng/mL` ↔ `ng/dL`, the
+  apolipoproteins' `g/L` ↔ `mg/dL` — go through `molarMasses.ts`'s
+  `concentrationRatio` instead. No molar mass is involved in those, but the
+  function sits beside the ones that need one so that a caller never types
+  a hardcoded `× 100` out either; that is what it replaced.
 
 Nothing in the app converts a *stored* value on the strength of any of
-this. Conversion is for comparability — putting two markers of one
-index onto one scale — never for correcting a row.
+this. Conversion is for comparability — putting two markers of one index,
+or one marker's own history, onto one scale — never for correcting a row.
 
 ## Where a reader sees it
 

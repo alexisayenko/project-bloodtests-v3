@@ -51,7 +51,8 @@ factor a given unit pair needs (`massPerMolarUnit` / `molarPerMassUnit`), so
 instead of typing one — the pairs themselves are declared once, in
 `computedIndices.ts`'s exported `INDEX_UNIT_PAIRS` (8 analytes), which the
 Reference Book reads rather than restating T3's and DHEA-S's pairs, as it did
-while those two backed a computed index but no `MASS_MOLAR_SIBLINGS` entry and "38.6664 mg/dL per mmol/L" cannot drift from
+while those two backed a computed index but no `MASS_MOLAR_SIBLINGS` entry — so
+"38.6664 mg/dL per mmol/L" cannot drift from
 "cholesterol is 386.664 g/mol" (it had: glucose was 18.018 in one file and
 18.016 in the other). `web/public/schema/molar-masses-1.schema.json` describes
 it in the same closed-object style, and the same test file recomputes each mass
@@ -92,25 +93,50 @@ in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` /
 `reportDetailHelpers.ts` (the report-detail row helpers) and
 `data/generateTestData.ts`; the report detail view's cross-check state lives in
 the `useLoincCrossCheck` hook, which is what it passes around instead of eight
-separate props. Monitoring Panels grid cards list each
+separate props. In a results table the number and its unit label always move
+together: `ui.ts`'s `displayedResult` / `sharedUnit` / `buildRowCells` label a
+reading with its own code's unit — a molar variant folded into its mass
+primary's row keeps `mmol/L`, never the primary's `mg/dL` — and a row whose
+readings sit on two scales loses its row-level unit and labels each cell
+instead; the conversion itself is `computedIndices.ts`'s `convertUnit`, which
+folds a printed spelling to Latin before matching, so `ммоль/л` converts like
+`mmol/L` (it used to match no rule, leaving the printed number under a
+converted label). Monitoring Panels grid cards list each
 panel's observations and, below a divider, its computed indices
 (`INDEX_DEFS`, in `data/indexDefs.ts` — the clinical definitions, prose and
 citations, split from the engine in `computedIndices.ts` and importing its types
 one-directionally, with no re-export back so no cycle forms), both dot-colored
-by status; Panel Detail has a back
+by status. Cardiovascular Risk carries both calculated LDL-C estimates —
+`ldlf` (Friedewald, LOINC `13457-7`) and `ldls` (Sampson/NIH equation 2, no
+LOINC exists for the method) — each returning null outside its own validity
+range (TG ≥ 400 and > 800 mg/dL) so it renders as `–` rather than a
+confidently wrong number; Martin-Hopkins is deferred to task-0012. An index
+reads its inputs through `MARKER_CANDIDATE_LOINCS`, which expands
+`MARKER_LOINC` through the catalog's derived alias maps and places each value
+in the formula's unit or declines it, so a molar-coded history computes the
+same indices a mass-coded one does — before that it computed none at all.
+Panel Detail has a back
 chevron (‹) before its title, back to the grid. Panel Detail and All
 Observations each carry a "What's in range" tab — a normalized-overlay
 time chart (every marker, and every panel's
 computed indices, plotted as % of its own reference range or ok-zone
 band on one shared axis, with a panel picker (a marker or index shared
 across panels groups under every relevant one), zoom, autoscale, and a
-"not taken" section) — built from v2's
+"not taken" section, which also names readings dropped because their unit
+could not be placed on the series' band scale) — built from v2's
 `<lab-explore>` web component, vendored as-is into
 `web/src/vendor/lab-explore/` and `web/src/vendor/chart-kit/` (its
 domain-agnostic uPlot-based charting engine) and driven by the
 `buildExploreModel` adapter in `exploreModel.ts`, mounted via
 `LabExploreView.tsx`; deliberately generic-only (no medication overlays,
-reference-band overrides, or data-quality flagging). Panel Detail also
+reference-band overrides, or data-quality flagging). Its
+`placeOnBandScale` puts every reading on the unit its reference band is
+expressed in — mass↔molar included, via the factor derived from
+`molar-masses.json` — so a history that switched scales mid-decade plots as
+one line instead of a cliff; the converted number reaches this chart's
+in-memory series and nowhere else, since nothing is stored or exported
+(ADR-0003), and a reading that cannot be placed exactly is dropped and named
+rather than plotted on the wrong scale. Panel Detail also
 carries a "Charts" tab (`PanelChartsView`): the panel's markers as a 3D
 stacked-ribbon chart, one marker per depth plane, each normalized to
 its own observed min/max so mixed units share one chart; alias LOINCs
@@ -137,13 +163,18 @@ call-site imports behind a `<Suspense>`, so uPlot plus the vendored
 lab-explore/chart-kit and the 3D canvas engine each load on first visit
 instead of on first paint (All Observations shares the lab-explore
 chunk). Panel Detail's Analysis
-tab (the default: Observations and Indices tables) adds a "Scheduled"
-column, set apart at the right of both tables — a single-click toggle
+tab (the default: Observations and Indices tables) and All Observations both
+carry a "Scheduled"
+column, set apart at the right of each table — a single-click toggle
 per row (`role=checkbox`, ✓ in primary blue); scheduling an index also
 schedules its input observations, unscheduling it leaves them, and
 toggling an observation re-derives every index (scheduled iff all its
-inputs are); global state in localStorage `bloodtests_scheduled_v1`
-(`{loincs, indices}`), logic in `scheduled.ts`. Selecting an index
+inputs are) — that cascade is Panel Detail's alone, since All Observations
+has no indices and gets the row toggle only; global state in localStorage
+`bloodtests_scheduled_v1`
+(`{loincs, indices}`), logic in `scheduled.ts`, whose `useScheduled` hook the
+shell owns and hands down as `RowScheduling` / `IndexScheduling`, rather than
+Panel Detail, which remounts per panel. Selecting an index
 row there marks each input observation with a blue • in a fixed 10px
 gutter left of its name, and selecting an observation marks each index
 that uses it; the gutter is reserved on every row so names never shift
@@ -264,12 +295,12 @@ undefined rather than a guess — which is itself the lower-severity warning.
 No confirm-and-apply UI exists yet: normalization surfaces as warnings only,
 never as a suggestion chip (task-0011).
 A molar unit under a mass-concentration code is treated as a *code* error, so
-the check suggests the analyte's `[Moles/volume]` sibling from the 20 curated
+the check suggests the analyte's `[Moles/volume]` sibling from the 21 curated
 pairs in `data/massMolarSiblings.ts` (each naming its analyte's entry in
 `molar-masses.json` rather than stating a factor; the derived factor is data
 only) instead of converting the number (ADR-0003; UCUM as the target
 vocabulary is ADR-0007). Those molar codes were added to the analyte catalog
-(`web/public/data/analyses.json`, 124 → 139 entries then, 159 now)
+(`web/public/data/analyses.json`, 124 → 139 entries then, 160 now)
 and carry `aliasOf`
 against their mass primary, so a molar code folds into the same panel row,
 badge and chart series as the mass one with no changes to panels, tables or
@@ -298,7 +329,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (470 tests across 21 files, 1 skipped: index
+Vitest suites in `web/test/` (526 tests across 21 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
