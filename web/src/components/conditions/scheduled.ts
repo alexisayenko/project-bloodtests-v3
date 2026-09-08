@@ -10,6 +10,10 @@ export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
 export type Scheduled = { loincs: string[]; indices: string[] };
 export const EMPTY_SCHEDULED: Scheduled = { loincs: [], indices: [] };
 
+/** The Scheduled column's wiring, handed to every table that renders one. */
+export type RowScheduling = { scheduled: Scheduled; onToggle: (loincs: string[]) => void };
+export type IndexScheduling = { scheduled: Scheduled; onToggle: (key: string) => void };
+
 export function loadScheduled(): Scheduled {
   try {
     const raw = localStorage.getItem(SCHEDULED_KEY);

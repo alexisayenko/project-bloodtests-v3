@@ -7,7 +7,7 @@ import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { ObservationTable, IndexTable } from './ResultTables';
-import { indexInputLoincs, useScheduled } from './scheduled';
+import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
 import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
 
@@ -43,6 +43,8 @@ export function PanelDetailView({
   onSelectCell,
   onOpenResultPopup,
   onOpenIndexResultPopup,
+  scheduling,
+  indexScheduling,
   onBack,
 }: Readonly<{
   name: string;
@@ -58,10 +60,11 @@ export function PanelDetailView({
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
+  scheduling: RowScheduling;
+  indexScheduling: IndexScheduling;
   onBack: () => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
-  const { scheduled, onToggleRow, onToggleIndex } = useScheduled();
 
   const observations = tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
   const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc) && !COMPUTED_LOINCS.has(t.loinc));
@@ -98,7 +101,7 @@ export function PanelDetailView({
     selectedCell,
     onSelectCell,
     onOpenResultPopup,
-    scheduling: { scheduled, onToggle: onToggleRow },
+    scheduling,
   };
 
   return (
@@ -133,7 +136,7 @@ export function PanelDetailView({
                       selectedCell={selectedCell}
                       onSelectCell={onSelectCell}
                       onOpenIndexResultPopup={onOpenIndexResultPopup}
-                      scheduling={{ scheduled, onToggle: onToggleIndex }}
+                      scheduling={indexScheduling}
                       usedBy={usedBy}
                     />
                   )}

@@ -9,6 +9,8 @@ import {
   toggleRow,
 } from '../src/components/conditions/scheduled';
 import { MARKER_LOINC } from '../src/data/computedIndices';
+import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../src/data/analyteCatalog';
+import { testLoincs } from '../src/components/conditions/markers';
 
 describe('toggleRow', () => {
   it('schedules and unschedules a plain LOINC', () => {
@@ -84,6 +86,31 @@ describe('toggleIndex', () => {
 
   it('resolves an unknown index to no inputs', () => {
     expect(indexInputLoincs('nope')).toEqual([]);
+  });
+});
+
+// All Observations folds an alias code into its primary's row before building
+// the row, exactly as Panel Detail does, so both views hand toggleRow the same
+// LOINC set and one view's toggle reads back in the other.
+describe('All Observations rows fold aliases like Panel Detail', () => {
+  const row = (loinc: string) => {
+    const primary = ALIAS_TO_PRIMARY[loinc] ?? loinc;
+    return testLoincs({ short: '', full: '', longCommonName: '', loinc: primary, also: ALSO_REFS[primary] });
+  };
+
+  it('every alias-bearing analyte yields the same LOINC set from either code', () => {
+    for (const [alias, primary] of Object.entries(ALIAS_TO_PRIMARY)) {
+      expect(row(alias)).toEqual(row(primary));
+    }
+  });
+
+  it('scheduling a folded row reads as scheduled under every code of the group', () => {
+    const [alias, primary] = Object.entries(ALIAS_TO_PRIMARY)[0]!;
+    const on = toggleRow(EMPTY_SCHEDULED, row(alias));
+    expect(isRowScheduled(on, [primary])).toBe(true);
+    expect(isRowScheduled(on, [alias])).toBe(true);
+    const off = toggleRow(on, row(primary));
+    expect(isRowScheduled(off, [alias])).toBe(false);
   });
 });
 

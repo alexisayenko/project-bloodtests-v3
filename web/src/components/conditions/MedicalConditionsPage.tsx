@@ -17,6 +17,7 @@ import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
+import { useScheduled } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
 
 /** A popup's own content, before the opener anchors it to the clicked element. */
@@ -39,6 +40,9 @@ export function MedicalConditionsPage() {
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
   const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>(initialSettings.dateOrder);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
+  // One scheduling state for the whole shell: a row toggled in All Observations
+  // is the same row in Panel Detail, so both views read and write this.
+  const { scheduled, onToggleRow, onToggleIndex } = useScheduled();
 
   useEffect(() => {
     saveAnalysisSettings({ unitSystem, sampleLimit, dateOrder });
@@ -144,6 +148,8 @@ export function MedicalConditionsPage() {
   const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder };
+  const rowScheduling = { scheduled, onToggle: onToggleRow };
+  const indexScheduling = { scheduled, onToggle: onToggleIndex };
 
   const panelsGrid = (
     <PanelsGridView
@@ -191,6 +197,7 @@ export function MedicalConditionsPage() {
             onSelectCell={onSelectCell}
             onOpenResultPopup={openResultPopup}
             resultsByDate={resultsByDate}
+            scheduling={rowScheduling}
           />
         );
       case 'reports':
@@ -233,6 +240,8 @@ export function MedicalConditionsPage() {
             onSelectCell={onSelectCell}
             onOpenResultPopup={openResultPopup}
             onOpenIndexResultPopup={openIndexResultPopup}
+            scheduling={rowScheduling}
+            indexScheduling={indexScheduling}
             onBack={() => navigate({ view: 'panels' })}
           />
         );

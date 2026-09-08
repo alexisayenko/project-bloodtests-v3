@@ -6,6 +6,7 @@ import { TabBar } from './TabBar';
 import { visibleDatesOf, type SelectedCell } from './ui';
 import { ObservationTable } from './ResultTables';
 import type { Condition } from './exploreModel';
+import type { RowScheduling } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
 
 // Not the default tab, and it pulls uPlot plus the vendored
@@ -59,6 +60,7 @@ export function AllObservationsView({
   onSelectCell,
   onOpenResultPopup,
   resultsByDate,
+  scheduling,
 }: Readonly<{
   allResults: ResultEntry[];
   conditions: Condition[];
@@ -78,6 +80,8 @@ export function AllObservationsView({
    * buildExploreModel's doc comment).
    */
   resultsByDate: Record<string, Record<string, Result>>;
+  /** Shared with Panel Detail: no indices here, so only the observation toggle applies. */
+  scheduling: RowScheduling;
 }>) {
   const [tab, setTab] = useState<ObservationsTab>('analysis');
 
@@ -110,6 +114,7 @@ export function AllObservationsView({
           selectedCell={selectedCell}
           onSelectCell={onSelectCell}
           onOpenResultPopup={onOpenResultPopup}
+          scheduling={scheduling}
           preferRaw
         />
       </>
