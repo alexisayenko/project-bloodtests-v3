@@ -152,7 +152,7 @@ from, and they are the argument for the file existing:
   no source for it could be found. The derived value from triolein is
   **88.545**, and that is what the app now uses.
 
-Re-deriving the constants moved eleven expected values in the
+Re-deriving the constants moved eight expected values in the
 computed-index golden masters by **at most 0.07% relative**, changing
 no value the UI displays at two decimal places. It is a constants
 correction, not a change to any formula — the test file says so where

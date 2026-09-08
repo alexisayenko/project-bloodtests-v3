@@ -26,7 +26,7 @@ Product / business / UX live in their own sections.
 
 ## Reference data
 
-Four files under `web/public/data/`, all of them data and none of
+Four of the files under `web/public/data/`, all of them data and none of
 them mirrored in TypeScript
 ([ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md),
 [ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)):
@@ -137,9 +137,9 @@ sets, with UCUM fixed as the vocabulary by
 its analyte's entry in
 [`molar-masses.json`](molar-masses.md) rather than stating a factor;
 the derived factor is recorded as data, never applied); their molar codes
-were added to `web/public/data/analyses.json` (124 → 139 entries) and
-carry `aliasOf` pointing at the mass primary, so a molar code folds
-into the same panel row, badge and chart series without touching
+were added to `web/public/data/analyses.json` (124 → 139 entries then,
+159 now) and carry `aliasOf` pointing at the mass primary, so a molar
+code folds into the same panel row, badge and chart series without touching
 panels, tables or charts. To repair an
 existing file, `node scripts/recode-molar.mjs <input.json>` from
 `web/` rewrites `loinc` and nothing else — see
@@ -159,8 +159,9 @@ scheduled. Format and round-trip gaps are listed separately, under
 
 - **An oversized entry chunk, now mostly catalog.** The two chart tabs
   are `React.lazy`-split (`LabExploreView` ≈ 78 kB, `PanelChartsView`
-  ≈ 14 kB), which took the entry chunk from ~698 kB to ~608 kB, still
-  over Vite's "larger than 500 kB" advisory. What is left is largely
+  ≈ 14 kB), which took the entry chunk from ~698 kB to ~616 kB raw
+  (~181 kB gzipped), still over Vite's "larger than 500 kB" advisory.
+  What is left is largely
   `analyteCatalog.ts` importing `analyses.json` statically, so the
   catalog is bundled rather than fetched. It is an advisory, not an
   error, and a catalog that cannot arrive late is a fair trade on a

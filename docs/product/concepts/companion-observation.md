@@ -23,7 +23,7 @@ The three relation kinds side by side:
 
 | Relation | Scope | Strength | Home |
 | --- | --- | --- | --- |
-| [Monitoring panel](monitoring-panel.md) | per condition | browsing group | `panels.json` |
+| [Monitoring panel](monitoring-panel.md) | per condition | browsing group | `monitoring-panels.json` |
 | [Computed index](computed-index.md) inputs | per index | hard co-requirement; drives scheduling | `INDEX_DEFS` |
 | Companion observation | per marker | soft hint | `analyses.json` `companions` (planned) |
 

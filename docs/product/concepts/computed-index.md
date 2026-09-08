@@ -16,6 +16,6 @@ A ratio or estimate the product derives from one or more observations' results o
 
 ## Where it lives today
 
-`INDEX_DEFS` in `web/src/data/computedIndices.ts` (formula, cut-points, unit conversion, clinical text), rendered per panel in `MedicalConditionsPage.tsx`. Ported from `project-bloodtests-v2`'s `engine/src/indices/*.ts`; indices requiring age or sex (eGFR, FIB-4) were left out -- v3 has no user profile to source them from.
+`INDEX_DEFS` in `web/src/data/computedIndices.ts` (formula, cut-points, unit conversion, clinical text), rendered per panel by `PanelsGridView.tsx` (grid cards) and `PanelDetailView.tsx` (the Indices table). Its unit-conversion constants are derived from the molar masses in `web/public/data/molar-masses.json` rather than typed out ([ADR-0011](../../tech/decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)). Ported from `project-bloodtests-v2`'s `engine/src/indices/*.ts`; indices requiring age or sex (eGFR, FIB-4) were left out -- v3 had nothing to source age or sex from when they were ported. Database details has since gained `sex` and `birthYear`, so that reason no longer holds ([task-0004](../../tasks/task-0004.md) tracks using them).
 
 On Panel Detail's Analysis tab an index can be scheduled (`scheduled.ts`) -- its scheduled state follows its inputs (on iff every input observation is scheduled; scheduling it schedules those inputs), and selecting its row marks those inputs with a • beside their names.

@@ -111,7 +111,7 @@ The full table, its citations and the conventional cases are in
 
 ## Consequences
 
-- Re-deriving the constants re-baselined eleven expected values in the
+- Re-deriving the constants re-baselined eight expected values in the
   computed-index golden masters, by at most **0.07% relative**. No
   value the UI displays at two decimal places changes. It is a
   constants correction, not a formula change, and the test file says so

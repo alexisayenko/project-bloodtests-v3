@@ -236,7 +236,8 @@ pairs in `data/massMolarSiblings.ts` (each naming its analyte's entry in
 `molar-masses.json` rather than stating a factor; the derived factor is data
 only) instead of converting the number (ADR-0003; UCUM as the target
 vocabulary is ADR-0007). Those molar codes were added to the analyte catalog
-(`web/public/data/analyses.json`, 124 → 139 entries) and carry `aliasOf`
+(`web/public/data/analyses.json`, 124 → 139 entries then, 159 now)
+and carry `aliasOf`
 against their mass primary, so a molar code folds into the same panel row,
 badge and chart series as the mass one with no changes to panels, tables or
 charts. Two Ajv-validated offline
@@ -259,13 +260,12 @@ archive.
 
 Round-trip and format gaps are listed in
 [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md#known-round-trip-gaps);
-build-level ones (entry bundle over Vite's 500 kB advisory, unused
-`zod` dependency) in
+build-level ones (entry bundle over Vite's 500 kB advisory) in
 [`docs/tech/README.md`](docs/tech/README.md#known-limitations).
 
 ## Quality
 
-Vitest suites in `web/test/` (429 tests across 19 files, 1 skipped: index
+Vitest suites in `web/test/` (430 tests across 19 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, unit normalization (Latin/UCUM stages, dimension check,
@@ -301,6 +301,6 @@ weekly npm (minor+patch grouped) and github-actions bumps.
   panel, lab report, computed index, companion observation (planned),
   unit (derivation runs at import; no confirm-and-apply UI)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
-  (ten records; ADR-0005–0010 recorded 2026-09-07)
+  (eleven records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
   envelope spec, and its published JSON Schema
