@@ -1,23 +1,26 @@
-import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'react';
-import type { Analysis, Result, DiagnosticReport } from '../../types';
-import { fmtNum } from '../../utils/format';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import type { Result, DiagnosticReport } from '../../types';
 import {
   validateDiagnosticReports,
   groupHasErrors,
   type ValidationIssue,
 } from '../../data/validateDiagnosticReports';
-import { useData } from '../../data/DataContext';
-import {
-  crossCheckLocal,
-  fetchNlmLoinc,
-  latinPart,
-  selectByUnit,
-  type CrossCheckResult,
-  type CrossCheckSuggestion,
-  type NlmEntry,
-} from '../../data/loincCheck';
-import { ALSO_REFS, ALIAS_TO_PRIMARY } from './markers';
 import { formatFullDate, pressable } from './ui';
+import {
+  applyFieldEdit,
+  getChipSuggestions,
+  getDotColor,
+  getDotTitle,
+  getMismatchMessage,
+  getUnitLabel,
+  pluralize,
+  referenceRangeOf,
+  resolvedNameOf,
+  saveButtonLabel,
+  saveButtonStyle,
+  type EditableField,
+} from './reportDetailHelpers';
+import { useLoincCrossCheck, type LoincCrossCheck } from './useLoincCrossCheck';
 
 const th = {
   textAlign: 'left',
@@ -27,178 +30,16 @@ const th = {
 } as const;
 const td = { padding: '8px 12px', borderBottom: '1px solid #eee' } as const;
 
-function referenceRangeOf(item: Result): string {
-  if (item.refText) return item.refText;
-  if (item.refMin != null && item.refMax != null) return `${fmtNum(item.refMin)} - ${fmtNum(item.refMax)}`;
-  return '';
-}
-
-function pluralize(n: number): string {
-  return n === 1 ? '' : 's';
-}
-
-type EditableField = 'loinc' | 'value' | 'unit';
-
-function applyFieldEdit(item: Result, field: EditableField, newValue: string): Result {
-  if (field === 'loinc') return { ...item, loinc: newValue };
-  if (field === 'unit') return { ...item, unit: newValue };
-  const numVal = Number.parseFloat(newValue);
-  return { ...item, value: Number.isNaN(numVal) ? null : numVal, rawValue: newValue };
-}
-
-// A confident derivation is applied immediately (draft-gated by Save/Cancel)
-// — the user shouldn't have to pick between codes the resolver already
-// decided between.
-function computeConfidentFixes(items: Result[], results: CrossCheckResult[]): Map<number, string> {
-  const fixes = new Map<number, string>();
-  results.forEach((r, i) => {
-    const top = r.suggestions?.[0];
-    if (r.confident && top && top.loinc !== items[i]!.loinc.trim()) fixes.set(i, top.loinc);
-  });
-  return fixes;
-}
-
-function applyFixes(items: Result[], fixes: Map<number, string>): Result[] {
-  return items.map((item, i) => {
-    const fix = fixes.get(i);
-    return fix ? { ...item, loinc: fix } : item;
-  });
-}
-
-function isRowUnresolved(
-  r: CrossCheckResult,
-  i: number,
-  items: Result[],
-  nlmByCode: Record<string, string | null>,
-  nlmSuggestions: Record<number, NlmEntry[]>
-): boolean {
-  if (r.status === 'unknown-code') return nlmByCode[items[i]!.loinc] == null;
-  if (r.status === 'no-code') return !r.suggestions?.length && !nlmSuggestions[i]?.length;
-  return false;
-}
-
-function buildNlmSuggestionsByRow(
-  unresolvedRows: { r: CrossCheckResult; i: number }[],
-  items: Result[],
-  byName: Record<string, NlmEntry[]>
-): Record<number, NlmEntry[]> {
-  const perRow: Record<number, NlmEntry[]> = {};
-  for (const { r, i } of unresolvedRows) {
-    if (r.status !== 'no-code') continue;
-    const found = byName[latinPart(items[i]!.analysis)];
-    if (found?.length) perRow[i] = selectByUnit(found, items[i]!.unit).slice(0, 3);
-  }
-  return perRow;
-}
-
-// Resolved official name for a row, from the local catalog or the NLM lookup.
-function resolvedNameOf(
-  item: Result,
-  check: CrossCheckResult | undefined,
-  nlmByCode: Record<string, string | null>
-): string | undefined {
-  if (!check) return undefined;
-  if (check.loincName) return check.loincName;
-  if (check.status === 'unknown-code') return nlmByCode[item.loinc] ?? undefined;
-  return undefined;
-}
-
-// Catalog expanded with unit-variant aliases (ALSO_REFS): labs report
-// e.g. SHBG as 13967-5 (nmol/L) while the catalog keys it as 2942-1.
-function buildExpandedCatalog(analysesCatalog: Record<string, Analysis>): Analysis[] {
-  const base = Object.values(analysesCatalog);
-  const byCode = new Map(base.map((a) => [a.loinc, a]));
-  const aliases = Object.entries(ALSO_REFS).flatMap(([primary, refs]) => {
-    const canonical = byCode.get(primary);
-    if (!canonical) return [];
-    return refs
-      .filter((r) => !byCode.has(r.loinc))
-      .map((r) => ({ ...canonical, loinc: r.loinc, longCommonName: r.longCommonName }));
-  });
-  return [...base, ...aliases];
-}
-
-function getMismatchMessage(
-  item: Result,
-  check: CrossCheckResult | undefined,
-  nameMismatch: boolean
-): string | null {
-  if (!nameMismatch || !check) return null;
-  if (!check.derived) return 'Printed name differs from the LOINC name';
-  const loincNameSuffix = check.loincName ? ` is ${check.loincName}` : '';
-  return `printed code ${item.loinc.trim()}${loincNameSuffix} — name+unit resolve to ${check.derived.loinc} ${check.derived.name}`;
-}
-
-function getDotColor(itemHasError: boolean, itemHasWarning: boolean, nameMismatch: boolean): string {
-  if (itemHasError) return '#ea4335';
-  if (itemHasWarning || nameMismatch) return '#fbbc04';
-  return '#34a853';
-}
-
-function getDotTitle(itemIssues: ValidationIssue[], mismatchMsg: string | null): string {
-  const messages = itemIssues.map((issue) => issue.message);
-  if (mismatchMsg) messages.push(mismatchMsg);
-  return messages.join('; ') || 'OK';
-}
-
-type SuggestionChip = CrossCheckSuggestion | NlmEntry;
-
-function getChipSuggestions(
-  check: CrossCheckResult | undefined,
-  rowNlmSuggestions: NlmEntry[] | undefined
-): SuggestionChip[] {
-  if (!check) return [];
-  const isResolvableStatus = check.status === 'no-code' || check.status === 'malformed' || check.status === 'mismatch';
-  if (!isResolvableStatus) return [];
-  if (check.suggestions?.length) return check.suggestions;
-  return rowNlmSuggestions ?? [];
-}
-
-// Show the unit only where it disambiguates: on a known unit-variant code,
-// or when two chips share a name.
-function getUnitLabel(suggestion: SuggestionChip, chipSuggestions: SuggestionChip[]): string {
-  if (!suggestion.unit) return '';
-  const disambiguates =
-    suggestion.loinc in ALIAS_TO_PRIMARY ||
-    suggestion.loinc in ALSO_REFS ||
-    chipSuggestions.some((o) => o !== suggestion && o.name === suggestion.name);
-  return disambiguates ? ` · ${suggestion.unit}` : '';
-}
-
-function saveButtonStyle(hasErrors: boolean): CSSProperties {
-  return {
-    padding: '8px 16px',
-    backgroundColor: hasErrors ? '#ccc' : '#1971c2',
-    color: 'white',
-    border: 'none',
-    borderRadius: 4,
-    fontSize: 13,
-    cursor: hasErrors ? 'not-allowed' : 'pointer',
-    opacity: hasErrors ? 0.5 : 1,
-  };
-}
-
-function saveButtonLabel(isSaving: boolean): string {
-  return isSaving ? 'Saving...' : 'Save';
-}
-
 interface ReportResultsSectionProps {
   items: Result[];
   group: DiagnosticReport | undefined;
   issues: ValidationIssue[];
-  checkResults: CrossCheckResult[] | null;
-  nlmState: 'idle' | 'loading' | 'done' | 'failed';
-  nlmByCode: Record<string, string | null>;
-  nlmSuggestions: Record<number, NlmEntry[]>;
-  autoFilledCount: number;
-  unresolvedRows: { r: CrossCheckResult; i: number }[];
+  crossCheck: LoincCrossCheck;
   errorCount: number;
   warningCount: number;
   hasErrors: boolean;
   draftItems: Result[] | null;
   isSaving: boolean;
-  onCrossCheck: () => void;
-  onNlmCheck: () => void;
   onEditItem: (index: number, field: EditableField, newValue: string) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -208,28 +49,22 @@ function ReportResultsSection({
   items,
   group,
   issues,
-  checkResults,
-  nlmState,
-  nlmByCode,
-  nlmSuggestions,
-  autoFilledCount,
-  unresolvedRows,
+  crossCheck,
   errorCount,
   warningCount,
   hasErrors,
   draftItems,
   isSaving,
-  onCrossCheck,
-  onNlmCheck,
   onEditItem,
   onSave,
   onCancel,
 }: Readonly<ReportResultsSectionProps>) {
+  const { checkResults, nlmState, nlmByCode, nlmSuggestions, autoFilledCount, unresolvedRows } = crossCheck;
   return (
     <>
       <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
         <button
-          onClick={onCrossCheck}
+          onClick={crossCheck.onCrossCheck}
           style={{
             padding: '6px 16px',
             backgroundColor: 'transparent',
@@ -379,7 +214,7 @@ function ReportResultsSection({
             {unresolvedRows.length} observation{pluralize(unresolvedRows.length)} unresolved —
           </span>
           <button
-            onClick={onNlmCheck}
+            onClick={crossCheck.onNlmCheck}
             style={{
               padding: '4px 12px',
               backgroundColor: 'transparent',
@@ -456,16 +291,11 @@ export function DiagnosticReportDetailView({
   onBack: () => void;
   onUpdateGroup?: (file: string, updatedGroup: DiagnosticReport) => void;
 }>) {
-  const { analysesCatalog } = useData();
   const [loadedItems, setLoadedItems] = useState<Result[] | null>(null);
   const [draftItems, setDraftItems] = useState<Result[] | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [checkResults, setCheckResults] = useState<CrossCheckResult[] | null>(null);
-  const [nlmState, setNlmState] = useState<'idle' | 'loading' | 'done' | 'failed'>('idle');
-  const [nlmByCode, setNlmByCode] = useState<Record<string, string | null>>({});
-  const [nlmSuggestions, setNlmSuggestions] = useState<Record<number, NlmEntry[]>>({});
-  const [autoFilledCount, setAutoFilledCount] = useState(0);
   const items = draftItems ?? group?.items ?? loadedItems;
+  const crossCheck = useLoincCrossCheck(items, setDraftItems);
 
   // Validate what's on screen: the draft while editing, the stored group otherwise.
   const allGroups = useMemo<DiagnosticReport[]>(
@@ -517,49 +347,6 @@ export function DiagnosticReportDetailView({
     setDraftItems(null);
   };
 
-  const expandedCatalog = useMemo(() => buildExpandedCatalog(analysesCatalog), [analysesCatalog]);
-
-  const handleCrossCheck = () => {
-    if (!items) return;
-    const results = crossCheckLocal(items, expandedCatalog);
-    const fixes = computeConfidentFixes(items, results);
-    if (fixes.size > 0) {
-      const updated = applyFixes(items, fixes);
-      setDraftItems(updated);
-      setCheckResults(crossCheckLocal(updated, expandedCatalog));
-      setAutoFilledCount(fixes.size);
-    } else {
-      setCheckResults(results);
-      setAutoFilledCount(0);
-    }
-    setNlmState('idle');
-    setNlmByCode({});
-    setNlmSuggestions({});
-  };
-
-  // Rows the local pass couldn't resolve: unknown codes, or codeless rows
-  // with no local suggestion.
-  const unresolvedRows = useMemo(() => {
-    if (!checkResults || !items) return [];
-    return checkResults
-      .map((r, i) => ({ r, i }))
-      .filter(({ r, i }) => isRowUnresolved(r, i, items, nlmByCode, nlmSuggestions));
-  }, [checkResults, items, nlmByCode, nlmSuggestions]);
-
-  const handleNlmCheck = async () => {
-    if (!items || !checkResults) return;
-    setNlmState('loading');
-    const codes = unresolvedRows.filter(({ r }) => r.status === 'unknown-code').map(({ i }) => items[i]!.loinc);
-    const names = unresolvedRows
-      .filter(({ r }) => r.status === 'no-code')
-      .map(({ i }) => latinPart(items[i]!.analysis))
-      .filter((n) => n !== '');
-    const result = await fetchNlmLoinc([...new Set(codes)], [...new Set(names)]);
-    setNlmByCode(result.byCode);
-    setNlmSuggestions(buildNlmSuggestionsByRow(unresolvedRows, items, result.byName));
-    setNlmState(result.status === 'ok' ? 'done' : 'failed');
-  };
-
   return (
     <>
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
@@ -575,19 +362,12 @@ export function DiagnosticReportDetailView({
           items={items}
           group={group}
           issues={issues}
-          checkResults={checkResults}
-          nlmState={nlmState}
-          nlmByCode={nlmByCode}
-          nlmSuggestions={nlmSuggestions}
-          autoFilledCount={autoFilledCount}
-          unresolvedRows={unresolvedRows}
+          crossCheck={crossCheck}
           errorCount={errorCount}
           warningCount={warningCount}
           hasErrors={hasErrors}
           draftItems={draftItems}
           isSaving={isSaving}
-          onCrossCheck={handleCrossCheck}
-          onNlmCheck={handleNlmCheck}
           onEditItem={handleEditItem}
           onSave={handleSave}
           onCancel={handleCancel}

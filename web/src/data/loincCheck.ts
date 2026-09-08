@@ -1,5 +1,6 @@
 import type { Result, Analysis } from '../types';
 import { ALIAS_TO_PRIMARY, ALLOWED_UNITS, DEFAULT_UNITS } from './analyteCatalog';
+import { fuzzyVocabHits, groupVocabByLength, tokensFuzzyEqual } from './fuzzyMatch';
 import { foldUnitGlyphs, toLatinUnit } from './unitNormalization';
 
 export const LOINC_RE = /^\d{1,7}-\d$/;
@@ -106,92 +107,6 @@ function tokensOf(text: string): string[] {
     .replace(/ae|oe/g, 'e')
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length >= 2);
-}
-
-// --- Fuzzy token equality (lab typos: CORTIZOL, Thyroxin) ---
-
-// Two tokens count as equal when identical, or within Damerau-Levenshtein
-// distance 1 for length ≥ 5 (both sides), or distance 2 for length ≥ 9.
-// Short tokens get no slack — "hb" must never equal "hgb" by accident.
-const FUZZY1_MIN_LEN = 5;
-const FUZZY2_MIN_LEN = 9;
-
-function capForShorterLength(shorter: number): number {
-  if (shorter >= FUZZY2_MIN_LEN) return 2;
-  if (shorter >= FUZZY1_MIN_LEN) return 1;
-  return 0;
-}
-
-function fuzzyCap(a: string, b: string): number {
-  return capForShorterLength(Math.min(a.length, b.length));
-}
-
-// One row of the OSA Damerau-Levenshtein matrix.
-function editDistanceRow(
-  a: string,
-  b: string,
-  i: number,
-  prev: number[],
-  prev2: number[]
-): { row: number[]; rowMin: number } {
-  const row: number[] = [i];
-  let rowMin = i;
-  for (let j = 1; j <= b.length; j++) {
-    const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-    let d = Math.min(prev[j]! + 1, row[j - 1]! + 1, prev[j - 1]! + cost);
-    if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
-      d = Math.min(d, prev2[j - 2]! + 1);
-    }
-    row[j] = d;
-    if (d < rowMin) rowMin = d;
-  }
-  return { row, rowMin };
-}
-
-// Optimal-string-alignment Damerau-Levenshtein, early-exiting once a whole
-// row exceeds the cap.
-function editDistanceWithin(a: string, b: string, cap: number): boolean {
-  if (cap <= 0) return false;
-  if (Math.abs(a.length - b.length) > cap) return false;
-  let prev2: number[] = [];
-  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i++) {
-    const { row, rowMin } = editDistanceRow(a, b, i, prev, prev2);
-    if (rowMin > cap) return false;
-    prev2 = prev;
-    prev = row;
-  }
-  return prev[b.length]! <= cap;
-}
-
-function tokensFuzzyEqual(a: string, b: string): boolean {
-  return a === b || editDistanceWithin(a, b, fuzzyCap(a, b));
-}
-
-// Catalog vocabulary grouped by token length, so a fuzzy lookup only compares
-// against tokens whose length is within the allowed edit distance.
-function groupVocabByLength(weights: Map<string, number>): Map<number, string[]> {
-  const byLen = new Map<number, string[]>();
-  for (const t of weights.keys()) {
-    const group = byLen.get(t.length);
-    if (group) group.push(t);
-    else byLen.set(t.length, [t]);
-  }
-  return byLen;
-}
-
-function fuzzyVocabHits(token: string, vocabByLen: Map<number, string[]>): string[] {
-  const hits: string[] = [];
-  for (let len = token.length - 2; len <= token.length + 2; len++) {
-    const group = vocabByLen.get(len);
-    if (!group) continue;
-    const cap = capForShorterLength(Math.min(token.length, len));
-    if (cap === 0 || Math.abs(token.length - len) > cap) continue;
-    for (const v of group) {
-      if (v !== token && editDistanceWithin(token, v, cap)) hits.push(v);
-    }
-  }
-  return hits;
 }
 
 // Any-script tokenizer for the translation pass — Greek/Cyrillic printed names
@@ -350,7 +265,7 @@ function stageLatin(
   if (!name) return [];
   const rowUnit = canonicalUnit(item.unit);
   const queryTokens = tokensOf(name);
-  const vocabByLen = groupVocabByLength(weights);
+  const vocabByLen = groupVocabByLength(weights.keys());
   // Per query token: every catalog token it counts as (itself + fuzzy hits)
   // and its weight. A fuzzy-known token borrows its best match's weight; a
   // token the whole catalog has never seen ("3rd", "total") can't
@@ -505,80 +420,4 @@ export function crossCheckLocal(
     }
     return { status: 'match' as const, loincName };
   });
-}
-
-// --- Stage 2: NLM Clinical Tables lookup ---
-
-const NLM_BASE = 'https://clinicaltables.nlm.nih.gov/api/loinc_items/v3/search';
-
-export interface NlmEntry {
-  loinc: string;
-  name: string;
-  unit?: string;
-}
-
-export interface NlmLookupResult {
-  status: 'ok' | 'failed';
-  byCode: Record<string, string | null>;
-  byName: Record<string, NlmEntry[]>;
-}
-
-// EXAMPLE_UCUM_UNITS can list several units ("mg/dL;mmol/L"); our own
-// ALLOWED_UNITS extras for the entry's code count as agreement too.
-function nlmUnitMatches(entry: NlmEntry, rowUnit: string): boolean {
-  return [...(entry.unit ?? '').split(/[;,]/), ...(ALLOWED_UNITS[entry.loinc] ?? [])].some(
-    (u) => canonicalUnit(u) === rowUnit
-  );
-}
-
-// The same unit selection as the local ladder, for NLM name-search results:
-// entries agreeing with the row's unit win; ones contradicting it are dropped
-// once any agreeing entry exists (unknown-unit entries are kept as fallback).
-export function selectByUnit(entries: NlmEntry[], rowUnit: string | undefined): NlmEntry[] {
-  const unit = canonicalUnit(rowUnit);
-  if (!unit) return entries;
-  const matching = entries.filter((e) => nlmUnitMatches(e, unit));
-  if (matching.length === 0) return entries;
-  return [...matching, ...entries.filter((e) => !normalizeUnit(e.unit))];
-}
-
-// Response shape: [count, LOINC_NUM[], null, [LOINC_NUM, LONG_COMMON_NAME, EXAMPLE_UCUM_UNITS][]]
-async function nlmSearch(terms: string, fetchFn: typeof fetch): Promise<NlmEntry[]> {
-  const url = `${NLM_BASE}?terms=${encodeURIComponent(terms)}&df=LOINC_NUM,LONG_COMMON_NAME,EXAMPLE_UCUM_UNITS&maxList=10`;
-  const res = await fetchFn(url);
-  if (!res.ok) throw new Error(`NLM lookup failed: ${res.status}`);
-  const data = (await res.json()) as [number, string[], null, string[][]];
-  const rows = Array.isArray(data?.[3]) ? data[3] : [];
-  return rows
-    .filter((row) => Array.isArray(row) && row.length >= 2)
-    .map((row) => ({ loinc: row[0]!, name: row[1]!, unit: row[2] || undefined }));
-}
-
-export async function fetchNlmLoinc(
-  codes: string[],
-  names: string[],
-  fetchFn: typeof fetch = fetch
-): Promise<NlmLookupResult> {
-  const byCode: Record<string, string | null> = {};
-  const byName: Record<string, NlmEntry[]> = {};
-  let failed = false;
-
-  for (const code of codes) {
-    try {
-      const entries = await nlmSearch(code, fetchFn);
-      byCode[code] = entries.find((e) => e.loinc === code)?.name ?? null;
-    } catch {
-      failed = true;
-    }
-  }
-
-  for (const name of names) {
-    try {
-      byName[name] = await nlmSearch(name, fetchFn);
-    } catch {
-      failed = true;
-    }
-  }
-
-  return { status: failed ? 'failed' : 'ok', byCode, byName };
 }
