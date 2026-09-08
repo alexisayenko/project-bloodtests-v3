@@ -90,15 +90,17 @@ function ScheduledCell({ checked, label, onToggle }: Readonly<{ checked: boolean
   return (
     <>
       <td style={gapCell} />
-      <td
-        {...pressable(onToggle)}
-        role="checkbox"
-        aria-checked={checked}
-        aria-label={`Schedule ${label}`}
-        title={checked ? 'Scheduled -- click to unschedule' : 'Click to schedule'}
-        style={scheduledTd}
-      >
-        {checked ? '✓' : ''}
+      <td style={{ ...scheduledTd, position: 'relative' }} title={checked ? 'Scheduled -- click to unschedule' : 'Click to schedule'}>
+        <label style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onToggle}
+            aria-label={`Schedule ${label}`}
+            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+          />
+          {checked ? '✓' : ''}
+        </label>
       </td>
     </>
   );
