@@ -13,7 +13,15 @@ import {
   type SelectedCell,
 } from './ui';
 import { hasReference, type ResultEntry } from './resultsLookup';
-import { indexInputLoincs, isIndexScheduled, isRowScheduled, type IndexScheduling, type RowScheduling } from './scheduled';
+import {
+  indexInputLoincs,
+  isIndexScheduled,
+  isRowScheduled,
+  selectionState,
+  type IndexScheduling,
+  type RowScheduling,
+} from './scheduled';
+import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
 import type { Result } from '../../types';
 
 const DATE_COL_WIDTH = 96;
@@ -23,7 +31,8 @@ const LABEL_COL_WIDTH = 180;
 // separate block from the date grid while staying in the same table (exact
 // row alignment for free).
 const GAP_COL_WIDTH = 16;
-const SCHEDULED_COL_WIDTH = 96;
+// Wide enough for the header's month pill; the body cells stay a single glyph.
+const SCHEDULED_COL_WIDTH = 132;
 
 // Fixed layout only kicks in with a non-auto table width; every column width
 // then comes from the colgroup, so tables given the same dates share one grid
@@ -39,9 +48,14 @@ const th = {
 const td = { padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' } as const;
 const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere' } as const;
 const gapCell = { padding: 0, border: 'none' } as const;
+// whiteSpace resets to normal so the month pill and the select-all box stack
+// instead of forcing the column past its colgroup width.
 const scheduledTh = {
   ...th,
   textAlign: 'center',
+  whiteSpace: 'normal',
+  padding: '6px 8px',
+  verticalAlign: 'bottom',
   borderLeft: '1px solid #ddd',
   borderRight: '1px solid #ddd',
 } as const;
@@ -74,7 +88,7 @@ function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling:
   );
 }
 
-function TableHead({ label, dates, scheduling }: Readonly<{ label: string; dates: string[]; scheduling: boolean }>) {
+function TableHead({ label, dates, schedule }: Readonly<{ label: string; dates: string[]; schedule?: ScheduleHeaderProps }>) {
   return (
     <thead>
       <tr>
@@ -84,10 +98,12 @@ function TableHead({ label, dates, scheduling }: Readonly<{ label: string; dates
             {formatMonthYear(date)}
           </th>
         ))}
-        {scheduling && (
+        {schedule && (
           <>
             <th style={gapCell} />
-            <th style={scheduledTh}>Scheduled</th>
+            <th style={scheduledTh}>
+              <ScheduleHeader {...schedule} />
+            </th>
           </>
         )}
       </tr>
@@ -233,11 +249,22 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
     label, rows, visibleDates, allResults, unitSystem, selectedLoinc, onSelect, onOpenPopup,
     onSelectCell, onOpenResultPopup, selectedCell, preferRaw, scheduling, inputsOf,
   } = props;
+  // Select-all covers exactly the rows on screen: All Observations filters by
+  // panel and by name, and scheduling something the reader cannot see would be
+  // a silent surprise.
+  const visibleRowLoincs = rows.map(testLoincs);
+  const schedule = scheduling && {
+    label,
+    month: scheduling.scheduled.month,
+    onSetMonth: scheduling.onSetMonth,
+    state: selectionState(visibleRowLoincs.map((loincs) => isRowScheduled(scheduling.scheduled, loincs))),
+    onToggleAll: (on: boolean) => scheduling.onToggleAll(visibleRowLoincs, on),
+  };
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={table}>
         <ColGroup dates={visibleDates} scheduling={!!scheduling} />
-        <TableHead label={label} dates={visibleDates} scheduling={!!scheduling} />
+        <TableHead label={label} dates={visibleDates} schedule={schedule || undefined} />
         <tbody>
           {rows.map((test) => {
             const selected = selectedLoinc === test.loinc;
@@ -302,11 +329,19 @@ export function IndexTable({
   /** The selected observation: indices reading any of its `loincs` get a mark before their name (Panel Detail only). */
   usedBy?: Relation;
 }>) {
+  const visibleKeys = defs.map((def) => def.key);
+  const schedule = scheduling && {
+    label: 'Indices',
+    month: scheduling.scheduled.month,
+    onSetMonth: scheduling.onSetMonth,
+    state: selectionState(visibleKeys.map((key) => isIndexScheduled(scheduling.scheduled, key))),
+    onToggleAll: (on: boolean) => scheduling.onToggleAll(visibleKeys, on),
+  };
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={table}>
         <ColGroup dates={visibleDates} scheduling={!!scheduling} />
-        <TableHead label="Indices" dates={visibleDates} scheduling={!!scheduling} />
+        <TableHead label="Indices" dates={visibleDates} schedule={schedule || undefined} />
         <tbody>
           {defs.map((def) => {
             const selected = selectedLoinc === def.key;

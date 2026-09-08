@@ -7,12 +7,37 @@ import { LOINC_TO_MARKER } from './markers';
 // the next draw -- one global list across every panel, persisted so it
 // survives a refresh.
 export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
-export type Scheduled = { loincs: string[]; indices: string[] };
+// `month` (ISO YYYY-MM) LABELS the one global schedule -- "these are the tests
+// I plan to order for March 2027". It does not partition it: changing the month
+// leaves every checked row checked. Stored as YYYY-MM because it is a calendar
+// month, not an instant: it sorts lexicographically, needs no timezone, and is
+// what an <input type="month"> would have produced anyway.
+export type Scheduled = { loincs: string[]; indices: string[]; month?: string };
 export const EMPTY_SCHEDULED: Scheduled = { loincs: [], indices: [] };
 
+/** How many of a table's rows are scheduled, for the header's tri-state box. */
+export type SelectionState = 'none' | 'some' | 'all';
+
 /** The Scheduled column's wiring, handed to every table that renders one. */
-export type RowScheduling = { scheduled: Scheduled; onToggle: (loincs: string[]) => void };
-export type IndexScheduling = { scheduled: Scheduled; onToggle: (key: string) => void };
+export type RowScheduling = {
+  scheduled: Scheduled;
+  onToggle: (loincs: string[]) => void;
+  /** Select-all over exactly the rows the table is showing. */
+  onToggleAll: (rows: string[][], on: boolean) => void;
+  onSetMonth: (month: string | undefined) => void;
+};
+export type IndexScheduling = {
+  scheduled: Scheduled;
+  onToggle: (key: string) => void;
+  onToggleAll: (keys: string[], on: boolean) => void;
+  onSetMonth: (month: string | undefined) => void;
+};
+
+const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+export function isScheduleMonth(value: unknown): value is string {
+  return typeof value === 'string' && MONTH_RE.test(value);
+}
 
 export function loadScheduled(): Scheduled {
   try {
@@ -22,6 +47,7 @@ export function loadScheduled(): Scheduled {
       return {
         loincs: Array.isArray(parsed.loincs) ? parsed.loincs.filter((x): x is string => typeof x === 'string') : [],
         indices: Array.isArray(parsed.indices) ? parsed.indices.filter((x): x is string => typeof x === 'string') : [],
+        month: isScheduleMonth(parsed.month) ? parsed.month : undefined,
       };
     }
   } catch {
@@ -86,7 +112,7 @@ export function toggleRow(scheduled: Scheduled, loincs: string[]): Scheduled {
   const next = isRowScheduled(scheduled, all)
     ? scheduled.loincs.filter((loinc) => !all.includes(loinc))
     : union(scheduled.loincs, all);
-  return { loincs: next, indices: deriveIndices(next) };
+  return { ...scheduled, loincs: next, indices: deriveIndices(next) };
 }
 
 /** Scheduling an index also schedules its inputs; unscheduling leaves them alone. */
@@ -95,9 +121,52 @@ export function toggleIndex(scheduled: Scheduled, key: string): Scheduled {
     return { ...scheduled, indices: scheduled.indices.filter((k) => k !== key) };
   }
   return {
+    ...scheduled,
     loincs: union(scheduled.loincs, indexInputLoincs(key)),
     indices: [...scheduled.indices, key],
   };
+}
+
+/** Select-all over the observation rows on screen: one row's rule applied to all of them at once. */
+export function setRowsScheduled(scheduled: Scheduled, rows: string[][], on: boolean): Scheduled {
+  const all = withSiblings(rows.flat());
+  const next = on ? union(scheduled.loincs, all) : scheduled.loincs.filter((loinc) => !all.includes(loinc));
+  return { ...scheduled, loincs: next, indices: deriveIndices(next) };
+}
+
+/** Select-all over the index rows on screen, following toggleIndex: on schedules their inputs too, off leaves the inputs. */
+export function setIndicesScheduled(scheduled: Scheduled, keys: string[], on: boolean): Scheduled {
+  if (!on) return { ...scheduled, indices: scheduled.indices.filter((k) => !keys.includes(k)) };
+  return {
+    ...scheduled,
+    loincs: union(scheduled.loincs, keys.flatMap(indexInputLoincs)),
+    indices: union(scheduled.indices, keys),
+  };
+}
+
+export function setScheduleMonth(scheduled: Scheduled, month: string | undefined): Scheduled {
+  return { ...scheduled, month: isScheduleMonth(month) ? month : undefined };
+}
+
+export function selectionState(flags: readonly boolean[]): SelectionState {
+  if (flags.length === 0 || flags.every((f) => !f)) return 'none';
+  return flags.every(Boolean) ? 'all' : 'some';
+}
+
+/** The picker's choices: this month and the next `count`, plus a stored month that has since fallen outside that window. */
+export function monthChoices(today: Date, count: number, selected?: string): string[] {
+  const months: string[] = [];
+  for (let i = 0; i <= count; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  if (isScheduleMonth(selected) && !months.includes(selected)) months.push(selected);
+  return months.sort((a, b) => a.localeCompare(b));
+}
+
+export function formatScheduleMonth(month: string): string {
+  const [year, m] = month.split('-');
+  return new Date(Number(year), Number(m) - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
 export function useScheduled() {
@@ -109,6 +178,15 @@ export function useScheduled() {
 
   const onToggleRow = useCallback((loincs: string[]) => setScheduled((s) => toggleRow(s, loincs)), []);
   const onToggleIndex = useCallback((key: string) => setScheduled((s) => toggleIndex(s, key)), []);
+  const onToggleAllRows = useCallback(
+    (rows: string[][], on: boolean) => setScheduled((s) => setRowsScheduled(s, rows, on)),
+    []
+  );
+  const onToggleAllIndices = useCallback(
+    (keys: string[], on: boolean) => setScheduled((s) => setIndicesScheduled(s, keys, on)),
+    []
+  );
+  const onSetMonth = useCallback((month: string | undefined) => setScheduled((s) => setScheduleMonth(s, month)), []);
 
-  return { scheduled, onToggleRow, onToggleIndex };
+  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth };
 }

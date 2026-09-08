@@ -42,7 +42,7 @@ export function MedicalConditionsPage() {
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
-  const { scheduled, onToggleRow, onToggleIndex } = useScheduled();
+  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth } = useScheduled();
 
   useEffect(() => {
     saveAnalysisSettings({ unitSystem, sampleLimit, dateOrder });
@@ -148,8 +148,8 @@ export function MedicalConditionsPage() {
   const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder };
-  const rowScheduling = { scheduled, onToggle: onToggleRow };
-  const indexScheduling = { scheduled, onToggle: onToggleIndex };
+  const rowScheduling = { scheduled, onToggle: onToggleRow, onToggleAll: onToggleAllRows, onSetMonth };
+  const indexScheduling = { scheduled, onToggle: onToggleIndex, onToggleAll: onToggleAllIndices, onSetMonth };
 
   const panelsGrid = (
     <PanelsGridView
@@ -194,11 +194,14 @@ export function MedicalConditionsPage() {
             selectedLoinc={selectedLoinc}
             onSelect={setSelectedLoinc}
             onOpenPopup={openPopup}
+            onOpenIndexPopup={openIndexPopup}
             selectedCell={selectedCell}
             onSelectCell={onSelectCell}
             onOpenResultPopup={openResultPopup}
+            onOpenIndexResultPopup={openIndexResultPopup}
             resultsByDate={resultsByDate}
             scheduling={rowScheduling}
+            indexScheduling={indexScheduling}
           />
         );
       case 'reports':

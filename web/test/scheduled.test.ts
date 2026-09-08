@@ -1,10 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import {
   EMPTY_SCHEDULED,
+  SCHEDULED_KEY,
+  formatScheduleMonth,
   indexInputLoincs,
   isIndexScheduled,
   isRowScheduled,
   loadScheduled,
+  monthChoices,
+  saveScheduled,
+  selectionState,
+  setIndicesScheduled,
+  setRowsScheduled,
+  setScheduleMonth,
   toggleIndex,
   toggleRow,
 } from '../src/components/conditions/scheduled';
@@ -117,5 +125,112 @@ describe('All Observations rows fold aliases like Panel Detail', () => {
 describe('loadScheduled', () => {
   it('falls back to empty when storage is unavailable', () => {
     expect(loadScheduled()).toEqual({ loincs: [], indices: [] });
+  });
+});
+
+describe('the target month', () => {
+  const store = new Map<string, string>();
+
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, String(v)),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('round-trips through storage', () => {
+    saveScheduled({ loincs: ['2093-3'], indices: [], month: '2027-03' });
+    expect(loadScheduled()).toEqual({ loincs: ['2093-3'], indices: [], month: '2027-03' });
+  });
+
+  it('reads a payload stored before the month existed, sets intact', () => {
+    store.set(SCHEDULED_KEY, '{"loincs":["2093-3","2085-9"],"indices":["ka"]}');
+    const loaded = loadScheduled();
+    expect(loaded.loincs).toEqual(['2093-3', '2085-9']);
+    expect(loaded.indices).toEqual(['ka']);
+    expect(loaded.month).toBeUndefined();
+  });
+
+  it('writes no month key when none is set, so the stored shape stays as it was', () => {
+    saveScheduled({ loincs: ['2093-3'], indices: [] });
+    expect(store.get(SCHEDULED_KEY)).toBe('{"loincs":["2093-3"],"indices":[]}');
+  });
+
+  it('ignores a stored month that is not YYYY-MM', () => {
+    store.set(SCHEDULED_KEY, '{"loincs":[],"indices":[],"month":"March 2027"}');
+    expect(loadScheduled().month).toBeUndefined();
+    expect(setScheduleMonth(EMPTY_SCHEDULED, '2027-13').month).toBeUndefined();
+    expect(setScheduleMonth(EMPTY_SCHEDULED, undefined).month).toBeUndefined();
+  });
+
+  // The month labels the one schedule rather than partitioning it, so every
+  // toggle has to carry it through untouched.
+  it('survives every kind of toggle', () => {
+    const base = setScheduleMonth(EMPTY_SCHEDULED, '2027-03');
+    expect(toggleRow(base, ['2093-3']).month).toBe('2027-03');
+    expect(toggleIndex(base, 'ka').month).toBe('2027-03');
+    expect(setRowsScheduled(base, [['2093-3']], true).month).toBe('2027-03');
+    expect(setIndicesScheduled(base, ['ka'], true).month).toBe('2027-03');
+    expect(setIndicesScheduled(toggleIndex(base, 'ka'), ['ka'], false).month).toBe('2027-03');
+  });
+
+  it('offers the coming months plus a stored one that has since fallen behind', () => {
+    const choices = monthChoices(new Date(2026, 8, 8), 3, '2025-01');
+    expect(choices).toEqual(['2025-01', '2026-09', '2026-10', '2026-11', '2026-12']);
+    expect(monthChoices(new Date(2026, 8, 8), 3, '2026-10')).toHaveLength(4);
+    expect(formatScheduleMonth('2027-03')).toBe('Mar 2027');
+  });
+});
+
+describe('select-all over the rows on screen', () => {
+  it('schedules and unschedules exactly the rows it is given', () => {
+    const visible = [['2093-3'], ['2085-9']];
+    const on = setRowsScheduled(toggleRow(EMPTY_SCHEDULED, ['2571-8']), visible, true);
+    expect(isRowScheduled(on, ['2093-3'])).toBe(true);
+    expect(isRowScheduled(on, ['2085-9'])).toBe(true);
+    // Hidden by a filter, so select-all left it alone -- and clear-all likewise.
+    const off = setRowsScheduled(on, visible, false);
+    expect(off.loincs).toEqual(['2571-8']);
+  });
+
+  it('re-derives indices like a single row toggle does', () => {
+    const on = setRowsScheduled(EMPTY_SCHEDULED, [['2093-3'], ['2085-9']], true);
+    expect(isIndexScheduled(on, 'ka')).toBe(true);
+    expect(isIndexScheduled(setRowsScheduled(on, [['2085-9']], false), 'ka')).toBe(false);
+  });
+
+  it('folds a row keyed under an alternate LOINC', () => {
+    const [primary, alt] = MARKER_LOINC.T!;
+    expect(isRowScheduled(setRowsScheduled(EMPTY_SCHEDULED, [[alt!]], true), [primary!])).toBe(true);
+  });
+
+  it('cascades over indices exactly as toggleIndex does', () => {
+    const on = setIndicesScheduled(EMPTY_SCHEDULED, ['ka', 'tchdl'], true);
+    expect(on.indices).toEqual(['ka', 'tchdl']);
+    for (const loinc of indexInputLoincs('ka')) expect(isRowScheduled(on, [loinc])).toBe(true);
+    const off = setIndicesScheduled(on, ['ka', 'tchdl'], false);
+    expect(off.indices).toEqual([]);
+    expect(off.loincs).toEqual(on.loincs);
+  });
+
+  it('does not duplicate an index already scheduled', () => {
+    const twice = setIndicesScheduled(toggleIndex(EMPTY_SCHEDULED, 'ka'), ['ka'], true);
+    expect(twice.indices).toEqual(['ka']);
+  });
+});
+
+describe('selectionState', () => {
+  it('reads none, some and all off the visible rows', () => {
+    const visible = [['2093-3'], ['2085-9']];
+    const flags = (s: typeof EMPTY_SCHEDULED) => visible.map((loincs) => isRowScheduled(s, loincs));
+    expect(selectionState(flags(EMPTY_SCHEDULED))).toBe('none');
+    expect(selectionState(flags(toggleRow(EMPTY_SCHEDULED, ['2093-3'])))).toBe('some');
+    expect(selectionState(flags(setRowsScheduled(EMPTY_SCHEDULED, visible, true)))).toBe('all');
+  });
+
+  it('reads an empty table as none rather than all', () => {
+    expect(selectionState([])).toBe('none');
   });
 });
