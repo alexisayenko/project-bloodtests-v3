@@ -66,7 +66,12 @@ presentation config (`showPanels` — an allowlist of panel display names
 limiting the Monitoring Panels grid, All Observations always showing
 everything — plus `settings`, which seeds the shared table controls only
 when the visitor has none stored yet), where a missing, 404 or malformed
-meta simply means "no meta" and never fails the import; the
+meta simply means "no meta" and never fails the import. A stored meta
+never outlives the link it came from: `applySharedMeta` clears before it
+stores, and Clear and every replacing import (`uploadFile`, behind both
+"Import JSON" buttons) call `clearSharedMeta`, so a link without meta
+inherits no allowlist and a stale `showPanels` cannot go on hiding panels
+after the data it belonged to is gone; merges leave it alone. The
 payloads are real health data and are gitignored (`web/public/d/*.json`)
 because this repo is public, so a deploy needs them copied in locally
 first. `web/public/_headers` serves `/d/*` as

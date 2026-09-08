@@ -6,9 +6,12 @@ import {
   visiblePanels,
   loadStoredSharedMeta,
   storeSharedMeta,
+  clearSharedMeta,
+  applySharedMeta,
   SHARED_META_KEY,
 } from '../src/data/sharedMeta';
 import { fetchSharedMeta, fetchSharedData } from '../src/data/sharedLink';
+import { importResults } from '../src/data/importResults';
 import {
   ANALYSIS_SETTINGS_KEY,
   DEFAULT_ANALYSIS_SETTINGS,
@@ -217,5 +220,86 @@ describe('shared meta storage', () => {
     expect(loadStoredSharedMeta()).toBeNull();
     localStorage.setItem(SHARED_META_KEY, '{not json');
     expect(loadStoredSharedMeta()).toBeNull();
+  });
+
+  it('drops the stored meta on clear', () => {
+    storeSharedMeta({ showPanels: ['FBC'] });
+    clearSharedMeta();
+    expect(localStorage.getItem(SHARED_META_KEY)).toBeNull();
+    expect(loadStoredSharedMeta()).toBeNull();
+  });
+
+  it('clears without a stored meta and without storage', () => {
+    expect(() => clearSharedMeta()).not.toThrow();
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        removeItem: () => {
+          throw new Error('storage unavailable');
+        },
+      },
+      configurable: true,
+      writable: true,
+    });
+    expect(() => clearSharedMeta()).not.toThrow();
+  });
+});
+
+describe('a share link\'s meta does not outlive its link', () => {
+  beforeEach(() => {
+    installLocalStorageStub();
+  });
+
+  it('applies the meta the link supplied', () => {
+    applySharedMeta({ showPanels: ['FBC'] });
+    expect(loadStoredSharedMeta()).toEqual({ showPanels: ['FBC'] });
+  });
+
+  it('replaces a previous link\'s allowlist with this link\'s', () => {
+    applySharedMeta({ showPanels: ['FBC'] });
+    applySharedMeta({ showPanels: ['Anemia'] });
+    expect(loadStoredSharedMeta()).toEqual({ showPanels: ['Anemia'] });
+  });
+
+  it('does not inherit a previous link\'s allowlist when this link has no meta', () => {
+    applySharedMeta({ showPanels: ['FBC'] });
+    applySharedMeta(null);
+    expect(loadStoredSharedMeta()).toBeNull();
+    expect(panelAllowlist(loadStoredSharedMeta())).toBeNull();
+  });
+});
+
+describe('a replacing import drops the shared meta', () => {
+  // Mirrors ResultsContext.uploadFile / clearData: whatever replaces the
+  // stored sessions also drops the presentation config of the share link the
+  // visitor happened to open once.
+  const ENVELOPE = {
+    schema: 3,
+    diagnosticReports: [
+      {
+        lab: 'Lab A',
+        collectedAt: '2026-01-10T00:00:00Z',
+        observations: [{ loinc: '718-7', rawName: 'Hemoglobin', value: 14.2 }],
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    installLocalStorageStub();
+  });
+
+  it('a stale allowlist does not survive an Import JSON', () => {
+    storeSharedMeta({ showPanels: ['FBC'] });
+    importResults(ENVELOPE);
+    clearSharedMeta();
+    expect(loadStoredSharedMeta()).toBeNull();
+    expect(visiblePanels([{ name: 'Hypogonadism' }], panelAllowlist(loadStoredSharedMeta()))).toEqual([
+      { name: 'Hypogonadism' },
+    ]);
+  });
+
+  it('a failed import leaves both the sessions and the meta alone', () => {
+    storeSharedMeta({ showPanels: ['FBC'] });
+    expect(() => importResults({ not: 'an envelope' })).toThrow();
+    expect(loadStoredSharedMeta()).toEqual({ showPanels: ['FBC'] });
   });
 });

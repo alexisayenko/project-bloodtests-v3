@@ -10,7 +10,7 @@ import {
 } from './sharedLink';
 import { RESULTS_STORAGE_KEY as STORAGE_KEY } from './resultsStorage';
 import { importResults } from './importResults';
-import { loadStoredSharedMeta, storeSharedMeta, type SharedMeta } from './sharedMeta';
+import { applySharedMeta, clearSharedMeta, loadStoredSharedMeta, type SharedMeta } from './sharedMeta';
 
 interface ResultsContextType {
   sessions: DiagnosticReport[];
@@ -79,10 +79,8 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
           setSessions(importResults(data));
           markImported(guid);
         }
-        if (meta) {
-          storeSharedMeta(meta);
-          setSharedMeta(meta);
-        }
+        applySharedMeta(meta);
+        setSharedMeta(meta);
         stripDataParam();
       })
       .catch((e: unknown) => {
@@ -111,6 +109,10 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
 
     try {
       setSessions(importResults(json));
+      // The import replaces the stored sessions, so a share link's presentation
+      // config no longer has any link to belong to.
+      clearSharedMeta();
+      setSharedMeta(null);
     } catch (e) {
       setError(e instanceof UploadParseError ? e.message : 'Could not read that file.');
     }
@@ -139,6 +141,8 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     setSessions([]);
     setError(null);
     localStorage.removeItem(STORAGE_KEY);
+    clearSharedMeta();
+    setSharedMeta(null);
   }, []);
 
   const value = useMemo(

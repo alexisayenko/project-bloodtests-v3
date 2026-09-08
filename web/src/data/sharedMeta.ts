@@ -73,3 +73,21 @@ export function storeSharedMeta(meta: SharedMeta | null): void {
     // storage unavailable -- the meta is just re-fetched next visit
   }
 }
+
+export function clearSharedMeta(): void {
+  try {
+    localStorage.removeItem(SHARED_META_KEY);
+  } catch {
+    // storage unavailable -- there is nothing stored to drop
+  }
+}
+
+/**
+ * A share link's presentation config must not outlive the link that supplied
+ * it, so applying one always drops whatever a previous link left behind --
+ * including when this link carries no meta of its own.
+ */
+export function applySharedMeta(meta: SharedMeta | null): void {
+  clearSharedMeta();
+  if (meta) storeSharedMeta(meta);
+}
