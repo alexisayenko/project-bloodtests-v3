@@ -1,0 +1,363 @@
+{
+  "atomicWeights": {
+    "source": {
+      "authority": "CIAAW (IUPAC Commission on Isotopic Abundances and Atomic Weights)",
+      "identifier": "Standard atomic weights 2021",
+      "url": "https://www.ciaaw.org/abridged-atomic-weights.htm",
+      "fullTableUrl": "https://www.ciaaw.org/atomic-weights.htm",
+      "retrieved": "2026-09-08"
+    },
+    "elements": {
+      "H": {
+        "element": "hydrogen",
+        "value": 1.008,
+        "publishedAs": "[1.00784, 1.00811]",
+        "table": "abridged",
+        "note": "CIAAW publishes an interval for hydrogen, so the abridged conventional value is used."
+      },
+      "C": {
+        "element": "carbon",
+        "value": 12.011,
+        "publishedAs": "[12.0096, 12.0116]",
+        "table": "abridged",
+        "note": "CIAAW publishes an interval for carbon, so the abridged conventional value is used."
+      },
+      "N": {
+        "element": "nitrogen",
+        "value": 14.007,
+        "publishedAs": "[14.00643, 14.00728]",
+        "table": "abridged",
+        "note": "CIAAW publishes an interval for nitrogen, so the abridged conventional value is used."
+      },
+      "O": {
+        "element": "oxygen",
+        "value": 15.999,
+        "publishedAs": "[15.99903, 15.99977]",
+        "table": "abridged",
+        "note": "CIAAW publishes an interval for oxygen, so the abridged conventional value is used."
+      },
+      "Mg": {
+        "element": "magnesium",
+        "value": 24.305,
+        "publishedAs": "[24.304, 24.307]",
+        "table": "abridged",
+        "note": "CIAAW publishes an interval for magnesium, so the abridged conventional value is used."
+      },
+      "P": {
+        "element": "phosphorus",
+        "value": 30.973761998,
+        "publishedAs": "30.973761998(5)",
+        "table": "full"
+      },
+      "S": {
+        "element": "sulfur",
+        "value": 32.06,
+        "publishedAs": "[32.059, 32.076]",
+        "table": "abridged",
+        "note": "CIAAW publishes an interval for sulfur, so the abridged conventional value is used."
+      },
+      "Ca": {
+        "element": "calcium",
+        "value": 40.078,
+        "publishedAs": "40.078(4)",
+        "table": "full"
+      },
+      "Fe": {
+        "element": "iron",
+        "value": 55.845,
+        "publishedAs": "55.845(2)",
+        "table": "full"
+      },
+      "I": {
+        "element": "iodine",
+        "value": 126.90447,
+        "publishedAs": "126.90447(3)",
+        "table": "full"
+      }
+    }
+  },
+  "analytes": [
+    {
+      "id": "cholesterol",
+      "name": "Cholesterol",
+      "formula": "C27H46O",
+      "molarMassGPerMol": 386.664,
+      "basis": "compound",
+      "note": "Total, HDL and LDL cholesterol all measure the same molecule, so one molar mass serves all three LOINC sibling pairs.",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5997",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5997",
+          "reportedMolarMassGPerMol": 386.7,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "triglyceride",
+      "name": "Triglyceride (as triolein)",
+      "formula": "C57H104O6",
+      "molarMassGPerMol": 885.453,
+      "basis": "conventional",
+      "note": "Serum triglycerides are a MIXTURE of triacylglycerols with different fatty-acid chains, so there is no single true molar mass. Clinical practice converts on the triolein (glyceryl trioleate) equivalent, and that is what is tabulated here. The value derived from triolein's formula is 88.545 mg/dL per mmol/L; the 88.57 widely quoted in online converters is not reproducible from triolein's molar mass under any published set of atomic weights, and is not used.",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5497163",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5497163",
+          "reportedMolarMassGPerMol": 885.4,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "glucose",
+      "name": "Glucose",
+      "formula": "C6H12O6",
+      "molarMassGPerMol": 180.156,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5793",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5793",
+          "reportedMolarMassGPerMol": 180.16,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "creatinine",
+      "name": "Creatinine",
+      "formula": "C4H7N3O",
+      "molarMassGPerMol": 113.12,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 588",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/588",
+          "reportedMolarMassGPerMol": 113.12,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "urea",
+      "name": "Urea",
+      "formula": "CH4N2O",
+      "molarMassGPerMol": 60.056,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 1176",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/1176",
+          "reportedMolarMassGPerMol": 60.056,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "urea-nitrogen",
+      "name": "Urea nitrogen",
+      "formula": "N2",
+      "molarMassGPerMol": 28.014,
+      "basis": "conventional",
+      "note": "Blood urea nitrogen is reported on a NITROGEN basis, not as urea, so this is not the molar mass of any molecule: it is the mass of the two nitrogen atoms each urea molecule (CH4N2O, PubChem CID 1176) carries. The resulting 2.8014 mg/dL per mmol/L is therefore an atom count times an atomic weight, and never a compound's molar mass.",
+      "sources": [
+        {
+          "authority": "CIAAW",
+          "identifier": "Standard atomic weight of nitrogen",
+          "url": "https://www.ciaaw.org/nitrogen.htm",
+          "retrieved": "2026-09-08"
+        },
+        {
+          "authority": "PubChem",
+          "identifier": "CID 1176",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/1176",
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "bilirubin",
+      "name": "Bilirubin",
+      "formula": "C33H36N4O6",
+      "molarMassGPerMol": 584.673,
+      "basis": "compound",
+      "note": "Unconjugated bilirubin. Clinical convention applies this same molar mass to the total, direct (conjugated) and indirect fractions, although conjugated bilirubin actually circulates as the mono- and di-glucuronide and so has a larger true molar mass. The direct fraction's factor is therefore conventional rather than exact; the total and indirect fractions are exact.",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5280352",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5280352",
+          "reportedMolarMassGPerMol": 584.7,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "urate",
+      "name": "Urate (uric acid)",
+      "formula": "C5H4N4O3",
+      "molarMassGPerMol": 168.112,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 1175",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/1175",
+          "reportedMolarMassGPerMol": 168.11,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "calcium",
+      "name": "Calcium",
+      "formula": "Ca",
+      "molarMassGPerMol": 40.078,
+      "basis": "element",
+      "sources": [
+        {
+          "authority": "CIAAW",
+          "identifier": "Standard atomic weight of calcium",
+          "url": "https://www.ciaaw.org/calcium.htm",
+          "reportedMolarMassGPerMol": 40.078,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "iron",
+      "name": "Iron",
+      "formula": "Fe",
+      "molarMassGPerMol": 55.845,
+      "basis": "element",
+      "sources": [
+        {
+          "authority": "CIAAW",
+          "identifier": "Standard atomic weight of iron",
+          "url": "https://www.ciaaw.org/iron.htm",
+          "reportedMolarMassGPerMol": 55.845,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "magnesium",
+      "name": "Magnesium",
+      "formula": "Mg",
+      "molarMassGPerMol": 24.305,
+      "basis": "element",
+      "sources": [
+        {
+          "authority": "CIAAW",
+          "identifier": "Standard atomic weight of magnesium",
+          "url": "https://www.ciaaw.org/magnesium.htm",
+          "reportedMolarMassGPerMol": 24.305,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "phosphorus",
+      "name": "Phosphorus",
+      "formula": "P",
+      "molarMassGPerMol": 30.973762,
+      "basis": "element",
+      "note": "LOINC names the analyte \"Phosphate\", but both the mass and the molar scale report ELEMENTAL phosphorus, not the phosphate ion. The factor is therefore the atomic weight of P (30.974), never the molar mass of PO4 (94.97).",
+      "sources": [
+        {
+          "authority": "CIAAW",
+          "identifier": "Standard atomic weight of phosphorus",
+          "url": "https://www.ciaaw.org/phosphorus.htm",
+          "reportedMolarMassGPerMol": 30.973761998,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "testosterone",
+      "name": "Testosterone",
+      "formula": "C19H28O2",
+      "molarMassGPerMol": 288.431,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 6013",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6013",
+          "reportedMolarMassGPerMol": 288.4,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "cortisol",
+      "name": "Cortisol",
+      "formula": "C21H30O5",
+      "molarMassGPerMol": 362.466,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5754",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5754",
+          "reportedMolarMassGPerMol": 362.5,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "thyroxine",
+      "name": "Thyroxine (T4)",
+      "formula": "C15H11I4NO4",
+      "molarMassGPerMol": 776.87388,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5819",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5819",
+          "reportedMolarMassGPerMol": 776.87,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "triiodothyronine",
+      "name": "Triiodothyronine (T3)",
+      "formula": "C15H12I3NO4",
+      "molarMassGPerMol": 650.97741,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5920",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5920",
+          "reportedMolarMassGPerMol": 650.97,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "id": "dheas",
+      "name": "Dehydroepiandrosterone sulfate (DHEA-S)",
+      "formula": "C19H28O5S",
+      "molarMassGPerMol": 368.488,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 12594",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/12594",
+          "reportedMolarMassGPerMol": 368.5,
+          "retrieved": "2026-09-08"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blood.isayenko.net/schema/molar-masses-1.schema.json",
+  "title": "MolarMasses",
+  "description": "The app's molar-mass reference data, schema 1: web/public/data/molar-masses.json. This is the SINGLE SOURCE OF TRUTH for every mass↔molar conversion factor the app uses — the mass/molar LOINC sibling table and the computed indices both derive their factors from it, and no factor is written by hand anywhere in TypeScript. A factor is never stored: what is stored is a molar mass, and `web/src/data/molarMasses.ts` turns it into a factor for a given unit pair, so \"38.67 mg/dL per mmol/L\" cannot drift from \"cholesterol is 386.664 g/mol\". Each molar mass is in turn derived from a molecular formula and the atomic weights in `atomicWeights`, both of which carry the source they were verified against, so the whole chain from an IUPAC atomic weight to a number in a chart is auditable. Like the analyte catalog this is app-internal data with no outside authors, so the objects are CLOSED: a mistyped key fails the conformance suite instead of being silently ignored at runtime.",
+  "type": "object",
+  "required": ["atomicWeights", "analytes"],
+  "additionalProperties": false,
+  "properties": {
+    "atomicWeights": {
+      "type": "object",
+      "title": "AtomicWeights",
+      "description": "The standard atomic weights every molar mass below is computed from. Present so that a molar mass is never an unexplained constant: it is a formula plus this table.",
+      "required": ["source", "elements"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "object",
+          "description": "Where the whole table was taken from. One source for all elements, because they come from one published table.",
+          "required": ["authority", "identifier", "url", "retrieved"],
+          "additionalProperties": false,
+          "properties": {
+            "authority": { "type": "string", "minLength": 1 },
+            "identifier": { "type": "string", "minLength": 1 },
+            "url": { "type": "string", "pattern": "^https://" },
+            "fullTableUrl": {
+              "type": "string",
+              "pattern": "^https://",
+              "description": "Optional. The unabridged table, for the elements whose value is taken from it rather than from the abridged one."
+            },
+            "retrieved": { "$ref": "#/$defs/date" }
+          }
+        },
+        "elements": {
+          "type": "object",
+          "description": "Keyed by element symbol. Only the elements the tabulated analytes are made of — this is not a periodic table.",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[A-Z][a-z]?$" },
+          "additionalProperties": { "$ref": "#/$defs/atomicWeight" }
+        }
+      }
+    },
+    "analytes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/molarMass" }
+    }
+  },
+  "$defs": {
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "ISO date the source was actually retrieved. A citation nobody fetched is not a citation."
+    },
+    "atomicWeight": {
+      "type": "object",
+      "title": "AtomicWeight",
+      "description": "One element's standard atomic weight, as used in this project's molar-mass arithmetic.",
+      "required": ["element", "value", "publishedAs", "table"],
+      "additionalProperties": false,
+      "properties": {
+        "element": { "type": "string", "minLength": 1, "description": "The element's name, lower case." },
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "The single number used in the arithmetic. For an element CIAAW publishes as an interval this is the abridged conventional value, not an endpoint of the interval."
+        },
+        "publishedAs": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim as CIAAW prints it — an interval in brackets, or a value with its parenthesised uncertainty. Kept as text so the published form is visible next to the single number this project collapses it to."
+        },
+        "table": {
+          "enum": ["abridged", "full"],
+          "description": "Which CIAAW table `value` came from: the abridged (conventional) table for an element published as an interval, the full table for an element published as a single value with an uncertainty."
+        },
+        "note": { "type": "string", "minLength": 1, "description": "Optional. Why this element needed a judgement call." }
+      }
+    },
+    "molarMass": {
+      "type": "object",
+      "title": "MolarMass",
+      "description": "One analyte's molar mass, and the evidence for it. An entry exists because some conversion in the app needs it — a mass/molar LOINC sibling pair, or a computed index whose formula wants an input in the other unit system.",
+      "required": ["id", "name", "formula", "molarMassGPerMol", "basis", "sources"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Stable key the TypeScript side names this entry by. Not a LOINC: several LOINC codes share one molar mass (total, HDL and LDL cholesterol are all cholesterol)."
+        },
+        "name": { "type": "string", "minLength": 1, "description": "How a Reference Book page prints it." },
+        "formula": {
+          "type": "string",
+          "pattern": "^([A-Z][a-z]?\\d*)+$",
+          "description": "Molecular formula in Hill order, or a bare element symbol. `molarMassGPerMol` must be reproducible from this formula and the `atomicWeights` table — the conformance suite recomputes it, so the two cannot drift."
+        },
+        "molarMassGPerMol": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Grams per mole, computed from `formula` and `atomicWeights`, rounded to 6 decimals. The only number in this file that a conversion factor is built from; every factor in the app is this value scaled by the two units' decimal prefixes."
+        },
+        "basis": {
+          "enum": ["compound", "element", "conventional"],
+          "description": "How honest the number is. `compound` — a single molecular species, so the molar mass is exact. `element` — the analyte is an element measured as itself, so the value is its atomic weight. `conventional` — there is no single true molar mass and clinical practice agrees on a stand-in (a mixture reported on one representative species, or a value reported on an atom count rather than a molecule). A `conventional` entry MUST carry a `note` saying what the convention is."
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional for `compound` and `element`, required for `conventional`. States what is approximate and why, in the entry itself rather than in a comment somewhere downstream."
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/source" },
+          "description": "Every source actually retrieved for this entry. A compound cites PubChem for its identity and formula; an element cites CIAAW for its atomic weight."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "basis": { "const": "conventional" } }, "required": ["basis"] },
+          "then": { "required": ["note"] }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "title": "Source",
+      "description": "One retrieved citation. Every field is something a reader can check without trusting this file.",
+      "required": ["authority", "identifier", "url", "retrieved"],
+      "additionalProperties": false,
+      "properties": {
+        "authority": { "type": "string", "minLength": 1, "description": "Who publishes it — \"PubChem\", \"CIAAW\"." },
+        "identifier": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The stable identifier within that authority — a PubChem CID, or the named CIAAW entry."
+        },
+        "url": { "type": "string", "pattern": "^https://" },
+        "reportedMolarMassGPerMol": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Optional. The mass the source itself prints for THIS entry's species, at the source's own precision — PubChem rounds to four significant figures and computes on an older set of atomic weights, so this will not equal `molarMassGPerMol` exactly. The conformance suite requires the two to agree within 0.05%, which is loose enough for that rounding and tight enough to catch a wrong formula or a transposed digit. Absent where the source is identity evidence rather than a mass to compare against — urea nitrogen cites urea's PubChem entry to establish that each molecule carries two nitrogen atoms, and no source anywhere reports \"28.014 g/mol of urea nitrogen\". Every `compound` and `element` entry must carry it on at least one source."
+        },
+        "retrieved": { "$ref": "#/$defs/date" }
+      }
+    }
+  }
+}

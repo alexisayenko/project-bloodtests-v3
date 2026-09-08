@@ -5,8 +5,8 @@ import type { Result } from '../src/types';
 /**
  * Golden-master for all derived indices, ported from
  * project-bloodtests-v2 engine/test/indices.test.ts. Expected values are the
- * v2 GOLD constants (byte-identical); v3 drops the age/sex indices (eGFR ×3,
- * FIB-4), so those golds are omitted.
+ * v2 GOLD constants, re-baselined where noted on GOLD below; v3 drops the
+ * age/sex indices (eGFR ×3, FIB-4), so those golds are omitted.
  *
  * Unlike v2's test (which normalized units by hand before calling fn), this
  * fixture is Result objects with real LOINCs and units, so the assertion
@@ -62,26 +62,32 @@ const RESULTS: Record<string, Result> = Object.fromEntries([
 ]);
 
 // v2 GOLD, minus the unported age/sex indices (egfr, egfrcys, egfrcrcys, fib4).
+//
+// Re-baselined off v2 when the mass<->molar conversion constants stopped being
+// hand-typed and became derived from cited molar masses (molar-masses.json):
+// several hand-typed constants were slightly imprecise. The shift is <=0.07%
+// relative and moves no value the UI displays at 2dp — a constants correction,
+// not a change in any formula.
 const GOLD: Record<string, number> = {
   ka: 3,
   tchdl: 4,
   ldlhdl: 2.4,
-  aip: 0.117209,
+  aip: 0.117289,
   nonhdl: 150,
   remnant: 30,
   vldl: 30,
   apobapoa: 0.692308,
   tyg: 8.871365,
   gi: 11.875,
-  homair: 1.874669,
-  homab: 90.267715,
-  cft: 93.163378,
+  homair: 1.874918,
+  homab: 90.231958,
+  cft: 93.162473,
   fai: 43.3375,
-  tlh: 100,
-  te2: 16.666667,
-  dhtt: 8,
+  tlh: 99.999028,
+  te2: 16.666505,
+  dhtt: 8.000078,
   cortdhea: 0.060995,
-  ft3ft4: 0.284597,
+  ft3ft4: 0.284579,
   deritis: 1.25,
   tsat: 28.571429,
 };
@@ -128,15 +134,15 @@ describe('calculatedFreeTestosterone via the cft index (Vermeulen golden master)
   };
 
   it('sanity example (total 888 ng/dL)', () => {
-    expect(cft.fn(fixture(888, 30, 4.3))!).toBeCloseTo(219.40113, 5);
+    expect(cft.fn(fixture(888, 30, 4.3))!).toBeCloseTo(219.401605, 5);
   });
 
   it('mid case', () => {
-    expect(cft.fn(fixture(500, 40, 4.5))!).toBeCloseTo(91.114808, 5);
+    expect(cft.fn(fixture(500, 40, 4.5))!).toBeCloseTo(91.114944, 5);
   });
 
   it('albumin defaults to 4.3 when omitted', () => {
-    expect(cft.fn(fixture(300, 60))!).toBeCloseTo(39.353951, 5);
+    expect(cft.fn(fixture(300, 60))!).toBeCloseTo(39.353986, 5);
   });
 
   it('matches the ISSAM reference calculator (T 446, SHBG 24.9, ALB 4.3 → ~2.41%)', () => {

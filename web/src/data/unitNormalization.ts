@@ -378,17 +378,6 @@ function sameKinds(a: TokenKind[], b: TokenKind[]): boolean {
   return a.length === b.length && a.every((kind, i) => kind === b[i]);
 }
 
-// The pair's own `massPerMolarUnit` is stated on its declared units, so it
-// yields g/mol once both are put on their base scales — that covers the pairs
-// whose factor is not a molecular molar mass at all (urea nitrogen).
-function gramsPerMole(pair: MassMolarSibling): number | undefined {
-  if (pair.molarMassGPerMol !== undefined) return pair.molarMassGPerMol;
-  const mass = unitScale(pair.mass.unit);
-  const molar = unitScale(pair.molar.unit);
-  if (!mass || !molar) return undefined;
-  return (pair.massPerMolarUnit * mass.factor) / molar.factor;
-}
-
 /**
  * Convert a value between two UCUM units for one analyte: scale-only within a
  * dimension (g/L ↔ mg/dL, ug/L ↔ ng/mL), or across the mass/molar divide using
@@ -418,8 +407,10 @@ export function convertValue(
   if (!molarToMass && !massToMolar) return undefined;
   const pair = SIBLING_BY_MASS_LOINC[loinc] ?? SIBLING_BY_MOLAR_LOINC[loinc];
   if (!pair) return undefined;
-  const grams = gramsPerMole(pair);
-  if (grams === undefined) return undefined;
+  // Every pair carries a molar mass, derived from the molar-mass reference
+  // data — including urea nitrogen, whose 28.014 g/mol is two nitrogen atoms
+  // rather than a molecule (see its entry's note).
+  const grams = pair.molarMassGPerMol;
   const base = value * from.factor;
   return { value: (molarToMass ? base * grams : base / grams) / to.factor, unit: toUcum };
 }

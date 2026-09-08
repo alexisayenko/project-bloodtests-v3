@@ -1,4 +1,5 @@
 import type { Result } from '../types';
+import { massPerMolarUnit, molarPerMassUnit } from './molarMasses';
 
 /**
  * Client-side computed indices — ratios/estimates derived from other
@@ -44,11 +45,20 @@ export const MARKER_LOINC: Record<string, string[]> = {
   TIBC: ['2500-7'],
 };
 
-// ---- unit conversion, ported verbatim from engine/src/convert.ts + build.ts's UNIT_CONVERSIONS ----
+// ---- unit conversion, ported from engine/src/convert.ts + build.ts's
+// UNIT_CONVERSIONS. v2 wrote each factor out as a literal; here every one is
+// DERIVED from the molar-mass reference data, so an index can no longer
+// disagree with the mass/molar sibling table about what a mole of glucose
+// weighs (it did: v2 used 18.018, the sibling table 18.016, and 180.156 g/mol
+// makes it 18.0156). ----
 
-const cholMgdlToMmoll = (x: number) => x / 38.67;
-const tgMgdlToMmoll = (x: number) => x / 88.57;
-const glucoseMgdlToMmoll = (x: number) => x / 18.018;
+const CHOL_MGDL_PER_MMOLL = massPerMolarUnit('cholesterol', 'mg/dL', 'mmol/L');
+const TG_MGDL_PER_MMOLL = massPerMolarUnit('triglyceride', 'mg/dL', 'mmol/L');
+const GLU_MGDL_PER_MMOLL = massPerMolarUnit('glucose', 'mg/dL', 'mmol/L');
+
+const cholMgdlToMmoll = (x: number) => x / CHOL_MGDL_PER_MMOLL;
+const tgMgdlToMmoll = (x: number) => x / TG_MGDL_PER_MMOLL;
+const glucoseMgdlToMmoll = (x: number) => x / GLU_MGDL_PER_MMOLL;
 
 const MGDL_TO_MMOLL: Record<string, (x: number) => number> = {
   TC: cholMgdlToMmoll,
@@ -65,24 +75,33 @@ interface UnitConv {
   conv: (x: number) => number;
 }
 
-// Testosterone MW 288.42 g/mol (see calculatedFreeTestosterone below) => 1 ng/dL = 0.03467 nmol/L.
-const T_NGDL_TO_NMOLL_FACTOR = 0.03467;
+/**
+ * Testosterone ng/dL -> nmol/L. The one declaration: this used to be written
+ * out twice under two names (T_NGDL_TO_NMOLL_FACTOR here and T_NGDL_TO_NMOLL
+ * in the Vermeulen block below), both hard-coded to the same 0.03467.
+ */
+const T_NGDL_TO_NMOLL = molarPerMassUnit('testosterone', 'ng/dL', 'nmol/L');
+const FT3_PGML_TO_PMOLL = molarPerMassUnit('triiodothyronine', 'pg/mL', 'pmol/L');
+const FT4_NGDL_TO_PMOLL = molarPerMassUnit('thyroxine', 'ng/dL', 'pmol/L');
+// Used inside the cortisol/DHEA-S index's fn, which needs both sides in nmol/L.
+const CORTISOL_UGDL_TO_NMOLL = molarPerMassUnit('cortisol', 'ug/dL', 'nmol/L');
+const DHEAS_UGDL_TO_NMOLL = molarPerMassUnit('dheas', 'ug/dL', 'nmol/L');
 
 const UNIT_CONVERSIONS: UnitConv[] = [
-  { marker: 'FT3', from: 'pg/mL', to: 'pmol/L', conv: (x) => x * 1.536 },
-  { marker: 'FT3', from: 'pmol/L', to: 'pg/mL', conv: (x) => x / 1.536 },
-  { marker: 'FT4', from: 'ng/dL', to: 'pmol/L', conv: (x) => x * 12.87 },
-  { marker: 'FT4', from: 'pmol/L', to: 'ng/dL', conv: (x) => x / 12.87 },
+  { marker: 'FT3', from: 'pg/mL', to: 'pmol/L', conv: (x) => x * FT3_PGML_TO_PMOLL },
+  { marker: 'FT3', from: 'pmol/L', to: 'pg/mL', conv: (x) => x / FT3_PGML_TO_PMOLL },
+  { marker: 'FT4', from: 'ng/dL', to: 'pmol/L', conv: (x) => x * FT4_NGDL_TO_PMOLL },
+  { marker: 'FT4', from: 'pmol/L', to: 'ng/dL', conv: (x) => x / FT4_NGDL_TO_PMOLL },
   // Testosterone: nmol/L (molar, e.g. LOINC 14913-8) <-> ng/dL (the mass unit
   // cft/tlh/te2/dhtt's formulas expect).
-  { marker: 'T', from: 'nmol/L', to: 'ng/dL', conv: (x) => x / T_NGDL_TO_NMOLL_FACTOR },
-  { marker: 'T', from: 'ng/dL', to: 'nmol/L', conv: (x) => x * T_NGDL_TO_NMOLL_FACTOR },
+  { marker: 'T', from: 'nmol/L', to: 'ng/dL', conv: (x) => x / T_NGDL_TO_NMOLL },
+  { marker: 'T', from: 'ng/dL', to: 'nmol/L', conv: (x) => x * T_NGDL_TO_NMOLL },
   // Testosterone: ng/mL (e.g. LOINC 2986-8) <-> ng/dL -- same mass unit, dL = 100 mL.
   { marker: 'T', from: 'ng/mL', to: 'ng/dL', conv: (x) => x * 100 },
   { marker: 'T', from: 'ng/dL', to: 'ng/mL', conv: (x) => x / 100 },
   // Testosterone: ng/mL <-> nmol/L directly (ng/mL -> ng/dL -> nmol/L combined).
-  { marker: 'T', from: 'ng/mL', to: 'nmol/L', conv: (x) => x * 100 * T_NGDL_TO_NMOLL_FACTOR },
-  { marker: 'T', from: 'nmol/L', to: 'ng/mL', conv: (x) => x / T_NGDL_TO_NMOLL_FACTOR / 100 },
+  { marker: 'T', from: 'ng/mL', to: 'nmol/L', conv: (x) => x * 100 * T_NGDL_TO_NMOLL },
+  { marker: 'T', from: 'nmol/L', to: 'ng/mL', conv: (x) => x / T_NGDL_TO_NMOLL / 100 },
   ...Object.entries(MGDL_TO_MMOLL).flatMap(([marker, f]): UnitConv[] => [
     { marker, from: 'mg/dL', to: 'mmol/L', conv: f },
     { marker, from: 'mmol/L', to: 'mg/dL', conv: (x) => x / f(1) },
@@ -133,7 +152,6 @@ export function zone(value: number, good: number, warn: number, hi = false): Zon
 const ALBUMIN_MW = 69000; // g/mol, Vermeulen/ISSAM calculator convention (not albumin's true MW)
 const KA_ALBUMIN = 3.6e4; // L/mol, testosterone-albumin association constant
 const KS_SHBG = 1e9; // L/mol, testosterone-SHBG association constant
-const T_NGDL_TO_NMOLL = 0.03467; // testosterone MW 288.42 g/mol
 const DEFAULT_ALBUMIN_GDL = 4.3;
 
 function calculatedFreeTestosterone(totalT_ngdl: number, shbg_nmoll: number, albumin_gdl?: number): number {
@@ -399,8 +417,12 @@ export const INDEX_DEFS: IndexDef[] = [
     references: [
       { organization: "European Journal of Endocrinology (Phillips AC, Carroll D, Gale CR, Lord JM, Arlt W, Batty GD)", document: "Cortisol, DHEAS, their ratio and the metabolic syndrome: evidence from the Vietnam Experience Study", year: 2010, url: "https://pubmed.ncbi.nlm.nih.gov/20164211/", doi: "10.1530/EJE-09-1078", quote: "A higher cortisol:DHEAS ratio was associated with greater metabolic-syndrome risk; the ratio is a research/functional-medicine marker of catabolic-anabolic balance with no agreed diagnostic cutoff — bands here are orientation only." },
     ],
-    // Both sides converted to nmol/L: cortisol µg/dL x27.59 (MW 362.46); DHEA-S µg/dL x27.14 (MW 368.5).
-    fn: (m) => (has(m, 'Cortisol', 'DHEA-S') ? (m['Cortisol']! * 27.59) / (m['DHEA-S']! * 27.14) : null),
+    // Both sides converted to nmol/L from the tabulated molar masses, not from
+    // literals: cortisol 362.466 g/mol, DHEA-S 368.488 g/mol.
+    fn: (m) =>
+      has(m, 'Cortisol', 'DHEA-S')
+        ? (m['Cortisol']! * CORTISOL_UGDL_TO_NMOLL) / (m['DHEA-S']! * DHEAS_UGDL_TO_NMOLL)
+        : null,
   },
   {
     key: 'ft3ft4', name: 'FT3 / FT4 ratio', nameCompact: 'FT3/FT4', panels: ['Hypothyroidism'],
