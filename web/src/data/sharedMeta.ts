@@ -75,12 +75,18 @@ export function storeSharedMeta(meta: SharedMeta | null): void {
     const settingsIn = meta.settings;
     const unitSystem =
       settingsIn?.unitSystem === 'si' || settingsIn?.unitSystem === 'us' ? settingsIn.unitSystem : undefined;
-    const sampleLimit =
-      settingsIn?.sampleLimit === 'all'
-        ? ('all' as const)
-        : typeof settingsIn?.sampleLimit === 'number' && Number.isFinite(settingsIn.sampleLimit) && settingsIn.sampleLimit > 0
-          ? settingsIn.sampleLimit
-          : undefined;
+    let sampleLimit: number | 'all' | undefined;
+    if (settingsIn?.sampleLimit === 'all') {
+      sampleLimit = 'all';
+    } else if (
+      typeof settingsIn?.sampleLimit === 'number' &&
+      Number.isFinite(settingsIn.sampleLimit) &&
+      settingsIn.sampleLimit > 0
+    ) {
+      sampleLimit = settingsIn.sampleLimit;
+    } else {
+      sampleLimit = undefined;
+    }
     const dateOrder =
       settingsIn?.dateOrder === 'asc' || settingsIn?.dateOrder === 'desc' ? settingsIn.dateOrder : undefined;
 

@@ -44,12 +44,14 @@ export function MedicalConditionsPage() {
       // them can still trace back to a share-link's fetched meta JSON
       // (see ui.ts's seedAnalysisSettings) rather than a user click.
       const safeUnitSystem: 'si' | 'us' = unitSystem === 'us' ? 'us' : 'si';
-      const safeSampleLimit: number | 'all' =
-        sampleLimit === 'all'
-          ? 'all'
-          : typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0
-            ? sampleLimit
-            : DEFAULT_ANALYSIS_SETTINGS.sampleLimit;
+      let safeSampleLimit: number | 'all';
+      if (sampleLimit === 'all') {
+        safeSampleLimit = 'all';
+      } else if (typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0) {
+        safeSampleLimit = sampleLimit;
+      } else {
+        safeSampleLimit = DEFAULT_ANALYSIS_SETTINGS.sampleLimit;
+      }
       const safeDateOrder: 'asc' | 'desc' = dateOrder === 'desc' ? 'desc' : 'asc';
       localStorage.setItem(
         ANALYSIS_SETTINGS_KEY,
