@@ -6,8 +6,8 @@ import { massPerMolarUnit, molarPerMassUnit } from './molarMasses';
  * observations, not reported directly by any lab. Ported from
  * project-bloodtests-v2's engine/src/indices/{definitions,build,free-testosterone}.ts
  * and engine/src/{flag,convert}.ts. Age/sex-dependent indices (eGFR x3, FIB-4)
- * are intentionally NOT ported -- v3 has no user profile to source age/sex from;
- * eGFR stays the lab-reported LOINC value it already was.
+ * are intentionally NOT ported; eGFR stays the lab-reported LOINC value it
+ * already was.
  */
 
 export type Markers = Record<string, number | undefined>;
