@@ -1,5 +1,6 @@
 import type { ExploreMarker, ExploreNotTaken, LabExploreModel } from '../../vendor/lab-explore/explore-types';
-import { INDEX_DEFS, SI_US_UNIT, computeIndex, toUnit, type IndexDef, type IndexReference } from '../../data/computedIndices';
+import { SI_US_UNIT, computeIndex, toUnit, type IndexDef, type IndexReference } from '../../data/computedIndices';
+import { INDEX_DEFS } from '../../data/indexDefs';
 import { INDEX_LOINCS, LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';

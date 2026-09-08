@@ -1,9 +1,11 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import type { Result } from '../../types';
-import { INDEX_DEFS, MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
+import { MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
+import { INDEX_DEFS } from '../../data/indexDefs';
 import { COMPUTED_LOINCS, INDEX_LOINCS, testLoincs, type Observation } from './markers';
 import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
+import { TabBar } from './TabBar';
 import { ObservationTable, IndexTable } from './ResultTables';
 import { indexInputLoincs, useScheduled } from './scheduled';
 import { LangProvider } from '../../i18n/LangContext';
@@ -17,11 +19,11 @@ const PanelChartsView = lazy(() => import('../analytics/PanelChartsView').then((
 
 type DetailTab = 'analysis' | 'in-range' | 'charts';
 
-const TAB_LABELS: Record<DetailTab, string> = {
-  analysis: 'Analysis',
-  'in-range': "What's in range",
-  charts: 'Charts',
-};
+const DETAIL_TABS: readonly { id: DetailTab; label: string }[] = [
+  { id: 'analysis', label: 'Analysis' },
+  { id: 'in-range', label: "What's in range" },
+  { id: 'charts', label: 'Charts' },
+];
 
 // Matches the muted empty-state text used across these views; the min-height
 // reserves roughly a chart's worth of room so the tab doesn't jump on load.
@@ -107,26 +109,7 @@ export function PanelDetailView({
         </span>
         {name}
       </h1>
-      <div style={{ display: 'flex', gap: 8, borderBottom: '1.5px solid #eee', marginBottom: 24 }}>
-        {(['analysis', 'in-range', 'charts'] as const).map((tab) => (
-          <div
-            key={tab}
-            {...pressable(() => setDetailTab(tab))}
-            style={{
-              padding: '10px 4px',
-              marginBottom: -2,
-              borderBottom: detailTab === tab ? '2px solid #1971c2' : '2px solid transparent',
-              // Faux-bold via text-shadow, not fontWeight -- see NavBar.tsx's comment:
-              // a real weight change reflows neighboring tabs by a px on switch.
-              textShadow: detailTab === tab ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
-              color: detailTab === tab ? '#1971c2' : '#555',
-              cursor: 'pointer',
-            }}
-          >
-            {TAB_LABELS[tab]}
-          </div>
-        ))}
-      </div>
+      <TabBar tabs={DETAIL_TABS} active={detailTab} onChange={setDetailTab} />
 
       {detailTab === 'analysis' && (
         <div>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { INDEX_DEFS, MARKER_LOINC } from '../../data/computedIndices';
+import { MARKER_LOINC } from '../../data/computedIndices';
+import { INDEX_DEFS } from '../../data/indexDefs';
 import { LOINC_TO_MARKER } from './markers';
 
 // Which observations (by LOINC) and computed indices (by key) are marked for

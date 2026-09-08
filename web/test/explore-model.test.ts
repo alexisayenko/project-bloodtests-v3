@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildExploreModel, refBandFor, INDEX_MARKER_KEY_PREFIX, type Condition } from '../src/components/conditions/exploreModel';
-import { INDEX_DEFS, toUnit } from '../src/data/computedIndices';
+import { toUnit } from '../src/data/computedIndices';
+import { INDEX_DEFS } from '../src/data/indexDefs';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import type { Result } from '../src/types';

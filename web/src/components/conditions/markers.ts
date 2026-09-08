@@ -1,4 +1,5 @@
-import { INDEX_DEFS, MARKER_LOINC } from '../../data/computedIndices';
+import { MARKER_LOINC } from '../../data/computedIndices';
+import { INDEX_DEFS } from '../../data/indexDefs';
 import { ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
 import type { Analysis, LoincRef, MonitoringPanelDef, Panel } from '../../types';
 

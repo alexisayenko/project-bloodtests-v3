@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { INDEX_DEFS, computeIndex, markersForIndex, zone } from '../src/data/computedIndices';
+import { computeIndex, markersForIndex, zone } from '../src/data/computedIndices';
+import { INDEX_DEFS } from '../src/data/indexDefs';
 import type { Result } from '../src/types';
 
 /**

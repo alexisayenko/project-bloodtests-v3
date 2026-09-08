@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { INDEX_DEFS, computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
+import { computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
+import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
 import { INDEX_LOINCS, testLoincs, type Observation } from './markers';
 import { STATUS_STYLES, ZONE_DOT, pressable } from './ui';
