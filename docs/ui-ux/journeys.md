@@ -31,9 +31,9 @@ Entry point → panel detail, with a historical values table.
   cut-points) instead of the values table
 - **Branches:** "Charts" tab shows the panel's markers as a 3D
   stacked-ribbon chart (one marker per depth plane, each normalized to
-  its own observed range; checkbox picker up to 8 markers; time window
-  All time / 1 week / 1 month / 1 year with ‹› panning; drag to
-  rotate, scroll to zoom)
+  its own observed range; checkbox picker up to 8 markers; From / To
+  year selects listing only the years the data has, plus Translucent
+  and Reset view; drag to rotate, scroll to zoom)
 - **Exit / success:** viewer sees an observation's historical values
   and reference range
 

@@ -81,18 +81,21 @@ stacked-ribbon chart, one marker per depth plane, each normalized to
 its own observed min/max so mixed units share one chart; alias LOINCs
 merge into one series per test (canonical code = the test's `loinc`),
 a checkbox picker selects up to 8 markers with stable per-marker
-colors, plus a translucent/opaque toggle, a time-window selector (All
-time / 1 week / 1 month / 1 year, anchored to the latest date; ‹›
-pans by a day or by a window width, clamped to the data extent;
-out-of-window points are dropped before per-series normalization, as
-in the mood tracker), drag to rotate, wheel/pinch to zoom,
+colors, plus a translucent/opaque toggle, a "Reset view" button, and
+From / To year selects listing only the years the data actually has (a
+gap year stays absent; picking a From past the To drags the other
+along, and the pair drives the engine's `setRange` — out-of-window
+points are dropped before per-series normalization, as in the mood
+tracker), drag to rotate, wheel/pinch to zoom,
 double-click to reset; the time axis stretches to the page width (the
 room's x half-extent is fitted per draw so the projected room spans
 ~90% of the canvas; height fixed at 420px). The engine
 (`web/src/components/analytics/chart3d-stacked-core.ts`,
 `chart3d-camera.ts`) is ported from project-moodtracker's
 `chart3d-stacked.js`/`chart3d-camera.js`, generalized from 8 fixed
-slots to N series; `StackedBiomarkerChart3D.tsx` mounts it and
+slots to N series; it still exposes the ported `setWindowKind` /
+`panByWindowWidth` / `panByDay` window controls, which the year selects
+replaced and no caller uses. `StackedBiomarkerChart3D.tsx` mounts it and
 `StackedBiomarkerSection.tsx` owns selection and the picker. The
 legacy, unwired `AnalyticsPage` reuses the same section behind a List /
 Compare-in-3D toggle (`BiomarkerCharts.tsx`). Panel Detail's Analysis
@@ -128,7 +131,11 @@ LOINC / value / unit, saved to localStorage via `updateGroup`, and
 carries a "Cross-check LOINCs" button (`loincCheck.ts`): an offline
 resolver derives each row's LOINC from printed name + unit (ADR-0004;
 Latin-name pass, then catalog `lang` translations, unit hard-selecting
-among unit variants; per-code allowed-unit sets (`ALLOWED_UNITS`)
+among unit variants — the unit comparison key borrows
+`unitNormalization`'s `foldUnitGlyphs` / `toLatinUnit` rather than
+tabulating them twice, so a Cyrillic spelling ("ммоль/л", "тыс/мкл"),
+a superscript digit (×10⁹/L) and the micro sign all fold to the
+catalog's Latin form; per-code allowed-unit sets (`ALLOWED_UNITS`)
 drive the validation unit warning — it fires only when a unit is
 outside the code's accepted set, listing that set — and alias-group
 members collapse into one suggestion, the kept code picked by the
@@ -190,15 +197,19 @@ implemented, and `web/public/schema/bloodtests-3.schema.json` (served at
 as is the parser, since ADR-0009) for the machine-readable form; the envelope's
 TypeScript types are generated from that schema by `npm run schema:types`
 (`scripts/generate-envelope-types.mjs` → `data/envelopeTypes.ts`), with a
-drift test failing CI on an ungenerated schema edit. Unit normalization is
-built but not yet wired into any view: `data/unitNormalization.ts` runs three
-pure stages — printed unit (Cyrillic and Ukrainian unit tables, superscripts,
-micro-sign and multiplication-sign folding) to a canonical Latin spelling,
+drift test failing CI on an ungenerated schema edit. Unit normalization
+(`data/unitNormalization.ts`) runs three pure stages — printed unit (Cyrillic
+and Ukrainian unit tables, superscripts, micro-sign and
+multiplication-sign folding) to a canonical Latin spelling,
 Latin to a UCUM code, then a LOINC-versus-unit dimension check — plus
 `convertValue` / `canonicalUnitFor` and a `normalizeObservationUnit`
-orchestrator returning all three stages in one reviewable result. The printed
-value and unit stay authoritative; a canonical form is derived per call and
-never stored, and an unrecognized unit returns undefined rather than a guess.
+orchestrator returning all three stages in one reviewable result. It has two
+callers: `parseUpload.ts` (above) and `validateDiagnosticReports.ts`. The printed
+value and unit stay authoritative; the canonical form is derived, never written
+back to `value`/`unit` and never exported, and an unrecognized unit returns
+undefined rather than a guess — which is itself the lower-severity warning.
+No confirm-and-apply UI exists yet: normalization surfaces as warnings only,
+never as a suggestion chip (task-0011).
 A molar unit under a mass-concentration code is treated as a *code* error, so
 the check suggests the analyte's `[Moles/volume]` sibling from the 20 curated
 pairs in `data/massMolarSiblings.ts` (each with the mass/molar factor as data
@@ -213,14 +224,25 @@ Node scripts sit beside the app: `npm run convert:v3`
 — no npm alias — which rewrites only the `loinc` of an observation whose mass
 code carries a molar unit, leaving value, unit and reference ranges exactly as
 printed. The original
-upload/panels/results/analytics flow still exists in
-`web/src/components/` but isn't currently wired into `App.tsx` (and is
-excluded from eslint, Sonar, and coverage until it returns or moves to
-`archive/`).
+upload/panels/results flow still exists in `web/src/components/`
+(`layout/`, `panels/`, `results/`, `upload/`, `analytics/`) but isn't
+wired into `App.tsx`, and all five folders stay excluded from eslint,
+Sonar, and coverage until they return or move to `archive/` — with one
+exception that has since crossed the line: Panel Detail's Charts tab
+imports `analytics/PanelChartsView`, so that folder is live code
+carrying a legacy exclusion.
+
+## Known limitations
+
+Round-trip and format gaps are listed in
+[`docs/tech/interchange-format.md`](docs/tech/interchange-format.md#known-round-trip-gaps);
+build-level ones (entry bundle over Vite's 500 kB advisory, unused
+`zod` dependency) in
+[`docs/tech/README.md`](docs/tech/README.md#known-limitations).
 
 ## Quality
 
-Vitest suites in `web/test/` (370 tests across 19 files, 1 skipped: index
+Vitest suites in `web/test/` (420 tests across 19 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, unit normalization (Latin/UCUM stages, dimension check,
@@ -251,8 +273,8 @@ weekly npm (minor+patch grouped) and github-actions bumps.
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
   panel, lab report, computed index, companion observation (planned),
-  unit (derivation built, not wired into any view)
+  unit (derivation runs at import; no confirm-and-apply UI)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
-  (nine records; ADR-0005–0008 recorded 2026-09-07)
+  (ten records; ADR-0005–0010 recorded 2026-09-07)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
   envelope spec, and its published JSON Schema

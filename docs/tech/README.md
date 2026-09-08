@@ -77,8 +77,7 @@ The core user journey for data ingestion and local editing:
 
 ## Unit normalization
 
-Built, tested, and wired into no view yet — a subsystem the app owns
-but does not use. `web/src/data/unitNormalization.ts` runs three pure
+`web/src/data/unitNormalization.ts` runs three pure
 stages: printed unit → canonical Latin spelling (Cyrillic and
 Ukrainian unit tables, superscript folding, micro and multiplication
 signs), Latin → UCUM code, then a check of that code's dimension
@@ -89,6 +88,23 @@ authoritative, a canonical form is derived per call, and an
 unrecognized unit returns undefined rather than a guess — the tables
 are a curated subset, not a UCUM parser, with the NLM UCUM library the
 upgrade path ([task-0008](../tasks/task-0008.md)).
+
+It has two callers, both on the way in rather than in a view.
+`parseUpload.ts` runs it over every observation of every import route
+and attaches the derived pair to the in-memory row as `canonical`
+(step 2 above); `validateDiagnosticReports.ts` runs it again to raise
+the two cases it cannot settle silently — a dimension contradiction
+with a known sibling code, and a unit that maps to no UCUM code at all
+— as warnings on the Diagnostic Reports dot. What does *not* exist is
+the confirm-and-apply UI: a normalization warning names the problem
+and stops there, unlike the LOINC cross-check's suggestion chips
+([task-0011](../tasks/task-0011.md)).
+
+The same folding helpers are shared, not duplicated: `loincCheck.ts`
+builds its unit comparison key with `foldUnitGlyphs` and `toLatinUnit`
+from this module, so a Cyrillic printed unit (`ммоль/л`, `тыс/мкл`), a
+superscript digit (`×10⁹/L`) and the micro sign all reduce to the
+catalog's Latin spelling before a code is derived from name + unit.
 
 The case worth naming is mass versus molar. A `mmol/L` result stored
 under Cholesterol's `[Mass/volume]` code `2093-3` is a **code** error,
@@ -107,10 +123,33 @@ existing file, `node scripts/recode-molar.mjs <input.json>` from
 `web/` rewrites `loinc` and nothing else — see
 [`interchange-format.md`](interchange-format.md#a-wrong-unit-here-is-usually-a-wrong-loinc).
 Product-level reasoning is the [unit](../product/concepts/unit.md)
-concept; remaining work (UI wiring) is
+concept; remaining work (the confirm-and-apply UI) is
 [task-0011](../tasks/task-0011.md) — the catalog consolidation it
-also asked for landed with
-[ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md).
+also asked for landed for `ALSO_REFS` and the allowed-unit sets with
+[ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md),
+while the sibling pairs still carry their own copy of each code's unit.
+
+## Known limitations
+
+Build- and dependency-level, and all currently accepted rather than
+scheduled. Format and round-trip gaps are listed separately, under
+[the interchange format](interchange-format.md#known-round-trip-gaps).
+
+- **One oversized entry chunk.** `analyteCatalog.ts` imports
+  `analyses.json` statically, so the catalog is bundled rather than
+  fetched: `npm run build` emits a single ~695 kB entry chunk and Vite
+  prints its "larger than 500 kB" advisory on every build. It is an
+  advisory, not an error, and one chunk of mostly-JSON on a
+  single-page app is a fair trade for a catalog that cannot arrive
+  late — but the warning is real and the fix (a dynamic `import()` of
+  the catalog, or a raised `chunkSizeWarningLimit`) has not been
+  taken, so a genuinely new size regression would hide inside it.
+- **`zod` is a dependency nothing imports.** It sits in `package.json`
+  under `dependencies` and no file in `web/src`, `web/test` or
+  `web/scripts` imports it — envelope validation is ajv against the
+  published JSON Schema, and the generated types come from the same
+  schema. Tree-shaking keeps it out of the bundle, so the cost is an
+  install and a Dependabot surface, not weight.
 
 ## Common slots
 

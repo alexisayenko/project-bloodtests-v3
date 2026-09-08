@@ -156,10 +156,13 @@ events accumulate enough to warrant their own pages — see
   zoom, double-click to reset). Engine ported from project-moodtracker's
   `chart3d-stacked.js`/`chart3d-camera.js`, generalized from 8 fixed
   slots to N series. The tab then gained a time-window selector (All
-  time / 1 week / 1 month / 1 year, anchored to the latest date; ‹›
-  pans by a day or by a window width, clamped to the data extent;
-  out-of-window points dropped before per-series normalization, as in
-  the mood tracker), and its time axis now stretches to the page width
+  time / 1 week / 1 month / 1 year, anchored to the latest date, with
+  ‹› panning) — replaced the same day by two From / To year selects
+  listing only the years the data actually has, which say what a
+  decade of blood tests is actually filtered by; the ported window and
+  pan methods stay on the engine, unused. Out-of-window points are
+  dropped before per-series normalization either way, as in the mood
+  tracker. Its time axis now stretches to the page width
   (room x half-extent fitted per draw so the projected room spans ~90%
   of the canvas; height fixed at 420px). Deployed to
   `blood.isayenko.net` the same day.

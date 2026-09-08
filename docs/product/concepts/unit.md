@@ -2,13 +2,13 @@
 
 The measurement scale a result is expressed in — `mmol/L`, `10^9/L`, `ng/mL` — recorded per entry in a [diagnostic report](lab-report.md), not fixed by the [observation](observation.md).
 
-> **Status: partly built.** The printed unit described below is still the only unit the app *stores*. Deriving a canonical UCUM unit from it now exists — as a pure module, computing on demand and writing nothing — and no view uses it yet. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
+> **Status: partly built.** The printed unit described below is still the only unit the app *stores*. Deriving a canonical UCUM unit from it now exists — as a pure module, computing on demand and writing nothing — and it runs at import, over every observation of every import route, attaching the derived pair beside the printed one in memory. What it cannot settle it reports as a warning; what does not exist is the place a person confirms a suggestion. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
 
 ## What a unit is today
 
 Provenance. The app stores each observation's `unit` exactly as the lab printed it and rewrites it never — same rule that governs every other field a report carries. A result that came back as `mmol/l` stays `mmol/l`; one that came back as `mmol/L` stays `mmol/L`.
 
-One helper does fold spellings today, and it is worth being exact about its reach: `canonicalUnit` in `web/src/data/loincCheck.ts` lowercases a unit and folds a per-mL prefix up to its per-L equivalent (`µIU/mL` → `miu/l`). It exists so the LOINC cross-check can compare a row's unit against a code's allowed set. It is a **matching key only** — it never touches stored data, is never displayed, and is not UCUM.
+One helper does fold spellings today, and it is worth being exact about its reach: `canonicalUnit` in `web/src/data/loincCheck.ts` transliterates a Cyrillic unit, folds superscript digits, the micro sign and the multiplication sign (all borrowed from the normalization module rather than tabulated twice), lowercases the result, and folds a per-mL prefix up to its per-L equivalent (`µIU/mL` → `miu/l`). It exists so the LOINC cross-check can compare a row's unit against a code's allowed set. It is a **matching key only** — it never touches stored data, is never displayed, and is not UCUM.
 
 The consequence is that a unit is a *string*, not a scale. Two labs measuring the same thing on the same scale can disagree on how to spell it, and across years and languages they routinely do: `10^9/L`, `×10⁹/л`, `10*9/L`, `G/L`. To the app these are four different units.
 
@@ -69,6 +69,6 @@ So normalization is not a batch rewrite. It must behave the way the LOINC cross-
 
 Per-observation, in each stored diagnostic report, as printed.
 
-The unit knowledge the derivation reads from was already written down for another purpose: the per-code allowed-unit sets in `web/src/data/loincCheck.ts` (`DEFAULT_UNITS` plus `ALLOWED_UNITS`, compared through the `canonicalUnit` folding helper described above) encode which units a LOINC code may carry, and the cross-check uses them to disambiguate codes. The dimension check now reads the same sets to decide what a code expects — the seed grew into the check, without becoming a second copy of the same facts.
+The unit knowledge the derivation reads from was already written down for another purpose: the per-code allowed-unit sets encode which units a LOINC code may carry, and the cross-check uses them to disambiguate codes. They started out hand-kept in `web/src/data/loincCheck.ts` and now live on the catalog entry itself (`unit` plus `allowedUnits`), derived into `DEFAULT_UNITS` and `ALLOWED_UNITS` by `web/src/data/analyteCatalog.ts` ([ADR-0010](../../tech/decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md)) and compared through the `canonicalUnit` folding helper described above. The dimension check reads the same sets to decide what a code expects — the seed grew into the check, without becoming a second copy of the same facts.
 
 Tracked as [task-0011](../../tasks/task-0011.md).
