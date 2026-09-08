@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { Analysis, Result } from '../../types';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS, type Observation } from './markers';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
@@ -74,6 +74,34 @@ export function AllObservationsView({
   );
   const allDates = visibleDatesOf(sortedDates, controls.sampleLimit, controls.dateOrder);
 
+  let analysisTab: ReactNode;
+  if (rows.length === 0) {
+    analysisTab = <div style={{ color: '#888', fontSize: 14 }}>No results uploaded yet.</div>;
+  } else {
+    analysisTab = (
+      <>
+        <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+          {rows.length} observations across {sortedDates.length} lab reports
+        </div>
+        <ControlsBar {...controls} />
+        <ObservationTable
+          label="Observations"
+          rows={rows}
+          visibleDates={allDates}
+          allResults={allResults}
+          unitSystem={controls.unitSystem}
+          selectedLoinc={selectedLoinc}
+          onSelect={onSelect}
+          onOpenPopup={onOpenPopup}
+          selectedCell={selectedCell}
+          onSelectCell={onSelectCell}
+          onOpenResultPopup={onOpenResultPopup}
+          preferRaw
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>All Observations</h1>
@@ -98,32 +126,7 @@ export function AllObservationsView({
         ))}
       </div>
 
-      {tab === 'analysis' ? (
-        rows.length === 0 ? (
-          <div style={{ color: '#888', fontSize: 14 }}>No results uploaded yet.</div>
-        ) : (
-          <>
-            <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
-              {rows.length} observations across {sortedDates.length} lab reports
-            </div>
-            <ControlsBar {...controls} />
-            <ObservationTable
-              label="Observations"
-              rows={rows}
-              visibleDates={allDates}
-              allResults={allResults}
-              unitSystem={controls.unitSystem}
-              selectedLoinc={selectedLoinc}
-              onSelect={onSelect}
-              onOpenPopup={onOpenPopup}
-              selectedCell={selectedCell}
-              onSelectCell={onSelectCell}
-              onOpenResultPopup={onOpenResultPopup}
-              preferRaw
-            />
-          </>
-        )
-      ) : (
+      {tab === 'analysis' ? analysisTab : (
         <LabExploreView
           conditions={conditions}
           allResults={allResults}

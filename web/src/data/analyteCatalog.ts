@@ -23,7 +23,8 @@ export const SHORT_LABELS: Record<string, { short: string; unit: string }> = Obj
 export const ALSO_REFS: Record<string, LoincRef[]> = ANALYTES.reduce<Record<string, LoincRef[]>>(
   (acc, a) => {
     if (!a.aliasOf) return acc;
-    (acc[a.aliasOf] ??= []).push({
+    acc[a.aliasOf] ??= [];
+    acc[a.aliasOf].push({
       label: a.aliasLabel ?? '',
       loinc: a.loinc,
       longCommonName: a.longCommonName,

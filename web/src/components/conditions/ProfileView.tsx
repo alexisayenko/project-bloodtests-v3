@@ -16,6 +16,11 @@ const SECTION_DIVIDER = {
   paddingTop: 20,
 } as const;
 
+function goToReports() {
+  window.history.pushState(null, '', '#reports');
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
 export function ProfileView({
   sessionCount,
   uploadError,
@@ -27,11 +32,6 @@ export function ProfileView({
   uploadFile: (file: File) => Promise<void>;
   loadGenerated: (groups: ReturnType<typeof generateTestData>) => void;
 }>) {
-  function goToReports() {
-    window.history.pushState(null, '', '#reports');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Get Started</h1>

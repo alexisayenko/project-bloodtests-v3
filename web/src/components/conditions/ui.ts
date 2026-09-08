@@ -74,7 +74,7 @@ export function hasStoredAnalysisSettings(): boolean {
 
 /** Share-link settings applied over the defaults: a starting point, never an override. */
 export function seedAnalysisSettings(seed: Partial<AnalysisSettings> | undefined): AnalysisSettings {
-  return { ...DEFAULT_ANALYSIS_SETTINGS, ...(seed ?? {}) };
+  return { ...DEFAULT_ANALYSIS_SETTINGS, ...seed };
 }
 
 /**

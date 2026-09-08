@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { fmtNum, formatResultReference, isOutOfRange } from '../../utils/format';
 import { computeIndex, zone, type IndexDef } from '../../data/computedIndices';
 import type { Result } from '../../types';
@@ -205,6 +206,18 @@ export function Popup({
   onLearnMore: (key: string) => void;
 }>) {
   if (!popup) return null;
+
+  let body: ReactNode;
+  if (popup.kind === 'observation') {
+    body = <ObservationPopupBody test={popup.test} latestByLoinc={latestByLoinc} />;
+  } else if (popup.kind === 'index') {
+    body = <IndexPopupBody def={popup.def} latestByLoinc={latestByLoinc} resultsByDate={resultsByDate} onLearnMore={onLearnMore} />;
+  } else if (popup.kind === 'result') {
+    body = <ResultPopupBody test={popup.test} entry={popup.entry} />;
+  } else {
+    body = <IndexResultPopupBody def={popup.def} date={popup.date} value={popup.value} resultsByDate={resultsByDate} />;
+  }
+
   return (
     <>
       <div aria-label="Close popup" {...pressable(onClose)} style={{ position: 'fixed', inset: 0, zIndex: 100 }} />
@@ -231,15 +244,7 @@ export function Popup({
           zIndex: 101,
         }}
       >
-        {popup.kind === 'observation' ? (
-          <ObservationPopupBody test={popup.test} latestByLoinc={latestByLoinc} />
-        ) : popup.kind === 'index' ? (
-          <IndexPopupBody def={popup.def} latestByLoinc={latestByLoinc} resultsByDate={resultsByDate} onLearnMore={onLearnMore} />
-        ) : popup.kind === 'result' ? (
-          <ResultPopupBody test={popup.test} entry={popup.entry} />
-        ) : (
-          <IndexResultPopupBody def={popup.def} date={popup.date} value={popup.value} resultsByDate={resultsByDate} />
-        )}
+        {body}
       </div>
     </>
   );
