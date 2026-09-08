@@ -1,5 +1,7 @@
 import type { Result } from '../types';
-import { massPerMolarUnit, molarPerMassUnit } from './molarMasses';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, DEFAULT_UNITS } from './analyteCatalog';
+import { concentrationRatio, massPerMolarUnit, molarPerMassUnit } from './molarMasses';
+import { toLatinUnit } from './unitNormalization';
 
 /**
  * Client-side computed indices — ratios/estimates derived from other
@@ -100,6 +102,20 @@ interface UnitConv {
 const T_NGDL_TO_NMOLL = molarPerMass('testosterone');
 const FT3_PGML_TO_PMOLL = molarPerMass('triiodothyronine');
 const FT4_NGDL_TO_PMOLL = molarPerMass('thyroxine');
+const CORTISOL_UGDL_TO_NMOLL = molarPerMass('cortisol');
+
+/** A same-dimension rescale, derived rather than typed: g/L -> mg/dL is 100. */
+const rescale = (from: string, to: string): number => {
+  const ratio = concentrationRatio(from, to);
+  if (ratio === undefined) throw new Error(`no same-dimension rescale from "${from}" to "${to}"`);
+  return ratio;
+};
+
+/** Both directions of one same-dimension rescale, for a marker labs spell two ways. */
+const rescaleBoth = (marker: string, from: string, to: string): UnitConv[] => [
+  { marker, from, to, conv: (x) => x * rescale(from, to) },
+  { marker, from: to, to: from, conv: (x) => x * rescale(to, from) },
+];
 
 const UNIT_CONVERSIONS: UnitConv[] = [
   { marker: 'FT3', from: 'pg/mL', to: 'pmol/L', conv: (x) => x * FT3_PGML_TO_PMOLL },
@@ -111,21 +127,50 @@ const UNIT_CONVERSIONS: UnitConv[] = [
   { marker: 'T', from: 'nmol/L', to: 'ng/dL', conv: (x) => x / T_NGDL_TO_NMOLL },
   { marker: 'T', from: 'ng/dL', to: 'nmol/L', conv: (x) => x * T_NGDL_TO_NMOLL },
   // Testosterone: ng/mL (e.g. LOINC 2986-8) <-> ng/dL -- same mass unit, dL = 100 mL.
-  { marker: 'T', from: 'ng/mL', to: 'ng/dL', conv: (x) => x * 100 },
-  { marker: 'T', from: 'ng/dL', to: 'ng/mL', conv: (x) => x / 100 },
+  ...rescaleBoth('T', 'ng/mL', 'ng/dL'),
   // Testosterone: ng/mL <-> nmol/L directly (ng/mL -> ng/dL -> nmol/L combined).
-  { marker: 'T', from: 'ng/mL', to: 'nmol/L', conv: (x) => x * 100 * T_NGDL_TO_NMOLL },
-  { marker: 'T', from: 'nmol/L', to: 'ng/mL', conv: (x) => x / T_NGDL_TO_NMOLL / 100 },
+  { marker: 'T', from: 'ng/mL', to: 'nmol/L', conv: (x) => x * rescale('ng/mL', 'ng/dL') * T_NGDL_TO_NMOLL },
+  { marker: 'T', from: 'nmol/L', to: 'ng/mL', conv: (x) => x / T_NGDL_TO_NMOLL / rescale('ng/mL', 'ng/dL') },
+  // Cortisol: the [Moles/volume] sibling code 14675-3 reports nmol/L, while
+  // cortdhea's formula works from the mass code's ug/dL.
+  { marker: 'Cortisol', from: 'nmol/L', to: 'ug/dL', conv: (x) => x / CORTISOL_UGDL_TO_NMOLL },
+  { marker: 'Cortisol', from: 'ug/dL', to: 'nmol/L', conv: (x) => x * CORTISOL_UGDL_TO_NMOLL },
+  // Apolipoproteins: mass-only analytes labs print either as mg/dL or as g/L.
+  ...rescaleBoth('ApoB', 'g/L', 'mg/dL'),
+  ...rescaleBoth('ApoA1', 'g/L', 'mg/dL'),
   ...Object.entries(MGDL_TO_MMOLL).flatMap(([marker, f]): UnitConv[] => [
     { marker, from: 'mg/dL', to: 'mmol/L', conv: f },
     { marker, from: 'mmol/L', to: 'mg/dL', conv: (x) => x / f(1) },
   ]),
 ];
 
+/**
+ * The value expressed in `to`, or undefined when no verified conversion covers
+ * the pair -- the caller then has to keep the value in its own printed unit
+ * rather than relabel it (ADR-0003).
+ *
+ * Printed spellings are folded to their Latin form first (unitNormalization's
+ * own curated tables), so "ммоль/л" converts exactly like "mmol/L". Without
+ * that fold a Cyrillic spelling silently matched no rule: the number stayed as
+ * printed while the display went on labelling it with the target unit.
+ */
+export function convertUnit(
+  value: number,
+  marker: string,
+  from: string | null | undefined,
+  to: string
+): number | undefined {
+  if (!from) return undefined;
+  const latinFrom = toLatinUnit(from) ?? from;
+  const latinTo = toLatinUnit(to) ?? to;
+  if (latinFrom === latinTo) return value;
+  const rule = UNIT_CONVERSIONS.find((r) => r.marker === marker && r.from === latinFrom && r.to === latinTo);
+  return rule ? rule.conv(value) : undefined;
+}
+
+/** convertUnit, falling back to the value untouched -- only for callers that show no unit of their own. */
 export function toUnit(value: number, marker: string, from: string | null | undefined, to: string): number {
-  if (!from || from === to) return value;
-  const rule = UNIT_CONVERSIONS.find((r) => r.marker === marker && r.from === from && r.to === to);
-  return rule ? rule.conv(value) : value;
+  return convertUnit(value, marker, from, to) ?? value;
 }
 
 /**
@@ -194,11 +239,77 @@ export interface IndexDef {
   fn: (m: Markers) => number | null;
 }
 
-/** First of a marker's candidate LOINCs that has a value on this draw. */
-function findResult(short: string, resultsByLoinc: Record<string, Result>): Result | undefined {
-  for (const loinc of MARKER_LOINC[short] ?? []) {
+/**
+ * Every LOINC a marker's reading can arrive under: the codes MARKER_LOINC
+ * declares, then each one's unit/method variants as the analyte catalog
+ * records them. The variants are DERIVED from `analyses.json` through
+ * ALSO_REFS / ALIAS_TO_PRIMARY (ADR-0010) rather than listed here a second
+ * time, so a code added to the catalog reaches the indices with no edit -- and
+ * a molar-coded reading (cholesterol under 14647-2, glucose under 15074-8)
+ * feeds the same index its mass primary would, which before this it silently
+ * did not: the whole Cardiovascular Risk set and HOMA-IR simply never appeared
+ * for a history reported in mmol/L.
+ *
+ * Declared codes come first, so a draw carrying both keeps today's precedence.
+ */
+export const MARKER_CANDIDATE_LOINCS: Record<string, string[]> = Object.fromEntries(
+  Object.entries(MARKER_LOINC).map(([marker, declared]) => {
+    const codes = new Set(declared);
+    for (const loinc of declared) {
+      const primary = ALIAS_TO_PRIMARY[loinc] ?? loinc;
+      codes.add(primary);
+      for (const variant of ALSO_REFS[primary] ?? []) codes.add(variant.loinc);
+    }
+    return [marker, [...codes]];
+  })
+);
+
+/**
+ * The unit a marker's declared primary code is reported in, from the catalog.
+ * It is the yardstick for an input whose formula declares no unit of its own:
+ * a ratio like TC/HDL does not care which unit it is computed in, but it does
+ * care that both sides are on the SAME one, and this is that one.
+ */
+const MARKER_REFERENCE_UNIT: Record<string, string | undefined> = Object.fromEntries(
+  Object.entries(MARKER_LOINC).map(([marker, declared]) => [
+    marker,
+    declared[0] ? DEFAULT_UNITS[declared[0]] : undefined,
+  ])
+);
+
+/**
+ * One marker's value on this draw, expressed in the unit the formula needs.
+ *
+ * Nothing here is written back: the returned number is a local, derived
+ * quantity handed straight to an index's `fn`. The stored `Result` keeps the
+ * value and unit the lab printed (ADR-0003) -- conversion for computation is
+ * exactly the display-time conversion that ADR allows for.
+ *
+ * An input that cannot be placed in the expected unit is left OUT rather than
+ * passed through as printed, because a number on the wrong scale would
+ * silently produce a wrong index and no index at all is the honest answer.
+ *
+ * The one exception is the case this function inherits: a value under the
+ * marker's PRIMARY code with no formula-declared unit is used as printed, as
+ * it always was -- DHT is reported in pg/mL against a ng/dL code and dhtt's
+ * formula rescales it itself. A variant code gets no such benefit of the
+ * doubt: it was reached through the alias map precisely because it is on
+ * another scale, so it is placed on the reference one or declined.
+ */
+function markerValue(
+  short: string,
+  resultsByLoinc: Record<string, Result>,
+  target: string | undefined
+): number | undefined {
+  const primary = (MARKER_LOINC[short] ?? [])[0];
+  const to = target ?? MARKER_REFERENCE_UNIT[short];
+  for (const loinc of MARKER_CANDIDATE_LOINCS[short] ?? []) {
     const r = resultsByLoinc[loinc];
-    if (r?.value != null) return r;
+    if (r?.value == null) continue;
+    if (!to) return r.value;
+    const converted = convertUnit(r.value, short, r.unit, to);
+    if (converted !== undefined) return converted;
+    if (!target && loinc === primary) return r.value;
   }
   return undefined;
 }
@@ -207,14 +318,12 @@ function findResult(short: string, resultsByLoinc: Record<string, Result>): Resu
 export function markersForIndex(def: IndexDef, resultsByLoinc: Record<string, Result>): Markers {
   const m: Markers = {};
   for (const short of def.needs) {
-    const r = findResult(short, resultsByLoinc);
-    if (r?.value == null) continue;
-    const target = def.inputUnits?.[short];
-    m[short] = target ? toUnit(r.value, short, r.unit, target) : r.value;
+    const value = markerValue(short, resultsByLoinc, def.inputUnits?.[short]);
+    if (value !== undefined) m[short] = value;
   }
   if (def.key === 'cft') {
-    const alb = findResult('ALB', resultsByLoinc);
-    if (alb?.value != null) m['ALB'] = alb.value;
+    const alb = markerValue('ALB', resultsByLoinc, undefined);
+    if (alb !== undefined) m['ALB'] = alb;
   }
   return m;
 }

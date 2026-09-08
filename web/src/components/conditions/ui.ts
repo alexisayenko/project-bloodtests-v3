@@ -1,5 +1,10 @@
 import { fmtNum } from '../../utils/format';
-import type { IndexDef } from '../../data/computedIndices';
+import { SI_US_UNIT, convertUnit, type IndexDef } from '../../data/computedIndices';
+import { DEFAULT_UNITS } from '../../data/analyteCatalog';
+import { toLatinUnit } from '../../data/unitNormalization';
+import { LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
+import type { ResultEntry } from './resultsLookup';
+import type { Result } from '../../types';
 
 export const STATUS_STYLES = {
   'never': { border: '#ccc', background: '#f5f5f5', color: '#999' },
@@ -123,6 +128,102 @@ export function tabStyle(active: boolean) {
     borderBottom: active ? '2px solid #1971c2' : '2px solid transparent',
     textShadow: active ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
     color: active ? '#1971c2' : '#555',
+  };
+}
+
+/** What one reading is displayed as: a number and the unit it is labelled with. */
+export type DisplayedResult = { value: number | null; rawValue: string; unit: string; converted: boolean };
+
+/**
+ * The reading's own printed unit, in the app's spelling of it: the catalog's
+ * own form when the print means the same unit ("mcg/dL", "мкг/дл"), otherwise
+ * the canonical Latin form, otherwise the print verbatim. Only a SPELLING is
+ * chosen here -- the unit itself is always the one the reading carries, and
+ * with nothing printed it is the reading's OWN code's expected unit, never the
+ * unit of the primary whose row it happens to fold into.
+ */
+function ownUnitOf(result: Pick<Result, 'loinc' | 'unit'>): string {
+  const expected = DEFAULT_UNITS[result.loinc];
+  const printed = result.unit?.trim();
+  if (!printed) return expected ?? '';
+  const latin = toLatinUnit(printed);
+  if (latin === undefined) return printed;
+  if (expected && toLatinUnit(expected) === latin) return expected;
+  return latin;
+}
+
+/**
+ * The number and the unit label always move together. A reading recorded under
+ * a unit-variant alias (e.g. VLDL-C's molar 25371-6 folded into mass 13458-5's
+ * row) keeps ITS OWN unit, never the row's primary one -- pairing a printed
+ * value with another code's unit is exactly the mislabel ADR-0003 forbids.
+ * Only a verified SI/US conversion for this marker may change the number, and
+ * then the label changes with it; where no such conversion exists the reading
+ * stays as printed, unit included.
+ *
+ * `marker` is the row's marker (markers.ts's LOINC_TO_MARKER), not the
+ * reading's code: an alias is the same analyte, so its molar reading converts
+ * on the primary's rules.
+ */
+export function displayedResult(
+  marker: string | undefined,
+  result: Pick<Result, 'loinc' | 'value' | 'rawValue' | 'unit'>,
+  unitSystem: 'si' | 'us'
+): DisplayedResult {
+  const own = ownUnitOf(result);
+  const target = marker ? SI_US_UNIT[marker]?.[unitSystem] : undefined;
+  if (target && result.value != null) {
+    const converted = convertUnit(result.value, marker!, own, target);
+    if (converted !== undefined) {
+      return { value: converted, rawValue: result.rawValue, unit: target, converted: true };
+    }
+  }
+  return { value: result.value, rawValue: result.rawValue, unit: own, converted: false };
+}
+
+/**
+ * The single unit a set of displayed cells can be labelled with, or undefined
+ * when they disagree -- a row whose readings sit on two scales (a lab that
+ * switched from mg/dL to umol/L mid-history) gets no row-level unit at all,
+ * and each cell carries its own instead.
+ */
+export function sharedUnit(units: string[]): string | undefined {
+  const first = units[0];
+  if (first === undefined) return undefined;
+  return units.every((u) => u === first) ? first : undefined;
+}
+
+/** One visible date column of an observation row: the reading, if any, as displayed. */
+export type RowCell = { date: string; match: ResultEntry | null; display: DisplayedResult | null };
+
+/**
+ * An observation row's cells plus the unit to label them with. `rowUnit` labels
+ * the whole row when every reading agrees; when they don't -- a lab that
+ * switched scales mid-history, or a mass code and its molar alias folded into
+ * one row -- `showCellUnits` moves the unit onto each cell instead, so a number
+ * is never shown under another reading's unit. A reading with no unit at all
+ * makes no competing claim and stays out of that comparison. With no readings
+ * to speak for the row, the label falls back to the SI/US target, then to the
+ * row's own catalog unit.
+ */
+export function buildRowCells(
+  test: Observation,
+  visibleDates: string[],
+  allResults: ResultEntry[],
+  unitSystem: 'si' | 'us'
+): { cells: RowCell[]; rowUnit: string | undefined; showCellUnits: boolean } {
+  const marker = LOINC_TO_MARKER[test.loinc];
+  const rowLoincs = testLoincs(test);
+  const cells = visibleDates.map((date): RowCell => {
+    const match = allResults.find((r) => r.date === date && rowLoincs.includes(r.loinc)) ?? null;
+    return { date, match, display: match ? displayedResult(marker, match.result, unitSystem) : null };
+  });
+  const units = cells.map((c) => c.display?.unit).filter((u): u is string => !!u);
+  const shared = sharedUnit(units);
+  return {
+    cells,
+    rowUnit: units.length > 0 ? shared : (marker && SI_US_UNIT[marker]?.[unitSystem]) || test.unit,
+    showCellUnits: units.length > 0 && shared === undefined,
   };
 }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  buildRowCells,
   cellBg,
   formatFullDate,
   formatMonthYear,
@@ -7,10 +8,16 @@ import {
   isCellArmed,
   loadAnalysisSettings,
   DEFAULT_ANALYSIS_SETTINGS,
+  displayedResult,
   popupPosition,
   pressable,
+  sharedUnit,
   visibleDatesOf,
 } from '../src/components/conditions/ui';
+import { ALSO_REFS, SHORT_LABELS } from '../src/data/analyteCatalog';
+import type { Observation } from '../src/components/conditions/markers';
+import type { ResultEntry } from '../src/components/conditions/resultsLookup';
+import type { Result } from '../src/types';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 
 describe('formatMonthYear', () => {
@@ -151,5 +158,120 @@ describe('loadAnalysisSettings', () => {
     loadAnalysisSettings().sampleLimit = 'all';
     expect(DEFAULT_ANALYSIS_SETTINGS.sampleLimit).toBe(5);
     vi.unstubAllGlobals();
+  });
+});
+
+/**
+ * A unit-variant alias folds into its primary's row (VLDL-C's molar 25371-6
+ * into mass 13458-5's), which is what the row model is for -- but the UNIT
+ * LABEL has to keep following the reading, not the row. Pairing a printed
+ * value with another code's unit is the mislabel ADR-0003 forbids: 0.98
+ * ммоль/л must never read "0.98, mg/dL".
+ */
+function obs(loinc: string): Observation {
+  return {
+    short: SHORT_LABELS[loinc]?.short ?? loinc,
+    full: loinc,
+    longCommonName: '',
+    loinc,
+    unit: SHORT_LABELS[loinc]?.unit,
+    also: ALSO_REFS[loinc],
+  };
+}
+
+function reading(loinc: string, value: number, unit: string): Pick<Result, 'loinc' | 'value' | 'rawValue' | 'unit'> {
+  return { loinc, value, rawValue: String(value), unit };
+}
+
+function entry(loinc: string, date: string, value: number, unit: string): ResultEntry {
+  return {
+    loinc,
+    date,
+    place: 'Lab',
+    result: {
+      loinc, analysis: '', symbol: '', section: '', value, rawValue: String(value), valueQualifier: '',
+      unit, refText: '', refMin: null, refMax: null, method: '',
+    },
+  };
+}
+
+describe('displayedResult', () => {
+  it('labels a molar alias reading with its own unit, not the mass primary\'s', () => {
+    // VLDL-C: no SI/US conversion exists, so nothing may change the number.
+    expect(displayedResult(undefined, reading('25371-6', 0.98, 'ммоль/л'), 'si')).toEqual({
+      value: 0.98,
+      rawValue: '0.98',
+      unit: 'mmol/L',
+      converted: false,
+    });
+  });
+
+  it('falls back to the reading\'s OWN code unit when the lab printed none', () => {
+    expect(displayedResult(undefined, reading('14933-6', 310, ''), 'us').unit).toBe('umol/L');
+    expect(displayedResult(undefined, reading('3084-1', 5.2, ''), 'us').unit).toBe('mg/dL');
+  });
+
+  it('moves number and label together when a verified conversion applies', () => {
+    const us = displayedResult('TC', reading('14647-2', 5.2, 'ммоль/л'), 'us');
+    expect(us.unit).toBe('mg/dL');
+    expect(us.value).toBeCloseTo(5.2 * 38.6664, 2);
+    expect(us.converted).toBe(true);
+
+    const si = displayedResult('TC', reading('2093-3', 200, 'mg/dL'), 'si');
+    expect(si.unit).toBe('mmol/L');
+    expect(si.value).toBeCloseTo(200 / 38.6664, 4);
+  });
+
+  it('keeps the printed unit when the SI/US target is unreachable', () => {
+    // No TC rule for g/L: relabelling to mg/dL here would be the same mislabel.
+    expect(displayedResult('TC', reading('2093-3', 2, 'g/L'), 'us')).toMatchObject({ value: 2, unit: 'g/L', converted: false });
+  });
+});
+
+describe('sharedUnit', () => {
+  it('is the common unit, or undefined when they disagree or there are none', () => {
+    expect(sharedUnit(['mmol/L', 'mmol/L'])).toBe('mmol/L');
+    expect(sharedUnit(['mg/dL', 'umol/L'])).toBeUndefined();
+    expect(sharedUnit([])).toBeUndefined();
+  });
+});
+
+describe('buildRowCells', () => {
+  const dates = ['2026-05-07'];
+
+  it('labels the row from the reading, not the alias group primary', () => {
+    const row = buildRowCells(obs('13458-5'), dates, [entry('25371-6', '2026-05-07', 0.98, 'ммоль/л')], 'si');
+    expect(row.rowUnit).toBe('mmol/L');
+    expect(row.showCellUnits).toBe(false);
+    expect(row.cells[0]!.display).toMatchObject({ value: 0.98, unit: 'mmol/L' });
+  });
+
+  it('drops the row label and labels each cell when readings sit on two scales', () => {
+    const row = buildRowCells(
+      obs('3084-1'),
+      ['2024-01-01', '2026-05-07'],
+      [entry('3084-1', '2024-01-01', 5.2, 'mg/dL'), entry('14933-6', '2026-05-07', 310, 'мкмоль/л')],
+      'si'
+    );
+    expect(row.rowUnit).toBeUndefined();
+    expect(row.showCellUnits).toBe(true);
+    expect(row.cells.map((c) => c.display?.unit)).toEqual(['mg/dL', 'umol/L']);
+  });
+
+  it('converts a whole SI/US row to one unit, alias readings included', () => {
+    const row = buildRowCells(
+      obs('2093-3'),
+      ['2024-01-01', '2026-05-07'],
+      [entry('2093-3', '2024-01-01', 200, 'mg/dL'), entry('14647-2', '2026-05-07', 5.2, 'ммоль/л')],
+      'us'
+    );
+    expect(row.rowUnit).toBe('mg/dL');
+    expect(row.showCellUnits).toBe(false);
+    expect(row.cells[1]!.display!.value).toBeCloseTo(5.2 * 38.6664, 2);
+  });
+
+  it('falls back to the row\'s own unit when it has no readings at all', () => {
+    expect(buildRowCells(obs('13458-5'), dates, [], 'si').rowUnit).toBe('mg/dL');
+    expect(buildRowCells(obs('2093-3'), dates, [], 'si').rowUnit).toBe('mmol/L');
   });
 });

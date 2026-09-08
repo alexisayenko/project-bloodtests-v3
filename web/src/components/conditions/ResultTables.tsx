@@ -1,9 +1,19 @@
 import { fmtNum, isOutOfRange } from '../../utils/format';
-import { SI_US_UNIT, computeIndex, toUnit, zone, type IndexDef } from '../../data/computedIndices';
-import { LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
-import { ZONE_BG, SELECTED_ZONE_BG, formatMonthYear, pressable, cellBg, isCellArmed, type SelectedCell } from './ui';
+import { computeIndex, zone, type IndexDef } from '../../data/computedIndices';
+import { testLoincs, type Observation } from './markers';
+import {
+  ZONE_BG,
+  SELECTED_ZONE_BG,
+  buildRowCells,
+  formatMonthYear,
+  pressable,
+  cellBg,
+  isCellArmed,
+  type RowCell,
+  type SelectedCell,
+} from './ui';
 import { hasReference, type ResultEntry } from './resultsLookup';
-import { indexInputLoincs, isIndexScheduled, isRowScheduled, type Scheduled } from './scheduled';
+import { indexInputLoincs, isIndexScheduled, isRowScheduled, type IndexScheduling, type RowScheduling } from './scheduled';
 import type { Result } from '../../types';
 
 const DATE_COL_WIDTH = 96;
@@ -164,23 +174,29 @@ export type ObservationTableProps = {
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   /** Show the lab's raw string (qualifiers like "<0.1") when no unit conversion applies. */
   preferRaw?: boolean;
-  /** When set, appends the Scheduled toggle column (Panel Detail only). */
-  scheduling?: { scheduled: Scheduled; onToggle: (loincs: string[]) => void };
+  /** When set, appends the Scheduled toggle column. */
+  scheduling?: RowScheduling;
   /** The selected computed index: rows answering for any of its input `loincs` get a mark before their name (Panel Detail only). */
   inputsOf?: Relation;
 };
 
 /** One observation row's cells across the visible dates. */
 function ObservationCells({
-  test, visibleDates, allResults, unitSystem, selected, selectedCell, onSelect, onSelectCell, onOpenResultPopup, preferRaw,
-}: Readonly<Omit<ObservationTableProps, 'label' | 'rows' | 'selectedLoinc' | 'onOpenPopup'> & { test: Observation; selected: boolean }>) {
-  const marker = LOINC_TO_MARKER[test.loinc];
-  const siUsUnit = marker ? SI_US_UNIT[marker] : undefined;
-  const rowLoincs = testLoincs(test);
+  test, cells, showCellUnits, selected, selectedCell, onSelect, onSelectCell, onOpenResultPopup, preferRaw,
+}: Readonly<{
+  test: Observation;
+  cells: RowCell[];
+  showCellUnits: boolean;
+  selected: boolean;
+  selectedCell: SelectedCell;
+  onSelect: (loinc: string) => void;
+  onSelectCell: (loinc: string, date: string) => void;
+  onOpenResultPopup: ObservationTableProps['onOpenResultPopup'];
+  preferRaw?: boolean;
+}>) {
   return (
     <>
-      {visibleDates.map((date) => {
-        const match = allResults.find((r) => r.date === date && rowLoincs.includes(r.loinc)) ?? null;
+      {cells.map(({ date, match, display }) => {
         const handleClick = armedCellHandler({
           selectedCell,
           rowKey: test.loinc,
@@ -189,7 +205,7 @@ function ObservationCells({
           onSelectCell,
           onOpen: match ? (e) => onOpenResultPopup(test, match, e) : undefined,
         });
-        if (!match) {
+        if (!match || !display) {
           return (
             <td key={date} {...pressable(handleClick)} style={td}>
               –
@@ -198,15 +214,13 @@ function ObservationCells({
         }
         const bg = cellBg(hasReference(match.result), isOutOfRange(match.result), selected);
         // Coloring always uses the as-reported value/range (self-consistent);
-        // only the displayed number is converted for the toggle.
-        const converted =
-          siUsUnit && match.result.value != null
-            ? toUnit(match.result.value, marker!, match.result.unit, siUsUnit[unitSystem])
-            : match.result.value;
-        const text = !siUsUnit && preferRaw ? match.result.rawValue || fmtNum(match.result.value) : fmtNum(converted);
+        // only the displayed number is converted for the toggle, and then it is
+        // shown under the unit it was converted TO (see displayedResult).
+        const text = !display.converted && preferRaw ? display.rawValue || fmtNum(display.value) : fmtNum(display.value);
         return (
           <td key={date} {...pressable(handleClick)} style={{ ...td, background: bg }}>
             {text}
+            {showCellUnits && display.unit && <span style={{ color: '#888' }}> {display.unit}</span>}
           </td>
         );
       })}
@@ -215,7 +229,10 @@ function ObservationCells({
 }
 
 export function ObservationTable(props: Readonly<ObservationTableProps>) {
-  const { label, rows, visibleDates, unitSystem, selectedLoinc, onSelect, onOpenPopup, scheduling, inputsOf } = props;
+  const {
+    label, rows, visibleDates, allResults, unitSystem, selectedLoinc, onSelect, onOpenPopup,
+    onSelectCell, onOpenResultPopup, selectedCell, preferRaw, scheduling, inputsOf,
+  } = props;
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={table}>
@@ -224,9 +241,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
         <tbody>
           {rows.map((test) => {
             const selected = selectedLoinc === test.loinc;
-            const marker = LOINC_TO_MARKER[test.loinc];
-            const siUsUnit = marker ? SI_US_UNIT[marker] : undefined;
-            const displayUnit = siUsUnit ? siUsUnit[unitSystem] : test.unit;
+            const { cells, rowUnit, showCellUnits } = buildRowCells(test, visibleDates, allResults, unitSystem);
             const rowLoincs = testLoincs(test);
             return (
               <tr key={test.loinc} style={{ background: selected ? '#eaf3fb' : undefined }}>
@@ -239,9 +254,19 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
                 >
                   <RelationMark label={inputsOf && overlaps(rowLoincs, inputsOf.loincs) ? `input of ${inputsOf.name}` : undefined} />
                   <span style={{ fontWeight: 600 }}>{test.short}</span>
-                  {displayUnit && `, ${displayUnit}`}
+                  {rowUnit && `, ${rowUnit}`}
                 </td>
-                <ObservationCells {...props} test={test} selected={selected} />
+                <ObservationCells
+                  test={test}
+                  cells={cells}
+                  showCellUnits={showCellUnits}
+                  selected={selected}
+                  selectedCell={selectedCell}
+                  onSelect={onSelect}
+                  onSelectCell={onSelectCell}
+                  onOpenResultPopup={onOpenResultPopup}
+                  preferRaw={preferRaw}
+                />
                 {scheduling && (
                   <ScheduledCell
                     checked={isRowScheduled(scheduling.scheduled, rowLoincs)}
@@ -273,7 +298,7 @@ export function IndexTable({
   /** Second click on an already-armed cell: open the simple value popup for that specific date's value. */
   onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
   /** When set, appends the Scheduled toggle column; scheduling an index also schedules its inputs. */
-  scheduling?: { scheduled: Scheduled; onToggle: (key: string) => void };
+  scheduling?: IndexScheduling;
   /** The selected observation: indices reading any of its `loincs` get a mark before their name (Panel Detail only). */
   usedBy?: Relation;
 }>) {

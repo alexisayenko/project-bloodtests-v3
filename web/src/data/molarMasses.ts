@@ -138,6 +138,22 @@ function scaleOf(unit: string, kind: 'mass' | 'substance'): number {
 }
 
 /**
+ * How much of `toUnit` one unit of `fromUnit` is, when both express the SAME
+ * dimension (g/L → mg/dL is 100). Pure SI arithmetic — no molar mass is
+ * involved and none is needed — but it belongs beside the functions above so
+ * that a caller rescaling a concentration never writes the factor out by hand
+ * either. Undefined when either unit is not a concentration this module fully
+ * understands, or when the two are of different dimensions (that is the
+ * mass↔molar case, and it needs `massPerMolarUnit` and a molar mass).
+ */
+export function concentrationRatio(fromUnit: string, toUnit: string): number | undefined {
+  const from = concentrationScale(fromUnit);
+  const to = concentrationScale(toUnit);
+  if (!from || !to || from.kind !== to.kind) return undefined;
+  return from.scale / to.scale;
+}
+
+/**
  * How much of `massUnit` one unit of `molarUnit` is — the number a mass value
  * is divided by to reach the molar scale. Cholesterol in mg/dL and mmol/L
  * gives 38.666.

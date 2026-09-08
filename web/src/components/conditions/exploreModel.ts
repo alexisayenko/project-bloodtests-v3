@@ -1,5 +1,7 @@
 import type { ExploreMarker, ExploreNotTaken, LabExploreModel } from '../../vendor/lab-explore/explore-types';
-import { SI_US_UNIT, computeIndex, toUnit, type IndexDef, type IndexReference } from '../../data/computedIndices';
+import { computeIndex, convertUnit, type IndexDef, type IndexReference } from '../../data/computedIndices';
+import { convertValue, toLatinUnit, toUcum } from '../../data/unitNormalization';
+import { displayedResult } from './ui';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { INDEX_LOINCS, LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
@@ -195,11 +197,56 @@ function resolveRefBand(byDate: Map<string, ResultEntry>, override: RefBandOverr
 }
 
 /**
+ * One reading placed on the series' own scale -- the unit its reference band
+ * is expressed in, since the band is what normalization divides by. A test
+ * whose history crosses the mass/molar divide (magnesium printed 0.74 mmol/L
+ * in one draw and 2.12 mg/dL in the next, urate and total bilirubin likewise)
+ * otherwise plots both numbers raw against one mg/dL band, reading as a cliff
+ * where the value barely moved.
+ *
+ * CONVERTED FOR DISPLAY ONLY, NEVER STORED: the number goes into this chart's
+ * in-memory series and nowhere else -- the observation, localStorage and every
+ * export keep exactly what the lab printed, and a molar unit under a mass code
+ * remains a code error to be fixed at the code (ADR-0003), not here. The
+ * mass<->molar factor is derived from `molar-masses.json` via the sibling
+ * pair, inside convertValue (ADR-0011); nothing here states one.
+ *
+ * Returns undefined when the reading's unit cannot be placed exactly -- an
+ * analyte with no sibling pair, or a unit outside it -- so the caller can drop
+ * the point instead of plotting it on the wrong scale.
+ */
+function placeOnBandScale(
+  value: number,
+  from: string | null | undefined,
+  to: string,
+  loinc: string,
+  unitMarker: string | undefined
+): number | undefined {
+  const printed = (from ?? '').trim();
+  // Nothing printed makes no competing claim about scale -- same reading
+  // ownUnitOf() labels with its own code's expected unit (see ui.ts).
+  if (!printed || !to) return value;
+  if ((toLatinUnit(printed) ?? printed) === (toLatinUnit(to) ?? to)) return value;
+  if (unitMarker) {
+    const converted = convertUnit(value, unitMarker, printed, to);
+    if (converted !== undefined) return converted;
+  }
+  const fromUcum = toUcum(printed);
+  const toUcumUnit = toUcum(to);
+  if (!fromUcum || !toUcumUnit) return undefined;
+  return convertValue(value, fromUcum, toUcumUnit, loinc)?.value;
+}
+
+/**
  * Builds the ExploreMarker for one test once its reference band is resolved
  * -- unit selection (SI/US override table, else the band's own printed
  * unit, else the catalog default), value conversion, the sorted date
  * series, and (see REF_BAND_OVERRIDES's doc comment) the goodAbove/goodNote
  * pair a curated override band cites in the tooltip.
+ *
+ * `omitted` names the printed unit of every reading that could not be placed
+ * on the band's scale (see placeOnBandScale) -- one entry per dropped reading,
+ * so the caller can say so in the picker rather than thin the line in silence.
  */
 function buildTestMarker(
   loinc: string,
@@ -209,17 +256,28 @@ function buildTestMarker(
   band: Extract<RefBand, { kind: 'band' }>,
   unitSystem: 'si' | 'us',
   override: RefBandOverride | undefined
-): { marker: ExploreMarker; data: [string, number][] } {
+): { marker: ExploreMarker; data: [string, number][]; omitted: string[] } {
   const { refMinRaw, refMaxRaw, refFromUnit } = band;
   const unitMarker = LOINC_TO_MARKER[loinc];
-  const siUsUnit = unitMarker ? SI_US_UNIT[unitMarker] : undefined;
-  const unit = siUsUnit ? siUsUnit[unitSystem] : refFromUnit || test.unit || '';
+  // The band is what every reading is normalized against, so its own displayed
+  // unit is the series' unit -- never the row primary's, and never an SI/US
+  // target the conversion could not actually reach (see displayedResult).
+  const bandUnit = displayedResult(unitMarker, { loinc, value: refMaxRaw, rawValue: '', unit: refFromUnit ?? '' }, unitSystem);
+  const unit = bandUnit.unit || test.unit || '';
+  // The bounds are the scale itself, not points on it: they are already in
+  // `unit` by construction, so an unplaceable one keeps its number rather than
+  // leaving the marker with no band at all.
   const convert = (value: number, from: string | null | undefined): number =>
-    siUsUnit && unitMarker ? toUnit(value, unitMarker, from, unit) : value;
+    placeOnBandScale(value, from, unit, loinc, unitMarker) ?? value;
 
-  const data: [string, number][] = Array.from(byDate.entries())
-    .map(([date, e]): [string, number] => [date, convert(e.result.value!, e.result.unit)])
-    .sort((a, b) => a[0].localeCompare(b[0]));
+  const data: [string, number][] = [];
+  const omitted: string[] = [];
+  for (const [date, e] of byDate) {
+    const placed = placeOnBandScale(e.result.value!, e.result.unit, unit, e.loinc, unitMarker);
+    if (placed === undefined) omitted.push((e.result.unit ?? '').trim());
+    else data.push([date, placed]);
+  }
+  data.sort((a, b) => a[0].localeCompare(b[0]));
 
   const marker: ExploreMarker = {
     label: test.short,
@@ -237,7 +295,14 @@ function buildTestMarker(
       : {}),
   };
 
-  return { marker, data };
+  return { marker, data, omitted };
+}
+
+/** "2 readings omitted (mmol/L)" -- the picker chip's suffix for dropped readings. */
+function omittedReason(omitted: string[]): string {
+  const units = [...new Set(omitted)].filter(Boolean);
+  const what = `${omitted.length} reading${omitted.length === 1 ? '' : 's'} omitted`;
+  return units.length > 0 ? `${what} (${units.join(', ')})` : what;
 }
 
 /**
@@ -339,8 +404,19 @@ export function buildExploreModel(
       continue;
     }
 
-    const { marker, data } = buildTestMarker(loinc, test, panel, byDate, refBand, unitSystem, override);
+    const { marker, data, omitted } = buildTestMarker(loinc, test, panel, byDate, refBand, unitSystem, override);
+    if (data.length === 0) {
+      // Every reading was on a scale this series' band cannot be compared
+      // against -- real data on file, none of it plottable here, which is the
+      // second ExploreNotTaken.reason case, not a never-drawn marker.
+      notTaken.push({ key: loinc, label: test.short, panel, reason: omittedReason(omitted) });
+      continue;
+    }
     markers[loinc] = marker;
+    // Partly plottable: the line is real but shorter than the history, so the
+    // gap is named next to it rather than left to look like a missing draw.
+    if (omitted.length > 0)
+      notTaken.push({ key: `${loinc}:omitted`, label: test.short, panel, reason: omittedReason(omitted) });
 
     // Default selection: the current panel's own two-sided-range markers
     // with more than one reading -- mirrors v2's defaultPanel option. When

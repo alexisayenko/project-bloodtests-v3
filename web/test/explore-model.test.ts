@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildExploreModel, refBandFor, INDEX_MARKER_KEY_PREFIX, type Condition } from '../src/components/conditions/exploreModel';
 import { toUnit } from '../src/data/computedIndices';
+import { massPerMolarUnit } from '../src/data/molarMasses';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
@@ -34,16 +35,16 @@ function entry(loinc: string, date: string, value: number | null, overrides: Par
 
 describe('buildExploreModel — plottable two-sided-range markers', () => {
   it('plots a marker with >=1 reading, an upper bound and a non-degenerate range', () => {
-    const test = obs('MARK1', 'M1', 'u');
+    const test = obs('MARK1', 'M1', 'U/L');
     const conditions: Condition[] = [{ name: 'PanelA', tests: [test] }];
     const allResults = [
-      entry('MARK1', '2024-06-01', 12, { unit: 'u', refMin: 5, refMax: 15 }),
-      entry('MARK1', '2024-01-01', 10, { unit: 'u', refMin: 5, refMax: 15 }),
+      entry('MARK1', '2024-06-01', 12, { unit: 'U/L', refMin: 5, refMax: 15 }),
+      entry('MARK1', '2024-01-01', 10, { unit: 'U/L', refMin: 5, refMax: 15 }),
     ];
     const model = buildExploreModel(conditions, allResults, 'si', 'PanelA');
     expect(model.markers['MARK1']).toEqual({
       label: 'M1',
-      unit: 'u',
+      unit: 'U/L',
       refMin: 5,
       refMax: 15,
       panel: 'PanelA',
@@ -296,6 +297,85 @@ describe('buildExploreModel — SI/US unit conversion', () => {
     const allResults = [entry('718-7', '2024-01-01', 14.2, { unit: 'g/dL', refMin: 13, refMax: 17 })];
     const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
     expect(model.markers['718-7']).toMatchObject({ unit: 'g/dL', refMin: 13, refMax: 17, data: [['2024-01-01', 14.2]] });
+  });
+});
+
+describe('buildExploreModel — mass/molar histories on one scale', () => {
+  // Magnesium as the owner's real data has it: 0.74 mmol/L under the molar
+  // code in one draw, 2.12 mg/dL under the mass code in the next, folded into
+  // one series by the alias (ALSO_REFS) the app supplies at runtime.
+  const MG_MASS = '19123-9';
+  const MG_MOLAR = '2601-3';
+  const HDL_LOINC = '2085-9';
+  const magnesium: Observation = {
+    short: 'Mg',
+    full: 'Magnesium',
+    longCommonName: '',
+    loinc: MG_MASS,
+    unit: 'mg/dL',
+    also: [{ label: 'Mg', loinc: MG_MOLAR, longCommonName: '', unit: 'mmol/L' }],
+  };
+
+  it('converts a molar reading onto the mass unit its reference band is expressed in', () => {
+    const allResults = [
+      entry(MG_MOLAR, '2024-11-01', 0.74, { unit: 'mmol/L' }),
+      entry(MG_MASS, '2025-08-01', 2.12, { unit: 'mg/dL', refMin: 1.6, refMax: 2.6 }),
+    ];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [magnesium] }], allResults, 'si', 'PanelA');
+
+    const expected = 0.74 * massPerMolarUnit('magnesium', 'mg/dL', 'mmol/L');
+    expect(expected).toBeGreaterThan(1.7); // the point of the fix: 0.74 is not a cliff, it is ~1.8 mg/dL
+    const marker = model.markers[MG_MASS]!;
+    expect(marker.unit).toBe('mg/dL');
+    expect(marker).toMatchObject({ refMin: 1.6, refMax: 2.6 });
+    expect(marker.data[0]![0]).toBe('2024-11-01');
+    expect(marker.data[0]![1]).toBeCloseTo(expected, 10);
+    expect(marker.data[1]).toEqual(['2025-08-01', 2.12]);
+    // Both readings sit inside the band once placed on one scale, which is
+    // what the raw 0.74-against-a-mg/dL-band plot got wrong.
+    expect(marker.data.every(([, v]) => v >= marker.refMin && v <= marker.refMax)).toBe(true);
+    expect(model.notTaken).toEqual([]);
+  });
+
+  it('follows the band to the molar side when that is the unit the band is printed in', () => {
+    const allResults = [
+      entry(MG_MASS, '2024-11-01', 2.12, { unit: 'mg/dL' }),
+      entry(MG_MOLAR, '2025-08-01', 0.74, { unit: 'mmol/L', refMin: 0.66, refMax: 1.07 }),
+    ];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [magnesium] }], allResults, 'si', 'PanelA');
+
+    const marker = model.markers[MG_MASS]!;
+    expect(marker.unit).toBe('mmol/L');
+    expect(marker.data[0]![1]).toBeCloseTo(2.12 / massPerMolarUnit('magnesium', 'mg/dL', 'mmol/L'), 10);
+    expect(marker.data[1]).toEqual(['2025-08-01', 0.74]);
+  });
+
+  it('omits a reading whose unit cannot be placed, and names the omission in the picker', () => {
+    const test = obs('MARK1', 'M1', 'U/L'); // no mass/molar sibling pair, no SI/US rule
+    const allResults = [
+      entry('MARK1', '2024-01-01', 8, { unit: 'ng/mL' }),
+      entry('MARK1', '2024-06-01', 30, { unit: 'U/L', refMin: 10, refMax: 40 }),
+    ];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
+
+    expect(model.markers['MARK1']).toMatchObject({ unit: 'U/L', data: [['2024-06-01', 30]] });
+    expect(model.notTaken).toEqual([
+      { key: 'MARK1:omitted', label: 'M1', panel: 'PanelA', reason: '1 reading omitted (ng/mL)' },
+    ]);
+  });
+
+  it('drops a marker to notTaken when none of its readings can be placed on the band', () => {
+    const test = obs(HDL_LOINC, 'HDL-C'); // band comes from REF_BAND_OVERRIDES, not from a reading
+    const allResults = [
+      entry(HDL_LOINC, '2024-01-01', 22, { unit: '%' }),
+      entry(HDL_LOINC, '2024-06-01', 24, { unit: '%' }),
+    ];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'us', 'PanelA');
+
+    expect(model.markers[HDL_LOINC]).toBeUndefined();
+    expect(model.notTaken).toEqual([
+      { key: HDL_LOINC, label: 'HDL-C', panel: 'PanelA', reason: '2 readings omitted (%)' },
+    ]);
   });
 });
 
