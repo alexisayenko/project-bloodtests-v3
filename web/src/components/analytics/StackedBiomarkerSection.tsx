@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { useLang } from '../../i18n/LangContext';
 import { useData } from '../../data/DataContext';
 import { getAnalysisName } from '../../utils/analysis';
-import { MAX_SERIES, StackedBiomarkerChart3D, type StackedEntry } from './StackedBiomarkerChart3D';
-import type { BiomarkerNames, LoincEntry } from './BiomarkerCharts';
+import { StackedBiomarkerChart3D, type StackedEntry } from './StackedBiomarkerChart3D';
+import { MAX_SERIES } from './palette';
+import type { BiomarkerNames, LoincEntry } from './types';
 
 // How many biomarkers the 3D view starts with before the user has touched
 // the picker -- entries are expected sorted by point count descending, so

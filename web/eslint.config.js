@@ -8,13 +8,6 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores([
     'dist',
-    // Legacy pre-nav flow, not wired into App.tsx (see CLAUDE.md) — linted
-    // again if/when it returns or moves to archive/.
-    'src/components/layout',
-    'src/components/panels',
-    'src/components/results',
-    'src/components/upload',
-    'src/components/analytics',
     // Generated from public/schema/bloodtests-3.schema.json by
     // scripts/generate-envelope-types.mjs — never hand-edited.
     'src/data/envelopeTypes.ts',

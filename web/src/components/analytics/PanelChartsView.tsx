@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { testLoincs, type Observation } from '../conditions/markers';
 import type { ResultEntry } from '../conditions/resultsLookup';
-import type { BiomarkerNames, LoincEntry } from './BiomarkerCharts';
+import type { BiomarkerNames, LoincEntry } from './types';
 import { StackedBiomarkerSection } from './StackedBiomarkerSection';
-import { MAX_SERIES } from './StackedBiomarkerChart3D';
+import { MAX_SERIES } from './palette';
 
 interface Props {
   tests: Observation[];

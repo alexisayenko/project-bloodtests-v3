@@ -6,16 +6,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**'],
-      // Legacy pre-nav flow, not wired into App.tsx (see CLAUDE.md) — matches
-      // the eslint and Sonar exclusions.
-      exclude: [
-        'src/components/layout/**',
-        'src/components/panels/**',
-        'src/components/results/**',
-        'src/components/upload/**',
-        'src/components/analytics/**',
-        'src/utils/analysis.ts', // used only by the legacy flow above
-      ],
+      // Reached only from the chart view layer, which the coverage metric
+      // skips anyway — matches the Sonar coverage exclusions.
+      exclude: ['src/utils/analysis.ts'],
     },
   },
 });
