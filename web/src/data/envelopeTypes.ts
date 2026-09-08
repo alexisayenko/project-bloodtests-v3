@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *

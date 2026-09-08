@@ -162,13 +162,13 @@ function clean(printed: string): string {
     .toLowerCase()
     .replace(/\s+/g, '')
     .replace(/10[*^](\d)/g, '10^$1')
-    .replace(/[.?]+$/, '');
+    .replace(/(?<=[^.?]|^)[.?]+$/, '');
 }
 
 function splitUnit(cleaned: string): string[] | undefined {
   if (!cleaned) return undefined;
   const parts = cleaned.split('/');
-  return parts.some((p) => p === '') ? undefined : parts;
+  return parts.includes('') ? undefined : parts;
 }
 
 function resolveToken(token: string): UnitToken | undefined {

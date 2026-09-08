@@ -7,7 +7,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const schemaPath = resolve(here, '../public/schema/bloodtests-3.schema.json');
 const defaultOut = resolve(here, '../src/data/envelopeTypes.ts');
 
-const bannerComment = `/* eslint-disable */
+const bannerComment = `/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
