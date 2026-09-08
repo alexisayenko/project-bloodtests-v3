@@ -62,8 +62,25 @@ Optional. Useful when the name is still in motion.
 | `serum.im` | candidate (2026-08-25) — short, clinical, memorable |
 | `in-vitro.cc` | candidate (2026-08-25) — lab-diagnostics term, hyphenated |
 | `invitro.im` | candidate (2026-08-25) — same, unhyphenated (note: clashes with Invitro, the large RU/CIS lab chain) |
-| `assay.guru` | candidate (2026-08-25) — playful, assay = lab test |
+| `assay.guru` | dropped (2026-09-08) — playful, assay = lab test, but already registered |
 | `bioanalysis.cc` | candidate (2026-08-25) — descriptive, generic |
+| `markerly.net` | candidate (2026-09-08) — coined from "marker", product-shaped rather than clinical |
+| `markerly.cc` | candidate (2026-09-08) — same on the short TLD |
+| `biomarks.net` | candidate (2026-09-08) — biomarkers, shortened |
+| `biomarks.cc` | candidate (2026-09-08) — same on the short TLD |
+| `bloodtests.cc` | candidate (2026-09-08) — plainly descriptive, matches the repo name |
+
+Registration checked by `whois` on 2026-09-08: every name above was
+unregistered except `assay.guru`. A CLI check can return thin answers on
+niche TLDs, so confirm at a registrar before buying.
+
+Two threads run through the list worth settling before one is locked.
+Every name so far is a synonym for "lab test", so none of them says the
+thing that distinguishes this from a lab's own portal — that the data
+stays local and the point is the trend across years and labs. And the
+`in-vitro` / `invitro` pair carries a live trademark risk: Invitro is a
+large RU/CIS lab chain, which is the same market the reports this app
+parses come from, and hyphenation does not dodge that.
 
 ## Open questions
 
