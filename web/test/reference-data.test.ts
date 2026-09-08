@@ -53,7 +53,7 @@ describe('reference data conforms to analytes-1.schema.json', () => {
 describe('reference data is internally consistent', () => {
   it('no LOINC is listed twice in the catalog', () => {
     const codes = ANALYSES.map((a) => a.loinc);
-    expect(codes.length).toBe(new Set(codes).size);
+    expect(codes).toHaveLength(new Set(codes).size);
   });
 
   it('every aliasOf names a catalog entry that is not itself an alias', () => {
@@ -80,6 +80,6 @@ describe('reference data is internally consistent', () => {
 
   it('Monitoring Panel names are unique', () => {
     const names = MONITORING_PANELS.map((p) => p.name);
-    expect(names.length).toBe(new Set(names).size);
+    expect(names).toHaveLength(new Set(names).size);
   });
 });

@@ -281,7 +281,7 @@ describe('resolveLoinc', () => {
       prolactinCatalog,
       prolactinUnits
     );
-    expect(res.candidates.length).toBe(2);
+    expect(res.candidates).toHaveLength(2);
     expect(res.confident).toBe(false);
   });
 
