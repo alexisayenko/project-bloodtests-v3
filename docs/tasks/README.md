@@ -29,6 +29,7 @@ the index.
 | [task-0009](task-0009.md) | Per-code allowed-unit sets and alias-group collapse | done |
 | [task-0010](task-0010.md) | Research companion observations (draw-together pairs) | to do |
 | [task-0011](task-0011.md) | Normalize units to UCUM | in progress |
+| [task-0012](task-0012.md) | Implement the Martin-Hopkins LDL-C estimate | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
