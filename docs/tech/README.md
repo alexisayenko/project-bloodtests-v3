@@ -124,7 +124,14 @@ The same folding helpers are shared, not duplicated: `loincCheck.ts`
 builds its unit comparison key with `foldUnitGlyphs` and `toLatinUnit`
 from this module, so a Cyrillic printed unit (`ммоль/л`, `тыс/мкл`), a
 superscript digit (`×10⁹/L`) and the micro sign all reduce to the
-catalog's Latin spelling before a code is derived from name + unit.
+catalog's Latin spelling before a code is derived from name + unit. The
+table layer borrows one more: `sameUnitScale` answers whether two printed
+spellings denote the identical unit — same token kinds, ratio exactly 1 —
+so `ui.ts`'s `sharedUnit` can give a row one label when its readings only
+*look* like two units (`uIU/mL` / `mIU/L`), while a genuine scale
+difference still splits the label onto the cells. It compares, it never
+converts, and an unrecognized unit answers "no" rather than optimistically
+"yes".
 
 The case worth naming is mass versus molar. A `mmol/L` result stored
 under Cholesterol's `[Mass/volume]` code `2093-3` is a **code** error,

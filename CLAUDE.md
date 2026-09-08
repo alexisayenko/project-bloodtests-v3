@@ -64,7 +64,8 @@ share link, `/?data=<guid>`, fetches `/d/<guid>.data.json` and imports it
 through the same parse path as an upload, then strips the param; in
 parallel it fetches an optional `/d/<guid>.meta.json` per-link
 presentation config (`showPanels` — an allowlist of panel display names
-limiting the Monitoring Panels grid, All Observations always showing
+limiting the Monitoring Panels grid, and with it All Observations' panel
+options and the indices they scope, though its observation rows always show
 everything — plus `settings`, which seeds the shared table controls only
 when the visitor has none stored yet), where a missing, 404 or malformed
 meta simply means "no meta" and never fails the import. A stored meta
@@ -103,7 +104,16 @@ together: `ui.ts`'s `displayedResult` / `sharedUnit` / `buildRowCells` label a
 reading with its own code's unit — a molar variant folded into its mass
 primary's row keeps `mmol/L`, never the primary's `mg/dL` — and a row whose
 readings sit on two scales loses its row-level unit and labels each cell
-instead; the conversion itself is `computedIndices.ts`'s `convertUnit`, which
+instead. Two spellings of one unit are not two scales, though: `sharedUnit`
+falls back to `unitNormalization`'s `sameUnitScale`, which folds both to Latin,
+computes prefix × volume and demands identical kinds and a ratio of exactly 1,
+so a TSH history printed `uIU/mL`, `mIU/L` and `мкМЕ/мл` carries one `mIU/L`
+label (the row's own catalog/SI-US unit when that belongs to the same unit,
+else the readings' majority spelling) with no number converted, while `mg/dL`
+against `mmol/L` still splits onto the cells. The identities it folds are
+`IU/L` = `U/L` = `mIU/mL`, `ng/mL` = `ug/L`, `mg/L` = `ug/mL` and
+`mIU/L` = `uIU/mL`. The conversion itself is `computedIndices.ts`'s
+`convertUnit`, which
 folds a printed spelling to Latin before matching, so `ммоль/л` converts like
 `mmol/L` (it used to match no rule, leaving the printed number under a
 converted label). Monitoring Panels grid cards list each
@@ -174,10 +184,23 @@ column, set apart at the right of each table — a single-click toggle
 per row (`role=checkbox`, ✓ in primary blue); scheduling an index also
 schedules its input observations, unscheduling it leaves them, and
 toggling an observation re-derives every index (scheduled iff all its
-inputs are) — that cascade is Panel Detail's alone, since All Observations
-has no indices and gets the row toggle only; global state in localStorage
+inputs are) — the same cascade in both views, since All Observations renders
+an Indices table too. The column header is a control rather than a word: a
+month pill (this month and the next 23, plus a stored month that has since
+fallen outside that window) above a select-all box carrying the "Scheduled"
+label, tri-state through native `indeterminate` (`ScheduleHeader.tsx`, which
+keeps its own copy of the filter pill's style rather than importing
+`AllObservationsView`'s, since that module already imports the tables). The
+month is an ISO `YYYY-MM` label *for* the one global schedule, not a partition
+of it — switching months leaves every checked row checked — and select-all
+scopes to the rows the table is actually rendering, so All Observations' panel
+and text filters narrow it. Global state in localStorage
 `bloodtests_scheduled_v1`
-(`{loincs, indices}`), logic in `scheduled.ts`, whose `useScheduled` hook the
+(`{loincs, indices, month?}` — backward compatible in both directions: an
+unset month is `undefined`, so `JSON.stringify` drops the key and an
+unscheduled payload keeps the old shape, and a missing or malformed one loads
+as undefined with the checked sets intact), logic in `scheduled.ts`, whose
+`useScheduled` hook the
 shell owns and hands down as `RowScheduling` / `IndexScheduling`, rather than
 Panel Detail, which remounts per panel. Selecting an index
 row there marks each input observation with a blue • in a fixed 10px
@@ -233,13 +256,21 @@ lookup is the app's only network call and lives alone in
 name; the resolver's domain-free edit-distance matching is likewise its
 own module, `data/fuzzyMatch.ts`, with no tie to the analyte catalog), All
 Observations (every uploaded result in one table, with a "Show
-observations from" select narrowing it to one Monitoring Panel — session
+observations from" select narrowing it to one Monitoring Panel and a
+"Find a marker" box narrowing it by text — both session
 state, never stored, so a filter cannot go on hiding rows the way a
 stored `showPanels` once did; both the panel's codes and the rows fold
 through `ALIAS_TO_PRIMARY` (`panelRowLoincs`, `markers.ts`) so a reading
 matches its panel whichever of its codes the lab used, while
-`buildConditions` still maps one-to-one; a share link's allowlist limits
-the options but never the table), Monitoring Panels
+`buildConditions` still maps one-to-one; the text pass
+(`observationMatchesQuery` / `indexMatchesQuery`, `markers.ts`) matches the
+badge label, the displayed and long common names, every LOINC the row
+answers for and every `rawName` a lab printed for it, so a Cyrillic printed
+name finds its row; below the observations sits the same `IndexTable` Panel
+Detail renders, scoped the way Panel Detail scopes it — the selected panel's
+indices, or the union over the panels on offer, so a share link's allowlist,
+which limits the panel options but never the observation rows, does narrow
+the indices), Monitoring Panels
 (the default/entry route), Reference Book (Indices Descriptions: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Physiology: HP Axis page with v2's
@@ -341,7 +372,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (532 tests across 21 files, 1 skipped: index
+Vitest suites in `web/test/` (564 tests across 21 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the

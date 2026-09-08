@@ -114,10 +114,17 @@ rationale per rule so future-us can revisit.
   column so it reads as a separate concern from the dated value cells.
   On Panel Detail's Observations and Indices tables and on All
   Observations, over one shared set — the same row toggled in either
-  place is the same row.
+  place is the same row. Its header is a control, not a label: a month
+  pill above a tri-state select-all box that carries the word
+  "Scheduled". The month names what the schedule is *for* and never
+  filters it; select-all covers only the rows currently on screen, so a
+  filtered table never schedules something the reader cannot see.
 - **Unit labels:** the unit sits once in the row's name column when
-  every reading in the row agrees on it. When they don't — a lab that
-  switched scales mid-history, or a molar code folded into its mass
+  every reading in the row is on one scale. Two spellings of the same
+  unit count as one scale — `uIU/mL` and `mIU/L` are the same unit, so
+  a row printed both ways still gets a single label, and no number
+  moves. When the scales genuinely differ — a lab that
+  switched mid-history, or a molar code folded into its mass
   primary's row — the row-level unit disappears and each cell carries
   its own in grey beside the number, so a figure is never shown under
   another reading's scale.

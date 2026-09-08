@@ -24,7 +24,9 @@ Entry point → panel detail, with a historical values table.
 - **Branches:** the Analysis tab's "Scheduled" column (right of both
   tables) toggles a row into the global scheduled set with one click;
   scheduling an index also schedules its inputs, and an index reads
-  scheduled once all its inputs are
+  scheduled once all its inputs are. Its header picks the month the
+  schedule is for (a label on the one set, not a filter over it) and
+  selects or clears every row the table is showing at once
 - **Branches:** "What's in range" tab shows a normalized-overlay chart
   (every marker as % of its own reference range, plus the panel's
   computed indices normalized against their own ok/warn/bad

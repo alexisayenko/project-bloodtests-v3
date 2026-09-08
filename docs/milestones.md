@@ -10,6 +10,27 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-08 — All Observations stops being just a list. It now carries
+  the computed indices too — the same `IndexTable` Panel Detail renders,
+  scoped to the selected panel or to the union over the panels on offer,
+  so a share link's allowlist narrows the indices the way it already
+  narrowed the panel picker — and the scheduling cascade came with them.
+  A "Find a marker" box joins the panel select, matching the badge label,
+  the displayed and long common names, every LOINC the row answers for
+  and every name a lab actually printed, so a Cyrillic printed name finds
+  its row; like the panel filter it is session state and never stored.
+  The Scheduled header stopped being a word: a month pill — an ISO
+  `YYYY-MM` label *for* the single global schedule, not a partition of it,
+  so switching months changes nothing about what is checked — above a
+  tri-state select-all scoped to the rows on screen, with storage going
+  `{loincs, indices}` → `{loincs, indices, month?}` compatibly in both
+  directions. Alongside, `sameUnitScale` fixed a comparison rather than a
+  conversion: `uIU/mL`, `mIU/L` and `мкМЕ/мл` are one unit, so a TSH row
+  spanning all three finally carries one label instead of a unit per cell,
+  while `mg/dL` against `mmol/L` still splits and no number moves. The
+  panel select also got its chevron back inside the pill — a native select
+  draws its indicator with squared-off metrics, which a 9999px radius had
+  been swallowing. The suite is 564 tests across 21 files.
 - 2026-09-08 — Numbers and their units stop drifting apart. The bug was
   broader than it first looked: a table row labelled its cells with the
   alias group *primary's* unit while each cell printed its own number,
