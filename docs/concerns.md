@@ -99,3 +99,26 @@ laboratory actually printed. Candidate pieces:
 
 The open question under all of this is what "trustworthy" is allowed to
 mean when the pipeline begins with a language model reading a PDF.
+
+**Something like "Scheduler"** — planning the next draw rather than
+recording the last one. Read as a whole, its goal is sharper than the
+checkbox column suggests: *produce the order for my next blood test*.
+
+- Plan observations for the next sampling.
+- Plan several months.
+- A compact view: every scheduled observation for a given date.
+- Include companion observations — the draw-together pairs of
+  [task-0010](tasks/task-0010.md), which is still research and has not
+  started, so this concern depends on a task that has not begun.
+- Export the plan as JSON — new; the scheduler has no export today.
+  Presumably a list to hand to the laboratory or carry to the draw.
+
+**Reversal to record:** "plan several months" undoes the decision of
+2026-09-09, when the month was deliberately made a *label* for one
+global schedule rather than a partition of it — switching months leaves
+every checked row checked, and storage is `{loincs, indices, month?}`.
+Planning several months needs the month-keyed map that decision
+rejected. There is no production data, so the change costs nothing but
+the rewrite; it is recorded here because it is a reversal, not an
+extension, and the reasoning that produced the first answer should be
+re-examined rather than forgotten.
