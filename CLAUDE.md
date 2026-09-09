@@ -259,7 +259,16 @@ name; the resolver's domain-free edit-distance matching is likewise its
 own module, `data/fuzzyMatch.ts`, with no tie to the analyte catalog), All
 Observations (every uploaded result in one table, with a "Show
 observations from" select narrowing it to one Monitoring Panel and a
-"Find a marker" box narrowing it by text — both session
+"Find a marker" box narrowing it by text — both now sit in
+`ControlsBar` beside the unit system and sample limit, one row of four
+that wraps rather than a second row of its own; Panel Detail renders the
+same four and *disables* the panel select rather than hiding it, since
+it is already one panel and a control that vanishes between views makes
+the bar jump, while its marker box does filter that panel's own tables.
+`ControlsBar` holds no state: each view keeps its filter in `useState`
+and passes it down, deliberately not lifting it to the shell, which owns
+the *persisted* settings — a filter living there invites persisting it.
+Both are session
 state, never stored, so a filter cannot go on hiding rows the way a
 stored `showPanels` once did; both the panel's codes and the rows fold
 through `ALIAS_TO_PRIMARY` (`panelRowLoincs`, `markers.ts`) so a reading

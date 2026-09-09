@@ -62,6 +62,24 @@ export function observationMatchesQuery(test: Observation, query: string, printe
   );
 }
 
+/** Every name a lab printed, indexed by the row key those names belong to. */
+export function buildPrintedNames(allResults: readonly { loinc: string; result: { analysis?: string } }[]): Record<string, string[]> {
+  const byLoinc: Record<string, string[]> = {};
+  for (const { loinc, result } of allResults) {
+    const name = result.analysis;
+    if (!name) continue;
+    const key = primaryLoinc(loinc);
+    const names = (byLoinc[key] ??= []);
+    if (!names.includes(name)) names.push(name);
+  }
+  return byLoinc;
+}
+
+/** The printed names of every code a row answers for, ready for observationMatchesQuery. */
+export function printedNamesOf(index: Record<string, string[]>, test: Observation): string[] {
+  return testLoincs(test).flatMap((loinc) => index[primaryLoinc(loinc)] ?? []);
+}
+
 /** The same filter over a computed index, which has no LOINC or printed name of its own. */
 export function indexMatchesQuery(def: IndexDef, query: string): boolean {
   const q = query.trim().toLowerCase();

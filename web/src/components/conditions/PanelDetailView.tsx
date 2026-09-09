@@ -2,7 +2,16 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import type { Result } from '../../types';
 import { MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
-import { COMPUTED_LOINCS, INDEX_LOINCS, testLoincs, type Observation } from './markers';
+import {
+  COMPUTED_LOINCS,
+  INDEX_LOINCS,
+  buildPrintedNames,
+  indexMatchesQuery,
+  observationMatchesQuery,
+  printedNamesOf,
+  testLoincs,
+  type Observation,
+} from './markers';
 import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
@@ -65,10 +74,21 @@ export function PanelDetailView({
   onBack: () => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
+  // Session-only, like All Observations' copy: a stored filter would go on
+  // hiding rows in a later session with nothing on screen to explain the gap.
+  const [query, setQuery] = useState('');
 
   const observations = tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
   const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc) && !COMPUTED_LOINCS.has(t.loinc));
   const computedForPanel = INDEX_DEFS.filter((d) => d.panels.includes(name));
+
+  const printedNames = useMemo(() => buildPrintedNames(allResults), [allResults]);
+  const matchesQuery = (t: Observation) => observationMatchesQuery(t, query, printedNamesOf(printedNames, t));
+  const visibleObservations = observations.filter(matchesQuery);
+  const visibleIndices = indices.filter(matchesQuery);
+  const visibleComputed = computedForPanel.filter((d) => indexMatchesQuery(d, query));
+  const nothingMatches =
+    visibleObservations.length === 0 && visibleIndices.length === 0 && visibleComputed.length === 0;
   const selectedIndex = computedForPanel.find((d) => d.key === selectedLoinc);
   const inputsOf = selectedIndex && { name: selectedIndex.name, loincs: indexInputLoincs(selectedIndex.key) };
   const selectedObservation = observations.find((t) => t.loinc === selectedLoinc);
@@ -116,18 +136,24 @@ export function PanelDetailView({
 
       {detailTab === 'analysis' && (
         <div>
-          <ControlsBar {...controls} />
+          {/* No panelFilter: the picker renders disabled, since this view is already one panel. */}
+          <ControlsBar {...controls} markerQuery={{ value: query, onChange: setQuery }} />
           {dates.length === 0 ? (
             <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
           ) : (
             <>
-              <ObservationTable label="Observations" rows={observations} {...tableProps} inputsOf={inputsOf} />
-              {(indices.length > 0 || computedForPanel.length > 0) && (
+              {nothingMatches && (
+                <div style={{ color: '#888', fontSize: 14 }}>Nothing in {name} matches “{query.trim()}”.</div>
+              )}
+              {visibleObservations.length > 0 && (
+                <ObservationTable label="Observations" rows={visibleObservations} {...tableProps} inputsOf={inputsOf} />
+              )}
+              {(visibleIndices.length > 0 || visibleComputed.length > 0) && (
                 <div style={{ marginTop: 16 }}>
-                  {indices.length > 0 && <ObservationTable label="Indices" rows={indices} {...tableProps} />}
-                  {computedForPanel.length > 0 && (
+                  {visibleIndices.length > 0 && <ObservationTable label="Indices" rows={visibleIndices} {...tableProps} />}
+                  {visibleComputed.length > 0 && (
                     <IndexTable
-                      defs={computedForPanel}
+                      defs={visibleComputed}
                       visibleDates={visibleDates}
                       resultsByDate={resultsByDate}
                       selectedLoinc={selectedLoinc}
