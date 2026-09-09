@@ -166,16 +166,9 @@ describe('validateDiagnosticReports', () => {
     expect(issues[0]?.level).toBe('error');
   });
 
-  it('does not report error when value is null but rawValue is present', () => {
-    const groups = [createGroup({ items: [createResult({ value: null })] })];
-    const issues = validateDiagnosticReports(groups);
-    expect(issues).toHaveLength(0);
-  });
-
-  it('does not report error when rawValue is empty but value is present', () => {
-    const groups = [createGroup({ items: [createResult({ rawValue: '' })] })];
-    const issues = validateDiagnosticReports(groups);
-    expect(issues).toHaveLength(0);
+  it('accepts an observation carrying either a value or a rawValue', () => {
+    expect(validateDiagnosticReports([createGroup({ items: [createResult({ value: null })] })])).toHaveLength(0);
+    expect(validateDiagnosticReports([createGroup({ items: [createResult({ rawValue: '' })] })])).toHaveLength(0);
   });
 
   it('reports error when value is null and rawValue is empty', () => {
@@ -201,16 +194,13 @@ describe('validateDiagnosticReports', () => {
     expect(issues[0]?.level).toBe('warning');
   });
 
-  it('does not report warning when refText is present', () => {
-    const groups = [createGroup({ items: [createResult({ refMin: null, refMax: null, refText: 'Normal' })] })];
-    const issues = validateDiagnosticReports(groups);
-    expect(issues).toHaveLength(0);
-  });
-
-  it('does not report warning when refMin and refMax are present', () => {
-    const groups = [createGroup({ items: [createResult({ refText: '', refMin: 13, refMax: 17 })] })];
-    const issues = validateDiagnosticReports(groups);
-    expect(issues).toHaveLength(0);
+  it('accepts a reference given either as printed text or as numeric bounds', () => {
+    expect(
+      validateDiagnosticReports([createGroup({ items: [createResult({ refMin: null, refMax: null, refText: 'Normal' })] })])
+    ).toHaveLength(0);
+    expect(
+      validateDiagnosticReports([createGroup({ items: [createResult({ refText: '', refMin: 13, refMax: 17 })] })])
+    ).toHaveLength(0);
   });
 
   it('sorts issues by groupFile then resultIndex', () => {
@@ -229,54 +219,27 @@ describe('validateDiagnosticReports', () => {
   });
 });
 
-describe('hasErrors', () => {
-  it('returns true when there are any errors', () => {
-    const issues: ValidationIssue[] = [
-      { groupFile: 'file', resultIndex: 0, level: 'error', message: 'test' },
-    ];
-    expect(hasErrors(issues)).toBe(true);
+describe('issue predicates', () => {
+  const issue = (level: 'error' | 'warning', groupFile = 'file-a'): ValidationIssue => ({
+    groupFile,
+    resultIndex: 0,
+    level,
+    message: 'test',
   });
 
-  it('returns false when there are only warnings', () => {
-    const issues: ValidationIssue[] = [
-      { groupFile: 'file', resultIndex: 0, level: 'warning', message: 'test' },
-    ];
-    expect(hasErrors(issues)).toBe(false);
-  });
-
-  it('returns false for empty issues', () => {
+  it('hasErrors is true only when some issue is an error', () => {
+    expect(hasErrors([issue('error')])).toBe(true);
+    expect(hasErrors([issue('warning')])).toBe(false);
     expect(hasErrors([])).toBe(false);
   });
-});
 
-describe('groupHasErrors', () => {
-  it('returns true for errors in the specified group', () => {
-    const issues: ValidationIssue[] = [
-      { groupFile: 'file-a', resultIndex: 0, level: 'error', message: 'test' },
-    ];
-    expect(groupHasErrors('file-a', issues)).toBe(true);
-  });
+  it('the group predicates read the level and the group the issue belongs to', () => {
+    expect(groupHasErrors('file-a', [issue('error')])).toBe(true);
+    expect(groupHasErrors('file-a', [issue('warning')])).toBe(false);
+    expect(groupHasErrors('file-a', [issue('error', 'file-b')])).toBe(false);
 
-  it('returns false when the group has no errors', () => {
-    const issues: ValidationIssue[] = [
-      { groupFile: 'file-a', resultIndex: 0, level: 'warning', message: 'test' },
-    ];
-    expect(groupHasErrors('file-a', issues)).toBe(false);
-  });
-});
-
-describe('groupHasWarnings', () => {
-  it('returns true for warnings in the specified group', () => {
-    const issues: ValidationIssue[] = [
-      { groupFile: 'file-a', resultIndex: 0, level: 'warning', message: 'test' },
-    ];
-    expect(groupHasWarnings('file-a', issues)).toBe(true);
-  });
-
-  it('returns false when the group has no warnings', () => {
-    const issues: ValidationIssue[] = [
-      { groupFile: 'file-a', resultIndex: 0, level: 'error', message: 'test' },
-    ];
-    expect(groupHasWarnings('file-a', issues)).toBe(false);
+    expect(groupHasWarnings('file-a', [issue('warning')])).toBe(true);
+    expect(groupHasWarnings('file-a', [issue('error')])).toBe(false);
+    expect(groupHasWarnings('file-a', [issue('warning', 'file-b')])).toBe(false);
   });
 });

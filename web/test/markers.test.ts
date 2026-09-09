@@ -1,15 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildConditions,
+  buildPanelsByLoinc,
   indexMatchesQuery,
   isEchoRedundant,
   observationMatchesQuery,
+  panelMembershipOf,
   panelRowLoincs,
   primaryLoinc,
   testLoincs,
   type Observation,
 } from '../src/components/conditions/markers';
-import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS } from '../src/data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, ANALYTE_BY_LOINC, SHORT_LABELS } from '../src/data/analyteCatalog';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
@@ -61,10 +63,6 @@ describe('marker catalog consistency', () => {
     }
   });
 
-  it('short labels are unique per LOINC list intent (no accidental duplicates of a LOINC key)', () => {
-    const keys = Object.keys(SHORT_LABELS);
-    expect(new Set(keys).size).toBe(keys.length);
-  });
 });
 
 // The molar twin of a marker the panels already carry must fold into that
@@ -174,35 +172,23 @@ describe('observationMatchesQuery (All Observations text filter)', () => {
     also: ALSO_REFS['718-7'],
   };
 
-  it('matches an empty or whitespace-only query against every row', () => {
+  it('matches an empty or whitespace-only query against every row, and trims before matching', () => {
     expect(observationMatchesQuery(hgb, '')).toBe(true);
     expect(observationMatchesQuery(hgb, '   ')).toBe(true);
-  });
-
-  it('matches the badge label case-insensitively', () => {
-    expect(observationMatchesQuery(hgb, 'hgb')).toBe(true);
-    expect(observationMatchesQuery(hgb, 'HG')).toBe(true);
-  });
-
-  it('matches the displayed name and the official long name', () => {
-    expect(observationMatchesQuery(hgb, 'hemoglob')).toBe(true);
-    expect(observationMatchesQuery(hgb, 'mass/volume')).toBe(true);
-  });
-
-  it('matches the LOINC itself', () => {
-    expect(observationMatchesQuery(hgb, '718-7')).toBe(true);
-  });
-
-  it('matches a Cyrillic name the lab actually printed', () => {
-    expect(observationMatchesQuery(hgb, 'Гемоглобин')).toBe(false);
-    expect(observationMatchesQuery(hgb, 'гемоглобин', ['Гемоглобин'])).toBe(true);
-  });
-
-  it('trims the query before matching', () => {
     expect(observationMatchesQuery(hgb, '  hgb  ')).toBe(true);
   });
 
-  it('rejects a query that appears nowhere', () => {
+  it('matches the badge label, the displayed name, the long common name and the LOINC', () => {
+    expect(observationMatchesQuery(hgb, 'hgb')).toBe(true);
+    expect(observationMatchesQuery(hgb, 'HG')).toBe(true); // case-insensitive
+    expect(observationMatchesQuery(hgb, 'hemoglob')).toBe(true);
+    expect(observationMatchesQuery(hgb, 'mass/volume')).toBe(true);
+    expect(observationMatchesQuery(hgb, '718-7')).toBe(true);
+  });
+
+  it('matches a Cyrillic name only once a lab has actually printed it, and nothing else', () => {
+    expect(observationMatchesQuery(hgb, 'Гемоглобин')).toBe(false);
+    expect(observationMatchesQuery(hgb, 'гемоглобин', ['Гемоглобин'])).toBe(true);
     expect(observationMatchesQuery(hgb, 'ferritin', ['Гемоглобин'])).toBe(false);
   });
 
@@ -234,5 +220,34 @@ describe('indexMatchesQuery (All Observations text filter, index rows)', () => {
 
   it('rejects a query that names another index', () => {
     expect(indexMatchesQuery(def, 'homa')).toBe(false);
+  });
+});
+
+describe('panel membership of a LOINC (Reference Book, LOINC database)', () => {
+  const panelsByLoinc = buildPanelsByLoinc(buildConditions(PANELS, ANALYTE_BY_LOINC, MONITORING_PANELS));
+
+  it('lists every panel that names a code, without repeats', () => {
+    const glucose = panelMembershipOf(panelsByLoinc, '2339-0');
+    expect(glucose.via).toBeUndefined();
+    expect(glucose.panels).toContain('Insulin Resistance');
+    expect(glucose.panels).toContain('Kidney Function');
+    expect(new Set(glucose.panels).size).toBe(glucose.panels.length);
+  });
+
+  it('reports nothing for a primary code no panel names', () => {
+    expect(panelMembershipOf(panelsByLoinc, '13458-5')).toEqual({ panels: [] });
+  });
+
+  it('falls back to the primary for a variant code the resolver never lists', () => {
+    // HbA1c IFCC: Insulin Resistance excludes it by name, yet a reading recorded
+    // under it folds into the NGSP row, which that panel does carry.
+    const ifcc = panelMembershipOf(panelsByLoinc, '59261-8');
+    expect(panelsByLoinc['59261-8']).toBeUndefined();
+    expect(ifcc.via).toBe('4548-4');
+    expect(ifcc.panels).toEqual(panelMembershipOf(panelsByLoinc, '4548-4').panels);
+  });
+
+  it('leaves a variant whose primary is itself unlisted with no panels', () => {
+    expect(panelMembershipOf(panelsByLoinc, '25371-6')).toEqual({ panels: [], via: '13458-5' });
   });
 });

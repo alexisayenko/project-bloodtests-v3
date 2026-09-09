@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEV_COMMIT, buildYear, commitUrl, copyrightLine, formatBuildTime } from '../src/components/buildInfo';
+import { buildYear, commitUrl, copyrightLine, formatBuildTime } from '../src/components/buildInfo';
 
 describe('footer build stamp', () => {
   it('renders the copyright line for the build year', () => {
@@ -15,12 +15,9 @@ describe('footer build stamp', () => {
     expect(formatBuildTime('not-a-date')).toBe('not-a-date');
   });
 
-  it('links a hash-shaped commit to its GitHub page', () => {
-    const commit = '328bb5c';
-    expect(commit).toMatch(/^[0-9a-f]{7,8}$/);
-    expect(commitUrl(commit)).toBe(
+  it('links a commit hash to its GitHub page', () => {
+    expect(commitUrl('328bb5c')).toBe(
       'https://github.com/alexisayenko/project-bloodtests-v3/commit/328bb5c',
     );
-    expect(DEV_COMMIT).toBe('dev');
   });
 });

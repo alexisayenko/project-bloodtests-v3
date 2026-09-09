@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020';
 import { ANALYSES, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS } from './dataFiles';
-import { ALIAS_TO_PRIMARY, ANALYTE_BY_LOINC, DEFAULT_UNITS, SHORT_LABELS } from '../src/data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ANALYTE_BY_LOINC, DEFAULT_UNITS, SHORT_LABELS, SPECIMENS, specimenOf } from '../src/data/analyteCatalog';
 import {
   MOLAR_MASSES,
   MOLAR_MASS_BY_ID,
@@ -77,6 +77,23 @@ describe('reference data is internally consistent', () => {
   it('every badge label comes with the unit its range checks use', () => {
     for (const loinc of Object.keys(SHORT_LABELS)) {
       expect(DEFAULT_UNITS[loinc], `${loinc} has a short label but no unit`).toBeTruthy();
+    }
+  });
+
+  it('every entry carries a LOINC long common name', () => {
+    for (const a of ANALYSES) {
+      expect(a.longCommonName?.trim(), `${a.loinc} has no long common name`).toBeTruthy();
+    }
+  });
+
+  // 14913-8 was catalogued under 2986-8's "[Mass/volume]" name while carrying
+  // nmol/L, and every derived map read the wrong scale off it.
+  it("names a sibling code for the scale its own LOINC property declares", () => {
+    const property = (loinc: string): string | undefined =>
+      /\[(Mass|Moles)\/volume\]/.exec(ANALYTE_BY_LOINC[loinc]?.longCommonName ?? '')?.[1];
+    for (const pair of MASS_MOLAR_SIBLINGS) {
+      expect([pair.mass.loinc, property(pair.mass.loinc)]).toEqual([pair.mass.loinc, 'Mass']);
+      expect([pair.molar.loinc, property(pair.molar.loinc)]).toEqual([pair.molar.loinc, 'Moles']);
     }
   });
 
@@ -213,5 +230,32 @@ describe('molar masses are internally consistent', () => {
     expect(() => massPerMolarUnit('unobtainium', 'mg/dL', 'mmol/L')).toThrow();
     expect(molarMassFromFormula('Xx2')).toBeUndefined();
     expect(molarMassFromFormula('h2o')).toBeUndefined();
+  });
+});
+
+describe('specimen derived from the long common name', () => {
+  it('reads the system out of an "in …" clause, dropping any method', () => {
+    expect(specimenOf('Glucose [Mass/volume] in Serum or Plasma')).toBe('Serum or Plasma');
+    expect(specimenOf('Hemoglobin [Mass/volume] in Blood by Automated count')).toBe('Blood');
+    expect(specimenOf('Reticulocytes/Erythrocytes [Pure number fraction] in Red Blood Cells')).toBe('Red Blood Cells');
+  });
+
+  it('reads an "of …" clause the same way', () => {
+    expect(specimenOf('Hematocrit [Volume Fraction] of Blood by Automated count')).toBe('Blood');
+  });
+
+  it('never runs a match through the property bracket', () => {
+    expect(specimenOf('MCH [Entitic mass] by Automated count')).toBeUndefined();
+  });
+
+  it('returns nothing rather than guessing when the name states no specimen', () => {
+    expect(specimenOf('Prothrombin time (PT)')).toBeUndefined();
+    expect(specimenOf(undefined)).toBeUndefined();
+  });
+
+  it('derives a specimen for all but the handful of names that omit one', () => {
+    const without = ANALYSES.filter((a) => !SPECIMENS[a.loinc]);
+    expect(without.length).toBeLessThanOrEqual(8);
+    for (const a of without) expect(a.longCommonName).not.toMatch(/\s(?:in|of)\s/);
   });
 });

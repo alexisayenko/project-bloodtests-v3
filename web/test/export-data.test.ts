@@ -111,12 +111,12 @@ describe('buildExportEnvelope — normalized unit, printed rawUnit', () => {
 });
 
 describe('buildExportEnvelope', () => {
-  it('creates an envelope with schema 3 and contentHash', async () => {
-    const sessions = [session({})];
-    const envelope = await buildExportEnvelope(sessions);
+  it('creates an envelope with schema 3, a contentHash and a generatedAt stamp', async () => {
+    const envelope = await buildExportEnvelope([session({})]);
 
     expect(envelope.schema).toBe(3);
     expect(envelope.contentHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(envelope.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     expect(envelope.diagnosticReports).toHaveLength(1);
   });
 
@@ -160,42 +160,26 @@ describe('buildExportEnvelope', () => {
     expect(envelope.diagnosticReports[0].lab).toBe('Unknown Lab');
   });
 
-  it('includes a generatedAt ISO timestamp', async () => {
-    const envelope = await buildExportEnvelope([session({})]);
-
-    expect(envelope.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-  });
-
-  it('includes meta fields in the envelope when set', async () => {
-    const envelope = await buildExportEnvelope([session({})], {
+  it('writes the meta fields that are set and omits the blank and the absent ones', async () => {
+    const withMeta = await buildExportEnvelope([session({})], {
       subject: 'p-7fa3',
       sex: 'female',
       birthYear: 1972,
       notes: 'Rebuilt from the lab PDFs.',
     });
+    expect(withMeta.subject).toBe('p-7fa3');
+    expect(withMeta.sex).toBe('female');
+    expect(withMeta.birthYear).toBe(1972);
+    expect(withMeta.notes).toBe('Rebuilt from the lab PDFs.');
 
-    expect(envelope.subject).toBe('p-7fa3');
-    expect(envelope.sex).toBe('female');
-    expect(envelope.birthYear).toBe(1972);
-    expect(envelope.notes).toBe('Rebuilt from the lab PDFs.');
-  });
-
-  it('omits empty meta fields', async () => {
-    const envelope = await buildExportEnvelope([session({})], { subject: '  ', notes: '' });
-
-    expect(envelope).not.toHaveProperty('subject');
-    expect(envelope).not.toHaveProperty('sex');
-    expect(envelope).not.toHaveProperty('birthYear');
-    expect(envelope).not.toHaveProperty('notes');
-  });
-
-  it('omits meta fields when no meta given', async () => {
-    const envelope = await buildExportEnvelope([session({})]);
-
-    expect(envelope.sex).toBeUndefined();
-    expect(envelope.birthYear).toBeUndefined();
-    expect(envelope.subject).toBeUndefined();
-    expect(envelope.notes).toBeUndefined();
+    const blank = await buildExportEnvelope([session({})], { subject: '  ', notes: '' });
+    const none = await buildExportEnvelope([session({})]);
+    for (const envelope of [blank, none]) {
+      expect(envelope).not.toHaveProperty('subject');
+      expect(envelope).not.toHaveProperty('sex');
+      expect(envelope).not.toHaveProperty('birthYear');
+      expect(envelope).not.toHaveProperty('notes');
+    }
   });
 
   it('computes contentHash from diagnosticReports only (not full envelope)', async () => {
@@ -239,22 +223,14 @@ describe('buildExportEnvelope', () => {
     expect(obs.referenceRanges).toEqual([{ high: 200, text: '< 200 Desirable' }]);
   });
 
-  it('omits referenceRanges when no bounds or text', async () => {
-    const sessions = [session({ items: [result({ refMin: null, refMax: null, refText: '' })] })];
-
-    const envelope = await buildExportEnvelope(sessions);
-    const obs = envelope.diagnosticReports[0].observations[0];
-
-    expect(obs.referenceRanges).toBeUndefined();
-  });
-
-  it('omits value when null', async () => {
-    const sessions = [session({ items: [result({ value: null })] })];
-
-    const envelope = await buildExportEnvelope(sessions);
+  it('omits a null value and a reference range with neither bounds nor text', async () => {
+    const envelope = await buildExportEnvelope([
+      session({ items: [result({ value: null, refMin: null, refMax: null, refText: '' })] }),
+    ]);
     const obs = envelope.diagnosticReports[0].observations[0];
 
     expect(obs.value).toBeUndefined();
+    expect(obs.referenceRanges).toBeUndefined();
   });
 });
 

@@ -160,35 +160,6 @@ describe('panel allowlist', () => {
   });
 });
 
-describe('hidden panel route fallback', () => {
-  // Mirrors the guard in MedicalConditionsPage: a #panels/<name> hash pointing
-  // at a hidden panel resolves to the panels grid instead.
-  function resolve(hash: string, allow: string[] | null, panelsLoaded = true) {
-    const name = hash.startsWith('#panels/') ? decodeURIComponent(hash.slice('#panels/'.length)) : null;
-    if (!name) return 'panels';
-    if (panelsLoaded && !isPanelVisible(name, allow)) return 'panels';
-    return `panel:${name}`;
-  }
-
-  const allow = ['FBC', 'Anemia'];
-
-  it('keeps a visible panel route', () => {
-    expect(resolve('#panels/FBC', allow)).toBe('panel:FBC');
-  });
-
-  it('falls back to the grid for a hidden panel', () => {
-    expect(resolve('#panels/Hypogonadism', allow)).toBe('panels');
-  });
-
-  it('keeps any panel route when there is no allowlist', () => {
-    expect(resolve('#panels/Hypogonadism', null)).toBe('panel:Hypogonadism');
-  });
-
-  it('does not fall back before the panel catalog has loaded', () => {
-    expect(resolve('#panels/Hypogonadism', allow, false)).toBe('panel:Hypogonadism');
-  });
-});
-
 describe('meta settings seeding', () => {
   beforeEach(() => {
     installLocalStorageStub();
@@ -275,33 +246,13 @@ describe('a share link\'s meta does not outlive its link', () => {
   });
 });
 
-describe('a replacing import drops the shared meta', () => {
-  // Mirrors ResultsContext.uploadFile / clearData: whatever replaces the
-  // stored sessions also drops the presentation config of the share link the
-  // visitor happened to open once.
-  const ENVELOPE = {
-    schema: 3,
-    diagnosticReports: [
-      {
-        lab: 'Lab A',
-        collectedAt: '2026-01-10T00:00:00Z',
-        observations: [{ loinc: '718-7', rawName: 'Hemoglobin', value: 14.2 }],
-      },
-    ],
-  };
-
+describe('an import does not disturb the shared meta on its own', () => {
+  // NOTE: importResults itself does not clear the shared meta -- the caller
+  // (ResultsContext.uploadFile / clearData) calls clearSharedMeta beside it.
+  // That wiring lives in the view layer and is not covered here; what is
+  // covered is that a FAILED import leaves both stores untouched.
   beforeEach(() => {
     installLocalStorageStub();
-  });
-
-  it('a stale allowlist does not survive an Import JSON', () => {
-    storeSharedMeta({ showPanels: ['FBC'] });
-    importResults(ENVELOPE);
-    clearSharedMeta();
-    expect(loadStoredSharedMeta()).toBeNull();
-    expect(visiblePanels([{ name: 'Hypogonadism' }], panelAllowlist(loadStoredSharedMeta()))).toEqual([
-      { name: 'Hypogonadism' },
-    ]);
   });
 
   it('a failed import leaves both the sessions and the meta alone', () => {

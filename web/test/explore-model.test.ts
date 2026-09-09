@@ -91,43 +91,31 @@ describe('buildExploreModel — not taken', () => {
 });
 
 describe('buildExploreModel — excluded (has data, ineligible to plot)', () => {
-  it('excludes a lower-bound-only marker from plotting, but surfaces it as a distinguishable notTaken chip (not silently dropped)', () => {
-    // Real-world shape: HDL-C (LOINC 2085-9) is commonly reported as "> 40
-    // mg/dL" with no upper bound at all, confirmed against real uploaded
-    // data (dev-data/bloodtests.json) -- every dated HDL-C reading there has
-    // refMax: null. It would read inverted once normalized, so it can never
-    // be PLOTTED -- but it HAS real readings on file, so it must not vanish
-    // the way a genuinely never-taken marker does not (see the next
-    // describe block) -- it needs its own reason.
-    const test = obs('LOWONLY', 'Lower Only');
-    const allResults = [entry('LOWONLY', '2024-01-01', 50, { refMin: 20, refMax: null })];
-    const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
-    expect(model.markers['LOWONLY']).toBeUndefined();
-    expect(model.notTaken).toContainEqual({ key: 'LOWONLY', label: 'Lower Only', panel: 'PanelA', reason: 'no upper bound' });
-  });
-
+  // Real-world shape: HDL-C (LOINC 2085-9) is commonly reported as "> 40
+  // mg/dL" with no upper bound at all, confirmed against real uploaded data
+  // (dev-data/bloodtests.json) -- every dated HDL-C reading there has refMax:
+  // null. It would read inverted once normalized, so it can never be PLOTTED
+  // -- but it HAS real readings on file, so it must not vanish the way a
+  // genuinely never-taken marker does not: it needs its own reason. (The full
+  // notTaken chip shape is asserted in the REF_BAND_OVERRIDES regression.)
   it('distinguishes a has-data-but-unplottable marker from a genuinely never-taken one via reason', () => {
     const lowOnly = obs('LOWONLY2', 'Lower Only 2');
+    const noRef = obs('NOREF', 'No Ref'); // no printed range at all, same outcome
     const neverTaken = obs('NEVERTAKEN2', 'Never Taken 2');
-    const allResults = [entry('LOWONLY2', '2024-01-01', 50, { refMin: 20, refMax: null })];
+    const allResults = [
+      entry('LOWONLY2', '2024-01-01', 50, { refMin: 20, refMax: null }),
+      entry('NOREF', '2024-01-01', 50),
+    ];
     const model = buildExploreModel(
-      [{ name: 'PanelA', tests: [lowOnly, neverTaken] }],
+      [{ name: 'PanelA', tests: [lowOnly, noRef, neverTaken] }],
       allResults,
       'si',
       'PanelA'
     );
-    const lowOnlyEntry = model.notTaken.find((n) => n.key === 'LOWONLY2');
-    const neverTakenEntry = model.notTaken.find((n) => n.key === 'NEVERTAKEN2');
-    expect(lowOnlyEntry?.reason).toBe('no upper bound');
-    expect(neverTakenEntry?.reason).toBeUndefined();
-  });
-
-  it('excludes a marker with no reference range at all from plotting, but still surfaces it as notTaken', () => {
-    const test = obs('NOREF', 'No Ref');
-    const allResults = [entry('NOREF', '2024-01-01', 50)];
-    const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
     expect(model.markers['NOREF']).toBeUndefined();
-    expect(model.notTaken).toContainEqual({ key: 'NOREF', label: 'No Ref', panel: 'PanelA', reason: 'no upper bound' });
+    expect(model.notTaken.find((n) => n.key === 'LOWONLY2')?.reason).toBe('no upper bound');
+    expect(model.notTaken.find((n) => n.key === 'NOREF')?.reason).toBe('no upper bound');
+    expect(model.notTaken.find((n) => n.key === 'NEVERTAKEN2')?.reason).toBeUndefined();
   });
 
   it('excludes a degenerate range (refMin === refMax)', () => {

@@ -266,24 +266,26 @@ describe('parseUploadedResults — unit normalization at import', () => {
 });
 
 describe('parseUploadedResults — rejects everything that is not a v3 envelope', () => {
-  it.each([1, 2, 99])('an envelope stamped schema %i', (version) => {
-    expect(() =>
-      parseUploadedResults({
-        schema: version,
-        diagnosticReports: [
-          {
-            lab: 'Lab A',
-            collectedAt: '2026-01-10T00:00:00Z',
-            observations: [{ rawName: 'Test', value: 100, unit: 'U' }],
-          },
-        ],
-      })
-    ).toThrow(/Unrecognized JSON shape/);
+  const stamped = (version: number) => ({
+    schema: version,
+    diagnosticReports: [
+      {
+        lab: 'Lab A',
+        collectedAt: '2026-01-10T00:00:00Z',
+        observations: [{ rawName: 'Test', value: 100, unit: 'U' }],
+      },
+    ],
   });
 
-  it('project-bloodtests-v2 canonical draws', () => {
-    expect(() =>
-      parseUploadedResults([
+  // ADR-0009: schema 3 is the only shape the parser accepts. Every other shape
+  // the project has ever written or read must be refused outright.
+  const rejected: [string, unknown][] = [
+    ['an envelope stamped schema 1', stamped(1)],
+    ['an envelope stamped schema 2', stamped(2)],
+    ['an envelope stamped schema 99', stamped(99)],
+    [
+      'project-bloodtests-v2 canonical draws',
+      [
         {
           date: '2026-01-10',
           labName: 'Lab A',
@@ -297,35 +299,28 @@ describe('parseUploadedResults — rejects everything that is not a v3 envelope'
             },
           ],
         },
-      ])
-    ).toThrow(/Unrecognized JSON shape/);
+      ],
+    ],
+    ['legacy grouped sessions', [{ date: '2025-01-01', place: 'A', items: [{ loinc: '718-7', value: 14 }] }]],
+    [
+      'legacy flat entries',
+      [{ date: '2026-01-10', place: 'Lab A', loinc: '718-7', value: 14.2, unit: 'g/dL' }],
+    ],
+    ['an empty array', []],
+    ['an unrecognized object', [{ foo: 'bar' }]],
+    ['an envelope whose diagnosticReports is not an array', { schema: 3, diagnosticReports: {} }],
+    ['a primitive', 'not json at all'],
+  ];
+
+  it('refuses every non-v3 shape with an UploadParseError', () => {
+    for (const [label, input] of rejected) {
+      expect(() => parseUploadedResults(input), label).toThrow(UploadParseError);
+    }
   });
 
-  it('legacy grouped sessions', () => {
-    expect(() =>
-      parseUploadedResults([{ date: '2025-01-01', place: 'A', items: [{ loinc: '718-7', value: 14 }] }])
-    ).toThrow(/Unrecognized JSON shape/);
-  });
-
-  it('legacy flat entries', () => {
-    expect(() =>
-      parseUploadedResults([{ date: '2026-01-10', place: 'Lab A', loinc: '718-7', value: 14.2, unit: 'g/dL' }])
-    ).toThrow(/Unrecognized JSON shape/);
-  });
-
-  it('an empty array', () => {
-    expect(() => parseUploadedResults([])).toThrow(UploadParseError);
-  });
-
-  it('an unrecognized object', () => {
-    expect(() => parseUploadedResults([{ foo: 'bar' }])).toThrow(UploadParseError);
-  });
-
-  it('an envelope whose diagnosticReports is not an array', () => {
-    expect(() => parseUploadedResults({ schema: 3, diagnosticReports: {} })).toThrow(UploadParseError);
-  });
-
-  it('a primitive', () => {
-    expect(() => parseUploadedResults('not json at all')).toThrow(UploadParseError);
+  it('says "Unrecognized JSON shape" for a wrongly-versioned or legacy file', () => {
+    for (const input of [stamped(1), stamped(2), stamped(99), rejected[3]![1], rejected[4]![1], rejected[5]![1]]) {
+      expect(() => parseUploadedResults(input)).toThrow(/Unrecognized JSON shape/);
+    }
   });
 });

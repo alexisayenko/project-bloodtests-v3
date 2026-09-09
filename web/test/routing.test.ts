@@ -13,11 +13,11 @@ describe('routeToHash ↔ hashToRoute', () => {
     { view: 'panel', name: 'Bone and Mineral Metabolism' },
   ];
 
-  for (const route of roundTrips) {
-    it(`round-trips ${JSON.stringify(route)}`, () => {
-      expect(hashToRoute(routeToHash(route))).toEqual(route);
-    });
-  }
+  it('round-trips every route shape', () => {
+    for (const route of roundTrips) {
+      expect([route, hashToRoute(routeToHash(route))]).toEqual([route, route]);
+    }
+  });
 
   it('reference without a key maps to plain #reference', () => {
     expect(routeToHash({ view: 'reference' })).toBe('#reference');

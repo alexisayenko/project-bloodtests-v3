@@ -51,55 +51,38 @@ const issue = (overrides?: Partial<ValidationIssue>): ValidationIssue => ({
 });
 
 describe('referenceRangeOf', () => {
-  it('prefers the printed range text', () => {
+  it('prefers the printed text, falls back to both bounds, and is empty without either', () => {
     expect(referenceRangeOf(createResult({ refText: '< 200 Desirable' }))).toBe('< 200 Desirable');
-  });
-
-  it('falls back to the numeric bounds', () => {
     expect(referenceRangeOf(createResult())).toBe('70 - 100');
-  });
-
-  it('is empty when neither is present', () => {
     expect(referenceRangeOf(createResult({ refMin: null, refMax: null }))).toBe('');
-  });
-
-  it('needs both bounds', () => {
-    expect(referenceRangeOf(createResult({ refMax: null }))).toBe('');
+    expect(referenceRangeOf(createResult({ refMax: null }))).toBe(''); // one bound is not a range
   });
 });
 
 describe('pluralize', () => {
-  it('is empty for exactly one', () => {
+  it('is empty for exactly one and "s" for none or many', () => {
     expect(pluralize(1)).toBe('');
-  });
-
-  it('is "s" for none or many', () => {
     expect(pluralize(0)).toBe('s');
     expect(pluralize(2)).toBe('s');
   });
 });
 
 describe('applyFieldEdit', () => {
-  it('sets the loinc without touching the value', () => {
+  it('sets the loinc or the unit without touching the value', () => {
     const edited = applyFieldEdit(createResult(), 'loinc', '2339-0');
     expect(edited.loinc).toBe('2339-0');
     expect(edited.value).toBe(90);
-  });
-
-  it('sets the unit', () => {
     expect(applyFieldEdit(createResult(), 'unit', 'mmol/L').unit).toBe('mmol/L');
   });
 
-  it('parses a numeric value and keeps the raw text', () => {
+  it('parses a numeric value, keeps the raw text, and nulls a non-numeric one', () => {
     const edited = applyFieldEdit(createResult(), 'value', '5.4');
     expect(edited.value).toBe(5.4);
     expect(edited.rawValue).toBe('5.4');
-  });
 
-  it('nulls the value when the text is not numeric', () => {
-    const edited = applyFieldEdit(createResult(), 'value', 'Negative');
-    expect(edited.value).toBeNull();
-    expect(edited.rawValue).toBe('Negative');
+    const text = applyFieldEdit(createResult(), 'value', 'Negative');
+    expect(text.value).toBeNull();
+    expect(text.rawValue).toBe('Negative');
   });
 
   it('does not mutate the original', () => {
@@ -206,11 +189,8 @@ describe('buildNlmSuggestionsByRow', () => {
 describe('resolvedNameOf', () => {
   const item = createResult({ loinc: '99999-9' });
 
-  it('prefers the catalog name', () => {
+  it('prefers the catalog name, falling back to the NLM one for an unknown code', () => {
     expect(resolvedNameOf(item, { status: 'match', loincName: 'Glucose' }, {})).toBe('Glucose');
-  });
-
-  it('falls back to the NLM name for an unknown code', () => {
     expect(resolvedNameOf(item, { status: 'unknown-code' }, { '99999-9': 'Odd test' })).toBe('Odd test');
   });
 
@@ -283,13 +263,10 @@ describe('getDotColor', () => {
 });
 
 describe('getDotTitle', () => {
-  it('joins the issue messages and the mismatch note', () => {
+  it('joins the issue messages and the mismatch note, and says "OK" when there is nothing to say', () => {
     expect(getDotTitle([issue(), issue({ message: 'No range' })], 'codes disagree')).toBe(
       'Missing unit; No range; codes disagree'
     );
-  });
-
-  it('is "OK" when there is nothing to say', () => {
     expect(getDotTitle([], null)).toBe('OK');
   });
 });
@@ -318,19 +295,12 @@ describe('unitRepairFor', () => {
     });
   });
 
-  it('offers nothing when the unit fits the code', () => {
+  it('offers nothing unless a sibling pair actually settles the clash', () => {
+    // Unit fits the code; unit the tables cannot place; dimensions clash but no
+    // sibling pair is known; no code at all; no unit at all.
     expect(unitRepairFor(createResult({ loinc: '2093-3', unit: 'mg/dL' }))).toBeUndefined();
-  });
-
-  it('offers nothing for a unit the tables cannot place', () => {
     expect(unitRepairFor(createResult({ loinc: '2093-3', unit: 'сомнительно' }))).toBeUndefined();
-  });
-
-  it('offers nothing when the dimensions clash but no sibling pair is known', () => {
     expect(unitRepairFor(createResult({ loinc: '3016-3', analysis: 'TSH', unit: 'mmol/L' }))).toBeUndefined();
-  });
-
-  it('offers nothing without a code or without a unit', () => {
     expect(unitRepairFor(createResult({ loinc: '', unit: 'mmol/L' }))).toBeUndefined();
     expect(unitRepairFor(createResult({ loinc: '2093-3', unit: '' }))).toBeUndefined();
   });
@@ -370,13 +340,10 @@ describe('getChipSuggestions', () => {
     expect(getChipSuggestions({ status: 'unknown-code' }, nlm)).toEqual([]);
   });
 
-  it('prefers local suggestions over the NLM ones', () => {
+  it('prefers local suggestions over the NLM ones, and offers nothing without a check', () => {
     expect(getChipSuggestions({ status: 'no-code', suggestions: local }, nlm)).toEqual(local);
     expect(getChipSuggestions({ status: 'no-code' }, nlm)).toEqual(nlm);
     expect(getChipSuggestions({ status: 'no-code' }, undefined)).toEqual([]);
-  });
-
-  it('is empty without a check', () => {
     expect(getChipSuggestions(undefined, nlm)).toEqual([]);
   });
 });
@@ -395,24 +362,18 @@ describe('getUnitLabel', () => {
     expect(getUnitLabel(a, [a, b])).toBe(' · ng/mL');
   });
 
-  it('stays silent when the unit adds nothing', () => {
-    const chip: SuggestionChip = { loinc: '11111-1', name: 'Glucose', unit: 'mg/dL' };
-    expect(getUnitLabel(chip, [chip])).toBe('');
-  });
-
-  it('stays silent without a unit', () => {
-    const chip: SuggestionChip = { loinc: aliasCode, name: 'Variant' };
-    expect(getUnitLabel(chip, [chip])).toBe('');
+  it('stays silent when the unit adds nothing, and when there is no unit', () => {
+    const plain: SuggestionChip = { loinc: '11111-1', name: 'Glucose', unit: 'mg/dL' };
+    expect(getUnitLabel(plain, [plain])).toBe('');
+    const unitless: SuggestionChip = { loinc: aliasCode, name: 'Variant' };
+    expect(getUnitLabel(unitless, [unitless])).toBe('');
   });
 });
 
 describe('save button', () => {
-  it('greys out and blocks the pointer while errors stand', () => {
+  it('greys out and blocks the pointer while errors stand, and reports progress in its label', () => {
     expect(saveButtonStyle(true)).toMatchObject({ backgroundColor: COLOR.border, cursor: 'not-allowed', opacity: 0.5 });
     expect(saveButtonStyle(false)).toMatchObject({ backgroundColor: COLOR.accent, cursor: 'pointer', opacity: 1 });
-  });
-
-  it('reports progress in its label', () => {
     expect(saveButtonLabel(true)).toBe('Saving...');
     expect(saveButtonLabel(false)).toBe('Save');
   });
