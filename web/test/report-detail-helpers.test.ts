@@ -16,6 +16,7 @@ import {
   resolvedNameOf,
   saveButtonLabel,
   saveButtonStyle,
+  unitRepairFor,
   type SuggestionChip,
 } from '../src/components/conditions/reportDetailHelpers';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../src/data/analyteCatalog';
@@ -292,9 +293,73 @@ describe('getDotTitle', () => {
   });
 });
 
+describe('unitRepairFor', () => {
+  const cholesterolMolar = {
+    loinc: '14647-2',
+    name: 'Cholesterol [Moles/volume] in Serum or Plasma',
+    unit: 'mmol/L',
+  };
+  const molarUnderMass = createResult({ loinc: '2093-3', analysis: 'Cholesterol', unit: 'mmol/L', value: 5.2 });
+
+  it('names the molar sibling of a mass code printed in molar units', () => {
+    expect(unitRepairFor(molarUnderMass)).toEqual(cholesterolMolar);
+  });
+
+  it('reads a Cyrillic spelling of the same unit', () => {
+    expect(unitRepairFor(createResult({ loinc: '2093-3', unit: 'ммоль/л' }))).toEqual(cholesterolMolar);
+  });
+
+  it('names the mass sibling of a molar code printed in mass units', () => {
+    expect(unitRepairFor(createResult({ loinc: '14647-2', unit: 'mg/dL' }))).toEqual({
+      loinc: '2093-3',
+      name: 'Cholesterol [Mass/volume] in Serum or Plasma',
+      unit: 'mg/dL',
+    });
+  });
+
+  it('offers nothing when the unit fits the code', () => {
+    expect(unitRepairFor(createResult({ loinc: '2093-3', unit: 'mg/dL' }))).toBeUndefined();
+  });
+
+  it('offers nothing for a unit the tables cannot place', () => {
+    expect(unitRepairFor(createResult({ loinc: '2093-3', unit: 'сомнительно' }))).toBeUndefined();
+  });
+
+  it('offers nothing when the dimensions clash but no sibling pair is known', () => {
+    expect(unitRepairFor(createResult({ loinc: '3016-3', analysis: 'TSH', unit: 'mmol/L' }))).toBeUndefined();
+  });
+
+  it('offers nothing without a code or without a unit', () => {
+    expect(unitRepairFor(createResult({ loinc: '', unit: 'mmol/L' }))).toBeUndefined();
+    expect(unitRepairFor(createResult({ loinc: '2093-3', unit: '' }))).toBeUndefined();
+  });
+
+  it('repairs the code and leaves the printed value and unit alone', () => {
+    const repaired = applyFieldEdit(molarUnderMass, 'loinc', unitRepairFor(molarUnderMass)!.loinc);
+    expect(repaired).toMatchObject({ loinc: '14647-2', value: 5.2, rawValue: '90', unit: 'mmol/L' });
+  });
+});
+
 describe('getChipSuggestions', () => {
   const local = [{ loinc: '2345-7', name: 'Glucose', score: 1 }];
   const nlm: NlmEntry[] = [{ loinc: '2339-0', name: 'Glucose [Mass/vol]' }];
+  const repair = { loinc: '14647-2', name: 'Cholesterol [Moles/volume] in Serum or Plasma', unit: 'mmol/L' };
+
+  it('offers the unit repair without a cross-check having run', () => {
+    expect(getChipSuggestions(undefined, undefined, repair)).toEqual([repair]);
+  });
+
+  it('puts the unit repair ahead of the cross-check suggestions', () => {
+    expect(getChipSuggestions({ status: 'no-code', suggestions: local }, undefined, repair)).toEqual([
+      repair,
+      ...local,
+    ]);
+  });
+
+  it('does not offer the same code twice', () => {
+    const same = [{ loinc: repair.loinc, name: 'Cholesterol', score: 1 }];
+    expect(getChipSuggestions({ status: 'no-code', suggestions: same }, undefined, repair)).toEqual([repair]);
+  });
 
   it('offers chips only on a resolvable status', () => {
     expect(getChipSuggestions({ status: 'no-code', suggestions: local }, undefined)).toEqual(local);

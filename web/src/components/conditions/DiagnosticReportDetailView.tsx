@@ -18,6 +18,7 @@ import {
   resolvedNameOf,
   saveButtonLabel,
   saveButtonStyle,
+  unitRepairFor,
   type EditableField,
 } from './reportDetailHelpers';
 import { useLoincCrossCheck, type LoincCrossCheck } from './useLoincCrossCheck';
@@ -60,6 +61,7 @@ function ReportResultsSection({
   onCancel,
 }: Readonly<ReportResultsSectionProps>) {
   const { checkResults, nlmState, nlmByCode, nlmSuggestions, autoFilledCount, unresolvedRows } = crossCheck;
+  const unitRepairs = useMemo(() => items.map(unitRepairFor), [items]);
   return (
     <>
       <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -108,7 +110,7 @@ function ReportResultsSection({
               const dotTitle = getDotTitle(itemIssues, mismatchMsg);
               const resolvedName = resolvedNameOf(item, check, nlmByCode);
               const nlmResolvedName = check?.status === 'unknown-code' ? nlmByCode[item.loinc] : undefined;
-              const chipSuggestions = getChipSuggestions(check, nlmSuggestions[i]);
+              const chipSuggestions = getChipSuggestions(check, nlmSuggestions[i], unitRepairs[i]);
               const linkedName = resolvedName ?? nlmResolvedName;
               return (
                 <Fragment key={`${item.loinc}-${i}`}>

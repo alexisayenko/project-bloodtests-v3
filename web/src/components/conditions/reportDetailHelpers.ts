@@ -4,11 +4,20 @@ import { fmtNum } from '../../utils/format';
 import type { ValidationIssue } from '../../data/validateDiagnosticReports';
 import { latinPart, type CrossCheckResult, type CrossCheckSuggestion } from '../../data/loincCheck';
 import { selectByUnit, type NlmEntry } from '../../data/loincNlm';
+import { normalizeObservationUnit } from '../../data/unitNormalization';
+import { SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from '../../data/massMolarSiblings';
 import { ALSO_REFS, ALIAS_TO_PRIMARY } from './markers';
 
 export type EditableField = 'loinc' | 'value' | 'unit';
 
-export type SuggestionChip = CrossCheckSuggestion | NlmEntry;
+/** The sibling code a dimension-mismatched row should carry instead. */
+export interface UnitRepairSuggestion {
+  loinc: string;
+  name: string;
+  unit: string;
+}
+
+export type SuggestionChip = CrossCheckSuggestion | NlmEntry | UnitRepairSuggestion;
 
 export function referenceRangeOf(item: Result): string {
   if (item.refText) return item.refText;
@@ -122,7 +131,31 @@ export function getDotTitle(itemIssues: ValidationIssue[], mismatchMsg: string |
   return messages.join('; ') || 'OK';
 }
 
+// The row's unit contradicts what its code measures and the sibling table
+// knows the code on the printed scale. The repair is the code — the value and
+// the unit are what the lab printed (ADR-0003) — and it is offered, never
+// applied: which of the two the lab got wrong is a judgement, not a derivation.
+export function unitRepairFor(item: Result): UnitRepairSuggestion | undefined {
+  if (!item.loinc || !item.unit) return undefined;
+  const { check } = normalizeObservationUnit({ loinc: item.loinc, unit: item.unit });
+  if (check.kind !== 'dimension-mismatch' || !check.suggestedLoinc) return undefined;
+  const pair = SIBLING_BY_MASS_LOINC[item.loinc] ?? SIBLING_BY_MOLAR_LOINC[item.loinc];
+  const side = pair && [pair.mass, pair.molar].find((s) => s.loinc === check.suggestedLoinc);
+  if (!side) return undefined;
+  return { loinc: side.loinc, name: side.longCommonName, unit: side.unit };
+}
+
 export function getChipSuggestions(
+  check: CrossCheckResult | undefined,
+  rowNlmSuggestions: NlmEntry[] | undefined,
+  unitRepair?: UnitRepairSuggestion
+): SuggestionChip[] {
+  const fromCheck = crossCheckChips(check, rowNlmSuggestions);
+  if (!unitRepair) return fromCheck;
+  return [unitRepair, ...fromCheck.filter((s) => s.loinc !== unitRepair.loinc)];
+}
+
+function crossCheckChips(
   check: CrossCheckResult | undefined,
   rowNlmSuggestions: NlmEntry[] | undefined
 ): SuggestionChip[] {
