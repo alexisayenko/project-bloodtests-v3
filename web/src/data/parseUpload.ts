@@ -67,7 +67,12 @@ function v3ToResult(obs: InterchangeObservation): Result {
     value: obs.value ?? null,
     rawValue: obs.rawValue || '',
     valueQualifier: obs.comparator || '',
-    unit: obs.unit || '',
+    // The printed unit is what the app displays, validates and normalizes from,
+    // so `rawUnit` wins where a file carries it: `unit` may already hold a
+    // normalized UCUM code (this app's own export writes one), and reading that
+    // instead would lose the string the lab printed. A file without `rawUnit` —
+    // chatbot output, a hand-written one — keeps the printed string in `unit`.
+    unit: obs.rawUnit || obs.unit || '',
     refText:
       obs.referenceRanges?.find((r) => r.text)?.text ||
       obs.referenceRanges?.map((r) => r.label || `${r.low ?? ''}-${r.high ?? ''}`).join('; ') ||

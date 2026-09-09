@@ -28,7 +28,7 @@ const session = (partial: Partial<DiagnosticReport>): DiagnosticReport => ({
   ...partial,
 });
 
-describe('buildExportEnvelope — import-time normalization leaves it untouched', () => {
+describe('buildExportEnvelope — normalized unit, printed rawUnit', () => {
   const source = {
     schema: 3,
     diagnosticReports: [
@@ -37,42 +37,76 @@ describe('buildExportEnvelope — import-time normalization leaves it untouched'
         collectedAt: '2026-01-10T00:00:00Z',
         observations: [
           { loinc: '2093-3', rawName: 'Cholesterol', value: 1.86, rawValue: '1.86', unit: 'g/L' },
-          { loinc: '2160-0', rawName: 'Creatinine', value: 0.9, rawValue: '0,9', unit: 'мг/дл' },
+          { loinc: '14682-9', rawName: 'Creatinine', value: 79.6, rawValue: '79,6', unit: 'мкмоль/л' },
           { loinc: '718-7', rawName: 'Hemoglobin', value: 14.2, rawValue: '14.2', unit: 'g/dL' },
+          { loinc: '2000-8', rawName: 'Calcium ionized', value: 1.2, rawValue: '1.2', unit: 'μкат/л' },
         ],
       },
     ],
   };
 
-  it('writes bytes identical to an export of the same reports without a canonical form', async () => {
+  it('writes the UCUM spelling in unit and the printed string in rawUnit', async () => {
+    const envelope = await buildExportEnvelope(parseUploadedResults(source));
+    const observations = envelope.diagnosticReports[0]!.observations;
+
+    expect(observations.map((obs) => obs.unit)).toEqual(['g/L', 'umol/L', 'g/dL', undefined]);
+    expect(observations.map((obs) => obs.rawUnit)).toEqual(['g/L', 'мкмоль/л', 'g/dL', 'μкат/л']);
+  });
+
+  it('leaves unit absent when the printed unit cannot be placed in UCUM', async () => {
+    const envelope = await buildExportEnvelope(parseUploadedResults(source));
+    const unplaceable = envelope.diagnosticReports[0]!.observations[3]!;
+
+    expect('unit' in unplaceable).toBe(false);
+    expect(unplaceable.rawUnit).toBe('μкат/л');
+  });
+
+  it('normalizes the spelling only — the exported value is the printed one', async () => {
+    const envelope = await buildExportEnvelope(parseUploadedResults(source));
+    const creatinine = envelope.diagnosticReports[0]!.observations[1]!;
+
+    expect(creatinine.value).toBe(79.6);
+    expect(creatinine.rawValue).toBe('79,6');
+  });
+
+  it('never emits the derived canonical form', async () => {
     const normalized = parseUploadedResults(source);
     expect(normalized[0]!.items!.some((item) => item.canonical !== undefined)).toBe(true);
 
-    const stripped = normalized.map((group) => ({
-      ...group,
-      items: group.items!.map((item) => {
-        const copy = { ...item };
-        delete copy.canonical;
-        return copy;
-      }),
-    }));
+    const envelope = await buildExportEnvelope(normalized);
 
-    const [withCanonical, withoutCanonical] = await Promise.all([
-      buildExportEnvelope(normalized),
-      buildExportEnvelope(stripped),
-    ]);
-
-    expect(JSON.stringify(withCanonical.diagnosticReports, null, 2)).toBe(
-      JSON.stringify(withoutCanonical.diagnosticReports, null, 2)
-    );
-    expect(withCanonical.contentHash).toBe(withoutCanonical.contentHash);
+    expect(envelope.diagnosticReports[0]!.observations.every((obs) => !('canonical' in obs))).toBe(true);
   });
 
-  it('keeps the printed unit in the envelope, never the canonical one', async () => {
-    const envelope = await buildExportEnvelope(parseUploadedResults(source));
-    const observations = envelope.diagnosticReports[0]!.observations;
-    expect(observations.map((obs) => obs.unit)).toEqual(['g/L', 'мг/дл', 'g/dL']);
-    expect(observations.every((obs) => !('canonical' in obs))).toBe(true);
+  // Byte-identity of the FIRST round trip is deliberately gone: export now
+  // writes a field the imported file did not have. What has to hold instead is
+  // that the transformation settles — a file this app wrote survives import and
+  // re-export unchanged — which is the property that actually catches drift.
+  it('is stable across a second round trip: export → import → export is identical', async () => {
+    const first = await buildExportEnvelope(parseUploadedResults(source));
+    const second = await buildExportEnvelope(parseUploadedResults({ schema: 3, ...first }));
+
+    expect(JSON.stringify(second.diagnosticReports, null, 2)).toBe(
+      JSON.stringify(first.diagnosticReports, null, 2)
+    );
+    expect(second.contentHash).toBe(first.contentHash);
+  });
+
+  it('reads rawUnit back as the printed unit, so a re-export writes the same pair', async () => {
+    const reimported = parseUploadedResults({
+      schema: 3,
+      diagnosticReports: [
+        {
+          lab: 'Lab A',
+          collectedAt: '2026-01-10T00:00:00Z',
+          observations: [
+            { loinc: '14682-9', rawName: 'Creatinine', value: 79.6, unit: 'umol/L', rawUnit: 'мкмоль/л' },
+          ],
+        },
+      ],
+    });
+
+    expect(reimported[0]!.items![0]!.unit).toBe('мкмоль/л');
   });
 });
 

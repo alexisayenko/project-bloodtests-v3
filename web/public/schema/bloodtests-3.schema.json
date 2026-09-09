@@ -114,11 +114,11 @@
         },
         "unit": {
           "type": "string",
-          "description": "Optional. The unit as printed. No conversion happens here: converted values belong nowhere in this file, only what the lab reported. A reader wanting other units converts at display time, from the reported pair. When absent, a reader must not assume a unit, and must not compare the number to a range in a different one."
+          "description": "Optional. The unit in canonical UCUM form — the normalized half of the pair, with the string the lab printed kept beside it in `rawUnit`. Normalization is of the SPELLING only: `ммоль/л`, `mmol/l` and `mmol/L` all read as `mmol/L`, and no value is ever converted, so the number this labels is still the number the lab printed. A writer that cannot place a printed unit in UCUM leaves this field ABSENT rather than filling it with the printed string, which would claim a normalization that did not happen — `rawUnit` alone then carries the unit. When absent, a reader must not assume a unit, and must not compare the number to a range in a different one."
         },
         "rawUnit": {
           "type": "string",
-          "description": "Optional provenance, NOT YET IMPLEMENTED — upload ignores it and export never writes it. The unit exactly as the lab printed it, kept against the day a normalization pass rewrites `unit` to a canonical form and the printed string would otherwise be lost. It stands to `unit` as `rawValue` stands to `value` plus `comparator`, and as the printed test name stands to a resolved LOINC name: the parsed field is what the app computes on, the raw one is what the paper said. While nothing normalizes units, `unit` already holds the printed string and this field is redundant — a writer should leave it out until the two can differ."
+          "description": "Optional provenance. The unit exactly as the lab printed it — `мкМЕ/мл`, `mmol/l`, `×10⁹/л` — written whenever the report stated a unit at all, and never rewritten. It stands to `unit` as `rawValue` stands to `value` plus `comparator`, and as the printed test name stands to a resolved LOINC name: the derived field is what code computes on, the raw one is what the paper said. A reader wanting the record of what was read reads this; a reader wanting to compare across labs reads `unit`, and falls back to nothing rather than to this string when `unit` is absent."
         },
         "referenceRanges": {
           "type": "array",

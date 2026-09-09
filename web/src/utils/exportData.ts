@@ -1,6 +1,7 @@
 import type { Result, DiagnosticReport as DiagnosticReportType } from '../types';
 import type { EnvelopeMeta } from '../data/envelopeMeta';
 import { SCHEMA_VERSION } from '../data/envelopeSchema';
+import { ucumUnitFor } from '../data/unitNormalization';
 import type {
   InterchangeEnvelope,
   InterchangeObservation,
@@ -25,8 +26,20 @@ function resultToObservation(result: Result): InterchangeObservation {
     obs.rawValue = result.rawValue;
   }
 
+  // `unit` is ours, `rawUnit` is the report's: the printed spelling is folded to
+  // its UCUM code and written to `unit`, and the string the lab printed goes to
+  // `rawUnit` untouched. Only the spelling is normalized — no value is
+  // converted (ADR-0003) — so the number beside it still means what it did.
+  // A unit the curated tables cannot place leaves `unit` ABSENT rather than
+  // filled with the printed string: the field would otherwise claim a
+  // normalization that did not happen. `rawUnit` still carries it, and the
+  // validator already flags such a row.
   if (result.unit) {
-    obs.unit = result.unit;
+    const ucum = ucumUnitFor(result.unit);
+    if (ucum) {
+      obs.unit = ucum;
+    }
+    obs.rawUnit = result.unit;
   }
 
   if (result.refMin !== null || result.refMax !== null) {

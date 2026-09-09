@@ -208,6 +208,17 @@ export function toUcum(latinUnit: string): string | undefined {
   return ucum.join('/');
 }
 
+/**
+ * Stages 1–2 in one call: a printed spelling to its UCUM code, or undefined
+ * when the curated tables cannot place it. Spelling only — the quantity is
+ * unchanged, so a value labelled with the result stays the value that was
+ * printed (ADR-0003). This is what the exporter writes to `unit`.
+ */
+export function ucumUnitFor(printedUnit: string): string | undefined {
+  const latin = toLatinUnit(printedUnit);
+  return latin === undefined ? undefined : toUcum(latin);
+}
+
 const UCUM_KINDS: Record<string, TokenKind> = Object.fromEntries(
   Object.values(LATIN_TOKENS).map((token) => [token.ucum.toLowerCase(), token.kind])
 );
@@ -510,7 +521,7 @@ export function normalizeObservationUnit(observation: ObservationUnit): UnitNorm
   const printedUnit = observation.unit ?? '';
   const loinc = observation.loinc ?? '';
   const latinUnit = toLatinUnit(printedUnit);
-  const ucumUnit = latinUnit === undefined ? undefined : toUcum(latinUnit);
+  const ucumUnit = ucumUnitFor(printedUnit);
   const check = checkCodeUnit(loinc, ucumUnit ?? printedUnit);
   const canonical = canonicalForm(observation, ucumUnit, loinc, check);
   return {

@@ -134,7 +134,7 @@ describe('published JSON Schema — v3 fixtures', () => {
     ).toEqual([]);
   });
 
-  it('accepts every optional field the prose spec defines, including the unimplemented rawUnit', () => {
+  it('accepts every optional field the prose spec defines, including rawUnit beside a normalized unit', () => {
     expect(
       errorsFor({
         schema: 3,
