@@ -86,6 +86,32 @@ describe('reference data is internally consistent', () => {
     }
   });
 
+  // Six entries named one analyte while their code identified another —
+  // 2862-1 was catalogued as IgA but is Albumin by electrophoresis, 1557-8 as
+  // Fructosamine but is Fasting glucose. A name-only check cannot see that;
+  // only the service's own name for the code can. Regenerate the fixture with
+  // `node scripts/fetch-loinc-names.mjs` (it queries clinicaltables.nlm.nih.gov
+  // once per catalog code and rewrites the file) — the test never calls out.
+  describe('every catalog name is the one the LOINC service gives for that code', () => {
+    const fixture = JSON.parse(
+      readFileSync(new URL('./fixtures/loinc-long-common-names.json', import.meta.url), 'utf8'),
+    ) as { names: Record<string, string>; unknownToService: string[] };
+
+    it('matches the service name for every code the service knows', () => {
+      const drifted = ANALYSES.filter(
+        (a) => fixture.names[a.loinc] && fixture.names[a.loinc] !== a.longCommonName,
+      ).map((a) => `${a.loinc} ${a.displayName}: "${a.longCommonName}" vs "${fixture.names[a.loinc]}"`);
+      expect(drifted).toEqual([]);
+    });
+
+    it('covers every catalog code, bar the ones recorded as unknown to the service', () => {
+      const unnamed = ANALYSES.map((a) => a.loinc).filter((l) => !fixture.names[l]);
+      expect(unnamed.sort(), 'regenerate the fixture after changing a code').toEqual(
+        [...fixture.unknownToService].sort(),
+      );
+    });
+  });
+
   // 14913-8 was catalogued under 2986-8's "[Mass/volume]" name while carrying
   // nmol/L, and every derived map read the wrong scale off it.
   it("names a sibling code for the scale its own LOINC property declares", () => {

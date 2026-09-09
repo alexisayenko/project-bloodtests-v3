@@ -1137,8 +1137,8 @@
     }
   },
   {
-    "loinc": "1557-8",
-    "longCommonName": "Fructosamine [Mass/volume] in Serum or Plasma",
+    "loinc": "15069-8",
+    "longCommonName": "Fructosamine [Moles/volume] in Serum or Plasma",
     "displayName": "Fructosamine",
     "short": "FRA",
     "unit": "umol/L",
@@ -1275,7 +1275,7 @@
     }
   },
   {
-    "loinc": "2710-2",
+    "loinc": "2098-2",
     "longCommonName": "Cholinesterase [Enzymatic activity/volume] in Serum or Plasma",
     "displayName": "Pseudocholinesterase (PChE)",
     "short": "PChE",
@@ -1526,8 +1526,8 @@
     }
   },
   {
-    "loinc": "3167-4",
-    "longCommonName": "Tumor necrosis factor alpha [Mass/volume] in Serum or Plasma",
+    "loinc": "3074-2",
+    "longCommonName": "Tumor necrosis factor.alpha [Mass/volume] in Serum or Plasma",
     "displayName": "TNF-alpha",
     "short": "TNF-α",
     "unit": "pg/mL",
@@ -2880,8 +2880,8 @@
     }
   },
   {
-    "loinc": "58410-2",
-    "longCommonName": "Platelet large cell ratio in Blood by Automated count",
+    "loinc": "48386-7",
+    "longCommonName": "Platelets Large/Platelets in Blood by Automated count",
     "displayName": "P-LCR",
     "short": "P-LCR",
     "unit": "%?",
@@ -2902,8 +2902,8 @@
     }
   },
   {
-    "loinc": "74464-9",
-    "longCommonName": "Platelet large cells [#/volume] in Blood by Automated count",
+    "loinc": "96354-6",
+    "longCommonName": "Platelets Large [#/volume] in Blood by Automated count",
     "displayName": "P-LCC",
     "short": "P-LCC",
     "unit": "x10^3/uL?",
@@ -3057,8 +3057,8 @@
     }
   },
   {
-    "loinc": "2862-1",
-    "longCommonName": "IgA [Mass/volume] in Serum",
+    "loinc": "2458-8",
+    "longCommonName": "IgA [Mass/volume] in Serum or Plasma",
     "displayName": "Immunoglobulin A",
     "short": "IgA",
     "unit": "mg/dL",
