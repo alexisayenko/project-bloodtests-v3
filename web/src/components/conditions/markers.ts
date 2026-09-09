@@ -111,6 +111,36 @@ export function isEchoRedundant(full: string, short: string): boolean {
 }
 
 
+/** Which Monitoring Panels name a LOINC outright — one-to-one, as buildConditions resolves it. */
+export function buildPanelsByLoinc(conditions: readonly { name: string; tests: Observation[] }[]): Record<string, string[]> {
+  const byLoinc: Record<string, string[]> = {};
+  for (const condition of conditions) {
+    for (const test of condition.tests) {
+      const names = (byLoinc[test.loinc] ??= []);
+      if (!names.includes(condition.name)) names.push(condition.name);
+    }
+  }
+  return byLoinc;
+}
+
+/**
+ * A code's panel standing. buildConditions maps LOINCs one-to-one on purpose, so
+ * a variant code names no panel of its own even when the analyte it folds into
+ * sits in several -- reporting that as "no panels" would contradict what the user
+ * sees, since rows fold through primaryLoinc before a panel matches them. So an
+ * unlisted variant reports its primary's panels and says whose they are.
+ */
+export function panelMembershipOf(
+  panelsByLoinc: Record<string, string[]>,
+  loinc: string
+): { panels: string[]; via?: string } {
+  const direct = panelsByLoinc[loinc];
+  if (direct?.length) return { panels: direct };
+  const primary = primaryLoinc(loinc);
+  if (primary === loinc) return { panels: [] };
+  return { panels: panelsByLoinc[primary] ?? [], via: primary };
+}
+
 /**
  * The Monitoring Panels grid model: each definition from monitoring-panels.json
  * resolved against the lab groups in panels.json and the analyte catalog.

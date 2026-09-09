@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { INDEX_UNIT_PAIRS, type IndexDef, type IndexReference } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import {
@@ -12,9 +13,19 @@ import {
 import { MASS_MOLAR_SIBLINGS } from '../../data/massMolarSiblings';
 import { HP_AXIS_HTML } from './hpAxisContent';
 import { greenRangeOf, pressable } from './ui';
-import { isEchoRedundant } from './markers';
+import {
+  buildConditions,
+  buildPanelsByLoinc,
+  isEchoRedundant,
+  observationMatchesQuery,
+  panelMembershipOf,
+  type Observation,
+} from './markers';
 import type { Route } from './routing';
 import { COLOR } from '../../styles/tokens';
+import { useData } from '../../data/DataContext';
+import { ALSO_REFS, ANALYTES, ANALYTE_BY_LOINC, SHORT_LABELS, SPECIMENS } from '../../data/analyteCatalog';
+import type { Analysis } from '../../types';
 
 // Reference Book — one page per computed index, carrying the full clinical
 // prose (meaning + evidence standing) and its cited sources with verbatim
@@ -420,9 +431,152 @@ function MolarMassesPage() {
   );
 }
 
+const EM_DASH = '—';
+
+const FILTER_INPUT = {
+  border: `1.5px solid ${COLOR.accent}`,
+  borderRadius: 9999,
+  padding: '4px 12px',
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  lineHeight: '18px',
+  color: COLOR.accent,
+  backgroundColor: 'transparent',
+  width: 260,
+  maxWidth: '100%',
+  outline: 'none',
+} as const;
+
+const wrapTd = { ...td, whiteSpace: 'normal' } as const;
+
+function LoincLink({ loinc }: Readonly<{ loinc: string }>) {
+  return (
+    <a href={`https://loinc.org/${loinc}/`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', color: COLOR.accent }}>
+      {loinc}
+    </a>
+  );
+}
+
+function PanelsCell({ membership }: Readonly<{ membership: { panels: string[]; via?: string } }>) {
+  if (!membership.panels.length) return <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>;
+  if (!membership.via) return <>{membership.panels.join(' · ')}</>;
+  return (
+    <span style={{ color: COLOR.textSecondary }} title={`This code is a variant of ${membership.via}; a reading recorded under it is shown in that marker's row.`}>
+      {membership.panels.join(' · ')}
+      <span style={{ color: COLOR.textMuted }}> · via <LoincLink loinc={membership.via} /></span>
+    </span>
+  );
+}
+
+function UnitsCell({ analyte }: Readonly<{ analyte: Analysis }>) {
+  if (!analyte.unit) return <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>;
+  return (
+    <>
+      <span style={{ fontFamily: 'monospace' }}>{analyte.unit}</span>
+      {analyte.allowedUnits?.length && (
+        <span style={{ color: COLOR.textMuted, fontFamily: 'monospace' }}> · {analyte.allowedUnits.join(' · ')}</span>
+      )}
+    </>
+  );
+}
+
+function LoincDatabasePage() {
+  const { panels, monitoringPanels } = useData();
+  const [query, setQuery] = useState('');
+
+  const rows = useMemo(() => {
+    const panelsByLoinc = buildPanelsByLoinc(buildConditions(panels, ANALYTE_BY_LOINC, monitoringPanels));
+    return [...ANALYTES]
+      .sort((a, b) => a.displayName.localeCompare(b.displayName))
+      .map((analyte) => ({
+        analyte,
+        membership: panelMembershipOf(panelsByLoinc, analyte.loinc),
+        observation: {
+          short: SHORT_LABELS[analyte.loinc]?.short ?? analyte.displayName,
+          full: analyte.displayName,
+          longCommonName: analyte.longCommonName,
+          loinc: analyte.loinc,
+          also: ALSO_REFS[analyte.loinc],
+        } satisfies Observation,
+      }));
+  }, [panels, monitoringPanels]);
+
+  // The catalog's translations stand in for the printed names All Observations
+  // passes: here there are no uploaded reports, but a Cyrillic name should still
+  // find its row.
+  const shown = rows.filter((row) => observationMatchesQuery(row.observation, query, Object.values(row.analyte.lang)));
+
+  return (
+    <div>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>LOINC database</h1>
+      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 20, maxWidth: 720 }}>
+        Every analyte the app knows, as the catalog defines it. The specimen is read out of each official long
+        name; where a name does not state one, nothing is shown rather than a guess.
+      </div>
+
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: COLOR.textMuted, marginBottom: 6 }}>Find a marker</div>
+        <input
+          type="search"
+          aria-label="Filter the LOINC database by name or code"
+          placeholder="HGB, Гемоглобин, 718-7…"
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+          style={FILTER_INPUT}
+        />
+      </div>
+      <div style={{ fontSize: 13, color: COLOR.textMuted, marginBottom: 14 }}>
+        {shown.length === rows.length ? `${rows.length} analytes` : `${shown.length} of ${rows.length} analytes`}
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={th}>LOINC</th>
+              <th style={th}>Long name</th>
+              <th style={th}>Short</th>
+              <th style={th}>Specimen</th>
+              <th style={th}>Units</th>
+              <th style={th}>Panels</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map(({ analyte, membership }) => (
+              <tr key={analyte.loinc}>
+                <td style={td}>
+                  <LoincLink loinc={analyte.loinc} />
+                </td>
+                <td style={{ ...wrapTd, minWidth: 260 }}>
+                  {analyte.longCommonName}
+                  <div style={{ color: COLOR.textMuted }}>{analyte.displayName}</div>
+                </td>
+                <td style={td}>
+                  {SHORT_LABELS[analyte.loinc]?.short ?? <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>}
+                </td>
+                <td style={td}>
+                  {SPECIMENS[analyte.loinc] ?? <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>}
+                </td>
+                <td style={td}>
+                  <UnitsCell analyte={analyte} />
+                </td>
+                <td style={{ ...wrapTd, minWidth: 180 }}>
+                  <PanelsCell membership={membership} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: string; navigate: (r: Route) => void }>) {
   if (indexKey === 'hp-axis') return <HpAxisPage />;
   if (indexKey === 'molar-masses') return <MolarMassesPage />;
+  if (indexKey === 'loinc-database') return <LoincDatabasePage />;
   const def = indexKey ? INDEX_DEFS.find((d) => d.key === indexKey) : undefined;
   if (def) return <IndexDetail def={def} />;
 
@@ -451,6 +605,16 @@ export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: 
       >
         <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>Mass ↔ molar conversion</span>
         <span style={{ fontSize: 14, color: COLOR.textSecondary }}>Molar masses, their sources, and the factors derived from them</span>
+      </div>
+      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Analytes</h2>
+      <div
+        {...pressable(() => navigate({ view: 'reference', key: 'loinc-database' }))}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>LOINC database</span>
+        <span style={{ fontSize: 14, color: COLOR.textSecondary }}>
+          Every analyte the app knows — code, name, specimen, units and panels
+        </span>
       </div>
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Indices Descriptions</h2>
       <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 24 }}>

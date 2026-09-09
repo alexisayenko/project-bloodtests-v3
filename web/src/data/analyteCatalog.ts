@@ -49,3 +49,21 @@ export const DEFAULT_UNITS: Record<string, string> = Object.fromEntries(
 export const ALLOWED_UNITS: Record<string, string[]> = Object.fromEntries(
   ANALYTES.filter((a) => a.allowedUnits?.length).map((a) => [a.loinc, a.allowedUnits!])
 );
+
+/**
+ * The specimen a LOINC is measured in, read out of the long common name — LOINC
+ * names its system in an "… in Serum or Plasma" / "… of Blood" clause, optionally
+ * followed by a method ("… by Automated count"). The catalog stores no specimen
+ * field, so this is the only place it can come from; a name that carries no such
+ * clause ("Prothrombin time (PT)") yields undefined rather than a guess. The
+ * property bracket is excluded so a match can never run through "[Entitic mass]".
+ */
+const SPECIMEN_CLAUSE = /\s(?:in|of)\s([^[\]]+?)(?:\s+by\s.*)?$/;
+
+export function specimenOf(longCommonName: string | undefined): string | undefined {
+  return longCommonName?.match(SPECIMEN_CLAUSE)?.[1];
+}
+
+export const SPECIMENS: Record<string, string> = Object.fromEntries(
+  ANALYTES.map((a) => [a.loinc, specimenOf(a.longCommonName)]).filter((e): e is [string, string] => !!e[1])
+);
