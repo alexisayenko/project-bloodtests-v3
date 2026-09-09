@@ -71,10 +71,10 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'aip', name: 'AIP (atherogenic index of plasma)', nameCompact: 'AIP', panels: ['Insulin Resistance', 'Cardiovascular Risk'],
     formula: 'log₁₀(TG / HDL), molar', cut: [0.11, 0.21], needs: ['TRIG', 'HDL-C'],
-    inputUnits: { TRIG: 'mmol/L', 'HDL-C': 'mmol/L' }, level: 'consensus',
+    inputUnits: { TRIG: 'mmol/L', 'HDL-C': 'mmol/L' }, level: 'heuristic',
     meaning: 'Reflects LDL particle size and insulin resistance. Scale: <0.11 low risk, 0.11–0.21 medium, >0.21 high.',
-    consensus: 'Growing evidence as a CV-risk predictor, especially with high triglycerides / metabolic syndrome.',
-    evidenceLevel: 'consensus',
+    consensus: 'A studied statistical surrogate, not a consensus-endorsed clinical test: its own defining paper and the follow-on literature are observational-association studies (correlation with LDL particle size, CAD severity, metabolic syndrome), and no named guideline or consensus statement recommends AIP for clinical risk use. Most useful as orientation with high triglycerides / metabolic syndrome.',
+    evidenceLevel: 'heuristic',
     references: [
       { organization: "Clinical Biochemistry (Dobiásová M, Frohlich J)", document: "The plasma parameter log(TG/HDL-C) as an atherogenic index", year: 2001, url: "https://pubmed.ncbi.nlm.nih.gov/11738396/", doi: "10.1016/S0009-9120(01)00263-6", quote: "Introduces AIP = log10(TG/HDL-C) in molar units, correlating with LDL particle size and cholesterol esterification rate; the <0.11 / 0.11–0.21 / >0.21 risk bands originate here." },
     ],
@@ -101,7 +101,7 @@ export const INDEX_DEFS: IndexDef[] = [
     consensus: 'Accumulating evidence as a causal driver of atherosclerosis; increasingly used.',
     evidenceLevel: 'consensus',
     references: [
-      { organization: "Journal of the American College of Cardiology (Varbo A, Nordestgaard BG et al.)", document: "Remnant Cholesterol as a Causal Risk Factor for Ischemic Heart Disease", year: 2013, url: "https://pubmed.ncbi.nlm.nih.gov/23265341/", doi: "10.1016/j.jacc.2012.08.1026", quote: "Mendelian-randomization evidence that elevated remnant cholesterol (TC − HDL-C − LDL-C) is causally associated with ischemic heart disease; supports the ~0.6 mmol/L (~24 mg/dL) orientation threshold." },
+      { organization: "Journal of the American College of Cardiology (Varbo A, Nordestgaard BG et al.)", document: "Remnant Cholesterol as a Causal Risk Factor for Ischemic Heart Disease", year: 2013, url: "https://pubmed.ncbi.nlm.nih.gov/23265341/", doi: "10.1016/j.jacc.2012.08.1026", quote: "Mendelian-randomization evidence that elevated remnant cholesterol (TC − HDL-C − LDL-C) is causally associated with ischemic heart disease; supports the ~0.6 mmol/L (~24 mg/dL) orientation threshold. In this app, the LDL-C subtracted is whatever the lab reports under LOINC 13457-7 — the 'by calculation' code, typically Friedewald (TC − HDL-C − TG/5) — so TC − HDL-C − LDL-C reduces algebraically to that same TG/5 VLDL-C estimate whenever the lab's LDL-C is Friedewald-derived, making Remnant-C not an independent number in that case." },
     ],
     fn: (m) => (has(m, 'TC', 'HDL-C', 'LDL-C') ? m['TC']! - m['HDL-C']! - m['LDL-C']! : null),
   },
@@ -143,10 +143,11 @@ export const INDEX_DEFS: IndexDef[] = [
     cut: [100, 160], unit: 'mg/dL', needs: ['TC', 'HDL-C', 'TRIG'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus',
     meaning: 'LDL cholesterol estimated by the 2020 Sampson (NIH equation 2) formula, from the same three inputs as the Friedewald row above. It was derived against beta-quantification ultracentrifugation to fix exactly where Friedewald fails: it stays valid up to TG 800 mg/dL and is markedly more accurate at low LDL-C with high triglycerides. Read the two side by side — where they agree, the estimate is solid; where Sampson reads higher, Friedewald is under-reporting. Same caveat on thresholds: there is no universal LDL-C cutoff, targets are risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low). The bands here are the NCEP ATP III descriptive categories (<100 optimal · 100–159 near optimal to borderline · ≥160 high), used for coloring only.',
-    consensus: 'Increasingly adopted by clinical laboratories as the Friedewald replacement, and reported alongside it in current lipid literature. Limits: validated only to TG ≤ 800 mg/dL (no value is produced above that), and patients with type III hyperlipidemia were excluded from the derivation cohort, so it is not validated there. No LOINC code exists for a Sampson/NIH-equation LDL-C, so this index has none — the generic "LDL-C by calculation" code names a different method. Needs TC, HDL-C and TG from ONE draw.',
-    evidenceLevel: 'consensus',
+    consensus: 'The 2026 ACC/AHA/Multisociety Dyslipidemia Guideline gives a Class 1 (strong), Level B-NR recommendation that either the Martin/Hopkins or the Sampson/NIH equation is preferred over the Friedewald equation for LDL-C — not merely "increasingly adopted," a formal guideline preference. Reported alongside Friedewald in current lipid literature. Limits: validated only to TG ≤ 800 mg/dL (no value is produced above that), and patients with type III hyperlipidemia were excluded from the derivation cohort, so it is not validated there. No LOINC code exists for a Sampson/NIH-equation LDL-C, so this index has none — the generic "LDL-C by calculation" code names a different method. Needs TC, HDL-C and TG from ONE draw.',
+    evidenceLevel: 'guideline',
     references: [
       { organization: "JAMA Cardiology (Sampson M, Ling C, Sun Q, et al.)", document: "A New Equation for Calculation of Low-Density Lipoprotein Cholesterol in Patients With Normolipidemia and/or Hypertriglyceridemia", year: 2020, url: "https://pubmed.ncbi.nlm.nih.gov/32101259/", doi: "10.1001/jamacardio.2020.0013", quote: "Derives NIH equation 2, LDL-C = TC/0.948 − HDL-C/0.971 − (TG/8.56 + TG×nonHDL-C/2140 − TG²/16100) − 9.44, against beta-quantification; validated for TG up to 800 mg/dL, with type III hyperlipidemia excluded from the derivation cohort." },
+      { organization: "American College of Cardiology / American Heart Association Joint Committee on Clinical Practice Guidelines", document: "2026 ACC/AHA/AACVPR/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Dyslipidemia, JACC", year: 2026, url: "https://www.jacc.org/doi/10.1016/j.jacc.2025.11.016", doi: "10.1016/j.jacc.2025.11.016", quote: "Use of either the Martin/Hopkins equation or the Sampson/National Institutes of Health (NIH) equation is preferred over calculation by the Friedewald equation to estimate LDL-C. (1, B-NR)" },
       { organization: "National Cholesterol Education Program (NCEP) Expert Panel", document: "Third Report (ATP III), JAMA", year: 2001, url: "https://pubmed.ncbi.nlm.nih.gov/11368702/", doi: "10.1001/jama.285.19.2486", quote: "LDL-C descriptive categories (mg/dL): <100 optimal, 100–129 near optimal/above optimal, 130–159 borderline high, 160–189 high, ≥190 very high — the source of the bands used here." },
     ],
     // Derived and validated only to TG 800 mg/dL; above that no value is produced.
@@ -176,10 +177,10 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'tyg', name: 'TyG index', nameCompact: 'TyG', panels: ['Insulin Resistance'],
     formula: 'ln(TG[mg/dL] × glucose[mg/dL] / 2)', cut: [8.5, 9], needs: ['TRIG', 'GLU'],
-    inputUnits: { TRIG: 'mg/dL', GLU: 'mg/dL' }, level: 'consensus',
+    inputUnits: { TRIG: 'mg/dL', GLU: 'mg/dL' }, level: 'heuristic',
     meaning: 'Surrogate of insulin resistance from triglycerides and glucose — no insulin needed. Guide: <8.5 normal, >9 marked IR.',
-    consensus: 'Well-validated IR / metabolic-risk marker; convenient (no insulin assay). Needs fasting TG and glucose from one draw.',
-    evidenceLevel: 'consensus',
+    consensus: 'A studied surrogate for insulin resistance, not a consensus-endorsed one: the evidence linking it to IR and cardiometabolic outcomes is observational, with no interventional data showing that lowering TyG improves outcomes and no agreed cutoff across studies, so no named guideline recommends it as a clinical risk test. Convenient (no insulin assay) — needs fasting TG and glucose from one draw.',
+    evidenceLevel: 'heuristic',
     references: [
       { organization: "Metabolic Syndrome and Related Disorders (Simental-Mendía LE, Rodríguez-Morán M, Guerrero-Romero F)", document: "The Product of Fasting Glucose and Triglycerides as Surrogate for Identifying Insulin Resistance in Apparently Healthy Subjects", year: 2008, url: "https://pubmed.ncbi.nlm.nih.gov/19067533/", doi: "10.1089/met.2008.0034", quote: "Defines TyG = Ln[fasting TG(mg/dL) × fasting glucose(mg/dL)/2] as a surrogate of insulin resistance validated against HOMA-IR; the ~8.5–9 bands derive from this and follow-on clamp-validation work." },
     ],
@@ -201,7 +202,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'homair', name: 'HOMA-IR', nameCompact: 'HOMA-IR', panels: ['Insulin Resistance', 'Pancreatic Function'],
     formula: 'glucose(mmol/L) × insulin(µIU/mL) / 22.5', cut: [2, 2.9], needs: ['GLU', 'Insulin'],
     inputUnits: { GLU: 'mmol/L' }, level: 'consensus',
-    meaning: 'Fasting insulin-resistance estimate. Guide: <2 normal · 2–2.9 borderline / early insulin resistance · ≥2.9 insulin resistance.',
+    meaning: 'Model-based fasting insulin-resistance estimate (the HOMA model), not a direct measurement. Guide: <2 normal · 2–2.9 borderline / early insulin resistance · ≥2.9 insulin resistance.',
     consensus: 'Standard IR screening index. Requires fasting glucose AND insulin from one draw — insulin not yet measured.',
     evidenceLevel: 'consensus',
     references: [
@@ -213,7 +214,7 @@ export const INDEX_DEFS: IndexDef[] = [
     key: 'homab', name: 'HOMA-%B (beta-cell function)', nameCompact: 'HOMA-%B', panels: ['Pancreatic Function', 'Insulin Resistance'],
     formula: '20 × insulin(µIU/mL) / (glucose(mmol/L) − 3.5)', cut: [80, 50], hi: true, unit: '%', needs: ['GLU', 'Insulin'],
     inputUnits: { GLU: 'mmol/L' }, level: 'heuristic',
-    meaning: 'Estimates how well the pancreas\'s beta cells are still producing insulin, from the SAME fasting glucose + insulin pair as HOMA-IR (one draw, both fasting). Reference is ~100% = normal beta-cell function; lower means the beta cells are no longer keeping up. It must be read NEXT TO HOMA-IR, never alone: the two answer different halves of one question — HOMA-IR says how resistant the tissues are, %B says whether the pancreas can still compensate. A calm HOMA-IR with a low %B is a real pattern: no insulin resistance, but the beta cells are under-delivering, and glucose creeps up anyway. Guide: >80% good · 50–80% borderline · <50% low — orientation only, HOMA-%B has no agreed cut-points. And one draw is one point, not a trend.',
+    meaning: 'A model-based fasting estimate of beta-cell function, from the SAME fasting glucose + insulin pair as HOMA-IR (one draw, both fasting) — not a direct measurement of cell mass or a count of surviving beta cells. 100% is the value the HOMA model assigns to normal beta-cell function in its reference population, not a ceiling of total pancreatic capacity — %B expresses basal insulin output RELATIVE TO that reference, and lower means the beta cells are no longer keeping up relative to it, not that a defined fraction of cells has died or that the pancreas is failing outright. It must be read NEXT TO HOMA-IR, never alone: the two answer different halves of one question — HOMA-IR says how resistant the tissues are, %B says whether the pancreas can still compensate. A calm HOMA-IR with a low %B is a real pattern: no insulin resistance, but the beta cells are under-delivering, and glucose creeps up anyway. Guide: >80% good · 50–80% borderline · <50% low — orientation only, HOMA-%B has no agreed cut-points. And one draw is one point, not a trend.',
     consensus: 'Deliberately graded HEURISTIC, not consensus, for two honest reasons. (1) HOMA1\'s linear approximation is imprecise — the original paper reports a coefficient of variation around 32%; the non-linear HOMA2 model is the better estimator and this engine does not implement it. (2) The HOMA authors explicitly list measuring beta-cell function in isolation among the model\'s inappropriate uses; %B is meaningful only alongside HOMA-IR, which is why it is shipped on the same lenses and never on its own. Requires fasting glucose AND insulin from ONE draw — computed only where both exist on the same date, never paired across dates. Undefined when fasting glucose ≤ 3.5 mmol/L (the formula\'s denominator), in which case no value is produced.',
     evidenceLevel: 'heuristic',
     references: [
@@ -317,11 +318,11 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'deritis', name: 'De Ritis ratio (AST/ALT)', nameCompact: 'De Ritis', panels: ['Fatty Liver'],
     formula: 'AST / ALT', cut: [1.3, 2], needs: ['AST', 'ALT'], level: 'consensus', loinc: '1916-6',
-    meaning: 'Pattern of liver injury. <1 typical of fatty liver; >1 alcoholic/cirrhotic or muscle source; >2 especially concerning.',
-    consensus: 'Classic hepatology index with a long track record.',
+    meaning: 'Pattern of liver injury, not a standalone fatty-liver test: <1 is typical of fatty liver; >1 points to alcoholic/cirrhotic or muscle source; >2 especially concerning. Read as one clue to WHAT kind of injury is present, not as a way to diagnose or stage fatty liver on its own.',
+    consensus: 'A classic hepatology index with a long track record for characterizing the pattern and likely source of liver injury (viral vs alcoholic vs muscle) — not a validated standalone test for diagnosing or staging fatty liver disease; its own cited review discusses the <1 fatty-liver pattern alongside other injury patterns, not as a steatosis/fibrosis assessment in itself.',
     evidenceLevel: 'consensus',
     references: [
-      { organization: "The Clinical Biochemist Reviews (Botros M, Sikaris KA)", document: "The De Ritis Ratio: The Test of Time", year: 2013, url: "https://pubmed.ncbi.nlm.nih.gov/24353357/", doi: null, quote: "Reviews the AST/ALT (De Ritis) ratio: the differing half-lives of AST (~18 h) and ALT (~36 h) make the ratio reflect the type and severity of liver injury; a ratio >1 (and especially >2) points to alcoholic/cirrhotic or extrahepatic sources." },
+      { organization: "The Clinical Biochemist Reviews (Botros M, Sikaris KA)", document: "The De Ritis Ratio: The Test of Time", year: 2013, url: "https://pubmed.ncbi.nlm.nih.gov/24353357/", doi: null, quote: "Reviews the AST/ALT (De Ritis) ratio: the differing half-lives of AST (~18 h) and ALT (~36 h) make the ratio reflect the time course and pattern of liver injury and its likely source (eg ALT>AST in acute viral hepatitis, AST>ALT in alcoholic hepatitis; ratio <1 typical in NAFLD, particularly in morbidly obese patients) — a discriminator of injury type, not a validated standalone diagnostic or staging test for fatty liver disease." },
     ],
     fn: (m) => (has(m, 'AST', 'ALT') ? m['AST']! / m['ALT']! : null),
   },
@@ -330,10 +331,11 @@ export const INDEX_DEFS: IndexDef[] = [
     formula: 'serum iron / TIBC × 100, %', cut: [20, 15], unit: '%', hi: true, needs: ['Fe', 'TIBC'],
     level: 'consensus', loinc: '2502-3',
     meaning: 'How full the iron-transport protein (transferrin) is running. Low is the iron-deficiency signal: 20–45% normal · 15–20 low · <15 clear deficiency. More dynamic than ferritin, so they\'re read together. Note the other end — a HIGH saturation (>45%) means iron overload / hemochromatosis (flagged via ferritin on the Hypogonadism lens).',
-    consensus: 'Standard part of the iron panel; interpreted alongside ferritin.',
-    evidenceLevel: 'consensus',
+    consensus: 'Guideline-backed on both ends of its range: the ACG hemochromatosis guideline sets ≥45% as the recommended overload-screening threshold, and the BSG iron-deficiency-anaemia guideline names transferrin saturation, in a graded consensus recommendation, as a helpful test when a false-normal ferritin is suspected. Standard part of the iron panel; interpreted alongside ferritin, not in place of it.',
+    evidenceLevel: 'guideline',
     references: [
       { organization: "American College of Gastroenterology (Kowdley KV, Brown KE, Ahn J, Sundaram V)", document: "ACG Clinical Guideline: Hereditary Hemochromatosis, Am J Gastroenterol", year: 2019, url: "https://pubmed.ncbi.nlm.nih.gov/31335359/", doi: "10.14309/ajg.0000000000000315", quote: "A fasting transferrin saturation ≥45% is the recommended screening threshold for iron overload; conversely a low saturation (<~20%, with <15% clear) signals iron deficiency — the thresholds used here." },
+      { organization: "British Society of Gastroenterology (Snook J, Bhala N, Beales ILP, et al.)", document: "British Society of Gastroenterology guidelines for the management of iron deficiency anaemia in adults, Gut", year: 2021, url: "https://pubmed.ncbi.nlm.nih.gov/34497146/", doi: "10.1136/gutjnl-2021-325210", quote: "We recommend that iron deficiency should be confirmed by iron studies prior to investigation. Serum ferritin is the single most useful marker of IDA, but other blood tests (eg, transferrin saturation) can be helpful if a false-normal ferritin is suspected (evidence quality—medium, consensus—92%, statement strength—strong)." },
     ],
     fn: (m) => (has(m, 'Fe', 'TIBC') ? (m['Fe']! / m['TIBC']!) * 100 : null),
   },

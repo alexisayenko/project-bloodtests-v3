@@ -60,6 +60,7 @@ import type { Analysis } from '../../types';
 // quotes, ported from project-bloodtests-v2's index catalog (ADR-0007).
 
 const EVIDENCE_BADGE: Record<string, { background: string; color: string }> = {
+  guideline: { background: COLOR.accentSoft, color: COLOR.accent },
   consensus: { background: COLOR.statusOkBg, color: COLOR.statusOkText },
   heuristic: { background: COLOR.statusWarnBg, color: COLOR.statusWarnText },
 };
@@ -1220,7 +1221,8 @@ export function ReferenceBookPage({
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Indices and derived measurements</h2>
       <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 24 }}>
         Physiology, evidence standing and cited sources for every value the app calculates — derived measurements, a real
-        analyte's concentration arrived at arithmetically, and indices proper, ratios and scores no lab prints.
+        analyte's concentration arrived at arithmetically, and indices proper, ratios and scores this app computes itself
+        rather than taking from the lab (even one a lab may also print, like TC/HDL).
       </div>
       {Array.from(groups.entries()).map(([panel, defs]) => (
         <div key={panel} style={{ marginBottom: 28 }}>
