@@ -520,7 +520,7 @@ function LoincDatabasePage() {
         <input
           type="search"
           aria-label="Filter the LOINC database by name or code"
-          placeholder="HGB, Гемоглобин, 718-7…"
+          placeholder="HGB, Hemoglobin, 718-7…"
           value={query}
           onChange={(e) => setQuery(e.currentTarget.value)}
           style={FILTER_INPUT}

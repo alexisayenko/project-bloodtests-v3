@@ -201,7 +201,7 @@ export function ControlsBar({
         <input
           type="search"
           aria-label="Filter observations by name"
-          placeholder="HGB, Гемоглобин, 718-7…"
+          placeholder="HGB, Hemoglobin, 718-7…"
           disabled={!enabled.filters}
           value={markerQuery.value}
           onChange={(e) => markerQuery.onChange(e.currentTarget.value)}
