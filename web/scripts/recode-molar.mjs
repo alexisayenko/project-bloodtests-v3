@@ -11,11 +11,15 @@ const addFormats = addFormatsModule.default ?? addFormatsModule;
 const here = dirname(fileURLToPath(import.meta.url));
 const schemaPath = resolve(here, '../public/schema/bloodtests-3.schema.json');
 
-const SCHEMA_VERSION = 3;
+// Reads any minor of major 3, and the legacy bare number 3; it rewrites codes
+// only, so it leaves the file's own `schema` stamp exactly as it found it.
+const SCHEMA_MAJOR = 3;
+const MINOR_VERSION_RE = new RegExp(`^${SCHEMA_MAJOR}\\.(0|[1-9][0-9]*)$`);
+const isCurrentMajor = (v) => v === SCHEMA_MAJOR || (typeof v === 'string' && MINOR_VERSION_RE.test(v));
 
 const USAGE = `Usage: node scripts/recode-molar.mjs <input.json> [-o output.json] [--force]
 
-Repairs a schema-${SCHEMA_VERSION} envelope in which a lab reported a molar
+Repairs a schema-${SCHEMA_MAJOR}.x envelope in which a lab reported a molar
 (substance/volume) unit under a mass-concentration LOINC. Only the "loinc"
 field is rewritten, to the analyte's [Moles/volume] sibling — value, rawValue,
 unit and reference ranges are left exactly as printed, because a molar unit
@@ -192,9 +196,9 @@ function main() {
   } catch (e) {
     throw new RecodeError(`Input is not valid JSON: ${e.message}`);
   }
-  if (data?.schema !== SCHEMA_VERSION || !Array.isArray(data.diagnosticReports)) {
+  if (!isCurrentMajor(data?.schema) || !Array.isArray(data.diagnosticReports)) {
     throw new RecodeError(
-      `Input is not a schema-${SCHEMA_VERSION} envelope. Run scripts/convert-to-v3.mjs on it first.`
+      `Input is not a schema-${SCHEMA_MAJOR}.x envelope. Run scripts/convert-to-v3.mjs on it first.`
     );
   }
 

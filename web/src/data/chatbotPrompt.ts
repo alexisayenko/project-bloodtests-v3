@@ -25,7 +25,7 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
 
 5. Build ONE JSON object in exactly this shape:
 {
-  "schema": 3,
+  "schema": "3.1",
   "sex": "female",
   "birthYear": 1975,
   "diagnosticReports": [
@@ -50,7 +50,7 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
 The same shape as a JSON Schema, if you can validate against one: https://blood.isayenko.net/schema/bloodtests-3.schema.json — the rules below are complete on their own, so don't fetch it unless validating is free for you.
 
 Field rules — apply silently, do not ask me about any of these:
-   - "schema": always the literal number 3.
+   - "schema": always the literal string "3.1" — with the quotes, a string and not a number.
    - "sex" / "birthYear": include only if I gave them in step 2; otherwise omit both keys entirely.
    - "diagnosticReports": one object per report/draw I send you, even multiple reports from the same day and lab.
    - "lab": the lab/clinic name as printed; use "Unknown Lab" if the report doesn't state one.

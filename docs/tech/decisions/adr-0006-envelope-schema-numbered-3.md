@@ -1,12 +1,18 @@
 # ADR-0006: envelope schema numbered 3 to match the project
 
 Status: accepted · 2026-09-07 · partially superseded by
-[ADR-0009](adr-0009-v3-only-and-rawname.md)
+[ADR-0009](adr-0009-v3-only-and-rawname.md) and
+[ADR-0012](adr-0012-envelope-version-is-a-major-minor-string.md)
 
-The number `3` stands. The half of this record that says `1` stays
-accepted on import — and the `ACCEPTED_SCHEMA_VERSIONS` set that
-implemented it — is superseded: upload now reads `3` only, and old
-files are converted offline with `npm run convert:v3`.
+The number `3` stands, as the **major**. The half of this record that
+says `1` stays accepted on import — and the `ACCEPTED_SCHEMA_VERSIONS`
+set that implemented it — is superseded: upload reads major 3 only, and
+old files are converted offline with `npm run convert:v3`. Its "a plain
+integer, not semver" is superseded too: the field is the string
+`"major.minor"` (`"3.1"` today), because an integer cannot say which
+version of the format a file was written under, and a JSON number
+cannot tell `3.10` from `3.1`. The argument for a single number — a
+reader has one question — survives as the rule for the **major**.
 
 ## Context
 

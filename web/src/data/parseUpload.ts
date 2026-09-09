@@ -11,11 +11,16 @@ import type {
  * Parses a visitor-uploaded JSON file into DiagnosticReport[].
  *
  * One shape is accepted: the v3 interchange envelope,
- * `{ schema: 3, diagnosticReports: [...] }` — what this project's export
+ * `{ schema: "3.1", diagnosticReports: [...] }` — what this project's export
  * pipeline and the chatbot prompt both produce. Each DiagnosticReport maps
  * to a DiagnosticReport, with observations transformed into results. This is
  * the one place unit normalization runs — every import route (chatbot JSON,
  * Import JSON, share link) passes through here.
+ *
+ * Any minor within major 3 is read — `"3.0"`, `"3.1"`, a later `"3.2"` — plus
+ * the legacy bare number `3`, which means `3.0`; a minor only ever adds an
+ * optional field, and fields this build does not know are ignored anyway. See
+ * `docs/tech/decisions/adr-0012-envelope-version-is-a-major-minor-string.md`.
  *
  * Older files (envelopes stamped `schema: 1`, project-bloodtests-v2's
  * canonical draws, and the flat/grouped legacy shapes) are no longer read
@@ -123,7 +128,7 @@ export class UploadParseError extends Error {}
 export function parseUploadedResults(data: unknown): DiagnosticReport[] {
   if (!isV3Envelope(data)) {
     throw new UploadParseError(
-      'Unrecognized JSON shape. Expected a v3 interchange envelope shaped like { "schema": 3, "diagnosticReports": [...] }. An older file has to be converted first.'
+      'Unrecognized JSON shape. Expected a v3 interchange envelope shaped like { "schema": "3.1", "diagnosticReports": [...] } — any "3.x" version is read, as is the legacy number 3. An older file has to be converted first.'
     );
   }
 

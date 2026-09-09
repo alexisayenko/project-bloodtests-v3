@@ -2,11 +2,11 @@
 
 The wrapper of a lab-data interchange file: the JSON object that carries a set of lab reports for one person between systems.
 
-Machine-readable form of this page: [`https://blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json) (source: `web/public/schema/bloodtests-3.schema.json`), JSON Schema draft 2020-12. It describes **version 3 only**, and so does the upload parser: the two now agree, and nothing else is read; see [`schema`](#schema). Objects in it are deliberately open (no `additionalProperties: false`), because adding an optional field is not a breaking change here and [`identifiers`](#identifiers) is specified to pass unrecognised lab keys through. `web/test/envelope-schema.test.ts` holds it to the exporter's output and to this page's fields.
+Machine-readable form of this page: [`https://blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json) (source: `web/public/schema/bloodtests-3.schema.json`), JSON Schema draft 2020-12. It describes **major version 3 only** — every minor within it, and no other major — and so does the upload parser: the two agree, and nothing else is read; see [`schema`](#schema). The file name stays major-only and its `$id` never moves, because a minor is a backward-compatible addition and a reader that fetches this URL has to go on validating both older and newer 3.x files. Objects in it are deliberately open (no `additionalProperties: false`), because adding an optional field is not a breaking change here — it bumps the minor, and a reader ignores what it does not know — and [`identifiers`](#identifiers) is specified to pass unrecognised lab keys through. `web/test/envelope-schema.test.ts` holds it to the exporter's output and to this page's fields.
 
 > **Status: partially implemented.** This page is the full spec; the app implements a subset of it.
 >
-> - **Upload** (`web/src/data/parseUpload.ts`) accepts the v3 envelope and **nothing else** — no `schema: 1`, no project-bloodtests-v2 canonical draws, no legacy flat or grouped shapes; anything else fails with "Unrecognized JSON shape". Older files are converted first with `npm run convert:v3` (see [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md)). It reads only `schema` (`3`) and `diagnosticReports`. Per report it reads `lab`, `collectedAt` (date part only), `observations`, and `identifiers` — the first of `visit`/`order`/`accession` is folded into the session id so two same-day same-lab draws don't collide on merge (it isn't stored beyond that). Per observation it reads `loinc`, `rawName`, `value`, `comparator`, `rawValue`, `rawUnit` **or** `unit` — `rawUnit` wins where a file carries it, because `unit` may already hold a normalized UCUM code and the printed string is what the app displays and validates — `method`, and `referenceRanges` — flattened to a single min/max pair plus display text. It also runs unit normalization over every observation on the way in (`web/src/data/unitNormalization.ts`), the one place in the app that does: the printed `value` and `unit` are kept exactly as read, and where the unit places cleanly and the conversion to the code's canonical UCUM unit is known, the derived pair is attached to the in-memory row as `canonical` — never written back to `value`/`unit`, and never exported. Still **ignored on upload**: `generatedAt`, `contentHash` (never verified), `subject`, `sex`, `birthYear`, `notes`; per-report `issuedAt` and `specimen`; per-observation `interpretation` and `specimen`; range `label`/`appliesTo`/`ageLow`/`ageHigh` (kept only as display text, not used for range selection).
+> - **Upload** (`web/src/data/parseUpload.ts`) accepts the v3 envelope and **nothing else** — no `schema: 1`, no project-bloodtests-v2 canonical draws, no legacy flat or grouped shapes; anything else fails with "Unrecognized JSON shape". Older files are converted first with `npm run convert:v3` (see [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md)). It reads only `schema` (any `"3.x"`, plus the legacy number `3`; see [ADR-0012](decisions/adr-0012-envelope-version-is-a-major-minor-string.md)) and `diagnosticReports`. Per report it reads `lab`, `collectedAt` (date part only), `observations`, and `identifiers` — the first of `visit`/`order`/`accession` is folded into the session id so two same-day same-lab draws don't collide on merge (it isn't stored beyond that). Per observation it reads `loinc`, `rawName`, `value`, `comparator`, `rawValue`, `rawUnit` **or** `unit` — `rawUnit` wins where a file carries it, because `unit` may already hold a normalized UCUM code and the printed string is what the app displays and validates — `method`, and `referenceRanges` — flattened to a single min/max pair plus display text. It also runs unit normalization over every observation on the way in (`web/src/data/unitNormalization.ts`), the one place in the app that does: the printed `value` and `unit` are kept exactly as read, and where the unit places cleanly and the conversion to the code's canonical UCUM unit is known, the derived pair is attached to the in-memory row as `canonical` — never written back to `value`/`unit`, and never exported. Still **ignored on upload**: `generatedAt`, `contentHash` (never verified), `subject`, `sex`, `birthYear`, `notes`; per-report `issuedAt` and `specimen`; per-observation `interpretation` and `specimen`; range `label`/`appliesTo`/`ageLow`/`ageHigh` (kept only as display text, not used for range selection).
 > - **Export** (`web/src/utils/exportData.ts`) writes `schema`, `generatedAt` (always), `contentHash` (sha256 of `JSON.stringify(diagnosticReports)`, per [ADR-0001](decisions/adr-0001-content-hash-plain-stringify.md)), `subject`/`sex`/`birthYear`/`notes` when set in the Diagnostic Reports "Database details" card (kept in localStorage under `bloodtests_envelope_meta_v1`; empty fields omitted), and `diagnosticReports` — per report `lab`, `collectedAt` (stored date at `T00:00:00Z`), `observations`; per observation `loinc`, `rawName`, and when present `value`, `rawValue`, `unit` (the printed spelling folded to its UCUM code, absent when the curated tables cannot place it), `rawUnit` (the printed string, written whenever a unit was printed), `method`, and a single `{ low, high, text }` reference range. **Never written yet**: per-report `issuedAt`/`identifiers`/`specimen`; per-observation `comparator`, `interpretation`, `specimen`, and multi-band/`label`/`appliesTo`/age-banded ranges. The import-time `canonical` form is deliberately absent from that list: it is a converted *value*, derived rather than reported, so the exporter's field-by-field mapping never emits it. Because export writes the unit pair, an import-then-export round trip is no longer byte-identical — a file that arrived with a printed `unit` and no `rawUnit` leaves with both, and its `contentHash` changes accordingly. The property that replaces it, and the one `web/test/export-data.test.ts` holds, is that the transformation **settles**: export → import → export is byte-identical, so a file this app wrote survives every later round trip unchanged.
 
 ### Known round-trip gaps
@@ -23,7 +23,7 @@ The subset above is not symmetric, and the asymmetries cost something. Each of t
 
 ```json
 {
-  "schema": 3,
+  "schema": "3.1",
   "generatedAt": "2026-08-26T21:14:09Z",
   "contentHash": "sha256:<hex>",
   "subject": "p-7fa3",
@@ -42,13 +42,38 @@ The split follows from who writes the file: a hand-written or hand-edited file m
 
 ## `schema`
 
-**Required.** A plain integer, not semver. A reader has exactly one question — *can I read this?* — and a single number answers it; a three-part version invites comparison logic nobody needs.
+**Required.** The format version, as the **string** `"major.minor"` — two parts, not three, and not semver. **Current value: `"3.1"`.**
 
-**Current value: `3`, and the only accepted one.** `1` — the number the same shape carried before the renumber to match the project version — is **no longer accepted on import**; nor is `2`, which was never issued, nor any other number. A file stamped `1` (an earlier export, a share-link payload under `web/public/d/`, old dev data) is converted once, offline, with `npm run convert:v3 -- <file>`; the converter reads every legacy shape the app has dropped. See [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md), which supersedes [ADR-0006](decisions/adr-0006-envelope-schema-numbered-3.md)'s "`1` stays accepted".
+A string rather than a number for one reason: JSON numbers cannot tell `3.10` apart from `3.1`, and there will be a tenth minor. A file's version is an identifier, not a quantity.
 
-The value lives in one place — `web/src/data/envelopeSchema.ts` (`SCHEMA_VERSION`) — read by the exporter and the upload parser alike.
+**The major answers the reader's one question — *can I read this?*** Major `3` is accepted; every other major is refused, with the same single "Unrecognized JSON shape" error that a legacy array shape gets. A major bumps only on a **breaking** change: a field removed, renamed, or given a new meaning.
 
-Bump only on a **breaking** change: a field removed, renamed, or given a new meaning. Adding an optional field is not breaking, and does not bump.
+**The minor records which version of the format a file was written under.** It is bumped on **every** other change to the envelope format — an added optional field, a newly specified value — and each such change is by definition **backward-compatible in both directions**:
+
+- an older file still loads: a `3.0` file is read by this build, because a minor never removes anything;
+- a newer file still loads: a future `3.2` file is read by a build that knows only `3.1`, because the objects here are open and a reader ignores fields it does not know.
+
+That property is what makes one published schema enough for the whole major. `bloodtests-3.schema.json` is deliberately named for the **major only**, and its `$id` never moves: a reader that fetches the URL validates 3.0, 3.1 and 3.2 files alike.
+
+**Accepted on import:**
+
+| Value | Read as | Why |
+| --- | --- | --- |
+| `"3.0"`, `"3.1"`, `"3.2"`, … `"3.10"` | itself | any minor of major 3 |
+| `3` (the bare **number**) | `3.0` | the one legacy spelling — what files written before the version became a string carry, and there is existing data in that shape |
+
+**Refused:** the bare string `"3"` (the string form always carries a minor), any other major (`1`, `2`, `4`, `"4.0"`), any other number (`3.1` as a *number* is the ambiguity this format is avoiding), a leading-zero minor (`"3.01"`), anything malformed (`"3."`, `"abc"`), and a missing field.
+
+`1` — the number the same shape carried before the renumber to match the project version — is **not accepted on import**. A file stamped `1` (an earlier export, a share-link payload under `web/public/d/`, old dev data) is converted once, offline, with `npm run convert:v3 -- <file>`; the converter reads every legacy shape the app has dropped, and stamps the current version on its output. See [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md), which supersedes [ADR-0006](decisions/adr-0006-envelope-schema-numbered-3.md)'s "`1` stays accepted", and [ADR-0012](decisions/adr-0012-envelope-version-is-a-major-minor-string.md), which widens ADR-0009's `3`-only acceptance to `3.x`.
+
+**Minor history.**
+
+| Version | Change |
+| --- | --- |
+| `3.0` (written as the number `3`) | the version-3 envelope as ADR-0009 left it |
+| `3.1` | an observation's unit leaves as a **pair** — [`unit`](#unit) holds the printed spelling folded to its UCUM code, [`rawUnit`](#rawunit) the string the lab printed. Recorded retroactively: the exporter already wrote it. |
+
+The value lives in one place — `web/src/data/envelopeSchema.ts` (`SCHEMA_VERSION`, over `SCHEMA_MAJOR`) — read by the exporter, the upload parser and both offline scripts alike.
 
 ## `generatedAt`
 
@@ -104,7 +129,7 @@ This does not contradict the format's avoidance of free text. The rule stated un
 
 Caveat: anything written here travels with the file, so it is visible to whoever opens a share link. It is not a place for anything the reader should not see.
 
-Scope is the **envelope only** for now. Per-report and per-observation notes are deliberately deferred, though the likely real value is at the observation level — "was not fasting", "two weeks after flu", "different lab, method changed" — which is the context that makes an odd value readable a year later. Adding them later is not a breaking change and does not bump [`schema`](#schema).
+Scope is the **envelope only** for now. Per-report and per-observation notes are deliberately deferred, though the likely real value is at the observation level — "was not fasting", "two weeks after flu", "different lab, method changed" — which is the context that makes an odd value readable a year later. Adding them later is not a breaking change: it bumps [`schema`](#schema)'s minor, and leaves every existing file readable.
 
 ## `diagnosticReports`
 
@@ -269,7 +294,7 @@ The remedy is the sibling **code** — `14647-2` for the example above — never
 
 The check now runs on every imported file rather than only offline. `web/src/data/validateDiagnosticReports.ts` turns a dimension contradiction with a known sibling into a warning naming the printed unit, the code on the row and the sibling to move to, and a unit that resolves to neither a Latin spelling nor a UCUM code into a softer warning saying the row is left exactly as printed and is not comparable across units — the second is how the curated tables learn what they are missing. Both appear on the Diagnostic Reports table's existing warning dot and in the report's detail view; neither blocks anything, because neither is a defect in the file's *record* of what the lab printed.
 
-To repair an envelope in bulk, offline: `node scripts/recode-molar.mjs <input.json>` from `web/`. It takes a file already stamped `schema: 3` (run `npm run convert:v3` first otherwise), writes `<input>.recoded.json` unless `-o` says otherwise (`--force` overwrites), and validates the result against the published schema with Ajv before writing it. It has **no npm alias**, unlike `npm run convert:v3` — invoke it by path.
+To repair an envelope in bulk, offline: `node scripts/recode-molar.mjs <input.json>` from `web/`. It takes a file already stamped with a `3.x` `schema` (run `npm run convert:v3` first otherwise), writes `<input>.recoded.json` unless `-o` says otherwise (`--force` overwrites), and validates the result against the published schema with Ajv before writing it. It has **no npm alias**, unlike `npm run convert:v3` — invoke it by path.
 
 ### `rawUnit`
 

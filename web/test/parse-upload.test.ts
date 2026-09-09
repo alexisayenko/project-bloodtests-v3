@@ -265,6 +265,50 @@ describe('parseUploadedResults — unit normalization at import', () => {
   });
 });
 
+// ADR-0012: the version is the string "major.minor". Major 3 is read whatever
+// its minor — including a minor this build has never heard of, since a minor
+// only ever adds an optional field and unknown fields are ignored — plus the
+// legacy bare number 3, which means 3.0.
+describe('parseUploadedResults — the accepted schema versions', () => {
+  const stampedWith = (version: unknown) => ({
+    schema: version,
+    diagnosticReports: [
+      {
+        lab: 'Lab A',
+        collectedAt: '2026-01-10T00:00:00Z',
+        observations: [{ rawName: 'Test', value: 100, unit: 'U' }],
+      },
+    ],
+  });
+
+  it.each([3, '3.0', '3.1', '3.9', '3.10'])('reads a file stamped %o', (version) => {
+    const groups = parseUploadedResults(stampedWith(version));
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.items![0]!.value).toBe(100);
+  });
+
+  it.each([4, '4.0', '2.9', 1, '3', '3.', '3.01', 3.1, 'abc', '', null, undefined, {}])(
+    'refuses a file stamped %o',
+    (version) => {
+      expect(() => parseUploadedResults(stampedWith(version))).toThrow(/Unrecognized JSON shape/);
+    }
+  );
+
+  it('refuses an envelope with no schema field at all', () => {
+    expect(() =>
+      parseUploadedResults({
+        diagnosticReports: [
+          {
+            lab: 'Lab A',
+            collectedAt: '2026-01-10T00:00:00Z',
+            observations: [{ rawName: 'Test', value: 100 }],
+          },
+        ],
+      })
+    ).toThrow(/Unrecognized JSON shape/);
+  });
+});
+
 describe('parseUploadedResults — rejects everything that is not a v3 envelope', () => {
   const stamped = (version: number) => ({
     schema: version,

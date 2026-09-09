@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildExportEnvelope, downloadExportFile } from '../src/utils/exportData';
 import { parseUploadedResults } from '../src/data/parseUpload';
+import { SCHEMA_VERSION } from '../src/data/envelopeSchema';
 import type { Result, DiagnosticReport } from '../src/types';
 
 const result = (partial: Partial<Result>): Result => ({
@@ -111,10 +112,11 @@ describe('buildExportEnvelope — normalized unit, printed rawUnit', () => {
 });
 
 describe('buildExportEnvelope', () => {
-  it('creates an envelope with schema 3, a contentHash and a generatedAt stamp', async () => {
+  it('creates an envelope stamped with the current schema version, a contentHash and a generatedAt stamp', async () => {
     const envelope = await buildExportEnvelope([session({})]);
 
-    expect(envelope.schema).toBe(3);
+    expect(envelope.schema).toBe(SCHEMA_VERSION);
+    expect(SCHEMA_VERSION).toBe('3.1');
     expect(envelope.contentHash).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(envelope.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     expect(envelope.diagnosticReports).toHaveLength(1);

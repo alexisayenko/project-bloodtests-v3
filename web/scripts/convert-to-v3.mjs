@@ -11,8 +11,14 @@ const addFormats = addFormatsModule.default ?? addFormatsModule;
 const here = dirname(fileURLToPath(import.meta.url));
 const schemaPath = resolve(here, '../public/schema/bloodtests-3.schema.json');
 
-const SCHEMA_VERSION = 3;
-const ACCEPTED_ENVELOPE_VERSIONS = new Set([1, SCHEMA_VERSION]);
+// The converter's OUTPUT stamp: the current "major.minor" string. Its INPUT
+// side is wider — the legacy numbers 1 and 3, and any "3.x" string — because
+// it has to go on reading every file the app has ever written.
+const SCHEMA_MAJOR = 3;
+const SCHEMA_VERSION = `${SCHEMA_MAJOR}.1`;
+const MINOR_VERSION_RE = new RegExp(`^${SCHEMA_MAJOR}\\.(0|[1-9][0-9]*)$`);
+const isCurrentMajor = (v) => v === SCHEMA_MAJOR || (typeof v === 'string' && MINOR_VERSION_RE.test(v));
+const isAcceptedEnvelopeVersion = (v) => v === 1 || isCurrentMajor(v);
 const COMPARATORS = new Set(['<', '<=', '>=', '>']);
 const META_KEYS = ['subject', 'sex', 'birthYear', 'notes'];
 const RESTAMPED_KEYS = new Set(['schema', 'generatedAt', 'contentHash', 'diagnosticReports']);
@@ -21,13 +27,15 @@ const V2_LOINC_RE = /^\d+-\d$/;
 
 const USAGE = `Usage: node scripts/convert-to-v3.mjs <input.json> [-o output.json] [--force]
 
-Upgrades a legacy blood-tests file to the v3 interchange envelope (schema 3),
-the only shape the app reads. An observation's printed test name is written to
-"rawName"; a source file carrying it under "name" is renamed on the way out.
+Upgrades a legacy blood-tests file to the v3 interchange envelope
+(schema "${SCHEMA_VERSION}"), the only shape the app reads. An observation's printed
+test name is written to "rawName"; a source file carrying it under "name" is
+renamed on the way out.
 
 Accepted input shapes:
   - v3 envelope stamped schema 1
-  - v3 envelope stamped schema 3 (copied through unchanged)
+  - v3 envelope stamped any 3.x version, or the legacy number 3
+    (restamped "${SCHEMA_VERSION}"; copied through unchanged when it already is)
   - canonical draws (project-bloodtests-v2): [{ date, labName, sourceFile?, items }]
   - flat entries (legacy): [{ date, place?, analysis, loinc, value, ... }]
   - grouped sessions (legacy): [{ date, place, items }]
@@ -88,8 +96,7 @@ function isPlainObject(value) {
 function isV3Envelope(value) {
   return (
     isPlainObject(value) &&
-    typeof value.schema === 'number' &&
-    ACCEPTED_ENVELOPE_VERSIONS.has(value.schema) &&
+    isAcceptedEnvelopeVersion(value.schema) &&
     Array.isArray(value.diagnosticReports)
   );
 }
@@ -228,10 +235,16 @@ function detectAndConvert(data) {
     if (data.schema === SCHEMA_VERSION && !renamed) {
       return { shape: `v3 envelope (schema ${SCHEMA_VERSION})`, envelope: data, passThrough: true };
     }
-    const shape =
-      data.schema === SCHEMA_VERSION
-        ? `v3 envelope (schema ${SCHEMA_VERSION}, observation "name" renamed to "rawName")`
-        : 'v3 envelope (schema 1)';
+    let shape;
+    if (data.schema === SCHEMA_VERSION) {
+      shape = `v3 envelope (schema ${SCHEMA_VERSION}, observation "name" renamed to "rawName")`;
+    } else if (isCurrentMajor(data.schema)) {
+      // An earlier minor of the same major — restamped to the current one,
+      // which is a no-op on the reports themselves.
+      shape = `v3 envelope (schema ${JSON.stringify(data.schema)} → ${SCHEMA_VERSION})`;
+    } else {
+      shape = 'v3 envelope (schema 1)';
+    }
     return { shape, reports, source: data };
   }
 

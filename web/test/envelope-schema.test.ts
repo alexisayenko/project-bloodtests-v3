@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import { buildExportEnvelope } from '../src/utils/exportData';
+import { SCHEMA_VERSION } from '../src/data/envelopeSchema';
 import type { Result, DiagnosticReport } from '../src/types';
 
 const schema = JSON.parse(
@@ -283,7 +284,7 @@ describe('published JSON Schema — rejects', () => {
     );
   });
 
-  it('schema: 1 — the format is version-3 only, and the parser rejects 1 as well', () => {
+  it('schema: 1 — the format is major-3 only, and the schema rejects 1 as well', () => {
     const legacy = {
       schema: 1,
       diagnosticReports: [
@@ -296,10 +297,37 @@ describe('published JSON Schema — rejects', () => {
     };
 
     expect(errorsFor(legacy)).toContainEqual(
-      expect.objectContaining({ instancePath: '/schema', keyword: 'const' })
+      expect.objectContaining({ instancePath: '/schema', keyword: 'anyOf' })
     );
 
-    const asV3 = { ...legacy, schema: 3 };
+    const asV3 = { ...legacy, schema: SCHEMA_VERSION };
     expect(errorsFor(asV3)).toEqual([]);
   });
+});
+
+// ADR-0012: the version is the string "major.minor". Every minor of major 3
+// validates against this one schema — that is what makes a minor an addition
+// rather than a new format — and the legacy bare number 3 stays readable.
+describe('published JSON Schema — the schema version field', () => {
+  const withVersion = (version: unknown) => ({
+    schema: version,
+    diagnosticReports: [
+      {
+        lab: 'Lab A',
+        collectedAt: '2026-01-10T00:00:00Z',
+        observations: [{ loinc: '718-7', rawName: 'Hemoglobin', value: 14.2, unit: 'g/dL' }],
+      },
+    ],
+  });
+
+  it.each([3, '3.0', '3.1', '3.9', '3.10', '3.42'])('accepts %o', (version) => {
+    expect(errorsFor(withVersion(version))).toEqual([]);
+  });
+
+  it.each([1, 2, 4, 3.1, '3', '4.0', '2.9', '3.', '3.01', 'abc', null, undefined])(
+    'rejects %o',
+    (version) => {
+      expect(errorsFor(withVersion(version))).not.toEqual([]);
+    }
+  );
 });

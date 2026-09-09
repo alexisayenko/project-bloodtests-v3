@@ -3,7 +3,10 @@
 Status: accepted · 2026-09-07
 
 Supersedes [ADR-0006](adr-0006-envelope-schema-numbered-3.md)'s
-"`1` stays accepted on import".
+"`1` stays accepted on import". Its "`schema` accepts `3` only" is
+widened to any minor of major 3 by
+[ADR-0012](adr-0012-envelope-version-is-a-major-minor-string.md); the
+bare number `3` is still read, as `3.0`.
 
 ## Context
 
