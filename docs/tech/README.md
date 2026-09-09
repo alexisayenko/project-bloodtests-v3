@@ -109,16 +109,24 @@ unrecognized unit returns undefined rather than a guess — the tables
 are a curated subset, not a UCUM parser, with the NLM UCUM library the
 upgrade path ([task-0008](../tasks/task-0008.md)).
 
-It has two callers, both on the way in rather than in a view.
-`parseUpload.ts` runs it over every observation of every import route
-and attaches the derived pair to the in-memory row as `canonical`
-(step 2 above); `validateDiagnosticReports.ts` runs it again to raise
-the two cases it cannot settle silently — a dimension contradiction
-with a known sibling code, and a unit that maps to no UCUM code at all
-— as warnings on the Diagnostic Reports dot. What does *not* exist is
-the confirm-and-apply UI: a normalization warning names the problem
-and stops there, unlike the LOINC cross-check's suggestion chips
-([task-0011](../tasks/task-0011.md)).
+It has three callers. `parseUpload.ts` runs it over every observation
+of every import route and attaches the derived pair to the in-memory
+row as `canonical` (step 2 above); `validateDiagnosticReports.ts` runs
+it again to raise the two cases it cannot settle silently — a dimension
+contradiction with a known sibling code, and a unit that maps to no
+UCUM code at all — as warnings on the Diagnostic Reports dot; and
+`utils/exportData.ts` calls `ucumUnitFor` (stages 1–2 in one call) to
+write the folded spelling to each observation's `unit`, with the
+printed string beside it in `rawUnit`.
+
+Of the two warnings, only the first can be repaired in one click.
+`unitRepairFor` (`reportDetailHelpers.ts`) offers the sibling code as a
+chip in the report detail view's existing chip row, changing the
+`loinc` alone through the same edit draft and Save/Cancel gate the
+LOINC chips use — not auto-applied, because these warnings render on
+mount and which of code and unit the lab got wrong is a judgement. The
+unmappable unit has no chip: there is nothing to suggest, only tables
+to extend ([task-0008](../tasks/task-0008.md)).
 
 The same folding helpers are shared, not duplicated: `loincCheck.ts`
 builds its unit comparison key with `foldUnitGlyphs` and `toLatinUnit`
@@ -148,20 +156,26 @@ one use is display-time, where the "What's in range" chart places a history
 that crosses the mass/molar divide onto the single scale its reference band
 is expressed in, which is what
 [ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md) means by
-conversion belonging at display time); their molar codes
+conversion belonging at display time; and each code declaring only
+`{loinc, longCommonName}`, its unit taken from the catalog's
+`DEFAULT_UNITS`); their molar codes
 were added to `web/public/data/analyses.json` (124 → 139 entries then,
-160 now) and carry `aliasOf` pointing at the mass primary, so a molar
+163 now) and carry `aliasOf` pointing at the mass primary, so a molar
 code folds into the same panel row, badge and chart series without touching
 panels, tables or charts. To repair an
 existing file, `node scripts/recode-molar.mjs <input.json>` from
 `web/` rewrites `loinc` and nothing else — see
 [`interchange-format.md`](interchange-format.md#a-wrong-unit-here-is-usually-a-wrong-loinc).
 Product-level reasoning is the [unit](../product/concepts/unit.md)
-concept; remaining work (the confirm-and-apply UI) is
-[task-0011](../tasks/task-0011.md) — the catalog consolidation it
-also asked for landed for `ALSO_REFS` and the allowed-unit sets with
+concept; [task-0011](../tasks/task-0011.md) closed on 2026-09-09, its
+catalog consolidation complete — `ALSO_REFS` and the allowed-unit sets
+folded into the catalog with
 [ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md),
-while the sibling pairs still carry their own copy of each code's unit.
+the factors into `molar-masses.json` with
+[ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md),
+and the sibling pairs' last copy, each code's unit, derived from
+`DEFAULT_UNITS` rather than restated. What it handed on rather than
+finished is the UCUM parser itself, [task-0008](../tasks/task-0008.md).
 
 ## Known limitations
 
@@ -172,7 +186,7 @@ scheduled. Format and round-trip gaps are listed separately, under
 - **An oversized entry chunk, now mostly catalog.** The two chart tabs
   are `React.lazy`-split (`LabExploreView` ≈ 78 kB, `PanelChartsView`
   ≈ 14 kB), which took the entry chunk from ~698 kB to ~616 kB raw; it
-  measures ~635 kB raw (~185 kB gzipped) now that the Reference Book has
+  measures ~642 kB raw (~187 kB gzipped) now that the Reference Book has
   its mass↔molar page and `INDEX_DEFS` its two LDL-C estimates, still over
   Vite's "larger than 500 kB" advisory.
   What is left is largely

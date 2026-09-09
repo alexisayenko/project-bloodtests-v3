@@ -2,11 +2,13 @@
 
 The measurement scale a result is expressed in — `mmol/L`, `10^9/L`, `ng/mL` — recorded per entry in a [diagnostic report](lab-report.md), not fixed by the [observation](observation.md).
 
-> **Status: partly built.** The printed unit described below is still the only unit the app *stores*. Deriving a canonical UCUM unit from it now exists — as a pure module, computing on demand and writing nothing — and it runs at import, over every observation of every import route, attaching the derived pair beside the printed one in memory. What it cannot settle it reports as a warning; what does not exist is the place a person confirms a suggestion. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
+> **Status: partly built.** A unit now travels as a pair: an exported file carries the canonical UCUM code in `unit` and the string the lab printed in `rawUnit`, and import reads the printed one back. Deriving the canonical form is a pure module, computing on demand, and it runs at import over every observation of every import route, attaching a derived *value* pair beside the printed one in memory — that one is never stored or exported. What the derivation cannot settle it reports as a warning, and where the warning has a repair — a mass/molar sibling code — the report detail view offers it as a chip to confirm. What is still missing is a real UCUM parser: the tables are curated, so a unit outside them resolves to nothing. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
 
 ## What a unit is today
 
-Provenance. The app stores each observation's `unit` exactly as the lab printed it and rewrites it never — same rule that governs every other field a report carries. A result that came back as `mmol/l` stays `mmol/l`; one that came back as `mmol/L` stays `mmol/L`.
+Provenance, plus a derived scale beside it. The printed string is kept exactly as the lab wrote it and rewritten never — same rule that governs every other field a report carries. A result that came back as `mmol/l` is still `mmol/l` on the record; the `mmol/L` beside it is the app's reading of that string, not a replacement for it, and no number moves when the spelling folds.
+
+Inside the app a result carries the printed unit, and it is the printed unit the tables show and the report detail view edits. The canonical code appears when the data is written out — see [`unit` versus `rawUnit`](#unit-versus-rawunit) below.
 
 One helper does fold spellings today, and it is worth being exact about its reach: `canonicalUnit` in `web/src/data/loincCheck.ts` transliterates a Cyrillic unit, folds superscript digits, the micro sign and the multiplication sign (all borrowed from the normalization module rather than tabulated twice), lowercases the result, and folds a per-mL prefix up to its per-L equivalent (`µIU/mL` → `miu/l`). It exists so the LOINC cross-check can compare a row's unit against a code's allowed set. It is a **matching key only** — it never touches stored data, is never displayed, and is not UCUM.
 
@@ -50,29 +52,31 @@ The catalog carries both codes of each pair and aliases the molar one to its mas
 
 ## `unit` versus `rawUnit`
 
-The day a derived unit is *stored*, the two fields split the roles the interchange format already splits elsewhere:
+A derived unit is now written down, and the two fields split the roles the interchange format already splits elsewhere:
 
 | Field | Holds | Role |
 | --- | --- | --- |
 | `unit` | the canonical UCUM code | what code computes on |
 | `rawUnit` | the string the lab printed | the record of what was read |
 
-`rawUnit` is [documented in the interchange format](../../tech/interchange-format.md#rawunit) and not implemented — upload ignores it, export never writes it. It exists so that the day `unit` is rewritten, the rewrite is auditable and reversible rather than lossy.
+Export writes both: `unit` from folding the printed spelling to UCUM, `rawUnit` from the report itself, whenever a unit was printed at all. Import reads `rawUnit` back in preference to `unit`, so the printed string is what the app goes on displaying and validating, and a re-export writes the identical pair — the transformation settles instead of drifting. The fields are [specified in the interchange format](../../tech/interchange-format.md#rawunit).
 
 This is the format's existing pattern, twice over: `rawValue` preserves a printed `< 0.01` that `value` plus `comparator` parse lossily, and the app keeps each observation's printed name as provenance against the official LOINC name it resolves. In each pair the derived field is the one code uses, and the raw one is the receipt.
 
-That day has not come. Deriving a canonical unit is built; writing one down is not, so `unit` still holds the printed string and `rawUnit` holds nothing. Nothing about today's data is wrong — it is simply un-normalized, and the derivation stays a read of the data rather than a change to it.
+Two choices worth stating outright. The fold is of **spelling only** — no value is converted on the way out, so nothing in the file is a number no lab printed ([ADR-0003](../../tech/decisions/adr-0003-store-only-what-the-lab-printed.md)). And a printed unit the curated tables cannot place leaves `unit` **absent** rather than filled with the printed string: a field that means "canonical" must not quietly hold a string nobody canonicalized, and the row already carries the warning that says the tables need extending.
 
 ## Mapping is ambiguous, so it must be reviewable
 
 Not every printed unit resolves cleanly. `%` can mean a fraction of a differential count or a mass fraction; a bare `U/L` may or may not be the same assay unit another lab means by it; `mIU/L` and `µIU/mL` are numerically equal but not the same string, and a lab that prints one may or may not have meant the other. Some rows will resolve to nothing at all.
 
-So normalization is not a batch rewrite. It must behave the way the LOINC cross-check behaves: derive a suggestion, show it, and let the user confirm it — confirmable suggestions, never a silent rewrite of what the lab printed. A unit the resolver can't place stays as printed, flagged rather than guessed. The derivation already obeys this by construction, returning nothing where it is unsure; what does not exist yet is the place a person sees the suggestion and says yes.
+So normalization is not a batch rewrite. It behaves the way the LOINC cross-check behaves: derive a suggestion, show it, and let the user confirm it — confirmable suggestions, never a silent rewrite of what the lab printed. A unit the resolver can't place stays as printed, flagged rather than guessed; the derivation obeys this by construction, returning nothing where it is unsure.
+
+One of the two flags is now a chip. Where the printed unit contradicts what the code measures and the sibling table knows the code on the printed scale, the report detail view offers that code in its existing chip row, and clicking it changes the `loinc` alone — the value and the printed unit are what the lab reported. It is offered rather than applied for the reason this section exists: which of the two the lab got wrong is a judgement, not a derivation. The other flag, a unit the curated tables cannot place at all, has no chip, because there is nothing to suggest — only tables to extend.
 
 ## Where it lives today
 
-Per-observation, in each stored diagnostic report, as printed.
+Per-observation, in each stored diagnostic report, as printed. In an exported file, as the printed/canonical pair above.
 
 The unit knowledge the derivation reads from was already written down for another purpose: the per-code allowed-unit sets encode which units a LOINC code may carry, and the cross-check uses them to disambiguate codes. They started out hand-kept in `web/src/data/loincCheck.ts` and now live on the catalog entry itself (`unit` plus `allowedUnits`), derived into `DEFAULT_UNITS` and `ALLOWED_UNITS` by `web/src/data/analyteCatalog.ts` ([ADR-0010](../../tech/decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md)) and compared through the `canonicalUnit` folding helper described above. The dimension check reads the same sets to decide what a code expects — the seed grew into the check, without becoming a second copy of the same facts.
 
-Tracked as [task-0011](../../tasks/task-0011.md).
+Built as [task-0011](../../tasks/task-0011.md), closed 2026-09-09. What is left is the parser: the curated tables are a subset of UCUM, and adopting the NLM library is [task-0008](../../tasks/task-0008.md).

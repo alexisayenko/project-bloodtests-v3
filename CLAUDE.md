@@ -66,8 +66,10 @@ parallel it fetches an optional `/d/<guid>.meta.json` per-link
 presentation config (`showPanels` — an allowlist of panel display names
 limiting the Monitoring Panels grid, and with it All Observations' panel
 options and the indices they scope, though its observation rows always show
-everything — plus `settings`, which seeds the shared table controls only
-when the visitor has none stored yet), where a missing, 404 or malformed
+everything — plus `settings`, which seeds the shared table controls
+(`unitSystem`, `sampleLimit`) only when the visitor has none stored yet; the
+retired `dateOrder` an older link may still carry is dropped in
+`parseSettings` like any other unrecognized field), where a missing, 404 or malformed
 meta simply means "no meta" and never fails the import. A stored meta
 never outlives the link it came from: `applySharedMeta` clears before it
 stores, and Clear and every replacing import (`uploadFile`, behind both
@@ -313,11 +315,26 @@ the printed value and unit are kept exactly as read, and where the unit
 places cleanly and the conversion to the code's canonical UCUM unit is
 known, the derived pair is attached to the in-memory `Result` as
 `canonical` — an optional, clearly derived field that nothing treats as
-lab-reported and the exporter's field-by-field mapping never emits, so
-an import-then-export round trip is byte-identical. Export (`exportData.ts`) writes a v3 envelope —
+lab-reported and the exporter's field-by-field mapping never emits.
+Import reads `rawUnit` in preference to `unit`, since a file this app
+wrote carries the normalized code in `unit` and the printed string in
+`rawUnit`, and it is the printed string the app displays and validates.
+Export (`exportData.ts`) writes a v3 envelope —
 `schema`, `generatedAt`, `contentHash` (sha256 of the diagnosticReports
 array only), subject/sex/birthYear/notes when set, and
-reduced reports — as `blood-tests-export-<yyyymmdd>.json`; see
+reduced reports — as `blood-tests-export-<yyyymmdd>.json`. Each
+observation's unit leaves as a pair: `unit` is the printed spelling
+folded to its UCUM code (`ucumUnitFor`, spelling only — no value is
+converted, ADR-0003) and `rawUnit` is the string the lab printed,
+written whenever a unit was printed at all. A unit the curated tables
+cannot place leaves `unit` absent rather than filled with the printed
+string, which would claim a normalization that did not happen — the row
+the validator already flags with its lower-severity warning. So an
+import-then-export round trip is no longer byte-identical (it gains
+`rawUnit`, and folds spellings in `unit`, so `contentHash` changes with
+it); what holds instead, and is tested, is that the second round trip is
+stable — export → import → export is byte-identical, which is the
+property that catches drift. See
 `docs/tech/interchange-format.md` for exactly which envelope fields are
 implemented, and `web/public/schema/bloodtests-3.schema.json` (served at
 `blood.isayenko.net/schema/`, draft 2020-12, objects open, version-3 only —
@@ -330,20 +347,40 @@ and Ukrainian unit tables, superscripts, micro-sign and
 multiplication-sign folding) to a canonical Latin spelling,
 Latin to a UCUM code, then a LOINC-versus-unit dimension check — plus
 `convertValue` / `canonicalUnitFor` and a `normalizeObservationUnit`
-orchestrator returning all three stages in one reviewable result. It has two
-callers: `parseUpload.ts` (above) and `validateDiagnosticReports.ts`. The printed
-value and unit stay authoritative; the canonical form is derived, never written
-back to `value`/`unit` and never exported, and an unrecognized unit returns
+orchestrator returning all three stages in one reviewable result, plus
+`ucumUnitFor` (stages 1–2 in one call), which the exporter writes to `unit`. It
+has three callers: `parseUpload.ts` (above), `validateDiagnosticReports.ts` and
+`utils/exportData.ts`. The printed
+value stays authoritative and is never converted; the derived *value* pair
+(`canonical`) is never written back to `value`/`unit` and never exported, and an
+unrecognized unit returns
 undefined rather than a guess — which is itself the lower-severity warning.
-No confirm-and-apply UI exists yet: normalization surfaces as warnings only,
-never as a suggestion chip (task-0011).
+Only the unit's spelling is normalized in a file, and only in `unit`, with the
+printed string kept in `rawUnit`.
 A molar unit under a mass-concentration code is treated as a *code* error, so
 the check suggests the analyte's `[Moles/volume]` sibling from the 21 curated
-pairs in `data/massMolarSiblings.ts` (each naming its analyte's entry in
+pairs in `data/massMolarSiblings.ts` (each pair's code declaring only
+`{loinc, longCommonName}` and taking its unit from the catalog's
+`DEFAULT_UNITS` via `withUnit()`, which throws naming the code if the catalog
+has none, and each pair naming its analyte's entry in
 `molar-masses.json` rather than stating a factor; the derived factor is data
 only) instead of converting the number (ADR-0003; UCUM as the target
-vocabulary is ADR-0007). Those molar codes were added to the analyte catalog
-(`web/public/data/analyses.json`, 124 → 139 entries then, 160 now)
+vocabulary is ADR-0007). That mismatch is also the one normalization case with
+a confirm-and-apply UI: `unitRepairFor` (`reportDetailHelpers.ts`) re-runs
+`normalizeObservationUnit` per row and feeds the sibling code into the report
+detail view's existing chip row as a third source beside the offline resolver
+and the NLM lookup, clicking it changing the `loinc` alone — never the value or
+the printed unit — through the same edit draft and Save/Cancel gate. It is
+deliberately not auto-applied the way a confident LOINC fix is, since these
+warnings render on mount and auto-applying would mutate the draft on page load;
+the unmappable-unit warning gets no chip, there being nothing to suggest.
+Those molar codes were added to the analyte catalog
+(`web/public/data/analyses.json`, 124 → 139 entries then, 163 now — the last
+three, `14749-6` glucose, `22664-7` urea and `14798-3` iron, added when the
+sibling pairs stopped declaring their own units and the catalog turned out not
+to carry them; the same pass corrected eight `mcg/…` unit spellings and one
+`µg/mL` to the app's canonical Latin `ug/…`, a spelling
+`molarMasses.ts`'s `concentrationScale` cannot parse a prefix out of)
 and carry `aliasOf`
 against their mass primary, so a molar code folds into the same panel row,
 badge and chart series as the mass one with no changes to panels, tables or
@@ -372,7 +409,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (564 tests across 21 files, 1 skipped: index
+Vitest suites in `web/test/` (582 tests across 21 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
@@ -407,7 +444,7 @@ weekly npm (minor+patch grouped) and github-actions bumps.
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
   panel, lab report, computed index, companion observation (planned),
-  unit (derivation runs at import; no confirm-and-apply UI)
+  unit (printed and canonical are a pair: `rawUnit` and `unit`)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
   (eleven records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —

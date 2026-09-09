@@ -37,11 +37,14 @@ preserved in the
 documented in the interchange format, exactly as `rawValue` preserves
 a printed value.
 
-Not built yet. This ADR fixes the target vocabulary so that the
-`ALLOWED_UNITS` table and any future mapping pass are written
-against one answer instead of accreting an ad-hoc house format. The
-work is tracked as [task-0011](../../tasks/task-0011.md); adopting the
-NLM UCUM library it needs is [task-0008](../../tasks/task-0008.md).
+Not built yet at the time of writing. This ADR fixes the target
+vocabulary so that the `ALLOWED_UNITS` table and any future mapping
+pass are written against one answer instead of accreting an ad-hoc
+house format. The work was tracked as
+[task-0011](../../tasks/task-0011.md) and shipped 2026-09-09 — export
+writes the folded spelling to `unit` and the printed string to
+`rawUnit`, and no value is converted. Adopting the NLM UCUM library is
+still [task-0008](../../tasks/task-0008.md).
 
 ## Alternatives considered
 

@@ -50,11 +50,12 @@ Each record opens with `# ADR-NNNN: <title>` and a
 - **Relations between markers** — 0005, still unbuilt; see the
   [companion observation](../../product/concepts/companion-observation.md)
   concept and [task-0010](../../tasks/task-0010.md).
-- **Units** — 0007, derived at import in
-  `web/src/data/unitNormalization.ts` but never written to a file; the
-  confirm-and-apply UI and `rawUnit` are still unbuilt. See the
+- **Units** — 0007, derived in `web/src/data/unitNormalization.ts` and
+  written out as a pair: the folded spelling in `unit`, the printed
+  string in `rawUnit`. No value is converted (0003). See the
   [unit](../../product/concepts/unit.md) concept and
-  [task-0011](../../tasks/task-0011.md).
+  [task-0011](../../tasks/task-0011.md), done; the UCUM parser it
+  handed on is [task-0008](../../tasks/task-0008.md).
 
 ## Adding one
 

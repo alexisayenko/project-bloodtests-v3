@@ -28,9 +28,9 @@ the index.
 | [task-0008](task-0008.md) | Adopt UCUM for unit validation and conversion | to do |
 | [task-0009](task-0009.md) | Per-code allowed-unit sets and alias-group collapse | done |
 | [task-0010](task-0010.md) | Research companion observations (draw-together pairs) | to do |
-| [task-0011](task-0011.md) | Normalize units to UCUM | in progress |
+| [task-0011](task-0011.md) | Normalize units to UCUM | done |
 | [task-0012](task-0012.md) | Implement the Martin-Hopkins LDL-C estimate | to do |
-| [task-0013](task-0013.md) | Reorganize the results controls area | to do |
+| [task-0013](task-0013.md) | Reorganize the results controls area | in progress |
 | [task-0014](task-0014.md) | Rename the Analysis tab to Results and add a Trends tab | to do |
 | [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | to do |
 

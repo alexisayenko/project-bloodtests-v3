@@ -183,8 +183,12 @@ checks:
 ## Who uses the factors
 
 - **`web/src/data/massMolarSiblings.ts`** — the 21 curated mass/molar
-  LOINC sibling pairs. Each pair now declares only `molarMass: '<id>'`;
-  its `massPerMolarUnit` and `molarMassGPerMol` are derived. The remedy
+  LOINC sibling pairs. Each pair now declares only `molarMass: '<id>'`
+  and its two codes as `{loinc, longCommonName}`; `massPerMolarUnit`,
+  `molarMassGPerMol` and each code's `unit` (from the catalog's
+  `DEFAULT_UNITS`, [ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md))
+  are derived, and a code the catalog does not carry throws by name
+  rather than deriving a factor from an undefined unit. The remedy
   for a molar unit under a mass code is still the sibling code, never a
   rewritten number
   ([ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)); the

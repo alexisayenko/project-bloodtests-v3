@@ -10,6 +10,32 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-09 — A unit stops being one field.
+  [task-0011](tasks/task-0011.md) closed: export now writes the pair the
+  format had specified and never used — the printed spelling folded to
+  UCUM in `unit`, the string the lab printed in `rawUnit` — and a unit the
+  curated tables cannot place leaves `unit` absent rather than filled with
+  the printed string, which would claim a normalization that did not
+  happen. Only spelling folds; no value is converted
+  ([ADR-0003](tech/decisions/adr-0003-store-only-what-the-lab-printed.md)),
+  and import reads `rawUnit` back in preference to `unit`. That retires the
+  byte-identical round trip a day after it was recorded: a first export
+  gains `rawUnit` and a folded `unit`, so its `contentHash` moves. What
+  replaces it, and what the test now holds, is that the transformation
+  **settles** — export → import → export is byte-identical, so a file this
+  app wrote survives every later round trip unchanged. Alongside, the
+  mass/molar warning became the first normalization warning you can act on:
+  `unitRepairFor` offers the sibling code as a chip in the report detail
+  view's existing row, changing the `loinc` alone, offered rather than
+  auto-applied because these warnings render on mount and which of code and
+  unit the lab got wrong is a judgement. And the sibling pairs gave up
+  their last hand-kept fact: each code's unit now comes from the catalog,
+  which surfaced eight `mcg/…` spellings and one `µg/mL` where the
+  canonical Latin form is `ug/…` — `mcg` had been breaking
+  `concentrationScale`'s prefix parsing — and three molar codes missing
+  from the catalog altogether (catalog 160 → 163 entries). The UCUM parser
+  itself moved to [task-0008](tasks/task-0008.md) rather than keeping a
+  finished task open. The suite is 582 tests across 21 files.
 - 2026-09-08 — All Observations stops being just a list. It now carries
   the computed indices too — the same `IndexTable` Panel Detail renders,
   scoped to the selected panel or to the union over the panels on offer,
