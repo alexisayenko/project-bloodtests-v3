@@ -29,6 +29,6 @@ The three relation kinds side by side:
 
 ## Where it will live
 
-A per-marker `companions` list (LOINC codes) in `web/public/data/analyses.json`, beside the marker's name/description copy. Surfaced in one place only: the Scheduled column of Panel Detail's Analysis tab, as a hint beside a scheduled observation whose companions aren't scheduled. No other UI.
+A per-marker `companions` list (LOINC codes) in `web/public/data/analyses.json`, beside the marker's name/description copy. Surfaced in one place only: the Scheduled column of Panel Detail's Results tab, as a hint beside a scheduled observation whose companions aren't scheduled. No other UI.
 
 Research comes first — per marker family, with sources and verbatim quotes, reviewed in `docs/product/companions-research.md` before the catalog is touched. Tracked as [task-0010](../../tasks/task-0010.md).

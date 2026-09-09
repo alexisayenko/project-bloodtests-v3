@@ -16,12 +16,12 @@ For the journey concept and how it relates to screens, see
 Entry point → panel detail, with a historical values table.
 
 - **Entry:** Monitoring Panels (panel grid)
-- **Screens (in order):** Monitoring Panels → panel detail (Analysis
+- **Screens (in order):** Monitoring Panels → panel detail (Results
   tab)
-- **Branches:** on the Analysis tab, selecting an index row marks each
+- **Branches:** on the Results tab, selecting an index row marks each
   of its input observations with a blue • left of the name; selecting
   an observation marks each index that uses it
-- **Branches:** the Analysis tab's "Scheduled" column (right of both
+- **Branches:** the Results tab's "Scheduled" column (right of both
   tables) toggles a row into the global scheduled set with one click;
   scheduling an index also schedules its inputs, and an index reads
   scheduled once all its inputs are. Its header picks the month the

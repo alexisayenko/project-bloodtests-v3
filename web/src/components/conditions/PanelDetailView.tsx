@@ -15,6 +15,7 @@ import {
 import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
+import { TrendsView } from './TrendsView';
 import { ObservationTable, IndexTable } from './ResultTables';
 import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
 import { LangProvider } from '../../i18n/LangContext';
@@ -26,10 +27,11 @@ import type { ResultEntry } from './resultsLookup';
 const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
 const PanelChartsView = lazy(() => import('../analytics/PanelChartsView').then((m) => ({ default: m.PanelChartsView })));
 
-type DetailTab = 'analysis' | 'in-range' | 'charts';
+type DetailTab = 'analysis' | 'trends' | 'in-range' | 'charts';
 
 const DETAIL_TABS: readonly { id: DetailTab; label: string }[] = [
-  { id: 'analysis', label: 'Analysis' },
+  { id: 'analysis', label: 'Results' },
+  { id: 'trends', label: 'Trends' },
   { id: 'in-range', label: "What's in range" },
   { id: 'charts', label: 'Charts' },
 ];
@@ -172,6 +174,7 @@ export function PanelDetailView({
           )}
         </div>
       )}
+      {detailTab === 'trends' && <TrendsView />}
       {detailTab === 'in-range' && (
         <Suspense fallback={chartFallback}>
           <LabExploreView

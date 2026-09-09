@@ -49,7 +49,7 @@ rationale per rule so future-us can revisit.
   Locale-agnostic (`.` as the decimal separator) — locale-aware
   formatting is a separate render-time concern. Ported from
   `project-bloodtests-v2`'s `engine/src/format.ts` (`fmtNum`).
-- **Where each display mode applies:** the Analysis table (many
+- **Where each display mode applies:** the Results table (many
   dates at once) always uses adaptive precision, for a readable,
   consistent column — a lab's own printed digit count varies too
   much draw to draw to scan well in bulk. The popup's single-value
@@ -93,7 +93,7 @@ rationale per rule so future-us can revisit.
 
 ### Interaction
 
-- **Two-step cell open:** a data cell in the Analysis table arms on
+- **Two-step cell open:** a data cell in the Results table arms on
   first click (selects it and highlights its row) and opens on a
   second click on that same armed cell — an Observations cell opens a
   popup for that specific result (name, short name, date, laboratory,
@@ -104,7 +104,7 @@ rationale per rule so future-us can revisit.
   popup its row label opens (formula, evidence level, references).
   Clicking a different cell re-arms instead
   of opening; the row label still opens on a single click.
-- **Relation marks:** selecting an Analysis row marks its related rows
+- **Relation marks:** selecting a Results row marks its related rows
   — an index's input observations, or the indices an observation feeds
   — with a blue • in a fixed gutter left of the name. The gutter is
   reserved on every row (All Observations too, though it shows no
@@ -130,7 +130,7 @@ rationale per rule so future-us can revisit.
   another reading's scale.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
 - **Tab placement:** top (web) — both the section nav and the
-  Analysis/What's-in-range/Charts tabs use the same top,
+  Results/Trends/What's-in-range/Charts tabs use the same top,
   underlined-active style. Only the in-page strip is a shared component
   (`TabBar`); the section nav keeps its own markup, because it also
   carries a blocked state, its own spacing and font size, and an active

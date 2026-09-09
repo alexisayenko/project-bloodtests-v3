@@ -15,6 +15,7 @@ import {
 } from './markers';
 import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
+import { TrendsView } from './TrendsView';
 import { visibleDatesOf, type SelectedCell } from './ui';
 import { IndexTable, ObservationTable } from './ResultTables';
 import type { Condition } from './exploreModel';
@@ -30,10 +31,11 @@ const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ defa
 // chart's worth of room so the tab doesn't jump on load.
 const chartFallback = <div style={{ color: '#888', fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
 
-type ObservationsTab = 'analysis' | 'in-range';
+type ObservationsTab = 'analysis' | 'trends' | 'in-range';
 
 const OBSERVATIONS_TABS: readonly { id: ObservationsTab; label: string }[] = [
-  { id: 'analysis', label: 'Analysis' },
+  { id: 'analysis', label: 'Results' },
+  { id: 'trends', label: 'Trends' },
   { id: 'in-range', label: "What's in range" },
 ];
 
@@ -211,7 +213,9 @@ export function AllObservationsView({
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>All Observations</h1>
       <TabBar tabs={OBSERVATIONS_TABS} active={tab} onChange={setTab} />
 
-      {tab === 'analysis' ? analysisTab : (
+      {tab === 'analysis' && analysisTab}
+      {tab === 'trends' && <TrendsView />}
+      {tab === 'in-range' && (
         <Suspense fallback={chartFallback}>
           <LabExploreView
             conditions={conditions}

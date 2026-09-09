@@ -31,7 +31,7 @@ the index.
 | [task-0011](task-0011.md) | Normalize units to UCUM | done |
 | [task-0012](task-0012.md) | Implement the Martin-Hopkins LDL-C estimate | to do |
 | [task-0013](task-0013.md) | Reorganize the results controls area | in progress |
-| [task-0014](task-0014.md) | Rename the Analysis tab to Results and add a Trends tab | to do |
+| [task-0014](task-0014.md) | Rename the Analysis tab to Results and add a Trends tab | done |
 | [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
