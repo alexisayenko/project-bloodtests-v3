@@ -830,6 +830,8 @@ function LoincDatabasePage() {
   // The catalog's translations stand in for the printed names All Observations
   // passes: here there are no uploaded reports, but a Cyrillic name should still
   // find its row.
+  const primaryCount = useMemo(() => ANALYTES.filter((a) => !a.aliasOf).length, []);
+
   const matched = rows.filter((row) => observationMatchesQuery(row.observation, query, Object.values(row.analyte.lang)));
   const shown = sortAnalytes(matched, (row) => row.sortValues, sort.key, sort.direction);
 
@@ -858,7 +860,11 @@ function LoincDatabasePage() {
         />
       </div>
       <div style={{ fontSize: 13, color: COLOR.textMuted, marginBottom: 14 }}>
-        {shown.length === rows.length ? `${rows.length} analytes` : `${shown.length} of ${rows.length} analytes`}
+        {/* A row is a code, not an analyte: a code fixes the property and specimen too, so
+            cholesterol occupies two. The second figure counts the primaries the aliases fold into. */}
+        {shown.length === rows.length
+          ? `${rows.length} codes · ${primaryCount} analytes`
+          : `${shown.length} of ${rows.length} codes · ${primaryCount} analytes`}
       </div>
 
       <div style={{ overflowX: 'auto' }}>
