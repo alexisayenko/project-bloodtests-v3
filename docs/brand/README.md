@@ -1,7 +1,9 @@
 # Brand
 
-[TODO: 1-2 sentences — what state the brand identity is in
-(taking shape / locked / evolving), and the high-level direction.]
+Taking shape. A working name, Paneloom, and four candidate lockups
+exist; nothing is locked and there is no vector source yet. The
+direction is flat and geometric in navy and teal, deliberately not
+looking like a laboratory.
 
 Folder-specific applications (favicon, web splash, social cards,
 app icons, store screenshots) are derived from the mark and
@@ -29,18 +31,49 @@ owns identity / spirit; the style guide operationalizes it.
 
 ## Current state
 
-- **Name**: [TODO: working / locked + the name + rationale.]
-- **Visual direction**: [TODO: 1-2 lines — minimal, ornate,
-  themed-after-something, etc.]
-  - **Palette**: [TODO: list of colors / hex values, or
-    references to source material.]
-  - **Texture**: [TODO: flat vector / brushstroke / hand-drawn.]
-  - **Typography**: [TODO: serif / sans / mono / handwritten +
-    any specific typefaces in use.]
-  - **Mark**: [TODO: pictorial / abstract / letterform direction.]
+- **Name**: working — **Paneloom**. Panel + loom: the monitoring panels
+  the product is organized around, and the weaving of readings from
+  different laboratories, units and years into one comparable series.
+  Not locked; see "Names considered" below.
+- **Visual direction**: flat, geometric, calm. Clinical without being
+  cold — no red, no droplets, nothing that reads as a laboratory or a
+  diagnosis.
+  - **Palette**: sampled from `logo-woven-knot.png`, so approximate
+    until a vector source exists — deep navy `#062A4F` (dominant),
+    teal `#249C9C` / `#3CA8A8`, mid blue-teal `#188490`. The landing
+    concept adds near-white grounds and soft mint gradients.
+  - **Texture**: flat vector, no gradients inside the mark itself.
+  - **Typography**: geometric sans, rounded terminals, lowercase-heavy
+    wordmark. Exact typeface unidentified — the lockups are generated
+    raster, not set type.
+  - **Mark**: abstract, four candidates below. The interlaced knot is
+    the one the landing concept uses.
 - **Domain**: `blood.isayenko.net` — subdomain, no separate
-  registration.
-- **Wordmark / logo**: [TODO: TBD or describe the lockup.]
+  registration. `paneloom.app` / `.com` / `.net` were unregistered on
+  2026-09-08.
+- **Wordmark / logo**: horizontal lockup, mark left of the wordmark,
+  "Paneloom" in navy with "loom" sometimes carried in teal. Tagline
+  used in the landing concept: *Track today. See tomorrow.*
+
+## Logo candidates
+
+Generated 2026-09-09, all 1254×1254 PNG with transparent backgrounds.
+**Raster only — there is no vector source yet**, which blocks a real
+favicon, print, and clean scaling. Whichever is chosen needs redrawing
+as SVG before it ships.
+
+| File | Mark | Note |
+| --- | --- | --- |
+| [`logo-woven-knot.png`](logo-woven-knot.png) | interlaced square knot | the loom idea read literally; used by the landing concept |
+| [`logo-panel-cards.png`](logo-panel-cards.png) | four linked cards | the panel idea read literally; busiest of the four at small sizes |
+| [`logo-monogram-p.png`](logo-monogram-p.png) | letter P with a woven counter | most conventional; least tied to the product |
+| [`logo-network-ring.png`](logo-network-ring.png) | ring of orbiting nodes | reads as network or community rather than weaving |
+
+[`landing-concept.png`](landing-concept.png) is a full marketing-page
+mockup. Its copy is worth keeping even if the visuals change: it states
+the positioning this repo's `CLAUDE.md` still has as a TODO — *"Your
+bloodwork history, woven into one timeline"*, and the three promises
+*No accounts. No server. No medical advice.*
 
 ## Where applications live
 
