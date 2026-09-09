@@ -92,7 +92,11 @@ quality gates pass. Because a CI checkout has no `web/public/d/*.json`,
 an automated deploy carries NO share-link payloads and every existing
 `/?data=<guid>` link 404s until someone re-runs `wrangler deploy` by hand
 with the files copied in — accepted for now; the intended fix is serving
-`/d/` from R2 so the build carries no health data at all.
+`/d/` from R2 so the build carries no health data at all. A footer
+(`components/Footer.tsx`) stamps whichever build you are looking at:
+`vite.config.ts` injects the commit hash and a build timestamp, `buildInfo.ts`
+falls back to the local commit outside CI so the stamp is never empty, and the
+hash links to its commit on GitHub.
 The app shell is `web/src/components/conditions/MedicalConditionsPage.tsx`
 (route + results + shared settings + popup state); each section renders
 its own sibling view component (`PanelsGridView` / `PanelDetailView` /
@@ -107,7 +111,31 @@ in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` /
 `reportDetailHelpers.ts` (the report-detail row helpers) and
 `data/generateTestData.ts`; the report detail view's cross-check state lives in
 the `useLoincCrossCheck` hook, which is what it passes around instead of eight
-separate props. In a results table the number and its unit label always move
+separate props. On a narrow screen both of a results table's headers are
+retrievable rather than resident: `TableScroller.tsx` wraps every table
+(observations and both indices tables) and, on mobile only — `useIsMobile`
+(`web/src/hooks/useIsMobile.ts`) reading the stylesheet's own `max-width: 767px`
+as `MOBILE_QUERY`, so the JS-mounted overlays exist exactly where the CSS
+placing them applies — parks the marker-name column and the date header row at
+a 5px sliver each, opened by a pull (`usePullReveal.ts`: follows the finger,
+commits past 40% of the remaining travel, springs back otherwise, and takes a
+sub-6px gesture as a tap on the sliver) and, for the dates, by a thumb-sized
+"Dates" chip, which is the control people are meant to find. The column is the
+real first column held by `position: sticky` at a negative offset, so it cannot
+drift out of line with the rows; the header has to be a copy — vertical sticky
+would resolve against the scrolling box rather than the page — and is kept
+aligned by rendering the same `colgroup` and `thead` (over `ui.ts`'s shared
+`RESULT_TABLE` and `LABEL_COL_WIDTH`) in a fixed box of the same width with the
+horizontal scroll mirrored onto it. Nothing is conditionally rendered, so the
+real header and labels keep their place in the accessibility tree. The header
+handle carries no `touch-action` and claims each `touchmove` only in the
+direction that moves the panel, so a page scroll begun on it still scrolls. The
+nav joins in: `useHideOnScroll.ts` slides it off going down the page and back
+going up, and `NavBar` publishes its height as `--mc-nav-h` / `--mc-nav-offset`
+so a revealed header parks under it rather than behind it. Still open from the
+same ticket (task-0015): the per-cell tap that would name one cell's date and
+analyte is unbuilt, and `popupPosition`'s left clamp still goes negative below
+a ~396px viewport for the 380px index popup. In a results table the number and its unit label always move
 together: `ui.ts`'s `displayedResult` / `sharedUnit` / `buildRowCells` label a
 reading with its own code's unit — a molar variant folded into its mass
 primary's row keeps `mmol/L`, never the primary's `mg/dL` — and a row whose
@@ -434,7 +462,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (582 tests across 21 files, 1 skipped: index
+Vitest suites in `web/test/` (586 tests across 22 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
@@ -451,7 +479,9 @@ recomputed from its formula, agreeing with a cited source within
 0.05%, and every sibling pair naming a tabulated entry),
 share-link and shared-meta,
 explore-model, markers, routing,
-scheduling, ui helpers, format utils). CI
+scheduling, ui helpers, build stamp, format utils; the mobile reveal —
+`TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile` — has none
+yet). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a
 SonarCloud scan (CI-based, `SONAR_TOKEN` secret; Automatic Analysis is
 off). Coverage metric is scoped to the testable logic —
