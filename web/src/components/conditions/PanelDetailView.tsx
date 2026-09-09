@@ -89,7 +89,7 @@ export function PanelDetailView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allResults, tests]);
 
-  const visibleDates = visibleDatesOf(dates, controls.sampleLimit, controls.dateOrder);
+  const visibleDates = visibleDatesOf(dates, controls.sampleLimit);
 
   const tableProps = {
     visibleDates,

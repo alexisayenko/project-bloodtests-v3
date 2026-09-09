@@ -40,13 +40,20 @@ describe('parseSharedMeta', () => {
       parseSharedMeta({
         title: 'Alex labs',
         showPanels: ['Anemia', 'FBC'],
-        settings: { unitSystem: 'us', sampleLimit: 'all', dateOrder: 'desc' },
+        settings: { unitSystem: 'us', sampleLimit: 'all' },
       })
     ).toEqual({
       title: 'Alex labs',
       showPanels: ['Anemia', 'FBC'],
-      settings: { unitSystem: 'us', sampleLimit: 'all', dateOrder: 'desc' },
+      settings: { unitSystem: 'us', sampleLimit: 'all' },
     });
+  });
+
+  it('silently ignores the retired dateOrder a link published earlier may still carry', () => {
+    expect(parseSharedMeta({ settings: { unitSystem: 'us', dateOrder: 'desc' } })).toEqual({
+      settings: { unitSystem: 'us' },
+    });
+    expect(parseSharedMeta({ settings: { dateOrder: 'desc' } })).toEqual({});
   });
 
   it('treats every field as optional', () => {
@@ -60,7 +67,7 @@ describe('parseSharedMeta', () => {
       parseSharedMeta({
         title: 42,
         showPanels: ['Anemia', 7, null],
-        settings: { unitSystem: 'metric', sampleLimit: -1, dateOrder: 'sideways' },
+        settings: { unitSystem: 'metric', sampleLimit: -1 },
       })
     ).toEqual({ showPanels: ['Anemia'] });
     expect(parseSharedMeta({ showPanels: 'Anemia', settings: 'nope' })).toEqual({});
@@ -201,7 +208,7 @@ describe('meta settings seeding', () => {
   });
 
   it('does not seed once the visitor has their own stored choice', () => {
-    localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify({ unitSystem: 'si', sampleLimit: 5, dateOrder: 'desc' }));
+    localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify({ unitSystem: 'si', sampleLimit: 5 }));
     expect(hasStoredAnalysisSettings()).toBe(true);
   });
 });
@@ -212,8 +219,8 @@ describe('shared meta storage', () => {
   });
 
   it('round-trips a meta so a return visit keeps the same presentation', () => {
-    storeSharedMeta({ showPanels: ['FBC'], settings: { dateOrder: 'desc' } });
-    expect(loadStoredSharedMeta()).toEqual({ showPanels: ['FBC'], settings: { dateOrder: 'desc' } });
+    storeSharedMeta({ showPanels: ['FBC'], settings: { sampleLimit: 'all' } });
+    expect(loadStoredSharedMeta()).toEqual({ showPanels: ['FBC'], settings: { sampleLimit: 'all' } });
   });
 
   it('is null when nothing was stored or the stored value is corrupt', () => {

@@ -51,17 +51,23 @@ export function greenRangeOf(def: IndexDef): string {
   return `${cmp} ${fmtNum(def.cut[0])}${unit}`;
 }
 
-// The table controls (unit system, samplings shown, column order) are one
-// shared setting across every panel and All Observations (component-level
-// state, not per-panel) -- persisted here so they also survive a page refresh.
+// The table controls (unit system, samplings shown) are one shared setting
+// across every panel and All Observations (component-level state, not
+// per-panel) -- persisted here so they also survive a page refresh.
 export const ANALYSIS_SETTINGS_KEY = 'bloodtests_analysis_settings_v1';
-export type AnalysisSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all'; dateOrder: 'asc' | 'desc' };
-export const DEFAULT_ANALYSIS_SETTINGS: AnalysisSettings = { unitSystem: 'si', sampleLimit: 5, dateOrder: 'asc' };
+export type AnalysisSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
+export const DEFAULT_ANALYSIS_SETTINGS: AnalysisSettings = { unitSystem: 'si', sampleLimit: 5 };
 
 export function loadAnalysisSettings(): AnalysisSettings {
   try {
     const raw = localStorage.getItem(ANALYSIS_SETTINGS_KEY);
-    if (raw) return { ...DEFAULT_ANALYSIS_SETTINGS, ...JSON.parse(raw) };
+    if (raw) {
+      const stored = JSON.parse(raw) as Partial<AnalysisSettings>;
+      return {
+        unitSystem: stored.unitSystem ?? DEFAULT_ANALYSIS_SETTINGS.unitSystem,
+        sampleLimit: stored.sampleLimit ?? DEFAULT_ANALYSIS_SETTINGS.sampleLimit,
+      };
+    }
   } catch {
     // corrupt/incompatible local storage -- ignore and start fresh
   }
@@ -70,13 +76,12 @@ export function loadAnalysisSettings(): AnalysisSettings {
 
 /** Persist the shared table controls, dropping any value outside the accepted set. */
 export function saveAnalysisSettings(settings: AnalysisSettings): void {
-  const { unitSystem, sampleLimit, dateOrder } = settings;
+  const { unitSystem, sampleLimit } = settings;
   const validLimit =
     sampleLimit === 'all' || (typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0);
   const safe: AnalysisSettings = {
     unitSystem: unitSystem === 'us' ? 'us' : 'si',
     sampleLimit: validLimit ? sampleLimit : DEFAULT_ANALYSIS_SETTINGS.sampleLimit,
-    dateOrder: dateOrder === 'desc' ? 'desc' : 'asc',
   };
   try {
     localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify(safe));
@@ -263,10 +268,10 @@ export function isCellArmed(selectedCell: SelectedCell, loinc: string, date: str
   return selectedCell?.loinc === loinc && selectedCell?.date === date;
 }
 
-/** The date columns to show, applying the sampling limit and column order. */
-export function visibleDatesOf(dates: string[], sampleLimit: number | 'all', dateOrder: 'asc' | 'desc'): string[] {
+/** The date columns to show: the most recent N of a newest-first list, oldest to newest. */
+export function visibleDatesOf(dates: string[], sampleLimit: number | 'all'): string[] {
   const recent = sampleLimit === 'all' ? dates : dates.slice(0, sampleLimit);
-  return dateOrder === 'asc' ? [...recent].reverse() : recent;
+  return [...recent].reverse();
 }
 
 /** Where to anchor a popup opened from the given element, for the given width. */

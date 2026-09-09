@@ -38,15 +38,14 @@ export function MedicalConditionsPage() {
   const [hadStoredSettings] = useState(hasStoredAnalysisSettings);
   const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(initialSettings.unitSystem);
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
-  const [dateOrder, setDateOrder] = useState<'asc' | 'desc'>(initialSettings.dateOrder);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
   const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth } = useScheduled();
 
   useEffect(() => {
-    saveAnalysisSettings({ unitSystem, sampleLimit, dateOrder });
-  }, [unitSystem, sampleLimit, dateOrder]);
+    saveAnalysisSettings({ unitSystem, sampleLimit });
+  }, [unitSystem, sampleLimit]);
 
   // A share link's settings seed the controls only for a visitor who has none
   // of their own stored yet; once they pick anything, that choice is theirs.
@@ -58,7 +57,6 @@ export function MedicalConditionsPage() {
     setSeededFrom(sharedMeta);
     setUnitSystem(seeded.unitSystem);
     setSampleLimit(seeded.sampleLimit);
-    setDateOrder(seeded.dateOrder);
   }
 
   const conditions = useMemo(
@@ -147,7 +145,7 @@ export function MedicalConditionsPage() {
 
   const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
 
-  const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder };
+  const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit };
   const rowScheduling = { scheduled, onToggle: onToggleRow, onToggleAll: onToggleAllRows, onSetMonth };
   const indexScheduling = { scheduled, onToggle: onToggleIndex, onToggleAll: onToggleAllIndices, onSetMonth };
 

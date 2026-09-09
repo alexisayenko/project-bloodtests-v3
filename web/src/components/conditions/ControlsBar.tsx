@@ -3,7 +3,6 @@ import { pressable, type AnalysisSettings } from './ui';
 export type ControlsProps = AnalysisSettings & {
   setUnitSystem: (v: 'si' | 'us') => void;
   setSampleLimit: (v: number | 'all') => void;
-  setDateOrder: (v: 'asc' | 'desc') => void;
 };
 
 const PILL = {
@@ -15,9 +14,9 @@ const PILL = {
   cursor: 'pointer',
 } as const;
 
-// Shared table controls (unit system, samplings shown, column order) — one
-// setting across the panel Analysis tables and All Observations alike.
-export function ControlsBar({ unitSystem, setUnitSystem, sampleLimit, setSampleLimit, dateOrder, setDateOrder }: Readonly<ControlsProps>) {
+// Shared table controls (unit system, samplings shown) — one setting across
+// the panel Analysis tables and All Observations alike.
+export function ControlsBar({ unitSystem, setUnitSystem, sampleLimit, setSampleLimit }: Readonly<ControlsProps>) {
   return (
     <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
       <div>
@@ -54,15 +53,6 @@ export function ControlsBar({ unitSystem, setUnitSystem, sampleLimit, setSampleL
               {n === 'all' ? 'All' : n}
             </div>
           ))}
-        </div>
-      </div>
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 }}>Column order</div>
-        <div
-          {...pressable(() => setDateOrder(dateOrder === 'desc' ? 'asc' : 'desc'))}
-          style={{ ...PILL, display: 'inline-block', color: '#1971c2' }}
-        >
-          {dateOrder === 'desc' ? 'Newest → Oldest' : 'Oldest → Newest'}
         </div>
       </div>
     </div>

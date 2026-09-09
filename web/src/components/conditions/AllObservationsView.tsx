@@ -200,7 +200,7 @@ export function AllObservationsView({
     () => Array.from(new Set(allResults.map((r) => r.date))).sort((a, b) => b.localeCompare(a)),
     [allResults]
   );
-  const allDates = visibleDatesOf(sortedDates, controls.sampleLimit, controls.dateOrder);
+  const allDates = visibleDatesOf(sortedDates, controls.sampleLimit);
 
   let analysisTab: ReactNode;
   if (rows.length === 0) {

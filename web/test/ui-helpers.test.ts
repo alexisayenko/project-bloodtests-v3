@@ -76,13 +76,12 @@ describe('isCellArmed (two-step click-to-select-then-open)', () => {
 describe('visibleDatesOf', () => {
   const dates = ['2026-03-01', '2026-02-01', '2026-01-01'];
 
-  it('keeps all dates newest-first by default', () => {
-    expect(visibleDatesOf(dates, 'all', 'desc')).toEqual(dates);
+  it('keeps all dates, oldest first', () => {
+    expect(visibleDatesOf(dates, 'all')).toEqual([...dates].reverse());
   });
 
-  it('applies the sampling limit before ordering', () => {
-    expect(visibleDatesOf(dates, 2, 'desc')).toEqual(['2026-03-01', '2026-02-01']);
-    expect(visibleDatesOf(dates, 2, 'asc')).toEqual(['2026-02-01', '2026-03-01']);
+  it('takes the most recent N, then runs them oldest to newest', () => {
+    expect(visibleDatesOf(dates, 2)).toEqual(['2026-02-01', '2026-03-01']);
   });
 });
 
@@ -137,7 +136,7 @@ describe('popupPosition', () => {
 describe('loadAnalysisSettings', () => {
   it('falls back to defaults when storage is unavailable', () => {
     // node environment: localStorage is undefined → the try/catch default path
-    expect(loadAnalysisSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, dateOrder: 'asc' });
+    expect(loadAnalysisSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5 });
   });
 
   it('gives a first-time visitor every default, sampleLimit included', () => {
@@ -150,6 +149,12 @@ describe('loadAnalysisSettings', () => {
   it('keeps a stored choice and fills only what is missing', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{"sampleLimit":"all"}', setItem: () => {} });
     expect(loadAnalysisSettings()).toEqual({ ...DEFAULT_ANALYSIS_SETTINGS, sampleLimit: 'all' });
+    vi.unstubAllGlobals();
+  });
+
+  it('ignores the retired dateOrder field a pre-existing payload still carries', () => {
+    vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"us","sampleLimit":10,"dateOrder":"desc"}', setItem: () => {} });
+    expect(loadAnalysisSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10 });
     vi.unstubAllGlobals();
   });
 

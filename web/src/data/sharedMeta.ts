@@ -1,7 +1,6 @@
 export type SharedMetaSettings = {
   unitSystem?: 'si' | 'us';
   sampleLimit?: number | 'all';
-  dateOrder?: 'asc' | 'desc';
 };
 
 export type SharedMeta = {
@@ -24,7 +23,6 @@ function parseSettings(raw: unknown): SharedMetaSettings | undefined {
   else if (typeof raw.sampleLimit === 'number' && Number.isFinite(raw.sampleLimit) && raw.sampleLimit > 0) {
     out.sampleLimit = raw.sampleLimit;
   }
-  if (raw.dateOrder === 'asc' || raw.dateOrder === 'desc') out.dateOrder = raw.dateOrder;
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
