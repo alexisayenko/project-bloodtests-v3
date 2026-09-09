@@ -249,8 +249,9 @@ describe('a share link\'s meta does not outlive its link', () => {
 describe('an import does not disturb the shared meta on its own', () => {
   // NOTE: importResults itself does not clear the shared meta -- the caller
   // (ResultsContext.uploadFile / clearData) calls clearSharedMeta beside it.
-  // That wiring lives in the view layer and is not covered here; what is
-  // covered is that a FAILED import leaves both stores untouched.
+  // That wiring is covered in results-context.test.tsx, which mounts the
+  // provider; what is covered here is that a FAILED import leaves both
+  // stores untouched.
   beforeEach(() => {
     installLocalStorageStub();
   });
