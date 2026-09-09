@@ -7,6 +7,12 @@
 // re-exports it from "react"), not a bare global JSX namespace, so this
 // augments the "react" module rather than `declare global`. `export {}` makes
 // this file a module, so the augmentation merges instead of replacing "react".
+// Injected by vite.config.ts `define` at build time.
+declare global {
+  const __BUILD_COMMIT__: string;
+  const __BUILD_TIME__: string;
+}
+
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
