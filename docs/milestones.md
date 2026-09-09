@@ -10,6 +10,12 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-09 — `paneloom.com` registered, the project's first domain
+  and first out-of-pocket cost. The name is still *working* rather
+  than locked: the mark has four candidate lockups and no vector
+  source, and the app goes on serving from `blood.isayenko.net` until
+  something points at the new domain.
+
 - 2026-09-09 — A unit stops being one field.
   [task-0011](tasks/task-0011.md) closed: export now writes the pair the
   format had specified and never used — the printed spelling folded to
