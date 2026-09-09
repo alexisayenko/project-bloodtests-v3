@@ -21,6 +21,7 @@ import {
   panelMembershipOf,
   type Observation,
 } from './markers';
+import { sortAnalytes, type AnalyteSortKey, type AnalyteSortValues, type SortDirection } from './analyteSort';
 import type { Route } from './routing';
 import { COLOR } from '../../styles/tokens';
 import { useData } from '../../data/DataContext';
@@ -450,6 +451,49 @@ const FILTER_INPUT = {
 
 const wrapTd = { ...td, whiteSpace: 'normal' } as const;
 
+const sortableTh = { ...th, padding: 0 } as const;
+
+// The whole header cell is the target -- the span carries the padding so a
+// 375px tap anywhere in it sorts, and so the cell is reachable by keyboard.
+const sortableLabel = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '10px 12px',
+  cursor: 'pointer',
+  userSelect: 'none',
+} as const;
+
+const ARROW = { asc: '▲', desc: '▼' } as const;
+
+function SortableHeader({
+  label,
+  column,
+  sort,
+  onSort,
+}: Readonly<{
+  label: string;
+  column: AnalyteSortKey;
+  sort: { key: AnalyteSortKey; direction: SortDirection };
+  onSort: (key: AnalyteSortKey) => void;
+}>) {
+  const active = sort.key === column;
+  return (
+    <th style={sortableTh} aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <span
+        {...pressable(() => onSort(column))}
+        aria-label={`Sort by ${label}`}
+        style={{ ...sortableLabel, color: active ? COLOR.accent : COLOR.textSecondary }}
+      >
+        {label}
+        <span aria-hidden style={{ fontSize: 9, color: active ? COLOR.accent : COLOR.textDisabled }}>
+          {active ? ARROW[sort.direction] : '↕'}
+        </span>
+      </span>
+    </th>
+  );
+}
+
 function LoincLink({ loinc }: Readonly<{ loinc: string }>) {
   return (
     <a href={`https://loinc.org/${loinc}/`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', color: COLOR.accent }}>
@@ -484,28 +528,40 @@ function UnitsCell({ analyte }: Readonly<{ analyte: Analysis }>) {
 function LoincDatabasePage() {
   const { panels, monitoringPanels } = useData();
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<{ key: AnalyteSortKey; direction: SortDirection }>({ key: 'name', direction: 'asc' });
 
   const rows = useMemo(() => {
     const panelsByLoinc = buildPanelsByLoinc(buildConditions(panels, ANALYTE_BY_LOINC, monitoringPanels));
-    return [...ANALYTES]
-      .sort((a, b) => a.displayName.localeCompare(b.displayName))
-      .map((analyte) => ({
-        analyte,
-        membership: panelMembershipOf(panelsByLoinc, analyte.loinc),
-        observation: {
-          short: SHORT_LABELS[analyte.loinc]?.short ?? analyte.displayName,
-          full: analyte.displayName,
-          longCommonName: analyte.longCommonName,
-          loinc: analyte.loinc,
-          also: ALSO_REFS[analyte.loinc],
-        } satisfies Observation,
-      }));
+    return ANALYTES.map((analyte) => ({
+      analyte,
+      membership: panelMembershipOf(panelsByLoinc, analyte.loinc),
+      sortValues: {
+        loinc: analyte.loinc,
+        name: analyte.longCommonName,
+        short: SHORT_LABELS[analyte.loinc]?.short,
+        specimen: SPECIMENS[analyte.loinc],
+        unit: analyte.unit,
+      } satisfies AnalyteSortValues,
+      observation: {
+        short: SHORT_LABELS[analyte.loinc]?.short ?? analyte.displayName,
+        full: analyte.displayName,
+        longCommonName: analyte.longCommonName,
+        loinc: analyte.loinc,
+        also: ALSO_REFS[analyte.loinc],
+      } satisfies Observation,
+    }));
   }, [panels, monitoringPanels]);
 
   // The catalog's translations stand in for the printed names All Observations
   // passes: here there are no uploaded reports, but a Cyrillic name should still
   // find its row.
-  const shown = rows.filter((row) => observationMatchesQuery(row.observation, query, Object.values(row.analyte.lang)));
+  const matched = rows.filter((row) => observationMatchesQuery(row.observation, query, Object.values(row.analyte.lang)));
+  const shown = sortAnalytes(matched, (row) => row.sortValues, sort.key, sort.direction);
+
+  const toggle = (key: AnalyteSortKey) =>
+    setSort((current) =>
+      current.key === key ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' }
+    );
 
   return (
     <div>
@@ -534,12 +590,14 @@ function LoincDatabasePage() {
         <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              <th style={th}>LOINC</th>
-              <th style={th}>Long name</th>
-              <th style={th}>Short</th>
-              <th style={th}>Specimen</th>
-              <th style={th}>Units</th>
-              <th style={th}>Panels</th>
+              <SortableHeader label="LOINC" column="loinc" sort={sort} onSort={toggle} />
+              <SortableHeader label="Long name" column="name" sort={sort} onSort={toggle} />
+              <SortableHeader label="Short" column="short" sort={sort} onSort={toggle} />
+              <SortableHeader label="Specimen" column="specimen" sort={sort} onSort={toggle} />
+              <SortableHeader label="Units" column="unit" sort={sort} onSort={toggle} />
+              <th style={th} title="A code can belong to several panels, or to none, so there is no one order to put them in.">
+                Panels
+              </th>
             </tr>
           </thead>
           <tbody>
