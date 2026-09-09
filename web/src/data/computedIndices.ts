@@ -28,7 +28,7 @@ export const MARKER_LOINC: Record<string, string[]> = {
   TRIG: ['2571-8'],
   ApoB: ['1884-6'],
   ApoA1: ['1869-7'],
-  GLU: ['2339-0'],
+  GLU: ['2345-7'],
   Insulin: ['20448-7'],
   T: ['14913-8', '2986-8'],
   SHBG: ['2942-1', '13967-5'],

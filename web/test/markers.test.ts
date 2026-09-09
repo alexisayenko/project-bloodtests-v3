@@ -69,7 +69,7 @@ describe('marker catalog consistency', () => {
 // marker's row rather than surface as a separate analyte.
 describe('mass/molar sibling aliases', () => {
   const ALIASED_PAIRS: [string, string][] = [
-    ['2339-0', '15074-8'],
+    ['2345-7', '14749-6'],
     ['2093-3', '14647-2'],
     ['2085-9', '14646-4'],
     ['13457-7', '22748-8'],
@@ -81,6 +81,7 @@ describe('mass/molar sibling aliases', () => {
     ['3024-7', '14920-3'],
     ['17861-6', '2000-8'],
     ['3094-0', '14937-7'],
+    ['3091-6', '22664-7'],
     ['2160-0', '14682-9'],
     ['3084-1', '14933-6'],
     ['19123-9', '2601-3'],
@@ -227,7 +228,7 @@ describe('panel membership of a LOINC (Reference Book, LOINC database)', () => {
   const panelsByLoinc = buildPanelsByLoinc(buildConditions(PANELS, ANALYTE_BY_LOINC, MONITORING_PANELS));
 
   it('lists every panel that names a code, without repeats', () => {
-    const glucose = panelMembershipOf(panelsByLoinc, '2339-0');
+    const glucose = panelMembershipOf(panelsByLoinc, '2345-7');
     expect(glucose.via).toBeUndefined();
     expect(glucose.panels).toContain('Insulin Resistance');
     expect(glucose.panels).toContain('Kidney Function');

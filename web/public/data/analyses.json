@@ -212,12 +212,30 @@
   {
     "loinc": "2339-0",
     "longCommonName": "Glucose [Mass/volume] in Blood",
-    "displayName": "Glucose Serum",
+    "displayName": "Glucose (Whole Blood)",
+    "unit": "mg/dL",
+    "aliasOf": "2345-7",
+    "aliasLabel": "whole blood",
+    "lang": {
+      "ru-RU": "Глюкоза (цельная кровь)",
+      "uk-UA": "Глюкоза (цільна кров)"
+    },
+    "info": {
+      "description": "Primary sugar in the blood used as the main energy source for cells.",
+      "scientific": "Glucose is a six-carbon monosaccharide that serves as the primary metabolic fuel for most human cells and the obligate energy source for the brain and erythrocytes. Serum or plasma glucose concentration reflects the dynamic balance between intestinal absorption, hepatic gluconeogenesis and glycogenolysis, and peripheral tissue uptake mediated by insulin. Fasting glucose measurement is fundamental to the screening and diagnosis of diabetes mellitus and impaired glucose tolerance. Hyperglycemia results from insulin deficiency or resistance, while hypoglycemia may arise from excess insulin, adrenal insufficiency, or hepatic failure.",
+      "why": "Screens for diabetes, prediabetes, and monitors blood sugar control.",
+      "frequency": "Annually; every 3 months if diabetic"
+    }
+  },
+  {
+    "loinc": "2345-7",
+    "longCommonName": "Glucose [Mass/volume] in Serum or Plasma",
+    "displayName": "Glucose (Serum/Plasma)",
     "short": "GLU",
     "unit": "mg/dL",
     "lang": {
-      "ru-RU": "Глюкоза натощак",
-      "uk-UA": "Глюкоза натще"
+      "ru-RU": "Глюкоза (сыворотка/плазма)",
+      "uk-UA": "Глюкоза (сироватка/плазма)"
     },
     "info": {
       "description": "Your body's primary fuel — the sugar that every cell burns for energy. Blood glucose reflects the real-time balance between what you eat, what your cells consume, and how effectively insulin is doing its job. Measuring it fasting reveals how well your body maintains this balance overnight without food.",
@@ -241,30 +259,12 @@
     }
   },
   {
-    "loinc": "2345-7",
-    "longCommonName": "Glucose [Mass/volume] in Serum or Plasma",
-    "displayName": "Glucose (Serum/Plasma)",
-    "unit": "mg/dL",
-    "aliasOf": "2339-0",
-    "aliasLabel": "serum/plasma",
-    "lang": {
-      "ru-RU": "Глюкоза (сыворотка/плазма)",
-      "uk-UA": "Глюкоза (сироватка/плазма)"
-    },
-    "info": {
-      "description": "Primary sugar in the blood used as the main energy source for cells.",
-      "scientific": "Glucose is a six-carbon monosaccharide that serves as the primary metabolic fuel for most human cells and the obligate energy source for the brain and erythrocytes. Serum or plasma glucose concentration reflects the dynamic balance between intestinal absorption, hepatic gluconeogenesis and glycogenolysis, and peripheral tissue uptake mediated by insulin. Fasting glucose measurement is fundamental to the screening and diagnosis of diabetes mellitus and impaired glucose tolerance. Hyperglycemia results from insulin deficiency or resistance, while hypoglycemia may arise from excess insulin, adrenal insufficiency, or hepatic failure.",
-      "why": "Screens for diabetes, prediabetes, and monitors blood sugar control.",
-      "frequency": "Annually; every 3 months if diabetic"
-    }
-  },
-  {
     "loinc": "14749-6",
     "longCommonName": "Glucose [Moles/volume] in Serum or Plasma",
     "displayName": "Glucose (Serum/Plasma)",
     "unit": "mmol/L",
-    "aliasOf": "2339-0",
-    "aliasLabel": "serum/plasma, mmol/L unit",
+    "aliasOf": "2345-7",
+    "aliasLabel": "mmol/L unit",
     "lang": {
       "ru-RU": "Глюкоза (сыворотка/плазма)",
       "uk-UA": "Глюкоза (сироватка/плазма)"
@@ -273,13 +273,13 @@
   {
     "loinc": "15074-8",
     "longCommonName": "Glucose [Moles/volume] in Blood",
-    "displayName": "Glucose Serum",
+    "displayName": "Glucose (Whole Blood)",
     "unit": "mmol/L",
-    "aliasOf": "2339-0",
-    "aliasLabel": "mmol/L unit",
+    "aliasOf": "2345-7",
+    "aliasLabel": "whole blood, mmol/L unit",
     "lang": {
-      "ru-RU": "Глюкоза натощак",
-      "uk-UA": "Глюкоза натще"
+      "ru-RU": "Глюкоза (цельная кровь)",
+      "uk-UA": "Глюкоза (цільна кров)"
     },
     "info": {
       "description": "Your body's primary fuel — the sugar that every cell burns for energy. Blood glucose reflects the real-time balance between what you eat, what your cells consume, and how effectively insulin is doing its job. Measuring it fasting reveals how well your body maintains this balance overnight without food.",
@@ -684,12 +684,12 @@
   {
     "loinc": "3094-0",
     "longCommonName": "Urea nitrogen [Mass/volume] in Serum or Plasma",
-    "displayName": "Urea (BUN)",
-    "short": "Urea",
+    "displayName": "Urea Nitrogen (BUN)",
+    "short": "BUN",
     "unit": "mg/dL",
     "lang": {
-      "ru-RU": "Мочевина",
-      "uk-UA": "Сечовина"
+      "ru-RU": "Азот мочевины (BUN)",
+      "uk-UA": "Азот сечовини (BUN)"
     },
     "info": {
       "description": "Waste product from protein metabolism filtered by the kidneys.",
@@ -701,22 +701,27 @@
   {
     "loinc": "3091-6",
     "longCommonName": "Urea [Mass/volume] in Serum or Plasma",
-    "displayName": "Urea (BUN)",
+    "displayName": "Urea",
+    "short": "Urea",
     "unit": "mg/dL",
-    "aliasOf": "3094-0",
-    "aliasLabel": "Urea",
     "lang": {
       "ru-RU": "Мочевина",
       "uk-UA": "Сечовина"
+    },
+    "info": {
+      "description": "Waste product of protein metabolism, measured as the whole urea molecule rather than as its nitrogen content.",
+      "scientific": "Urea (CH4N2O) is the principal end product of protein catabolism, synthesized in the liver from ammonia via the urea cycle and cleared largely by glomerular filtration, with 40-50% passively reabsorbed in the tubules. Most laboratories outside the United States report urea itself, in mmol/L or mg/dL; United States laboratories report the nitrogen fraction of the same molecule as blood urea nitrogen (BUN). The two are not interchangeable numbers: each urea molecule carries two nitrogen atoms, 28.014 of its 60.056 g/mol, so urea mass is 2.14 times BUN mass. Elevated urea may be prerenal (dehydration, gastrointestinal bleeding, high protein intake), renal (acute or chronic kidney disease) or postrenal (obstruction); a low value can reflect hepatic synthetic failure or protein malnutrition.",
+      "why": "Assesses kidney function, hydration status and protein turnover.",
+      "frequency": "Annually, or as clinically indicated"
     }
   },
   {
     "loinc": "22664-7",
     "longCommonName": "Urea [Moles/volume] in Serum or Plasma",
-    "displayName": "Urea (BUN)",
+    "displayName": "Urea",
     "unit": "mmol/L",
-    "aliasOf": "3094-0",
-    "aliasLabel": "Urea, mmol/L unit",
+    "aliasOf": "3091-6",
+    "aliasLabel": "mmol/L unit",
     "lang": {
       "ru-RU": "Мочевина",
       "uk-UA": "Сечовина"
@@ -725,13 +730,13 @@
   {
     "loinc": "14937-7",
     "longCommonName": "Urea nitrogen [Moles/volume] in Serum or Plasma",
-    "displayName": "Urea (BUN)",
+    "displayName": "Urea Nitrogen (BUN)",
     "unit": "mmol/L",
     "aliasOf": "3094-0",
     "aliasLabel": "mmol/L unit",
     "lang": {
-      "ru-RU": "Мочевина",
-      "uk-UA": "Сечовина"
+      "ru-RU": "Азот мочевины (BUN)",
+      "uk-UA": "Азот сечовини (BUN)"
     },
     "info": {
       "description": "Waste product from protein metabolism filtered by the kidneys.",
@@ -1543,8 +1548,8 @@
     }
   },
   {
-    "loinc": "49246-0",
-    "longCommonName": "Oxidized LDL [Mass/volume] in Serum or Plasma",
+    "loinc": "54238-1",
+    "longCommonName": "LDL.oxidized [Units/volume] in Serum or Plasma",
     "displayName": "Oxidized LDL (oxLDL)",
     "short": "oxLDL",
     "unit": "U/L",
@@ -1740,8 +1745,8 @@
     }
   },
   {
-    "loinc": "2998-3",
-    "longCommonName": "Thiamine [Mass/volume] in Blood",
+    "loinc": "32554-8",
+    "longCommonName": "Thiamine [Moles/volume] in Blood",
     "displayName": "Vitamin B1 (Thiamine)",
     "short": "Vit B1",
     "unit": "nmol/L",
@@ -1757,8 +1762,8 @@
     }
   },
   {
-    "loinc": "30552-4",
-    "longCommonName": "Pyridoxal phosphate [Mass/volume] in Serum or Plasma",
+    "loinc": "62236-5",
+    "longCommonName": "Pyridoxal phosphate [Moles/volume] in Serum or Plasma",
     "displayName": "Vitamin B6 (Pyridoxal-5-Phosphate)",
     "short": "Vit B6",
     "unit": "nmol/L",
@@ -1808,8 +1813,8 @@
     }
   },
   {
-    "loinc": "1989-3",
-    "longCommonName": "25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma",
+    "loinc": "62292-8",
+    "longCommonName": "25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma",
     "displayName": "Vitamin D (25-OH)",
     "short": "Vit D",
     "unit": "ng/mL",
@@ -1818,22 +1823,27 @@
       "uk-UA": "Вітамін D (25-гідроксивітамін D)"
     },
     "info": {
-      "description": "Main circulating form of vitamin D reflecting overall body stores.",
-      "scientific": "25-Hydroxyvitamin D [25(OH)D] is the major circulating metabolite of vitamin D, formed by hepatic 25-hydroxylation of both cholecalciferol (vitamin D3, synthesized in skin or dietary) and ergocalciferol (vitamin D2, dietary). It is the best indicator of overall vitamin D status, reflecting combined contributions from sunlight exposure, diet, and supplements. 25(OH)D is subsequently converted to the biologically active form, 1,25-dihydroxyvitamin D [calcitriol], in the kidneys under regulation by parathyroid hormone. Deficiency (generally below 20 ng/mL) leads to impaired calcium absorption, secondary hyperparathyroidism, osteomalacia in adults, and rickets in children, and has been associated with increased risk of autoimmune diseases, infections, and cardiovascular events.",
+      "description": "Main circulating form of vitamin D reflecting overall body stores — the total of the D2 and D3 forms, which is what a lab means by \"vitamin D\" unless it says otherwise.",
+      "scientific": "25-Hydroxyvitamin D [25(OH)D] is the major circulating metabolite of vitamin D, formed by hepatic 25-hydroxylation of both cholecalciferol (vitamin D3, synthesized in skin or dietary) and ergocalciferol (vitamin D2, dietary). It is the best indicator of overall vitamin D status, reflecting combined contributions from sunlight exposure, diet, and supplements. 25(OH)D is subsequently converted to the biologically active form, 1,25-dihydroxyvitamin D [calcitriol], in the kidneys under regulation by parathyroid hormone. Deficiency (generally below 20 ng/mL) leads to impaired calcium absorption, secondary hyperparathyroidism, osteomalacia in adults, and rickets in children, and has been associated with increased risk of autoimmune diseases, infections, and cardiovascular events.\n\nWhy the total is the default: the Endocrine Society's clinical practice guideline recommends \"using the serum circulating 25-hydroxyvitamin D [25(OH)D] level, measured by a reliable assay, to evaluate vitamin D status in patients who are at risk for vitamin D deficiency\" (Holick et al., Evaluation, Treatment, and Prevention of Vitamin D Deficiency, J Clin Endocrinol Metab 96(7):1911, 2011 — https://academic.oup.com/jcem/article/96/7/1911/2833671). The Society's 2024 guideline gives the reason from the physiology: hepatic 25-hydroxylation \"is not tightly regulated; therefore, the 25(OH)D concentration most accurately reflects vitamin D status\" (Vitamin D for the Prevention of Disease, J Clin Endocrinol Metab 109(8):1907, 2024, doi:10.1210/clinem/dgae290 — https://academic.oup.com/jcem/article/109/8/1907/7685305).\n\nWhy this code rather than the D3-only one: the routine automated platforms most laboratories run are total 25(OH)D immunoassays, whose specification is \"total 25(OH)D measurement (the sum of 25(OH)D2 and 25(OH)D3)\" reported as a single number, while the reference method resolves the two — \"isotope dilution LC-MS/MS is currently considered the reference method for 25(OH)D measurement, as it can simultaneously quantitate 25(OH)D2 and 25(OH)D3; these values are summed to determine total 25(OH)D\" (A comparison between two different automated total 25-hydroxyvitamin D immunoassay methods using liquid chromatography-tandem mass spectrometry, Biochemia Medica, 2015 — https://pmc.ncbi.nlm.nih.gov/articles/PMC4622190/). So only an LC-MS/MS report breaks the fractions out; that separately reported D3 fraction is LOINC 1989-3, not this code.\n\nNot the same test: 1,25-dihydroxyvitamin D (calcitriol) is not a status marker. The 2011 guideline recommends \"against using the serum 1,25-dihydroxyvitamin D [1,25(OH)2D] assay for this purpose and are in favor of using it only in monitoring certain conditions, such as acquired and inherited disorders of vitamin D and phosphate metabolism\", because \"serum 1,25(OH)2D does not reflect vitamin D reserves\". Sources retrieved 2026-09-09.",
       "why": "Detects vitamin D deficiency linked to bone loss, immune dysfunction, and muscle weakness.",
       "frequency": "Annually; every 3 months when supplementing to reach target levels"
     }
   },
   {
-    "loinc": "62292-8",
-    "longCommonName": "25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma",
-    "displayName": "Vitamin D (25-OH)",
+    "loinc": "1989-3",
+    "longCommonName": "25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma",
+    "displayName": "Vitamin D3 (25-OH)",
+    "short": "Vit D3",
     "unit": "ng/mL",
-    "aliasOf": "1989-3",
-    "aliasLabel": "D2+D3 combined",
+    "aliasOf": "62292-8",
+    "aliasLabel": "D3 fraction only",
     "lang": {
-      "ru-RU": "Витамин D (25-гидроксивитамин D)",
-      "uk-UA": "Вітамін D (25-гідроксивітамін D)"
+      "ru-RU": "Витамин D3 (25-гидроксивитамин D3)",
+      "uk-UA": "Вітамін D3 (25-гідроксивітамін D3)"
+    },
+    "info": {
+      "description": "The cholecalciferol (D3) share of 25-hydroxyvitamin D alone, reported only when an LC-MS/MS assay breaks the fractions out.",
+      "scientific": "This code names the 25(OH)D3 fraction on its own, not vitamin D status. It appears only on reports from a method that resolves the two forms — in practice LC-MS/MS, which quantitates 25(OH)D2 and 25(OH)D3 separately before summing them. A person taking ergocalciferol (D2) can carry a low 25(OH)D3 with an adequate total, so the fraction is read alongside the total (LOINC 62292-8), never in place of it."
     }
   },
   {
@@ -2278,10 +2288,10 @@
   {
     "loinc": "48065-7",
     "longCommonName": "Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma",
-    "displayName": "D-Dimer",
+    "displayName": "D-Dimer (FEU)",
     "lang": {
-      "ru-RU": "D-димер",
-      "uk-UA": "D-димер"
+      "ru-RU": "D-димер (FEU)",
+      "uk-UA": "D-димер (FEU)"
     },
     "info": {
       "description": "Fibrin degradation product released when blood clots break down.",
@@ -2293,6 +2303,22 @@
   {
     "loinc": "5894-1",
     "longCommonName": "Prothrombin time (PT) actual/Normal",
+    "displayName": "PT Ratio (Actual/Normal)",
+    "unit": "%",
+    "lang": {
+      "ru-RU": "Протромбиновое отношение (актуальное/норма)",
+      "uk-UA": "Протромбінове відношення (актуальне/норма)"
+    },
+    "info": {
+      "description": "The patient's prothrombin time divided by the laboratory's normal prothrombin time.",
+      "scientific": "LOINC 5894-1 is Prothrombin time (PT) actual/Normal: the ratio of the patient's clotting time to the normal control, so it rises as coagulation slows. It is the reciprocal of the prothrombin index (normal/actual, LOINC 6302-4), which is reported as a percentage and falls as coagulation slows, so the two move in opposite directions and must never be filed under one another. The same ratio, raised to the reagent's international sensitivity index, is what the INR standardizes.",
+      "why": "Assesses extrinsic coagulation pathway function relative to a normal control.",
+      "frequency": "As clinically indicated"
+    }
+  },
+  {
+    "loinc": "6302-4",
+    "longCommonName": "Coagulation normal/actual in Platelet poor plasma by Prothrombin time (PT)",
     "displayName": "Prothrombin Index",
     "unit": "%",
     "lang": {
@@ -2301,7 +2327,7 @@
     },
     "info": {
       "description": "Prothrombin time expressed as a percentage of a normal reference value.",
-      "scientific": "Prothrombin index (PI) expresses the prothrombin time as a percentage of normal, calculated as (normal PT / patient PT) x 100, providing an intuitive measure of extrinsic and common coagulation pathway function. A higher percentage indicates faster clotting and more intact coagulation function. The prothrombin index is used in some clinical settings and laboratory traditions (particularly in European and post-Soviet medical practice) as an alternative or complement to the INR for assessing coagulation status. Decreased PI (below reference range) indicates hypocoagulability from vitamin K deficiency, warfarin therapy, hepatic synthetic dysfunction, or factor deficiencies.",
+      "scientific": "Prothrombin index (PI) expresses the prothrombin time as a percentage of normal, calculated as (normal PT / patient PT) x 100, providing an intuitive measure of extrinsic and common coagulation pathway function. A higher percentage indicates faster clotting and more intact coagulation function. LOINC 6302-4 is the normal/actual direction, which is what the index is; the actual/Normal ratio (LOINC 5894-1) is its reciprocal and moves the opposite way. The prothrombin index is used in some clinical settings and laboratory traditions (particularly in European and post-Soviet medical practice) as an alternative or complement to the INR for assessing coagulation status. Decreased PI (below reference range) indicates hypocoagulability from vitamin K deficiency, warfarin therapy, hepatic synthetic dysfunction, or factor deficiencies.",
       "why": "Assesses extrinsic coagulation pathway function and liver synthetic capacity.",
       "frequency": "As clinically indicated"
     }
@@ -3081,12 +3107,12 @@
   {
     "loinc": "48066-5",
     "longCommonName": "Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma",
-    "displayName": "D-Dimer",
-    "short": "D-Dim",
+    "displayName": "D-Dimer (DDU)",
+    "short": "D-Dim DDU",
     "unit": "ng/mL",
     "lang": {
-      "ru-RU": "D-димер",
-      "uk-UA": "D-димер"
+      "ru-RU": "D-димер (DDU)",
+      "uk-UA": "D-димер (DDU)"
     }
   },
   {

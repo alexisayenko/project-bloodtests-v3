@@ -267,17 +267,17 @@ describe('buildExploreModel — a test shared by two panels', () => {
 
 describe('buildExploreModel — SI/US unit conversion', () => {
   it('converts both the plotted values and the reference band into the requested unit system', () => {
-    const test = obs('2339-0', 'GLU'); // real LOINC with a verified mg/dL <-> mmol/L conversion
-    const allResults = [entry('2339-0', '2024-01-01', 90, { unit: 'mg/dL', refMin: 70, refMax: 100 })];
+    const test = obs('2345-7', 'GLU'); // real LOINC with a verified mg/dL <-> mmol/L conversion
+    const allResults = [entry('2345-7', '2024-01-01', 90, { unit: 'mg/dL', refMin: 70, refMax: 100 })];
 
     const us = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'us', 'PanelA');
-    expect(us.markers['2339-0']).toMatchObject({ unit: 'mg/dL', refMin: 70, refMax: 100, data: [['2024-01-01', 90]] });
+    expect(us.markers['2345-7']).toMatchObject({ unit: 'mg/dL', refMin: 70, refMax: 100, data: [['2024-01-01', 90]] });
 
     const si = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
-    expect(si.markers['2339-0']!.unit).toBe('mmol/L');
-    expect(si.markers['2339-0']!.refMin).toBe(toUnit(70, 'GLU', 'mg/dL', 'mmol/L'));
-    expect(si.markers['2339-0']!.refMax).toBe(toUnit(100, 'GLU', 'mg/dL', 'mmol/L'));
-    expect(si.markers['2339-0']!.data).toEqual([['2024-01-01', toUnit(90, 'GLU', 'mg/dL', 'mmol/L')]]);
+    expect(si.markers['2345-7']!.unit).toBe('mmol/L');
+    expect(si.markers['2345-7']!.refMin).toBe(toUnit(70, 'GLU', 'mg/dL', 'mmol/L'));
+    expect(si.markers['2345-7']!.refMax).toBe(toUnit(100, 'GLU', 'mg/dL', 'mmol/L'));
+    expect(si.markers['2345-7']!.data).toEqual([['2024-01-01', toUnit(90, 'GLU', 'mg/dL', 'mmol/L')]]);
   });
 
   it('leaves a marker with no verified conversion factor as-reported', () => {

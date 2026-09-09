@@ -653,7 +653,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
     {
       loinc: '2339-0',
       longCommonName: 'Glucose [Mass/volume] in Blood',
-      displayName: 'Glucose Serum',
+      displayName: 'Glucose (Whole Blood)',
       lang: {},
     },
     {
@@ -669,13 +669,13 @@ describe('per-code allowed unit sets and alias collapsing', () => {
       createResult({ loinc: '', analysis: 'Glucose, Fasting', unit: 'mg/dL' }),
       glucoseCatalog
     );
-    expect(res.candidates.map((c) => c.loinc)).toEqual(['2339-0']);
+    expect(res.candidates.map((c) => c.loinc)).toEqual(['2345-7']);
     expect(res.confident).toBe(true);
   });
 
   it('counts a row printing the alias code of the derived analyte as a match', () => {
     const [res] = crossCheckLocal(
-      [createResult({ loinc: '2345-7', analysis: 'Glucose, Fasting', unit: 'mg/dL' })],
+      [createResult({ loinc: '2339-0', analysis: 'Glucose, Fasting', unit: 'mg/dL' })],
       glucoseCatalog
     );
     expect(res?.status).toBe('match');
