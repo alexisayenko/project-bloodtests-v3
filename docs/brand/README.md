@@ -55,6 +55,10 @@ owns identity / spirit; the style guide operationalizes it.
   "Paneloom" in navy with "loom" sometimes carried in teal. Tagline
   used in the landing concept: *Track today. See tomorrow.*
 
+The brief that produced both the name and the artwork is kept verbatim in
+[`brief.md`](brief.md) — it is currently the fullest written statement of
+the product's positioning.
+
 ## Logo candidates
 
 Generated 2026-09-09, all 1254×1254 PNG with transparent backgrounds.
