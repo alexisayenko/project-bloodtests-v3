@@ -36,14 +36,14 @@ function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: Latest
   );
 }
 
-function LoincLine({ loinc, text }: Readonly<{ loinc: string; text: string }>) {
+function LoincChip({ loinc, unit }: Readonly<{ loinc: string; unit?: string }>) {
   return (
-    <>
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
       <a href={`https://loinc.org/${loinc}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', color: COLOR.accent }}>
         {loinc}
-      </a>{' '}
-      {text}
-    </>
+      </a>
+      {unit && <span style={{ color: COLOR.textMuted }}>{unit}</span>}
+    </span>
   );
 }
 
@@ -54,14 +54,12 @@ function ObservationPopupBody({ test, latestByLoinc }: Readonly<{ test: Observat
         {test.full}
         {!isEchoRedundant(test.full, test.short) && ` (${test.short})`}
       </div>
-      <div style={{ fontSize: 13, color: COLOR.textSecondary, marginBottom: test.also ? 10 : 0 }}>
-        <LoincLine loinc={test.loinc} text={test.longCommonName + (test.unit ? `, ${test.unit}` : '')} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', fontSize: 13, color: COLOR.textSecondary }}>
+        <LoincChip loinc={test.loinc} unit={test.unit} />
+        {test.also?.map((ref) => (
+          <LoincChip key={ref.loinc} loinc={ref.loinc} unit={ref.unit} />
+        ))}
       </div>
-      {test.also?.map((ref) => (
-        <div key={ref.loinc} style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8 }}>
-          <LoincLine loinc={ref.loinc} text={`${ref.longCommonName}, ${ref.unit}`} />
-        </div>
-      ))}
       <LatestValue latestByLoinc={latestByLoinc} loincs={testLoincs(test)} />
     </>
   );

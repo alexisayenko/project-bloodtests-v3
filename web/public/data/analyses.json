@@ -119,7 +119,7 @@
   },
   {
     "loinc": "14913-8",
-    "longCommonName": "Testosterone [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Testosterone [Moles/volume] in Serum or Plasma",
     "displayName": "Testosterone (T)",
     "short": "T",
     "unit": "nmol/L",
@@ -148,7 +148,7 @@
   },
   {
     "loinc": "10501-5",
-    "longCommonName": "Luteinizing hormone [Units/volume] in Serum or Plasma",
+    "longCommonName": "Lutropin [Units/volume] in Serum or Plasma",
     "displayName": "Luteinizing Hormone (LH)",
     "short": "LH",
     "unit": "mIU/mL",
@@ -165,7 +165,7 @@
   },
   {
     "loinc": "15067-2",
-    "longCommonName": "Follicle stimulating hormone [Units/volume] in Serum or Plasma",
+    "longCommonName": "Follitropin [Units/volume] in Serum or Plasma",
     "displayName": "Follicle Stimulating Hormone (FSH)",
     "short": "FSH",
     "unit": "mIU/mL",
@@ -304,7 +304,7 @@
   },
   {
     "loinc": "2085-9",
-    "longCommonName": "HDL Cholesterol [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Cholesterol in HDL [Mass/volume] in Serum or Plasma",
     "displayName": "HDL-Cholesterol",
     "short": "HDL-C",
     "unit": "mg/dL",
@@ -339,7 +339,7 @@
   },
   {
     "loinc": "2571-8",
-    "longCommonName": "Triglycerides [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Triglyceride [Mass/volume] in Serum or Plasma",
     "displayName": "Triglycerides",
     "short": "TRIG",
     "unit": "mg/dL",
@@ -374,7 +374,7 @@
   },
   {
     "loinc": "13457-7",
-    "longCommonName": "LDL Cholesterol [Mass/volume] in Serum or Plasma by calculation",
+    "longCommonName": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation",
     "displayName": "LDL-Cholesterol",
     "short": "LDL-C",
     "unit": "mg/dL",
@@ -777,7 +777,7 @@
   },
   {
     "loinc": "11580-8",
-    "longCommonName": "Thyrotropin [Units/volume] in Serum or Plasma",
+    "longCommonName": "Thyrotropin [Units/volume] in Serum or Plasma by Detection limit <= 0.005 mIU/L",
     "displayName": "TSH",
     "short": "TSH",
     "unit": "mIU/L",
@@ -808,7 +808,7 @@
   },
   {
     "loinc": "3051-0",
-    "longCommonName": "Triiodothyronine Free [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Triiodothyronine (T3) Free [Mass/volume] in Serum or Plasma",
     "displayName": "Free T3 (FT3)",
     "short": "FT3",
     "unit": "pg/mL",
@@ -839,7 +839,7 @@
   },
   {
     "loinc": "3024-7",
-    "longCommonName": "Thyroxine Free [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
     "displayName": "Free T4 (FT4)",
     "short": "FT4",
     "unit": "ng/dL",
@@ -902,7 +902,7 @@
   },
   {
     "loinc": "8099-4",
-    "longCommonName": "Thyroid peroxidase Ab [Units/volume] in Serum or Plasma",
+    "longCommonName": "Thyroperoxidase Ab [Units/volume] in Serum or Plasma",
     "displayName": "Anti-TPO",
     "short": "TPO",
     "unit": "IU/mL",
@@ -964,7 +964,7 @@
   },
   {
     "loinc": "5385-0",
-    "longCommonName": "Thyrotropin receptor Ab [Units/volume] in Serum or Plasma",
+    "longCommonName": "Thyrotropin receptor Ab [Units/volume] in Serum",
     "displayName": "TRAb",
     "short": "TRAb",
     "unit": "IU/L",
@@ -1026,7 +1026,7 @@
   },
   {
     "loinc": "4548-4",
-    "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood by NGSP",
+    "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood",
     "displayName": "HbA1c (NGSP)",
     "short": "HbA1c",
     "unit": "%",
@@ -1057,7 +1057,7 @@
   },
   {
     "loinc": "17855-8",
-    "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood by DCCT",
+    "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood by calculation",
     "displayName": "HbA1c (DCCT)",
     "unit": "%",
     "aliasOf": "4548-4",
@@ -1075,7 +1075,7 @@
   },
   {
     "loinc": "59261-8",
-    "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood by IFCC",
+    "longCommonName": "Hemoglobin A1c/Hemoglobin.total standardized per IFCC-RMP for CDT in Blood",
     "displayName": "HbA1c (IFCC)",
     "unit": "mmol/mol",
     "aliasOf": "4548-4",
@@ -1386,7 +1386,7 @@
   },
   {
     "loinc": "2885-2",
-    "longCommonName": "Total protein [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Protein [Mass/volume] in Serum or Plasma",
     "displayName": "Total Protein (TP)",
     "short": "TP",
     "unit": "g/dL",
@@ -1408,7 +1408,7 @@
   },
   {
     "loinc": "9830-1",
-    "longCommonName": "Cholesterol.total/Cholesterol.in HDL [Mass ratio] in Serum or Plasma",
+    "longCommonName": "Cholesterol.total/Cholesterol in HDL [Mass Ratio] in Serum or Plasma",
     "displayName": "Atherogenic Index",
     "short": "TC/HDL",
     "unit": "ratio",
@@ -1442,7 +1442,7 @@
   },
   {
     "loinc": "1869-7",
-    "longCommonName": "Apolipoprotein A1 [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Apolipoprotein A-I [Mass/volume] in Serum or Plasma",
     "displayName": "Apolipoprotein A1 (ApoA1)",
     "short": "ApoA1",
     "unit": "mg/dL",
@@ -1658,7 +1658,7 @@
   },
   {
     "loinc": "2243-4",
-    "longCommonName": "Estradiol [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Estradiol (E2) [Mass/volume] in Serum or Plasma",
     "displayName": "Estradiol (E2)",
     "short": "E2",
     "unit": "pg/mL",
@@ -1695,7 +1695,7 @@
   },
   {
     "loinc": "15057-3",
-    "longCommonName": "Androstanolone (Dihydrotestosterone) [Moles/volume] in Serum or Plasma",
+    "longCommonName": "Androstanolone [Moles/volume] in Serum or Plasma",
     "displayName": "Dihydrotestosterone (DHT)",
     "unit": "nmol/L",
     "aliasOf": "1848-1",
@@ -1707,7 +1707,7 @@
   },
   {
     "loinc": "2191-5",
-    "longCommonName": "Dehydroepiandrosterone sulfate [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Dehydroepiandrosterone sulfate (DHEA-S) [Mass/volume] in Serum or Plasma",
     "displayName": "DHEA-S",
     "short": "DHEA-S",
     "unit": "ug/dL",
@@ -1792,7 +1792,7 @@
   },
   {
     "loinc": "2132-9",
-    "longCommonName": "Cobalamin [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
     "displayName": "Vitamin B12 (Cobalamin)",
     "short": "Vit B12",
     "unit": "pg/mL",
@@ -1809,7 +1809,7 @@
   },
   {
     "loinc": "1989-3",
-    "longCommonName": "25-Hydroxyvitamin D [Mass/volume] in Serum or Plasma",
+    "longCommonName": "25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma",
     "displayName": "Vitamin D (25-OH)",
     "short": "Vit D",
     "unit": "ng/mL",
@@ -1873,7 +1873,7 @@
   },
   {
     "loinc": "1994-3",
-    "longCommonName": "Calcium.ionized [Moles/volume] in Serum or Plasma",
+    "longCommonName": "Calcium.ionized [Moles/volume] in Blood",
     "displayName": "Ionized Calcium (iCa)",
     "short": "iCa",
     "unit": "mmol/L",
@@ -2194,7 +2194,7 @@
   },
   {
     "loinc": "48642-3",
-    "longCommonName": "Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum or Plasma",
+    "longCommonName": "Glomerular filtration rate [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)/1.73 sq M among non black population",
     "displayName": "eGFR",
     "short": "eGFR",
     "unit": "mL/min/1.73m2",
@@ -2228,7 +2228,7 @@
   },
   {
     "loinc": "3173-2",
-    "longCommonName": "Activated partial thromboplastin time (aPTT) in Blood",
+    "longCommonName": "aPTT in Blood by Coagulation assay",
     "displayName": "APTT",
     "lang": {
       "ru-RU": "АЧТВ (активированное частичное тромбопластиновое время)",
@@ -2260,7 +2260,7 @@
   },
   {
     "loinc": "5902-2",
-    "longCommonName": "Prothrombin time (PT) in Platelet poor plasma by Coagulation assay",
+    "longCommonName": "Prothrombin time (PT)",
     "displayName": "Prothrombin Time (PT)",
     "short": "PT",
     "unit": "sec",
@@ -2292,7 +2292,7 @@
   },
   {
     "loinc": "5894-1",
-    "longCommonName": "Prothrombin time (PT) in Platelet poor plasma by Coagulation assay --percent of normal",
+    "longCommonName": "Prothrombin time (PT) actual/Normal",
     "displayName": "Prothrombin Index",
     "unit": "%",
     "lang": {
@@ -2308,7 +2308,7 @@
   },
   {
     "loinc": "3243-3",
-    "longCommonName": "Thrombin time in Platelet poor plasma by Coagulation assay",
+    "longCommonName": "Thrombin time",
     "displayName": "Thrombin Time",
     "unit": "sec",
     "allowedUnits": [
@@ -2327,7 +2327,7 @@
   },
   {
     "loinc": "3174-0",
-    "longCommonName": "Antithrombin [Enzymatic activity/volume] in Platelet poor plasma",
+    "longCommonName": "Antithrombin [Units/volume] in Platelet poor plasma by Chromogenic method",
     "displayName": "Antithrombin (Activity)",
     "lang": {
       "ru-RU": "Антитромбин (активность)",
@@ -2342,7 +2342,7 @@
   },
   {
     "loinc": "30341-2",
-    "longCommonName": "Erythrocyte sedimentation rate",
+    "longCommonName": "Erythrocyte [Sedimentation Rate] in Blood",
     "displayName": "ESR",
     "unit": "mm/hr",
     "allowedUnits": [
@@ -2595,7 +2595,7 @@
   },
   {
     "loinc": "770-8",
-    "longCommonName": "Neutrophils/100 leukocytes in Blood by Automated count",
+    "longCommonName": "Neutrophils/Leukocytes in Blood by Automated count",
     "displayName": "Neutrophils (NEUT%)",
     "short": "NEUT%",
     "unit": "%",
@@ -2617,7 +2617,7 @@
   },
   {
     "loinc": "736-9",
-    "longCommonName": "Lymphocytes/100 leukocytes in Blood by Automated count",
+    "longCommonName": "Lymphocytes/Leukocytes in Blood by Automated count",
     "displayName": "Lymphocytes (LYMPH%)",
     "short": "LYMPH%",
     "unit": "%",
@@ -2639,7 +2639,7 @@
   },
   {
     "loinc": "5905-5",
-    "longCommonName": "Monocytes/100 leukocytes in Blood by Automated count",
+    "longCommonName": "Monocytes/Leukocytes in Blood by Automated count",
     "displayName": "Monocytes (MONO%)",
     "short": "MONO%",
     "unit": "%",
@@ -2661,7 +2661,7 @@
   },
   {
     "loinc": "713-8",
-    "longCommonName": "Eosinophils/100 leukocytes in Blood by Automated count",
+    "longCommonName": "Eosinophils/Leukocytes in Blood by Automated count",
     "displayName": "Eosinophils (EO%)",
     "short": "EOS%",
     "unit": "%",
@@ -2683,7 +2683,7 @@
   },
   {
     "loinc": "706-2",
-    "longCommonName": "Basophils/100 leukocytes in Blood by Automated count",
+    "longCommonName": "Basophils/Leukocytes in Blood by Automated count",
     "displayName": "Basophils (BASO%)",
     "short": "BASO%",
     "unit": "%",
@@ -2705,7 +2705,7 @@
   },
   {
     "loinc": "787-2",
-    "longCommonName": "Mean corpuscular volume [Entitic volume] by Automated count",
+    "longCommonName": "MCV [Entitic mean volume] in Red Blood Cells by Automated count",
     "displayName": "MCV",
     "short": "MCV",
     "unit": "fL",
@@ -2727,7 +2727,7 @@
   },
   {
     "loinc": "785-6",
-    "longCommonName": "Mean corpuscular hemoglobin [Entitic mass] by Automated count",
+    "longCommonName": "MCH [Entitic mass] by Automated count",
     "displayName": "MCH",
     "short": "MCH",
     "unit": "pg",
@@ -2749,7 +2749,7 @@
   },
   {
     "loinc": "786-4",
-    "longCommonName": "Mean corpuscular hemoglobin concentration [Mass/volume] by Automated count",
+    "longCommonName": "MCHC [Entitic Mass/volume] in Red Blood Cells by Automated count",
     "displayName": "MCHC",
     "short": "MCHC",
     "unit": "g/dL",
@@ -2771,7 +2771,7 @@
   },
   {
     "loinc": "788-0",
-    "longCommonName": "Erythrocyte distribution width [Ratio] by Automated count",
+    "longCommonName": "Erythrocyte [DistWidth] in Blood by Automated count",
     "displayName": "RDW-CV",
     "short": "RDW",
     "unit": "%",
@@ -2793,7 +2793,7 @@
   },
   {
     "loinc": "21000-5",
-    "longCommonName": "Erythrocyte distribution width [Entitic volume] by Automated count",
+    "longCommonName": "Deprecated Erythrocyte distribution width [Entitic volume] by Automated count",
     "displayName": "RDW-SD",
     "short": "RDW-SD",
     "unit": "fL?",
@@ -2837,7 +2837,7 @@
   },
   {
     "loinc": "32623-1",
-    "longCommonName": "Mean platelet volume [Entitic volume] in Blood by Automated count",
+    "longCommonName": "Platelet [Entitic mean volume] in Blood by Automated count",
     "displayName": "MPV",
     "short": "MPV",
     "unit": "fL",
@@ -3003,7 +3003,7 @@
   },
   {
     "loinc": "77370-5",
-    "longCommonName": "Procollagen type I.N-terminal propeptide [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Procollagen type I.N-terminal propeptide [Mass/volume] in Serum or Plasma by Immunoassay",
     "displayName": "Procollagen Type I N-Terminal Propeptide (P1NP)",
     "short": "P1NP",
     "unit": "ng/mL",
@@ -3014,7 +3014,7 @@
   },
   {
     "loinc": "9622-2",
-    "longCommonName": "Vitamin K1 [Mass/volume] in Serum or Plasma",
+    "longCommonName": "Phytonadione [Mass/volume] in Serum or Plasma",
     "displayName": "Vitamin K1",
     "short": "Vit K",
     "unit": "ng/mL",
@@ -3047,7 +3047,7 @@
   },
   {
     "loinc": "2465-3",
-    "longCommonName": "IgG [Mass/volume] in Serum",
+    "longCommonName": "IgG [Mass/volume] in Serum or Plasma",
     "displayName": "Immunoglobulin G",
     "short": "IgG",
     "unit": "mg/dL",
@@ -3069,7 +3069,7 @@
   },
   {
     "loinc": "4537-7",
-    "longCommonName": "Erythrocyte sedimentation rate by Westergren method",
+    "longCommonName": "Erythrocyte [Sedimentation Rate] in Blood by Westergren method",
     "displayName": "Erythrocyte Sedimentation Rate (Westergren)",
     "short": "ESR",
     "unit": "mm/hr",
@@ -3080,7 +3080,7 @@
   },
   {
     "loinc": "48066-5",
-    "longCommonName": "Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma",
+    "longCommonName": "Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma",
     "displayName": "D-Dimer",
     "short": "D-Dim",
     "unit": "ng/mL",
@@ -3091,7 +3091,7 @@
   },
   {
     "loinc": "62418-9",
-    "longCommonName": "Glucose/Insulin [Mass Ratio] in Serum or Plasma",
+    "longCommonName": "Glucose/Insulin [Ratio] in Serum or Plasma",
     "displayName": "Glucose/Insulin Ratio",
     "short": "Glu/Ins",
     "unit": "ratio",
