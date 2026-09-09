@@ -590,7 +590,7 @@ export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: 
   return (
     <div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 28 }}>Reference Book</h1>
-      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Physiology</h2>
+      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Organism-wide aspects</h2>
       <div
         {...pressable(() => navigate({ view: 'reference', key: 'hp-axis' }))}
         style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
@@ -598,7 +598,7 @@ export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: 
         <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>HP Axis</span>
         <span style={{ fontSize: 14, color: COLOR.textSecondary }}>Hypothalamic–pituitary feedback loops (HPT · HPG · HPA)</span>
       </div>
-      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Units</h2>
+      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Formulas and math</h2>
       <div
         {...pressable(() => navigate({ view: 'reference', key: 'molar-masses' }))}
         style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
@@ -616,9 +616,10 @@ export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: 
           Every analyte the app knows — code, name, specimen, units and panels
         </span>
       </div>
-      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Indices Descriptions</h2>
+      <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Indices and derived measurements</h2>
       <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 24 }}>
-        Physiology, evidence standing and cited sources for every computed index.
+        Physiology, evidence standing and cited sources for every value the app calculates — derived measurements, a real
+        analyte's concentration arrived at arithmetically, and indices proper, ratios and scores no lab prints.
       </div>
       {Array.from(groups.entries()).map(([panel, defs]) => (
         <div key={panel} style={{ marginBottom: 28 }}>

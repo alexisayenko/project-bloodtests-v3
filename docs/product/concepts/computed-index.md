@@ -17,7 +17,7 @@ A ratio or estimate the product derives from one or more observations' results o
 
 ## Two kinds under one heading
 
-The 23 definitions in `INDEX_DEFS` are two different things, shown together under one "Indices" heading -- deliberately, the label stays:
+The 23 definitions in `INDEX_DEFS` are two different things, shown together under one heading. In the tables that heading is still "Indices"; the Reference Book section names both kinds ("Indices and derived measurements") and its standfirst spells the difference out, but the list underneath stays grouped by panel:
 
 - **Derived measurements** -- a concentration of a real analyte, arrived at arithmetically instead of by assay: `cft` (pg/mL, LOINC 103227-5), `vldl` (mg/dL, 13458-5), `nonhdl` (mg/dL, 43396-1), `ldlf` (mg/dL, 13457-7), `ldls` (mg/dL, no LOINC -- none exists for the Sampson method), `remnant` (mg/dL, no LOINC). A lab could equally have printed each of these as an observation.
 - **Indices proper** -- ratios and scores, not quantities of a substance: HOMA-IR, AIP, TyG, TC/HDL, LDL/HDL, De Ritis, T/LH and the rest. Four of them carry a `%` unit (`fai`, `tsat`, `dhtt`, `homab`), so the discriminator is a *concentration* unit, not the presence of a `unit` field at all.
