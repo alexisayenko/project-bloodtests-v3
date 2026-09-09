@@ -417,6 +417,31 @@ export function sameUnitScale(a: string, b: string): boolean {
 }
 
 /**
+ * The families of spellings that denote one and the same unit, found by asking
+ * `sameUnitScale` — there is no second notion of equivalence here. Each input
+ * is folded to its canonical Latin spelling first, so two prints of one
+ * spelling ("fL?" and "fL") count once, and a unit the tables cannot place is
+ * dropped rather than grouped on a guess.
+ *
+ * Only families of more than one member are returned: a spelling with no
+ * synonym is not a family, and a unit with no computable scale (a count, a
+ * percentage, an annotation) can never join one.
+ */
+export function unitScaleFamilies(units: Iterable<string>): string[][] {
+  const seen = new Set<string>();
+  const families: string[][] = [];
+  for (const printed of units) {
+    const latin = toLatinUnit(printed);
+    if (latin === undefined || seen.has(latin)) continue;
+    seen.add(latin);
+    const family = families.find((members) => sameUnitScale(members[0], latin));
+    if (family) family.push(latin);
+    else families.push([latin]);
+  }
+  return families.filter((members) => members.length > 1);
+}
+
+/**
  * Convert a value between two UCUM units for one analyte: scale-only within a
  * dimension (g/L ↔ mg/dL, ug/L ↔ ng/mL), or across the mass/molar divide using
  * the sibling table's molar mass. Returns undefined whenever the conversion is

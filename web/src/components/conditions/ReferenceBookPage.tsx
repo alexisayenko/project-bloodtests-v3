@@ -1,5 +1,20 @@
-import { useMemo, useState } from 'react';
-import { INDEX_UNIT_PAIRS, type IndexDef, type IndexReference } from '../../data/computedIndices';
+import { useMemo, useState, type ReactNode } from 'react';
+import {
+  INDEX_UNIT_PAIRS,
+  MARKER_LOINC,
+  SI_US_UNIT,
+  type IndexDef,
+  type IndexReference,
+} from '../../data/computedIndices';
+import {
+  CYRILLIC_TO_LATIN,
+  LATIN_TOKENS,
+  checkCodeUnit,
+  dimensionOf,
+  toLatinUnit,
+  toUcum,
+  unitScaleFamilies,
+} from '../../data/unitNormalization';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import {
   ATOMIC_WEIGHTS,
@@ -25,7 +40,15 @@ import { sortAnalytes, type AnalyteSortKey, type AnalyteSortValues, type SortDir
 import type { Route } from './routing';
 import { COLOR } from '../../styles/tokens';
 import { useData } from '../../data/DataContext';
-import { ALSO_REFS, ANALYTES, ANALYTE_BY_LOINC, SHORT_LABELS, SPECIMENS } from '../../data/analyteCatalog';
+import {
+  ALLOWED_UNITS,
+  ALSO_REFS,
+  ANALYTES,
+  ANALYTE_BY_LOINC,
+  DEFAULT_UNITS,
+  SHORT_LABELS,
+  SPECIMENS,
+} from '../../data/analyteCatalog';
 import type { Analysis } from '../../types';
 
 // Reference Book — one page per computed index, carrying the full clinical
@@ -434,6 +457,258 @@ function MolarMassesPage() {
 
 const EM_DASH = '—';
 
+const PRINTED_EXAMPLES = ['ммоль/л', 'мкМЕ/мл', '×10⁹/L', 'тыс/мкл', 'mcg/dL', 'МО/л', 'mmol/l'];
+
+const CATALOG_UNITS = [...Object.values(DEFAULT_UNITS), ...Object.values(ALLOWED_UNITS).flat()];
+
+const UNIT_FAMILIES = unitScaleFamilies(CATALOG_UNITS);
+
+const READABLE_CATALOG_UNITS = new Set(CATALOG_UNITS.map((unit) => toLatinUnit(unit)).filter(Boolean));
+
+const GLUCOSE_SIBLING = MASS_MOLAR_SIBLINGS.find((pair) => pair.mass.loinc === '2345-7') ?? MASS_MOLAR_SIBLINGS[0];
+
+function markerName(marker: string): string | undefined {
+  const loinc = MARKER_LOINC[marker]?.[0];
+  return loinc ? ANALYTE_BY_LOINC[loinc]?.displayName : undefined;
+}
+
+function Mono({ children }: Readonly<{ children: ReactNode }>) {
+  return <span style={{ fontFamily: 'monospace' }}>{children}</span>;
+}
+
+function Scroller({ children }: Readonly<{ children: ReactNode }>) {
+  return <div style={{ overflowX: 'auto', marginBottom: 20 }}>{children}</div>;
+}
+
+function UnitsPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
+  const mismatch = checkCodeUnit(GLUCOSE_SIBLING.mass.loinc, toUcum(GLUCOSE_SIBLING.molar.unit) ?? GLUCOSE_SIBLING.molar.unit);
+
+  return (
+    <div style={{ maxWidth: 860 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Units and how they are read</h1>
+      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 24, maxWidth: 720 }}>
+        Every lab prints its units its own way. What the app does with the string it finds — and, more importantly,
+        what it never does to the number beside it.
+      </div>
+
+      <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>One unit, many spellings</h2>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        A report from one year says <Mono>mmol/L</Mono>, the next says <Mono>mmol/l</Mono>, and one from another
+        country says <Mono>ммоль/л</Mono>. All three are the same unit and none of them is equal to the others as a
+        string. Left alone, that splits one marker into several series on a chart, and makes any comparison across
+        years a matter of luck in spelling.
+      </p>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 20, maxWidth: 720 }}>
+        So the app reads each printed unit into a canonical form. Reading is all it is: the string the lab printed
+        stays exactly as printed, and the number beside it is never touched.
+      </p>
+
+      <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>The target vocabulary: UCUM</h2>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        UCUM — the Unified Code for Units of Measure, published by the Regenstrief Institute — is the vocabulary the
+        app normalizes toward. It gives every unit one machine-readable code: <Mono>mmol/L</Mono> is{' '}
+        <Mono>mmol/L</Mono>, an international unit per litre is <Mono>[IU]/L</Mono>, and a count of a thousand per
+        microlitre is <Mono>10*3/uL</Mono>. LOINC publishes example UCUM units for its codes, and the interchange
+        format this app reads and writes is FHIR-shaped, where a quantity's code is expected to be UCUM — so
+        choosing anything else would mean deviating from the shapes already borrowed.
+      </p>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 20, maxWidth: 720 }}>
+        UCUM is an expression grammar rather than a fixed list, so a perfectly valid unit can be written that no
+        lookup table anticipated. What the app carries is a curated subset — {Object.keys(LATIN_TOKENS).length} unit
+        tokens and {Object.keys(CYRILLIC_TO_LATIN).length} Cyrillic and Ukrainian spellings of them — not a parser.
+        A unit outside it is reported as unreadable rather than guessed at, which is itself a mild warning on the
+        report: those are the rows whose spellings the tables still need to learn.
+      </p>
+
+      <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>Three stages</h2>
+      <div
+        style={{
+          fontSize: 13.5,
+          fontFamily: 'monospace',
+          background: COLOR.surfaceMuted,
+          borderRadius: 8,
+          padding: '10px 14px',
+          marginBottom: 12,
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        printed unit → canonical Latin spelling → UCUM code → does it fit the test code?
+      </div>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        The first stage does the messy part. It folds the glyphs a lab keyboard reaches for — superscript exponents
+        (<Mono>×10⁹/L</Mono> becomes <Mono>10^9/L</Mono>), the micro sign and Greek mu (µ, μ → <Mono>u</Mono>), the
+        multiplication signs including the Cyrillic <Mono>х</Mono> — then splits the unit on its slash and looks up
+        each part in turn, in the Latin table or in the Cyrillic one. Case and stray whitespace stop mattering
+        there; so does the two-letter <Mono>mc</Mono> prefix some labs use for micro. The second stage is a
+        straight lookup from that Latin spelling to the UCUM code. The third asks a different kind of question,
+        below.
+      </p>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        Every row below is computed by the same functions the importer calls, on the spelling in its first column:
+      </p>
+      <Scroller>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={th}>As printed</th>
+              <th style={th}>Latin spelling</th>
+              <th style={th}>UCUM</th>
+              <th style={th}>Dimension</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PRINTED_EXAMPLES.map((printed) => {
+              const latin = toLatinUnit(printed);
+              return (
+                <tr key={printed}>
+                  <td style={{ ...td, fontFamily: 'monospace' }}>{printed}</td>
+                  <td style={{ ...td, fontFamily: 'monospace' }}>{latin ?? EM_DASH}</td>
+                  <td style={{ ...td, fontFamily: 'monospace' }}>{(latin && toUcum(latin)) ?? EM_DASH}</td>
+                  <td style={{ ...td, color: COLOR.textSecondary }}>{dimensionOf(printed) ?? EM_DASH}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Scroller>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 20, maxWidth: 720 }}>
+        The third stage compares that unit's dimension — what kind of quantity it measures — against what the test
+        code says it should be measuring, using the units the analyte catalog allows for that code. It is a check,
+        not a repair: it can say that a unit and a code disagree, and it says so without altering either.
+      </p>
+
+      <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>Units that are the same unit</h2>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        Some spellings are not merely similar — they are one unit written twice. A thyrotropin result printed{' '}
+        <Mono>uIU/mL</Mono> and the same result printed <Mono>mIU/L</Mono> are the identical quantity: a millionth
+        of an international unit in a thousandth of a litre is a thousandth of one in a whole litre. Recognising
+        that is what lets a history spanning three labs carry one unit label above the row instead of a label on
+        every cell — and it does so without converting anything, because there is nothing to convert.
+      </p>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        The test is arithmetic, not a list: two spellings match when their parts are the same kinds of quantity in
+        the same order and the ratio of their scales is exactly one. Anything else — <Mono>mg/dL</Mono> against{' '}
+        <Mono>g/L</Mono>, or against <Mono>mmol/L</Mono> — shares a dimension but not a scale, and is kept apart.
+        These are the families that come out of the {READABLE_CATALOG_UNITS.size} readable units the analyte
+        catalog actually uses; a unit added to the catalog tomorrow joins one of them, or starts its own, with
+        nothing here to update.
+      </p>
+      <Scroller>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={th}>Spellings of one unit</th>
+              <th style={th}>UCUM</th>
+              <th style={th}>Dimension</th>
+            </tr>
+          </thead>
+          <tbody>
+            {UNIT_FAMILIES.map((family) => (
+              <tr key={family.join('|')}>
+                <td style={{ ...td, fontFamily: 'monospace' }}>{family.join('  =  ')}</td>
+                <td style={{ ...td, fontFamily: 'monospace', color: COLOR.textSecondary }}>
+                  {family.map((unit) => toUcum(unit) ?? unit).join('  =  ')}
+                </td>
+                <td style={{ ...td, color: COLOR.textSecondary }}>{dimensionOf(family[0]) ?? EM_DASH}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Scroller>
+      <p style={{ fontSize: 13, color: COLOR.textMuted, marginBottom: 24, maxWidth: 720 }}>
+        A unit with no computable scale — a percentage, a cell count per microlitre, a bare "Positive/Negative" —
+        can never be in a family here, because there is no scale to compare. Those readings keep their own label.
+      </p>
+
+      <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>The SI / US switch</h2>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        Above the results tables sits a unit-system toggle. It is deliberately narrow: it changes the display of
+        the {Object.keys(SI_US_UNIT).length} markers below, and nothing else. For those, the number shown and the
+        unit shown always move together — a converted value is never left standing under the unit it was converted
+        from. Every other marker keeps showing exactly what its lab reported, because inventing a conversion
+        factor for it would be worse than leaving it alone.
+      </p>
+      <Scroller>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={th}>Marker</th>
+              <th style={th}>SI</th>
+              <th style={th}>US</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(SI_US_UNIT).map(([marker, units]) => (
+              <tr key={marker}>
+                <td style={td}>
+                  <Mono>{marker}</Mono>
+                  {markerName(marker) && <span style={{ color: COLOR.textMuted }}> · {markerName(marker)}</span>}
+                </td>
+                <td style={{ ...td, fontFamily: 'monospace' }}>{units.si}</td>
+                <td style={{ ...td, fontFamily: 'monospace' }}>{units.us}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Scroller>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 24, maxWidth: 720 }}>
+        What the switch does not do: it does not edit anything. It is a preference about how a table is drawn,
+        applied when the table is drawn, and it reaches only the tables that read values — the analysis tables and
+        the "What's in range" chart. Nothing stored changes, nothing exported changes, and switching back leaves
+        no trace.
+      </p>
+
+      <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>What is never converted</h2>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        The value and the unit a laboratory printed are the record. They are stored exactly as they were read and
+        are never rewritten — not to tidy a spelling, not to move a result onto a scale the app would prefer. A
+        derived number sitting where a measurement is expected is eventually read as a measurement, and that is a
+        mistake worth designing against rather than apologising for later.
+      </p>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        Everything normalization produces therefore lives <i>beside</i> the printed pair, clearly derived. Where a
+        reading needs to be comparable across a history that changed units, a canonical form is computed in memory
+        for that purpose and discarded afterwards. An export keeps both halves apart: the printed string goes to
+        the report's <Mono>rawUnit</Mono> untouched, and the folded UCUM spelling goes to <Mono>unit</Mono> — and
+        if the tables cannot place the printed unit, <Mono>unit</Mono> is left out entirely rather than filled with
+        a string that would claim a normalization that never happened. No value is converted on the way out.
+      </p>
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
+        The sharpest case is a unit that contradicts its test code. A LOINC code names the scale it is reported
+        on, so a molar unit under a mass-concentration code is not a unit problem to be fixed by arithmetic — it is
+        the wrong code. The app says so, and names the sibling code for the same analyte on the other scale:
+      </p>
+      {mismatch.kind === 'dimension-mismatch' && (
+        <blockquote
+          style={{
+            margin: '0 0 12px',
+            padding: '8px 14px',
+            borderLeft: `3px solid ${COLOR.statusWarn}`,
+            background: COLOR.surfaceMuted,
+            borderRadius: '0 8px 8px 0',
+            fontSize: 13,
+            color: COLOR.textSecondary,
+            lineHeight: 1.55,
+          }}
+        >
+          {mismatch.note}
+        </blockquote>
+      )}
+      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, maxWidth: 720 }}>
+        {MASS_MOLAR_SIBLINGS.length} analytes are paired that way. The arithmetic that connects the two scales is
+        real and the app does hold it — for comparing readings, for placing a marker on its reference band, for
+        computing an index whose formula wants one particular unit — but it is never a remedy for a mislabelled
+        row.{' '}
+        <span {...pressable(() => navigate({ view: 'reference', key: 'molar-masses' }))} style={{ color: COLOR.accent, cursor: 'pointer', fontWeight: 600 }}>
+          Mass ↔ molar conversion
+        </span>{' '}
+        sets out where those numbers come from.
+      </p>
+    </div>
+  );
+}
+
 const FILTER_INPUT = {
   border: `1.5px solid ${COLOR.accent}`,
   borderRadius: 9999,
@@ -634,6 +909,7 @@ function LoincDatabasePage() {
 export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: string; navigate: (r: Route) => void }>) {
   if (indexKey === 'hp-axis') return <HpAxisPage />;
   if (indexKey === 'molar-masses') return <MolarMassesPage />;
+  if (indexKey === 'units') return <UnitsPage navigate={navigate} />;
   if (indexKey === 'loinc-database') return <LoincDatabasePage />;
   const def = indexKey ? INDEX_DEFS.find((d) => d.key === indexKey) : undefined;
   if (def) return <IndexDetail def={def} />;
@@ -659,10 +935,19 @@ export function ReferenceBookPage({ indexKey, navigate }: Readonly<{ indexKey?: 
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Formulas and math</h2>
       <div
         {...pressable(() => navigate({ view: 'reference', key: 'molar-masses' }))}
-        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer' }}
       >
         <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>Mass ↔ molar conversion</span>
         <span style={{ fontSize: 14, color: COLOR.textSecondary }}>Molar masses, their sources, and the factors derived from them</span>
+      </div>
+      <div
+        {...pressable(() => navigate({ view: 'reference', key: 'units' }))}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>Units and how they are read</span>
+        <span style={{ fontSize: 14, color: COLOR.textSecondary }}>
+          UCUM, the three normalization stages, and what is never converted
+        </span>
       </div>
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Analytes</h2>
       <div

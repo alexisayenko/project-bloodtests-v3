@@ -8,6 +8,7 @@ import {
   convertValue,
   canonicalUnitFor,
   sameUnitScale,
+  unitScaleFamilies,
 } from '../src/data/unitNormalization';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
 
@@ -371,6 +372,27 @@ describe('sameUnitScale', () => {
     expect(sameUnitScale('x10^3/uL', 'x10^3/uL')).toBe(false);
     expect(sameUnitScale('%', '%')).toBe(false);
     expect(sameUnitScale('', 'mIU/L')).toBe(false);
+  });
+});
+
+describe('unitScaleFamilies', () => {
+  it('groups synonymous spellings and leaves the rest out', () => {
+    expect(unitScaleFamilies(['mIU/L', 'mg/dL', 'uIU/mL', 'ng/mL', 'ug/L'])).toEqual([
+      ['mIU/L', 'uIU/mL'],
+      ['ng/mL', 'ug/L'],
+    ]);
+  });
+
+  it('counts one spelling once, however it was printed', () => {
+    expect(unitScaleFamilies(['fL', 'fL?', 'мкМЕ/мл', 'uIU/mL', 'mIU/L'])).toEqual([['uIU/mL', 'mIU/L']]);
+  });
+
+  it('never groups a unit it cannot place on a scale', () => {
+    expect(unitScaleFamilies(['%', '%?', 'x10^3/uL', 'ratio', 'Positive/Negative', 'wibble'])).toEqual([]);
+  });
+
+  it('keeps a shared dimension on a different scale apart', () => {
+    expect(unitScaleFamilies(['mg/dL', 'g/L', 'mmol/L'])).toEqual([]);
   });
 });
 
