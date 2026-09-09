@@ -10,7 +10,7 @@ One-time costs. Add a row per receipt as it lands.
 
 | Date | Vendor | Item | Amount | Receipt |
 | --- | --- | --- | --- | --- |
-| 2026-09-09 | Spaceship | `paneloom.com`, first year | €7.80 | PY-202609091324528 |
+| 2026-09-09 | Spaceship | `paneloom.com`, first year | €7.80 | [PY-202609091324528](receipts/2026-09-09-spaceship-paneloom-com.pdf) |
 
 **Totals to date**: €7.80.
 
