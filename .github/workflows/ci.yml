@@ -102,9 +102,14 @@ jobs:
   # `web/` with the files in place) after any automated deploy that must keep
   # a link alive.
   # ---------------------------------------------------------------------------
+  # Deliberately gates on nothing: it starts at once, alongside `test` and
+  # `sonar` rather than behind them, so a push is live in about a minute.
+  # The trade is real -- lint and the tests now report *after* the code is
+  # already serving, so a red suite means rolling forward, not a blocked
+  # deploy. `npm run build` below still runs `tsc -b`, so a type error does
+  # stop it; nothing else does.
   deploy:
     name: deploy to Cloudflare
-    needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
