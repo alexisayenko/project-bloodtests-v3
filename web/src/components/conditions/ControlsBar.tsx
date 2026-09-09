@@ -1,6 +1,6 @@
-import { pressable, type AnalysisSettings } from './ui';
+import { pressable, type ViewSettings } from './ui';
 
-export type ControlsProps = AnalysisSettings & {
+export type ControlsProps = ViewSettings & {
   setUnitSystem: (v: 'si' | 'us') => void;
   setSampleLimit: (v: number | 'all') => void;
 };

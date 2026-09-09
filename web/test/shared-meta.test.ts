@@ -13,10 +13,10 @@ import {
 import { fetchSharedMeta, fetchSharedData } from '../src/data/sharedLink';
 import { importResults } from '../src/data/importResults';
 import {
-  ANALYSIS_SETTINGS_KEY,
-  DEFAULT_ANALYSIS_SETTINGS,
-  hasStoredAnalysisSettings,
-  seedAnalysisSettings,
+  VIEW_SETTINGS_KEY,
+  DEFAULT_VIEW_SETTINGS,
+  hasStoredViewSettings,
+  seedViewSettings,
 } from '../src/components/conditions/ui';
 
 function installLocalStorageStub(): void {
@@ -195,21 +195,21 @@ describe('meta settings seeding', () => {
   });
 
   it('seeds over the defaults when the visitor has nothing stored', () => {
-    expect(hasStoredAnalysisSettings()).toBe(false);
-    expect(seedAnalysisSettings({ unitSystem: 'us', sampleLimit: 'all' })).toEqual({
-      ...DEFAULT_ANALYSIS_SETTINGS,
+    expect(hasStoredViewSettings()).toBe(false);
+    expect(seedViewSettings({ unitSystem: 'us', sampleLimit: 'all' })).toEqual({
+      ...DEFAULT_VIEW_SETTINGS,
       unitSystem: 'us',
       sampleLimit: 'all',
     });
   });
 
   it('leaves the defaults alone when the meta carries no settings', () => {
-    expect(seedAnalysisSettings(undefined)).toEqual(DEFAULT_ANALYSIS_SETTINGS);
+    expect(seedViewSettings(undefined)).toEqual(DEFAULT_VIEW_SETTINGS);
   });
 
   it('does not seed once the visitor has their own stored choice', () => {
-    localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify({ unitSystem: 'si', sampleLimit: 5 }));
-    expect(hasStoredAnalysisSettings()).toBe(true);
+    localStorage.setItem(VIEW_SETTINGS_KEY, JSON.stringify({ unitSystem: 'si', sampleLimit: 5 }));
+    expect(hasStoredViewSettings()).toBe(true);
   });
 });
 

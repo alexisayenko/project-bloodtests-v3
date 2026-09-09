@@ -182,9 +182,7 @@ instead of on first paint (All Observations shares the lab-explore
 chunk). Both views also carry a "Trends" tab, second in the strip, which is
 deliberately empty for now — a placeholder while what belongs in it is
 undecided (task-0014). Panel Detail's Results
-tab (the default: Observations and Indices tables; the label was renamed from
-"Analysis", but the internals — `AnalysisSettings`, `ANALYSIS_SETTINGS_KEY`
-and the `'analysis'` tab id — deliberately keep the old name) and All
+tab (the default: Observations and Indices tables) and All
 Observations both carry a "Scheduled"
 column, set apart at the right of each table — a single-click toggle
 per row (`role=checkbox`, ✓ in primary blue); scheduling an index also

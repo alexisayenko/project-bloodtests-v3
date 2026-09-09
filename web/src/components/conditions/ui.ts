@@ -54,54 +54,54 @@ export function greenRangeOf(def: IndexDef): string {
 // The table controls (unit system, samplings shown) are one shared setting
 // across every panel and All Observations (component-level state, not
 // per-panel) -- persisted here so they also survive a page refresh.
-export const ANALYSIS_SETTINGS_KEY = 'bloodtests_analysis_settings_v1';
-export type AnalysisSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
-export const DEFAULT_ANALYSIS_SETTINGS: AnalysisSettings = { unitSystem: 'si', sampleLimit: 5 };
+export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
+export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
+export const DEFAULT_VIEW_SETTINGS: ViewSettings = { unitSystem: 'si', sampleLimit: 5 };
 
-export function loadAnalysisSettings(): AnalysisSettings {
+export function loadViewSettings(): ViewSettings {
   try {
-    const raw = localStorage.getItem(ANALYSIS_SETTINGS_KEY);
+    const raw = localStorage.getItem(VIEW_SETTINGS_KEY);
     if (raw) {
-      const stored = JSON.parse(raw) as Partial<AnalysisSettings>;
+      const stored = JSON.parse(raw) as Partial<ViewSettings>;
       return {
-        unitSystem: stored.unitSystem ?? DEFAULT_ANALYSIS_SETTINGS.unitSystem,
-        sampleLimit: stored.sampleLimit ?? DEFAULT_ANALYSIS_SETTINGS.sampleLimit,
+        unitSystem: stored.unitSystem ?? DEFAULT_VIEW_SETTINGS.unitSystem,
+        sampleLimit: stored.sampleLimit ?? DEFAULT_VIEW_SETTINGS.sampleLimit,
       };
     }
   } catch {
     // corrupt/incompatible local storage -- ignore and start fresh
   }
-  return { ...DEFAULT_ANALYSIS_SETTINGS };
+  return { ...DEFAULT_VIEW_SETTINGS };
 }
 
 /** Persist the shared table controls, dropping any value outside the accepted set. */
-export function saveAnalysisSettings(settings: AnalysisSettings): void {
+export function saveViewSettings(settings: ViewSettings): void {
   const { unitSystem, sampleLimit } = settings;
   const validLimit =
     sampleLimit === 'all' || (typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0);
-  const safe: AnalysisSettings = {
+  const safe: ViewSettings = {
     unitSystem: unitSystem === 'us' ? 'us' : 'si',
-    sampleLimit: validLimit ? sampleLimit : DEFAULT_ANALYSIS_SETTINGS.sampleLimit,
+    sampleLimit: validLimit ? sampleLimit : DEFAULT_VIEW_SETTINGS.sampleLimit,
   };
   try {
-    localStorage.setItem(ANALYSIS_SETTINGS_KEY, JSON.stringify(safe));
+    localStorage.setItem(VIEW_SETTINGS_KEY, JSON.stringify(safe));
   } catch {
     // storage unavailable (private browsing, quota) -- setting just won't persist
   }
 }
 
 /** Whether the visitor already made their own choice -- share-link settings only seed when they haven't. */
-export function hasStoredAnalysisSettings(): boolean {
+export function hasStoredViewSettings(): boolean {
   try {
-    return localStorage.getItem(ANALYSIS_SETTINGS_KEY) !== null;
+    return localStorage.getItem(VIEW_SETTINGS_KEY) !== null;
   } catch {
     return false;
   }
 }
 
 /** Share-link settings applied over the defaults: a starting point, never an override. */
-export function seedAnalysisSettings(seed: Partial<AnalysisSettings> | undefined): AnalysisSettings {
-  return { ...DEFAULT_ANALYSIS_SETTINGS, ...seed };
+export function seedViewSettings(seed: Partial<ViewSettings> | undefined): ViewSettings {
+  return { ...DEFAULT_VIEW_SETTINGS, ...seed };
 }
 
 /**

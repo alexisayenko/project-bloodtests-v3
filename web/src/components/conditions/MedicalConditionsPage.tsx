@@ -7,7 +7,7 @@ import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
 import { routeToHash, hashToRoute, type Route } from './routing';
 import { ReferenceBookPage } from './ReferenceBookPage';
-import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadAnalysisSettings, saveAnalysisSettings, hasStoredAnalysisSettings, seedAnalysisSettings, popupPosition, type SelectedCell } from './ui';
+import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadViewSettings, saveViewSettings, hasStoredViewSettings, seedViewSettings, popupPosition, type SelectedCell } from './ui';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { NavBar } from './NavBar';
 import { Popup, type PopupPosition, type PopupState } from './Popup';
@@ -34,8 +34,8 @@ export function MedicalConditionsPage() {
   const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
   const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
-  const [initialSettings] = useState(loadAnalysisSettings);
-  const [hadStoredSettings] = useState(hasStoredAnalysisSettings);
+  const [initialSettings] = useState(loadViewSettings);
+  const [hadStoredSettings] = useState(hasStoredViewSettings);
   const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(initialSettings.unitSystem);
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
@@ -44,7 +44,7 @@ export function MedicalConditionsPage() {
   const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth } = useScheduled();
 
   useEffect(() => {
-    saveAnalysisSettings({ unitSystem, sampleLimit });
+    saveViewSettings({ unitSystem, sampleLimit });
   }, [unitSystem, sampleLimit]);
 
   // A share link's settings seed the controls only for a visitor who has none
@@ -53,7 +53,7 @@ export function MedicalConditionsPage() {
   // effect, so the first paint after the meta arrives already uses the seed.
   const [seededFrom, setSeededFrom] = useState<typeof sharedMeta>(null);
   if (!hadStoredSettings && sharedMeta?.settings && sharedMeta !== seededFrom) {
-    const seeded = seedAnalysisSettings(sharedMeta.settings);
+    const seeded = seedViewSettings(sharedMeta.settings);
     setSeededFrom(sharedMeta);
     setUnitSystem(seeded.unitSystem);
     setSampleLimit(seeded.sampleLimit);

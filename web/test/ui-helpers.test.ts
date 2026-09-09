@@ -6,8 +6,8 @@ import {
   formatMonthYear,
   greenRangeOf,
   isCellArmed,
-  loadAnalysisSettings,
-  DEFAULT_ANALYSIS_SETTINGS,
+  loadViewSettings,
+  DEFAULT_VIEW_SETTINGS,
   displayedResult,
   popupPosition,
   pressable,
@@ -133,35 +133,35 @@ describe('popupPosition', () => {
   });
 });
 
-describe('loadAnalysisSettings', () => {
+describe('loadViewSettings', () => {
   it('falls back to defaults when storage is unavailable', () => {
     // node environment: localStorage is undefined → the try/catch default path
-    expect(loadAnalysisSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5 });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5 });
   });
 
   it('gives a first-time visitor every default, sampleLimit included', () => {
     vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
-    expect(loadAnalysisSettings()).toEqual(DEFAULT_ANALYSIS_SETTINGS);
-    expect(loadAnalysisSettings().sampleLimit).toBe(5);
+    expect(loadViewSettings()).toEqual(DEFAULT_VIEW_SETTINGS);
+    expect(loadViewSettings().sampleLimit).toBe(5);
     vi.unstubAllGlobals();
   });
 
   it('keeps a stored choice and fills only what is missing', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{"sampleLimit":"all"}', setItem: () => {} });
-    expect(loadAnalysisSettings()).toEqual({ ...DEFAULT_ANALYSIS_SETTINGS, sampleLimit: 'all' });
+    expect(loadViewSettings()).toEqual({ ...DEFAULT_VIEW_SETTINGS, sampleLimit: 'all' });
     vi.unstubAllGlobals();
   });
 
   it('ignores the retired dateOrder field a pre-existing payload still carries', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"us","sampleLimit":10,"dateOrder":"desc"}', setItem: () => {} });
-    expect(loadAnalysisSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10 });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10 });
     vi.unstubAllGlobals();
   });
 
   it('never hands out the shared defaults object', () => {
     vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
-    loadAnalysisSettings().sampleLimit = 'all';
-    expect(DEFAULT_ANALYSIS_SETTINGS.sampleLimit).toBe(5);
+    loadViewSettings().sampleLimit = 'all';
+    expect(DEFAULT_VIEW_SETTINGS.sampleLimit).toBe(5);
     vi.unstubAllGlobals();
   });
 });
