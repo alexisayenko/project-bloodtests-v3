@@ -16,7 +16,7 @@ import {
 import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
-import { visibleDatesOf, type SelectedCell } from './ui';
+import { controlsForTab, visibleDatesOf, type SelectedCell } from './ui';
 import { IndexTable, ObservationTable } from './ResultTables';
 import type { Condition } from './exploreModel';
 import type { IndexScheduling, RowScheduling } from './scheduled';
@@ -160,11 +160,6 @@ export function AllObservationsView({
           {filtered ? `${visibleRows.length} of ${rows.length}` : rows.length} observations across{' '}
           {sortedDates.length} lab reports
         </div>
-        <ControlsBar
-          {...controls}
-          panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: setPanelFilter }}
-          markerQuery={{ value: query, onChange: setQuery }}
-        />
         {visibleRows.length === 0 && visibleIndexDefs.length === 0 ? (
           <div style={{ color: '#888', fontSize: 14 }}>{emptyMessage(activePanel?.name, query)}</div>
         ) : (
@@ -211,6 +206,12 @@ export function AllObservationsView({
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>All Observations</h1>
+      <ControlsBar
+        {...controls}
+        panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: setPanelFilter }}
+        markerQuery={{ value: query, onChange: setQuery }}
+        enabled={controlsForTab(tab)}
+      />
       <TabBar tabs={OBSERVATIONS_TABS} active={tab} onChange={setTab} />
 
       {tab === 'analysis' && analysisTab}

@@ -12,7 +12,7 @@ import {
   testLoincs,
   type Observation,
 } from './markers';
-import { pressable, visibleDatesOf, type SelectedCell } from './ui';
+import { controlsForTab, pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
@@ -134,12 +134,16 @@ export function PanelDetailView({
         </span>
         {name}
       </h1>
+      {/* No panelFilter: the picker renders disabled, since this view is already one panel. */}
+      <ControlsBar
+        {...controls}
+        markerQuery={{ value: query, onChange: setQuery }}
+        enabled={controlsForTab(detailTab)}
+      />
       <TabBar tabs={DETAIL_TABS} active={detailTab} onChange={setDetailTab} />
 
       {detailTab === 'analysis' && (
         <div>
-          {/* No panelFilter: the picker renders disabled, since this view is already one panel. */}
-          <ControlsBar {...controls} markerQuery={{ value: query, onChange: setQuery }} />
           {dates.length === 0 ? (
             <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
           ) : (

@@ -58,6 +58,23 @@ export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
 export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
 export const DEFAULT_VIEW_SETTINGS: ViewSettings = { unitSystem: 'si', sampleLimit: 5 };
 
+export type ControlsTab = 'analysis' | 'trends' | 'in-range' | 'charts';
+export type ControlsEnabled = { unitSystem: boolean; sampleLimit: boolean; filters: boolean };
+
+/**
+ * ControlsBar sits above the tab strip, so a control the active tab does not
+ * read is disabled rather than hidden -- hiding one would change the bar's
+ * height as you switch tabs. "What's in range" reads the unit system and
+ * nothing else; Trends and Charts read none of it.
+ */
+export function controlsForTab(tab: ControlsTab): ControlsEnabled {
+  return {
+    unitSystem: tab === 'analysis' || tab === 'in-range',
+    sampleLimit: tab === 'analysis',
+    filters: tab === 'analysis',
+  };
+}
+
 export function loadViewSettings(): ViewSettings {
   try {
     const raw = localStorage.getItem(VIEW_SETTINGS_KEY);

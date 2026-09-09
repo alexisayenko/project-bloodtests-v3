@@ -270,6 +270,14 @@ the bar jump, while its marker box does filter that panel's own tables.
 `ControlsBar` holds no state: each view keeps its filter in `useState`
 and passes it down, deliberately not lifting it to the shell, which owns
 the *persisted* settings — a filter living there invites persisting it.
+The bar sits between the `<h1>` and the `TabBar` in both views, so it
+stays put across tabs rather than living inside the Results branch; a
+control the active tab does not read renders disabled, never hidden,
+which is what keeps the row's height the same on every tab
+(`controlsForTab` in `ui.ts` — "What's in range" reads the unit system
+and nothing else, Trends and Charts read none of it). Where the tab and
+the view both disable the panel picker, the view's reason is the one
+shown: it is still true after switching back to Results.
 Both are session
 state, never stored, so a filter cannot go on hiding rows the way a
 stored `showPanels` once did; both the panel's codes and the rows fold
