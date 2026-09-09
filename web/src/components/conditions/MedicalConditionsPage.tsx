@@ -19,6 +19,7 @@ import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
 import { useScheduled } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
+import { COLOR } from '../../styles/tokens';
 
 /** A popup's own content, before the opener anchors it to the clicked element. */
 type PopupPayload = {
@@ -129,6 +130,8 @@ export function MedicalConditionsPage() {
   }, [allResults]);
 
   const openPopupFrom = (payload: PopupPayload, e: { currentTarget: HTMLElement }) => {
+    // 'result' and 'indexResult' are both simple value cards (name + date + one
+    // colored value line) -- same narrow width as 'observation'.
     const width = payload.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH;
     setPopup({ ...payload, ...popupPosition(e.currentTarget.getBoundingClientRect(), width) });
   };
@@ -261,10 +264,10 @@ export function MedicalConditionsPage() {
     <div className="mc-page">
       <NavBar route={route} navigate={navigate} hasValidationErrors={hasValidationErrors} />
       {sharedLinkError && (
-        <div style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>{sharedLinkError}</div>
+        <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 12 }}>{sharedLinkError}</div>
       )}
       {hasValidationErrors && (route.view === 'reports' || route.view === 'report') && (
-        <div style={{ fontSize: 13, color: '#ea4335', marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: COLOR.statusBad, marginBottom: 16 }}>
           Errors in diagnostic reports must be resolved before accessing other sections.
         </div>
       )}

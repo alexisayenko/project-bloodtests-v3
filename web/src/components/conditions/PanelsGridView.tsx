@@ -5,6 +5,7 @@ import type { Result } from '../../types';
 import { INDEX_LOINCS, testLoincs, type Observation } from './markers';
 import { STATUS_STYLES, ZONE_DOT, pressable } from './ui';
 import { getStatus, type LatestByLoinc } from './resultsLookup';
+import { COLOR } from '../../styles/tokens';
 
 export type Condition = { name: string; tests: Observation[] };
 
@@ -13,7 +14,7 @@ const rowStyle = {
   alignItems: 'center',
   gap: 6,
   padding: '7px 0',
-  borderBottom: '1px solid #eee',
+  borderBottom: `1px solid ${COLOR.borderSubtle}`,
   fontSize: 13,
   cursor: 'pointer',
 } as const;
@@ -32,7 +33,7 @@ function DotRow({
   return (
     <div {...pressable(onClick)} style={rowStyle}>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <span style={{ color: '#1a1a1a' }}>{label}</span>
+      <span style={{ color: COLOR.text }}>{label}</span>
     </div>
   );
 }
@@ -84,12 +85,12 @@ export function PanelsGridView({
                   letterSpacing: '0.04em',
                   paddingBottom: 10,
                   marginBottom: 16,
-                  borderBottom: '1.5px solid #1971c2',
+                  borderBottom: `1.5px solid ${COLOR.accent}`,
                   cursor: 'pointer',
                 }}
               >
                 {condition.name}
-                <span style={{ color: '#1971c2', fontWeight: 400 }}>›</span>
+                <span style={{ color: COLOR.accent, fontWeight: 400 }}>›</span>
               </div>
               <div className="mc-panel-dots">
                 {condition.tests
@@ -102,7 +103,7 @@ export function PanelsGridView({
               {computedForPanel.length > 0 && (
                 <div
                   className="mc-panel-dots"
-                  style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #cfe2f3' }}
+                  style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${COLOR.accentLine}` }}
                 >
                   {computedForPanel.map((def) => {
                     const z = latestZone(def, datesDesc, resultsByDate);

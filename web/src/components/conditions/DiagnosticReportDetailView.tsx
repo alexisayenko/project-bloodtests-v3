@@ -22,14 +22,15 @@ import {
   type EditableField,
 } from './reportDetailHelpers';
 import { useLoincCrossCheck, type LoincCrossCheck } from './useLoincCrossCheck';
+import { COLOR } from '../../styles/tokens';
 
 const th = {
   textAlign: 'left',
   padding: '8px 12px',
-  borderBottom: '1.5px solid #1971c2',
+  borderBottom: `1.5px solid ${COLOR.accent}`,
   whiteSpace: 'nowrap',
 } as const;
-const td = { padding: '8px 12px', borderBottom: '1px solid #eee' } as const;
+const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}` } as const;
 
 interface ReportResultsSectionProps {
   items: Result[];
@@ -70,8 +71,8 @@ function ReportResultsSection({
           style={{
             padding: '6px 16px',
             backgroundColor: 'transparent',
-            color: '#1971c2',
-            border: '1.5px solid #1971c2',
+            color: COLOR.accent,
+            border: `1.5px solid ${COLOR.accent}`,
             borderRadius: 999,
             fontSize: 13,
             cursor: 'pointer',
@@ -80,7 +81,7 @@ function ReportResultsSection({
           Cross-check LOINCs
         </button>
         {autoFilledCount > 0 && (
-          <span style={{ fontSize: 13, color: '#34a853' }}>
+          <span style={{ fontSize: 13, color: COLOR.statusOk }}>
             ✓ {autoFilledCount} code{pluralize(autoFilledCount)} filled automatically — review and Save
           </span>
         )}
@@ -129,14 +130,14 @@ function ReportResultsSection({
                           value={item.loinc}
                           onChange={(e) => onEditItem(i, 'loinc', e.currentTarget.value)}
                           onBlur={() => {}}
-                          style={{ width: 80, border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
+                          style={{ width: 80, border: `1px solid ${COLOR.border}`, padding: '2px 4px', fontSize: 13 }}
                         />
                         {linkedName && (
                           <a
                             href={`https://loinc.org/${item.loinc}/`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ fontSize: 13, color: '#1971c2', whiteSpace: 'nowrap', textDecoration: 'none' }}
+                            style={{ fontSize: 13, color: COLOR.accent, whiteSpace: 'nowrap', textDecoration: 'none' }}
                           >
                             {linkedName}
                           </a>
@@ -149,7 +150,7 @@ function ReportResultsSection({
                         value={item.rawValue || (item.value != null ? String(item.value) : '')}
                         onChange={(e) => onEditItem(i, 'value', e.currentTarget.value)}
                         onBlur={() => {}}
-                        style={{ width: 70, border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
+                        style={{ width: 70, border: `1px solid ${COLOR.border}`, padding: '2px 4px', fontSize: 13 }}
                       />
                     </td>
                     <td style={td}>
@@ -158,7 +159,7 @@ function ReportResultsSection({
                         value={item.unit}
                         onChange={(e) => onEditItem(i, 'unit', e.currentTarget.value)}
                         onBlur={() => {}}
-                        style={{ width: 80, border: '1px solid #ccc', padding: '2px 4px', fontSize: 13 }}
+                        style={{ width: 80, border: `1px solid ${COLOR.border}`, padding: '2px 4px', fontSize: 13 }}
                       />
                     </td>
                     <td style={td}>{referenceRangeOf(item)}</td>
@@ -166,7 +167,7 @@ function ReportResultsSection({
                   </tr>
                   {!itemHasError && (itemHasWarning || nameMismatch) && (
                     <tr>
-                      <td colSpan={7} style={{ ...td, paddingTop: 0, fontSize: 12, color: '#b8860b' }}>
+                      <td colSpan={7} style={{ ...td, paddingTop: 0, fontSize: 12, color: COLOR.statusWarnText }}>
                         {[
                           ...itemIssues.filter((issue) => issue.level === 'warning').map((issue) => issue.message),
                           ...(mismatchMsg ? [mismatchMsg] : []),
@@ -187,8 +188,8 @@ function ReportResultsSection({
                                 title={s.name}
                                 style={{
                                   fontSize: 11,
-                                  color: '#1971c2',
-                                  border: '1px solid #1971c2',
+                                  color: COLOR.accent,
+                                  border: `1px solid ${COLOR.accent}`,
                                   borderRadius: 999,
                                   padding: '1px 8px',
                                   cursor: 'pointer',
@@ -212,7 +213,7 @@ function ReportResultsSection({
       </div>
       {checkResults && unresolvedRows.length > 0 && nlmState !== 'loading' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 16, fontSize: 13 }}>
-          <span style={{ color: '#666' }}>
+          <span style={{ color: COLOR.textSecondary }}>
             {unresolvedRows.length} observation{pluralize(unresolvedRows.length)} unresolved —
           </span>
           <button
@@ -220,8 +221,8 @@ function ReportResultsSection({
             style={{
               padding: '4px 12px',
               backgroundColor: 'transparent',
-              color: '#1971c2',
-              border: '1.5px solid #1971c2',
+              color: COLOR.accent,
+              border: `1.5px solid ${COLOR.accent}`,
               borderRadius: 999,
               fontSize: 13,
               cursor: 'pointer',
@@ -229,29 +230,29 @@ function ReportResultsSection({
           >
             Check online (NLM)
           </button>
-          <span style={{ fontSize: 11, color: '#888' }}>
+          <span style={{ fontSize: 11, color: COLOR.textMuted }}>
             sends test names to clinicaltables.nlm.nih.gov, never values
           </span>
         </div>
       )}
       {nlmState === 'loading' && (
-        <div style={{ fontSize: 12, color: '#666', marginBottom: 16 }}>Checking against NLM…</div>
+        <div style={{ fontSize: 12, color: COLOR.textSecondary, marginBottom: 16 }}>Checking against NLM…</div>
       )}
       {nlmState === 'failed' && (
-        <div style={{ fontSize: 12, color: '#ea4335', marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: COLOR.statusBad, marginBottom: 16 }}>
           NLM lookup failed — check your network and try again.
         </div>
       )}
       {(errorCount > 0 || warningCount > 0) && (
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>
+        <div style={{ fontSize: 13, color: COLOR.textSecondary, marginBottom: 12 }}>
           {errorCount > 0 && (
-            <span style={{ color: '#ea4335', fontWeight: 600 }}>
+            <span style={{ color: COLOR.statusBad, fontWeight: 600 }}>
               {errorCount} error{pluralize(errorCount)}
             </span>
           )}
           {errorCount > 0 && warningCount > 0 && <span>, </span>}
           {warningCount > 0 && (
-            <span style={{ color: '#fbbc04', fontWeight: 600 }}>
+            <span style={{ color: COLOR.statusWarn, fontWeight: 600 }}>
               {warningCount} warning{pluralize(warningCount)}
             </span>
           )}
@@ -266,9 +267,9 @@ function ReportResultsSection({
             onClick={onCancel}
             style={{
               padding: '8px 16px',
-              backgroundColor: '#f5f5f5',
-              color: '#333',
-              border: '1px solid #ccc',
+              backgroundColor: COLOR.surfaceMuted,
+              color: COLOR.text,
+              border: `1px solid ${COLOR.border}`,
               borderRadius: 4,
               fontSize: 13,
               cursor: 'pointer',
@@ -352,13 +353,13 @@ export function DiagnosticReportDetailView({
   return (
     <>
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
-        <span {...pressable(onBack)} style={{ color: '#1971c2', cursor: 'pointer' }}>
+        <span {...pressable(onBack)} style={{ color: COLOR.accent, cursor: 'pointer' }}>
           ‹
         </span>
         {group ? `${group.place} · ${formatFullDate(group.date)}` : 'Diagnostic Report'}
       </h1>
       {!items || items.length === 0 ? (
-        <div style={{ color: '#888', fontSize: 14 }}>No results recorded on this report.</div>
+        <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No results recorded on this report.</div>
       ) : (
         <ReportResultsSection
           items={items}

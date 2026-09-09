@@ -25,6 +25,7 @@ import {
 } from './scheduled';
 import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
 import type { Result } from '../../types';
+import { COLOR } from '../../styles/tokens';
 
 const DATE_COL_WIDTH = 96;
 // The Scheduled column sits after an empty spacer column so it reads as a
@@ -39,10 +40,10 @@ const SCHEDULED_COL_WIDTH = 132;
 const th = {
   textAlign: 'left',
   padding: '8px 12px',
-  borderBottom: '1.5px solid #1971c2',
+  borderBottom: `1.5px solid ${COLOR.accent}`,
   whiteSpace: 'nowrap',
 } as const;
-const td = { padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' } as const;
+const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap', cursor: 'pointer' } as const;
 const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere' } as const;
 const gapCell = { padding: 0, border: 'none' } as const;
 const scheduledTh = {
@@ -50,15 +51,15 @@ const scheduledTh = {
   textAlign: 'center',
   padding: '6px 8px',
   verticalAlign: 'middle',
-  borderLeft: '1px solid #ddd',
-  borderRight: '1px solid #ddd',
+  borderLeft: `1px solid ${COLOR.borderMuted}`,
+  borderRight: `1px solid ${COLOR.borderMuted}`,
 } as const;
 const scheduledTd = {
   ...td,
   textAlign: 'center',
-  borderLeft: '1px solid #ddd',
-  borderRight: '1px solid #ddd',
-  color: '#1971c2',
+  borderLeft: `1px solid ${COLOR.borderMuted}`,
+  borderRight: `1px solid ${COLOR.borderMuted}`,
+  color: COLOR.accent,
   fontWeight: 600,
   userSelect: 'none',
 } as const;
@@ -136,7 +137,7 @@ const overlaps = (a: string[], b: string[]) => a.some((x) => b.includes(x));
 /** Fixed-width gutter before every name, so marking a row never shifts the text next to it. */
 function RelationMark({ label }: Readonly<{ label: string | undefined }>) {
   return (
-    <span aria-label={label} style={{ display: 'inline-block', width: 10, marginRight: 3, color: '#1971c2' }}>
+    <span aria-label={label} style={{ display: 'inline-block', width: 10, marginRight: 3, color: COLOR.accent }}>
       {label && '•'}
     </span>
   );
@@ -232,7 +233,7 @@ function ObservationCells({
         return (
           <td key={date} {...pressable(handleClick)} style={{ ...td, background: bg }}>
             {text}
-            {showCellUnits && display.unit && <span style={{ color: '#888' }}> {display.unit}</span>}
+            {showCellUnits && display.unit && <span style={{ color: COLOR.textMuted }}> {display.unit}</span>}
           </td>
         );
       })}
@@ -267,7 +268,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
             const { cells, rowUnit, showCellUnits } = buildRowCells(test, visibleDates, allResults, unitSystem);
             const rowLoincs = testLoincs(test);
             return (
-              <tr key={test.loinc} data-selected={selected || undefined} style={{ background: selected ? '#eaf3fb' : undefined }}>
+              <tr key={test.loinc} data-selected={selected || undefined} style={{ background: selected ? COLOR.accentSoft : undefined }}>
                 <td
                   {...pressable((e) => {
                     onSelect(test.loinc);
@@ -341,7 +342,7 @@ export function IndexTable({
           {defs.map((def) => {
             const selected = selectedLoinc === def.key;
             return (
-              <tr key={def.key} data-selected={selected || undefined} style={{ background: selected ? '#eaf3fb' : undefined }}>
+              <tr key={def.key} data-selected={selected || undefined} style={{ background: selected ? COLOR.accentSoft : undefined }}>
                 <td
                   {...pressable((e) => {
                     onSelect(def.key);

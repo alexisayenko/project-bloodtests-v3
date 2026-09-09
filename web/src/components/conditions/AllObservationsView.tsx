@@ -21,6 +21,7 @@ import { IndexTable, ObservationTable } from './ResultTables';
 import type { Condition } from './exploreModel';
 import type { IndexScheduling, RowScheduling } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
+import { COLOR } from '../../styles/tokens';
 
 // Not the default tab, and it pulls uPlot plus the vendored
 // lab-explore/chart-kit -- kept out of the initial bundle, same as in
@@ -29,7 +30,7 @@ const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ defa
 
 // Matches the muted empty-state text below; the min-height reserves roughly a
 // chart's worth of room so the tab doesn't jump on load.
-const chartFallback = <div style={{ color: '#888', fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
+const chartFallback = <div style={{ color: COLOR.textMuted, fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
 
 type ObservationsTab = 'analysis' | 'trends' | 'in-range';
 
@@ -152,16 +153,16 @@ export function AllObservationsView({
 
   let analysisTab: ReactNode;
   if (rows.length === 0) {
-    analysisTab = <div style={{ color: '#888', fontSize: 14 }}>No results uploaded yet.</div>;
+    analysisTab = <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No results uploaded yet.</div>;
   } else {
     analysisTab = (
       <>
-        <div style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+        <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 16 }}>
           {filtered ? `${visibleRows.length} of ${rows.length}` : rows.length} observations across{' '}
           {sortedDates.length} lab reports
         </div>
         {visibleRows.length === 0 && visibleIndexDefs.length === 0 ? (
-          <div style={{ color: '#888', fontSize: 14 }}>{emptyMessage(activePanel?.name, query)}</div>
+          <div style={{ color: COLOR.textMuted, fontSize: 14 }}>{emptyMessage(activePanel?.name, query)}</div>
         ) : (
           <>
             {visibleRows.length > 0 && (

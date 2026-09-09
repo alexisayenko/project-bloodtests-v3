@@ -19,6 +19,7 @@ import {
   unitRepairFor,
   type SuggestionChip,
 } from '../src/components/conditions/reportDetailHelpers';
+import { COLOR } from '../src/styles/tokens';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../src/data/analyteCatalog';
 import type { CrossCheckResult } from '../src/data/loincCheck';
 import type { NlmEntry } from '../src/data/loincNlm';
@@ -274,10 +275,10 @@ describe('getMismatchMessage', () => {
 
 describe('getDotColor', () => {
   it('ranks error over warning over ok', () => {
-    expect(getDotColor(true, true, true)).toBe('#ea4335');
-    expect(getDotColor(false, true, false)).toBe('#fbbc04');
-    expect(getDotColor(false, false, true)).toBe('#fbbc04');
-    expect(getDotColor(false, false, false)).toBe('#34a853');
+    expect(getDotColor(true, true, true)).toBe(COLOR.statusBad);
+    expect(getDotColor(false, true, false)).toBe(COLOR.statusWarn);
+    expect(getDotColor(false, false, true)).toBe(COLOR.statusWarn);
+    expect(getDotColor(false, false, false)).toBe(COLOR.statusOk);
   });
 });
 
@@ -407,8 +408,8 @@ describe('getUnitLabel', () => {
 
 describe('save button', () => {
   it('greys out and blocks the pointer while errors stand', () => {
-    expect(saveButtonStyle(true)).toMatchObject({ backgroundColor: '#ccc', cursor: 'not-allowed', opacity: 0.5 });
-    expect(saveButtonStyle(false)).toMatchObject({ backgroundColor: '#1971c2', cursor: 'pointer', opacity: 1 });
+    expect(saveButtonStyle(true)).toMatchObject({ backgroundColor: COLOR.border, cursor: 'not-allowed', opacity: 0.5 });
+    expect(saveButtonStyle(false)).toMatchObject({ backgroundColor: COLOR.accent, cursor: 'pointer', opacity: 1 });
   });
 
   it('reports progress in its label', () => {

@@ -20,6 +20,7 @@ import { ObservationTable, IndexTable } from './ResultTables';
 import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
 import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
+import { COLOR } from '../../styles/tokens';
 
 // Neither chart tab is the default one, so both are split out of the initial
 // bundle: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit,
@@ -38,7 +39,7 @@ const DETAIL_TABS: readonly { id: DetailTab; label: string }[] = [
 
 // Matches the muted empty-state text used across these views; the min-height
 // reserves roughly a chart's worth of room so the tab doesn't jump on load.
-const chartFallback = <div style={{ color: '#888', fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
+const chartFallback = <div style={{ color: COLOR.textMuted, fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
 
 export function PanelDetailView({
   name,
@@ -129,7 +130,7 @@ export function PanelDetailView({
   return (
     <>
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
-        <span {...pressable(onBack)} style={{ color: '#1971c2', cursor: 'pointer' }}>
+        <span {...pressable(onBack)} style={{ color: COLOR.accent, cursor: 'pointer' }}>
           ‹
         </span>
         {name}
@@ -145,11 +146,11 @@ export function PanelDetailView({
       {detailTab === 'analysis' && (
         <div>
           {dates.length === 0 ? (
-            <div style={{ color: '#888', fontSize: 14 }}>No results recorded for this panel yet.</div>
+            <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No results recorded for this panel yet.</div>
           ) : (
             <>
               {nothingMatches && (
-                <div style={{ color: '#888', fontSize: 14 }}>Nothing in {name} matches “{query.trim()}”.</div>
+                <div style={{ color: COLOR.textMuted, fontSize: 14 }}>Nothing in {name} matches “{query.trim()}”.</div>
               )}
               {visibleObservations.length > 0 && (
                 <ObservationTable label="Observations" rows={visibleObservations} {...tableProps} inputsOf={inputsOf} />

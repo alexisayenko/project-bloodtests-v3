@@ -14,6 +14,7 @@ import {
   sharedUnit,
   visibleDatesOf,
 } from '../src/components/conditions/ui';
+import { COLOR } from '../src/styles/tokens';
 import { ALSO_REFS, SHORT_LABELS } from '../src/data/analyteCatalog';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
@@ -47,16 +48,16 @@ describe('greenRangeOf', () => {
 });
 
 describe('cellBg', () => {
-  it('no reference → transparent (selection blue when selected)', () => {
+  it('no reference → transparent (selection tint when selected)', () => {
     expect(cellBg(false, false, false)).toBe('transparent');
-    expect(cellBg(false, false, true)).toBe('#eaf3fb');
+    expect(cellBg(false, false, true)).toBe(COLOR.accentSoft);
   });
 
   it('in range → green family; out of range → red family', () => {
-    expect(cellBg(true, false, false)).toBe('#e6f4ea');
-    expect(cellBg(true, true, false)).toBe('#fdecea');
-    expect(cellBg(true, false, true)).toBe('#dbecf0');
-    expect(cellBg(true, true, true)).toBe('#e6e8f0');
+    expect(cellBg(true, false, false)).toBe(COLOR.statusOkBg);
+    expect(cellBg(true, true, false)).toBe(COLOR.statusBadBg);
+    expect(cellBg(true, false, true)).toBe(COLOR.statusOkBgSelected);
+    expect(cellBg(true, true, true)).toBe(COLOR.statusBadBgSelected);
   });
 });
 
@@ -129,6 +130,40 @@ describe('popupPosition', () => {
     vi.stubGlobal('window', { innerWidth: 300, innerHeight: 800 });
     const p = popupPosition(rect({ left: 0, width: 10, top: 10, bottom: 30 }), 260);
     expect(p.left).toBe(8);
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps the right edge in the viewport for an element near it', () => {
+    vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800 });
+    const p = popupPosition(rect({ left: 960, width: 40, top: 100, bottom: 130 }), 260);
+    expect(p.left).toBe(1000 - 260 - 8);
+    vi.unstubAllGlobals();
+  });
+
+  it('narrows a popup wider than the viewport instead of overflowing it', () => {
+    vi.stubGlobal('window', { innerWidth: 375, innerHeight: 812 });
+    const p = popupPosition(rect({ left: 20, width: 100, top: 100, bottom: 130 }), 380);
+    expect(p.width).toBe(375 - 16);
+    expect(p.left).toBe(8);
+    expect(p.left + p.width).toBe(375 - 8);
+    vi.unstubAllGlobals();
+  });
+
+  it('leaves a popup that already fits at its full width', () => {
+    vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800 });
+    const p = popupPosition(rect({ left: 400, width: 100, top: 100, bottom: 130 }), 380);
+    expect(p.width).toBe(380);
+    expect(p.left).toBe(450 - 190);
+    vi.unstubAllGlobals();
+  });
+
+  it('never returns a negative left, whatever the anchor', () => {
+    vi.stubGlobal('window', { innerWidth: 320, innerHeight: 800 });
+    for (const left of [0, 150, 310]) {
+      const p = popupPosition(rect({ left, width: 10, top: 100, bottom: 130 }), 380);
+      expect(p.left).toBeGreaterThanOrEqual(8);
+      expect(p.left + p.width).toBeLessThanOrEqual(320 - 8);
+    }
     vi.unstubAllGlobals();
   });
 });

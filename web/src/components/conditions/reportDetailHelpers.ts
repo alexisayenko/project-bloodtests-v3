@@ -7,6 +7,7 @@ import { selectByUnit, type NlmEntry } from '../../data/loincNlm';
 import { normalizeObservationUnit } from '../../data/unitNormalization';
 import { SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from '../../data/massMolarSiblings';
 import { ALSO_REFS, ALIAS_TO_PRIMARY } from './markers';
+import { COLOR } from '../../styles/tokens';
 
 export type EditableField = 'loinc' | 'value' | 'unit';
 
@@ -120,9 +121,9 @@ export function getMismatchMessage(
 }
 
 export function getDotColor(itemHasError: boolean, itemHasWarning: boolean, nameMismatch: boolean): string {
-  if (itemHasError) return '#ea4335';
-  if (itemHasWarning || nameMismatch) return '#fbbc04';
-  return '#34a853';
+  if (itemHasError) return COLOR.statusBad;
+  if (itemHasWarning || nameMismatch) return COLOR.statusWarn;
+  return COLOR.statusOk;
 }
 
 export function getDotTitle(itemIssues: ValidationIssue[], mismatchMsg: string | null): string {
@@ -180,8 +181,8 @@ export function getUnitLabel(suggestion: SuggestionChip, chipSuggestions: Sugges
 export function saveButtonStyle(hasErrors: boolean): CSSProperties {
   return {
     padding: '8px 16px',
-    backgroundColor: hasErrors ? '#ccc' : '#1971c2',
-    color: 'white',
+    backgroundColor: hasErrors ? COLOR.border : COLOR.accent,
+    color: COLOR.textOnAccent,
     border: 'none',
     borderRadius: 4,
     fontSize: 13,

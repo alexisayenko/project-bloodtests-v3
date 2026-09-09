@@ -3,10 +3,11 @@ import { fmtNum, formatResultReference, isOutOfRange } from '../../utils/format'
 import { computeIndex, zone, type IndexDef } from '../../data/computedIndices';
 import type { Result } from '../../types';
 import { isEchoRedundant, testLoincs, type Observation } from './markers';
-import { ZONE_BG, POPUP_WIDTH, INDEX_POPUP_WIDTH, formatMonthYear, greenRangeOf, pressable, cellBg } from './ui';
+import { ZONE_BG, formatMonthYear, greenRangeOf, pressable, cellBg } from './ui';
 import { getLatest, hasReference, type LatestByLoinc, type ResultEntry } from './resultsLookup';
+import { COLOR } from '../../styles/tokens';
 
-export type PopupPosition = { left: number; top?: number; bottom?: number };
+export type PopupPosition = { left: number; width: number; top?: number; bottom?: number };
 export type PopupState =
   | ({ kind: 'observation'; test: Observation } & PopupPosition)
   | ({ kind: 'index'; def: IndexDef } & PopupPosition)
@@ -17,7 +18,7 @@ function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: Latest
   const current = getLatest(latestByLoinc, loincs);
   if (!current) {
     return (
-      <div style={{ fontSize: 13, color: '#888', marginTop: 8, paddingTop: 8, borderTop: '1px solid #eee' }}>
+      <div style={{ fontSize: 13, color: COLOR.textMuted, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${COLOR.borderSubtle}` }}>
         Never taken
       </div>
     );
@@ -25,11 +26,11 @@ function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: Latest
   const value = current.result.rawValue || fmtNum(current.result.value);
   const bg = cellBg(hasReference(current.result), isOutOfRange(current.result), false);
   return (
-    <div style={{ fontSize: 13, color: '#555', marginTop: 8, paddingTop: 8, borderTop: '1px solid #eee' }}>
-      <div style={{ fontWeight: 500, color: '#333' }}>Latest taken on {formatMonthYear(current.date)}</div>
+    <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${COLOR.borderSubtle}` }}>
+      <div style={{ fontWeight: 500, color: COLOR.text }}>Latest taken on {formatMonthYear(current.date)}</div>
       <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: bg }}>
         {value} {current.result.unit}
-        <span style={{ color: '#888' }}> (Ref: {formatResultReference(current.result)})</span>
+        <span style={{ color: COLOR.textMuted }}> (Ref: {formatResultReference(current.result)})</span>
       </div>
     </div>
   );
@@ -38,7 +39,7 @@ function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: Latest
 function LoincLine({ loinc, text }: Readonly<{ loinc: string; text: string }>) {
   return (
     <>
-      <a href={`https://loinc.org/${loinc}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', color: '#1971c2' }}>
+      <a href={`https://loinc.org/${loinc}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', color: COLOR.accent }}>
         {loinc}
       </a>{' '}
       {text}
@@ -53,11 +54,11 @@ function ObservationPopupBody({ test, latestByLoinc }: Readonly<{ test: Observat
         {test.full}
         {!isEchoRedundant(test.full, test.short) && ` (${test.short})`}
       </div>
-      <div style={{ fontSize: 13, color: '#555', marginBottom: test.also ? 10 : 0 }}>
+      <div style={{ fontSize: 13, color: COLOR.textSecondary, marginBottom: test.also ? 10 : 0 }}>
         <LoincLine loinc={test.loinc} text={test.longCommonName + (test.unit ? `, ${test.unit}` : '')} />
       </div>
       {test.also?.map((ref) => (
-        <div key={ref.loinc} style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
+        <div key={ref.loinc} style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8 }}>
           <LoincLine loinc={ref.loinc} text={`${ref.longCommonName}, ${ref.unit}`} />
         </div>
       ))}
@@ -75,12 +76,12 @@ function ResultPopupBody({ test, entry }: Readonly<{ test: Observation; entry: R
         {test.full}
         {!isEchoRedundant(test.full, test.short) && ` (${test.short})`}
       </div>
-      <div style={{ fontSize: 13, color: '#555' }}>
+      <div style={{ fontSize: 13, color: COLOR.textSecondary }}>
         {formatMonthYear(entry.date)} · {entry.place}
       </div>
-      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: bg, fontSize: 13, color: '#555' }}>
+      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: bg, fontSize: 13, color: COLOR.textSecondary }}>
         {value} {entry.result.unit}
-        <span style={{ color: '#888' }}> (Ref: {formatResultReference(entry.result)})</span>
+        <span style={{ color: COLOR.textMuted }}> (Ref: {formatResultReference(entry.result)})</span>
       </div>
     </>
   );
@@ -102,17 +103,17 @@ function IndexResultPopupBody({
         {def.name}
         {!isEchoRedundant(def.name, def.nameCompact) && ` (${def.nameCompact})`}
       </div>
-      <div style={{ fontSize: 13, color: '#555' }}>
+      <div style={{ fontSize: 13, color: COLOR.textSecondary }}>
         {formatMonthYear(date)} · Calculated
       </div>
-      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: ZONE_BG[z], fontSize: 13, color: '#555' }}>
+      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: ZONE_BG[z], fontSize: 13, color: COLOR.textSecondary }}>
         {fmtNum(value)} {def.unit ?? ''}
-        <span style={{ color: '#888' }}> (Ref: {greenRangeOf(def)})</span>
+        <span style={{ color: COLOR.textMuted }}> (Ref: {greenRangeOf(def)})</span>
       </div>
       {reported && (
-        <div style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
-          <div style={{ fontWeight: 500, color: '#333' }}>Lab reported, same draw</div>
-          <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: '#f5f5f5' }}>
+        <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8 }}>
+          <div style={{ fontWeight: 500, color: COLOR.text }}>Lab reported, same draw</div>
+          <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: COLOR.surfaceMuted }}>
             {reported.rawValue || fmtNum(reported.value)} {reported.unit}
           </div>
         </div>
@@ -148,11 +149,11 @@ function IndexPopupBody({
         {def.name}
         {!isEchoRedundant(def.name, def.nameCompact) && ` (${def.nameCompact})`}
       </div>
-      <div style={{ fontSize: 12, color: '#888', fontFamily: 'monospace', whiteSpace: 'pre-line', marginBottom: 10 }}>{def.formula}</div>
-      <div style={{ fontSize: 13, color: '#555', paddingTop: 8, borderTop: '1px solid #eee' }}>
+      <div style={{ fontSize: 12, color: COLOR.textMuted, fontFamily: 'monospace', whiteSpace: 'pre-line', marginBottom: 10 }}>{def.formula}</div>
+      <div style={{ fontSize: 13, color: COLOR.textSecondary, paddingTop: 8, borderTop: `1px solid ${COLOR.borderSubtle}` }}>
         {latest ? (
           <>
-            <div style={{ fontWeight: 500, color: '#333' }}>Calculated, {formatMonthYear(latest.date)}</div>
+            <div style={{ fontWeight: 500, color: COLOR.text }}>Calculated, {formatMonthYear(latest.date)}</div>
             <div
               style={{
                 marginTop: 4,
@@ -162,7 +163,7 @@ function IndexPopupBody({
               }}
             >
               {fmtNum(latest.value)} {def.unit ?? ''}
-              <span style={{ color: '#888' }}> (Ref: {greenRangeOf(def)})</span>
+              <span style={{ color: COLOR.textMuted }}> (Ref: {greenRangeOf(def)})</span>
             </div>
           </>
         ) : (
@@ -170,21 +171,21 @@ function IndexPopupBody({
         )}
       </div>
       {reported && (
-        <div style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
-          <div style={{ fontWeight: 500, color: '#333' }}>Lab reported, {formatMonthYear(reported.date)}</div>
-          <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: '#f5f5f5' }}>
+        <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8 }}>
+          <div style={{ fontWeight: 500, color: COLOR.text }}>Lab reported, {formatMonthYear(reported.date)}</div>
+          <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: COLOR.surfaceMuted }}>
             {reported.result.rawValue || fmtNum(reported.result.value)} {reported.result.unit}
           </div>
         </div>
       )}
-      <div style={{ fontSize: 13, color: '#333', marginTop: 10 }}>{def.meaning}</div>
-      <div style={{ fontSize: 12, color: '#666', marginTop: 10 }}>
+      <div style={{ fontSize: 13, color: COLOR.text, marginTop: 10 }}>{def.meaning}</div>
+      <div style={{ fontSize: 12, color: COLOR.textSecondary, marginTop: 10 }}>
         <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{def.evidenceLevel}</span>
         {def.references[0] && ` -- ${def.references[0].organization}`}
       </div>
       <div
         {...pressable(() => onLearnMore(def.key))}
-        style={{ fontSize: 13, color: '#1971c2', fontWeight: 500, marginTop: 10, cursor: 'pointer' }}
+        style={{ fontSize: 13, color: COLOR.accent, fontWeight: 500, marginTop: 10, cursor: 'pointer' }}
       >
         Learn more →
       </div>
@@ -227,13 +228,14 @@ export function Popup({
           top: popup.top,
           bottom: popup.bottom,
           left: popup.left,
-          background: '#fff',
-          border: '1.5px solid #1971c2',
+          background: COLOR.surface,
+          border: `1.5px solid ${COLOR.accent}`,
           borderRadius: 12,
           padding: 18,
-          width: popup.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH,
-          // 'result' and 'indexResult' are both simple value cards (name +
-          // date + one colored value line) -- same narrow width as 'observation'.
+          // Already capped to the viewport by popupPosition, which sized the box
+          // it placed -- rendering the untrimmed constant here would put the
+          // right edge back off a narrow screen.
+          width: popup.width,
           // Cap to whatever room is actually left on the anchored side, not just
           // the viewport height -- otherwise a popup opened partway down the
           // page can still try to render taller than the space below it.

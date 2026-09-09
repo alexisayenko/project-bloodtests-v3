@@ -1,4 +1,5 @@
 import type { ControlsEnabled, ViewSettings } from './ui';
+import { COLOR } from '../../styles/tokens';
 
 export type ControlsProps = ViewSettings & {
   setUnitSystem: (v: 'si' | 'us') => void;
@@ -31,34 +32,31 @@ const PILL_INSET = 12;
 const CHEVRON_WIDTH = 10;
 
 const PILL = {
-  border: '1.5px solid #1971c2',
+  border: `1.5px solid ${COLOR.accent}`,
   borderRadius: 9999,
   padding: `4px ${PILL_INSET}px`,
   fontSize: 13,
   fontWeight: 600,
   fontFamily: 'inherit',
   lineHeight: '18px',
-  color: '#1971c2',
+  color: COLOR.accent,
   backgroundColor: 'transparent',
 } as const;
 
 const TOGGLE_PILL = { ...PILL, cursor: 'pointer' } as const;
 
-const PILL_DISABLED = { ...PILL, border: '1.5px solid #ccc', color: '#aaa', cursor: 'not-allowed' } as const;
+const PILL_DISABLED = { ...PILL, border: `1.5px solid ${COLOR.border}`, color: COLOR.textDisabled, cursor: 'not-allowed' } as const;
 
 // A disabled pill keeps showing which option is selected -- filled grey rather
 // than filled blue, so the state survives without reading as live.
 function togglePill(selected: boolean, disabled: boolean) {
-  if (disabled) return { ...PILL_DISABLED, background: selected ? '#eee' : 'transparent' };
+  if (disabled) return { ...PILL_DISABLED, background: selected ? COLOR.surfaceSunken : 'transparent' };
   return {
     ...TOGGLE_PILL,
-    background: selected ? '#1971c2' : 'transparent',
-    color: selected ? '#fff' : '#1971c2',
+    background: selected ? COLOR.accent : 'transparent',
+    color: selected ? COLOR.textOnAccent : COLOR.accent,
   };
 }
-
-const chevron = (stroke: string) =>
-  `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1L5 5L9 1' fill='none' stroke='%23${stroke}' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
 
 // A native select draws its own indicator against the padding box using metrics
 // that assume a squared-off control, so under a 9999px radius it landed inside
@@ -72,7 +70,7 @@ const PANEL_SELECT = {
   WebkitAppearance: 'none',
   MozAppearance: 'none',
   paddingRight: PILL_INSET * 2 + CHEVRON_WIDTH,
-  backgroundImage: chevron('1971c2'),
+  backgroundImage: COLOR.chevronAccent,
   backgroundRepeat: 'no-repeat',
   backgroundPosition: `right ${PILL_INSET}px center`,
   cursor: 'pointer',
@@ -80,9 +78,9 @@ const PANEL_SELECT = {
 
 const PANEL_SELECT_DISABLED = {
   ...PANEL_SELECT,
-  border: '1.5px solid #ccc',
-  color: '#aaa',
-  backgroundImage: chevron('aaaaaa'),
+  border: `1.5px solid ${COLOR.border}`,
+  color: COLOR.textDisabled,
+  backgroundImage: COLOR.chevronDisabled,
   cursor: 'not-allowed',
 } as const;
 
@@ -90,9 +88,9 @@ const FILTER_INPUT = { ...PILL, width: 220, maxWidth: '100%', outline: 'none' } 
 
 const FILTER_INPUT_DISABLED = { ...FILTER_INPUT, ...PILL_DISABLED, width: 220, maxWidth: '100%' } as const;
 
-const GROUP_LABEL = { fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 6 } as const;
+const GROUP_LABEL = { fontSize: 12, fontWeight: 600, color: COLOR.textMuted, marginBottom: 6 } as const;
 
-const groupLabel = (disabled: boolean) => ({ ...GROUP_LABEL, color: disabled ? '#bbb' : '#888' });
+const groupLabel = (disabled: boolean) => ({ ...GROUP_LABEL, color: disabled ? COLOR.textDisabled : COLOR.textMuted });
 
 const NOT_IN_PANEL_DETAIL = 'You are already viewing one panel — filtering by panel applies in All Observations.';
 const NO_PANELS = 'No monitoring panels to filter by.';

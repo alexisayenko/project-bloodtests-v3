@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { NAV_ITEMS, type Route } from './routing';
 import { pressable, tabStyle } from './ui';
 import { useHideOnScroll } from './useHideOnScroll';
+import { COLOR } from '../../styles/tokens';
 
 export function NavBar({ route, navigate, hasValidationErrors = false }: Readonly<{ route: Route; navigate: (r: Route) => void; hasValidationErrors?: boolean }>) {
   // Mobile pins the nav over the content and slides it away while you read
@@ -47,7 +48,7 @@ export function NavBar({ route, navigate, hasValidationErrors = false }: Readonl
               marginBottom: -1.5,
               fontSize: 15,
               ...tab,
-              color: isBlocked && !active ? '#ccc' : tab.color,
+              color: isBlocked && !active ? COLOR.textDisabled : tab.color,
               cursor: isBlocked ? 'not-allowed' : 'pointer',
               opacity: isBlocked ? 0.5 : 1,
             }}

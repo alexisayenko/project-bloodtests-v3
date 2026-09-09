@@ -5,24 +5,25 @@ import { toLatinUnit, sameUnitScale } from '../../data/unitNormalization';
 import { LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
+import { COLOR } from '../../styles/tokens';
 
 export const STATUS_STYLES = {
-  'never': { border: '#ccc', background: '#f5f5f5', color: '#999' },
-  'in-range': { border: '#34a853', background: '#e6f4ea', color: '#1a1a1a' },
-  'out-of-range': { border: '#ea4335', background: '#fdecea', color: '#1a1a1a' },
-  'unknown': { border: '#1971c2', background: 'transparent', color: '#1a1a1a' },
+  'never': { border: COLOR.border, background: COLOR.surfaceMuted, color: COLOR.textMuted },
+  'in-range': { border: COLOR.statusOk, background: COLOR.statusOkBg, color: COLOR.text },
+  'out-of-range': { border: COLOR.statusBad, background: COLOR.statusBadBg, color: COLOR.text },
+  'unknown': { border: COLOR.accent, background: 'transparent', color: COLOR.text },
 } as const;
 
 // 3-zone coloring for computed indices (see data/computedIndices.ts's `zone()`).
-export const ZONE_BG = { ok: '#e6f4ea', warn: '#fff4e0', bad: '#fdecea' } as const;
-// Selected-row variants, blended with the row-selection blue (#eaf3fb).
-export const SELECTED_ZONE_BG = { ok: '#dbecf0', warn: '#e7ecea', bad: '#e6e8f0' } as const;
+export const ZONE_BG = { ok: COLOR.statusOkBg, warn: COLOR.statusWarnBg, bad: COLOR.statusBadBg } as const;
+// Selected-row variants, blended with the row-selection tint (--accent-soft).
+export const SELECTED_ZONE_BG = { ok: COLOR.statusOkBgSelected, warn: COLOR.statusWarnBgSelected, bad: COLOR.statusBadBgSelected } as const;
 // Saturated dot colors for the same 3 zones, for compact list rows (e.g. the
 // Monitoring Panels grid card) where ZONE_BG's pale backgrounds would be too
 // faint to read as a small dot. ok/bad reuse STATUS_STYLES' green/red so the
 // two-state and three-state dots read as one color language; warn is Google's
 // amber, completing the same red/yellow/green triad.
-export const ZONE_DOT = { ok: '#34a853', warn: '#fbbc04', bad: '#ea4335' } as const;
+export const ZONE_DOT = { ok: COLOR.statusOk, warn: COLOR.statusWarn, bad: COLOR.statusBad } as const;
 
 export const PANEL_PADDING = 20;
 export const PANEL_GAP = 24;
@@ -30,6 +31,8 @@ export const PANEL_WIDTH = 316;
 
 export const POPUP_WIDTH = 260;
 export const INDEX_POPUP_WIDTH = 380;
+/** Breathing room kept between a popup and each edge of the viewport. */
+export const POPUP_MARGIN = 8;
 
 // Shared across observations and both indices tables so they line up as one
 // block -- and read by the mobile reveal, whose overlays borrow the same grid.
@@ -162,9 +165,9 @@ export function pressable(handler: (e: { currentTarget: HTMLElement }) => void) 
  */
 export function tabStyle(active: boolean) {
   return {
-    borderBottom: active ? '2px solid #1971c2' : '2px solid transparent',
+    borderBottom: active ? `2px solid ${COLOR.accent}` : '2px solid transparent',
     textShadow: active ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
-    color: active ? '#1971c2' : '#555',
+    color: active ? COLOR.accent : COLOR.textSecondary,
   };
 }
 
@@ -285,9 +288,9 @@ export function buildRowCells(
 
 /** Background for a result cell: reference presence, range status, row selection. */
 export function cellBg(hasRef: boolean, outOfRange: boolean, selected: boolean): string {
-  if (!hasRef) return selected ? '#eaf3fb' : 'transparent';
-  if (outOfRange) return selected ? '#e6e8f0' : '#fdecea';
-  return selected ? '#dbecf0' : '#e6f4ea';
+  if (!hasRef) return selected ? COLOR.accentSoft : 'transparent';
+  if (outOfRange) return selected ? COLOR.statusBadBgSelected : COLOR.statusBadBg;
+  return selected ? COLOR.statusOkBgSelected : COLOR.statusOkBg;
 }
 
 // A cell-level selection: which one data cell (row identity + date) is
@@ -306,20 +309,26 @@ export function visibleDatesOf(dates: string[], sampleLimit: number | 'all'): st
   return [...recent].reverse();
 }
 
-/** Where to anchor a popup opened from the given element, for the given width. */
+/**
+ * Where to anchor a popup opened from the given element, and how wide it may
+ * actually be. The width is returned rather than taken on trust because a fixed
+ * 380 cannot fit a 375px viewport: clamping the left edge alone would only
+ * trade an overflow off the left for one off the right.
+ */
 export function popupPosition(
   rect: DOMRect,
-  width: number
-): { left: number; top?: number; bottom?: number } {
+  maxWidth: number
+): { left: number; top?: number; bottom?: number; width: number } {
+  const width = Math.min(maxWidth, window.innerWidth - 2 * POPUP_MARGIN);
   const center = rect.left + rect.width / 2;
-  const left = Math.min(Math.max(center - width / 2, 8), window.innerWidth - width - 8);
+  const left = Math.max(Math.min(center - width / 2, window.innerWidth - width - POPUP_MARGIN), POPUP_MARGIN);
   const spaceBelow = window.innerHeight - rect.bottom;
   const spaceAbove = rect.top;
   // Open upward when there's little room below and more room above --
   // keeps the popup from running off the bottom of the viewport for a
   // row near the end of a long page.
   if (spaceBelow < 200 && spaceAbove > spaceBelow) {
-    return { left, bottom: window.innerHeight - rect.top + 8 };
+    return { left, width, bottom: window.innerHeight - rect.top + 8 };
   }
-  return { left, top: rect.bottom + 8 };
+  return { left, width, top: rect.bottom + 8 };
 }

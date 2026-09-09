@@ -1,10 +1,11 @@
 import { DEV_COMMIT, commitUrl, copyrightLine, formatBuildTime } from './buildInfo';
+import { COLOR } from '../styles/tokens';
 
 const FOOTER = {
   marginTop: 64,
   padding: '16px 12px 28px',
-  borderTop: '1px solid #eee',
-  color: '#999',
+  borderTop: `1px solid ${COLOR.borderSubtle}`,
+  color: COLOR.textMuted,
   fontSize: 12,
   lineHeight: 1.7,
   textAlign: 'center',
