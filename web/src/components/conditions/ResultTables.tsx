@@ -4,6 +4,7 @@ import { testLoincs, type Observation } from './markers';
 import {
   ZONE_BG,
   SELECTED_ZONE_BG,
+  LABEL_COL_WIDTH,
   buildRowCells,
   formatMonthYear,
   pressable,
@@ -12,6 +13,7 @@ import {
   type RowCell,
   type SelectedCell,
 } from './ui';
+import { TableScroller } from './TableScroller';
 import { hasReference, type ResultEntry } from './resultsLookup';
 import {
   indexInputLoincs,
@@ -25,8 +27,6 @@ import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
 import type { Result } from '../../types';
 
 const DATE_COL_WIDTH = 96;
-// Shared across observations and both indices tables so they line up as one block.
-const LABEL_COL_WIDTH = 180;
 // The Scheduled column sits after an empty spacer column so it reads as a
 // separate block from the date grid while staying in the same table (exact
 // row alignment for free).
@@ -35,11 +35,6 @@ const GAP_COL_WIDTH = 16;
 // the 8px gap, the select-all box and the cell padding. The body cells stay a
 // single glyph.
 const SCHEDULED_COL_WIDTH = 132;
-
-// Fixed layout only kicks in with a non-auto table width; every column width
-// then comes from the colgroup, so tables given the same dates share one grid
-// whatever their content.
-const table = { borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', width: '100%' } as const;
 
 const th = {
   textAlign: 'left',
@@ -262,17 +257,17 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
     onToggleAll: (on: boolean) => scheduling.onToggleAll(visibleRowLoincs, on),
   };
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={table}>
-        <ColGroup dates={visibleDates} scheduling={!!scheduling} />
-        <TableHead label={label} dates={visibleDates} schedule={schedule || undefined} />
+    <TableScroller
+      colgroup={<ColGroup dates={visibleDates} scheduling={!!scheduling} />}
+      head={<TableHead label={label} dates={visibleDates} schedule={schedule || undefined} />}
+    >
         <tbody>
           {rows.map((test) => {
             const selected = selectedLoinc === test.loinc;
             const { cells, rowUnit, showCellUnits } = buildRowCells(test, visibleDates, allResults, unitSystem);
             const rowLoincs = testLoincs(test);
             return (
-              <tr key={test.loinc} style={{ background: selected ? '#eaf3fb' : undefined }}>
+              <tr key={test.loinc} data-selected={selected || undefined} style={{ background: selected ? '#eaf3fb' : undefined }}>
                 <td
                   {...pressable((e) => {
                     onSelect(test.loinc);
@@ -306,8 +301,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
             );
           })}
         </tbody>
-      </table>
-    </div>
+    </TableScroller>
   );
 }
 
@@ -339,15 +333,15 @@ export function IndexTable({
     onToggleAll: (on: boolean) => scheduling.onToggleAll(visibleKeys, on),
   };
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={table}>
-        <ColGroup dates={visibleDates} scheduling={!!scheduling} />
-        <TableHead label="Indices" dates={visibleDates} schedule={schedule || undefined} />
+    <TableScroller
+      colgroup={<ColGroup dates={visibleDates} scheduling={!!scheduling} />}
+      head={<TableHead label="Indices" dates={visibleDates} schedule={schedule || undefined} />}
+    >
         <tbody>
           {defs.map((def) => {
             const selected = selectedLoinc === def.key;
             return (
-              <tr key={def.key} style={{ background: selected ? '#eaf3fb' : undefined }}>
+              <tr key={def.key} data-selected={selected || undefined} style={{ background: selected ? '#eaf3fb' : undefined }}>
                 <td
                   {...pressable((e) => {
                     onSelect(def.key);
@@ -394,7 +388,6 @@ export function IndexTable({
             );
           })}
         </tbody>
-      </table>
-    </div>
+    </TableScroller>
   );
 }

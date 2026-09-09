@@ -265,10 +265,78 @@ img.panel-icon { display: none; }
 .mc-panel-dots { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); column-gap: 8px; row-gap: 4px; }
 
 @media (max-width: 767px) {
-  .mc-page { padding: 20px 12px; }
+  .mc-page { padding: 20px 12px; padding-top: calc(20px + var(--mc-nav-h, 0px)); }
   .mc-nav { gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
   .mc-panels-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .mc-panel-card { width: auto; min-width: 0; padding: 12px 10px; }
   .mc-panel-dots { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 6px; }
   .mc-panel-dots > * { min-width: 0; overflow-wrap: anywhere; }
+
+  /* The nav is pinned over the content and gets out of the way while reading
+     down; everything fixed below it offsets against --mc-nav-offset. */
+  :root { --mc-nav-offset: var(--mc-nav-h, 0px); }
+  :root[data-mc-nav-hidden='true'] { --mc-nav-offset: 0px; }
+  .mc-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    margin-bottom: 0; padding: 0 12px; background: var(--gray-50);
+    transition: transform 0.22s ease;
+  }
+  .mc-nav-hidden { transform: translateY(-100%); }
+
+  /* A results table's marker-name column is the real first column, parked by
+     sticky at a negative offset so only --mc-col-left of it shows. It can
+     never fall out of line with the rows because it IS the rows' own cells. */
+  .mc-table-wrap th:first-child,
+  .mc-table-wrap tbody td:first-child {
+    position: sticky; left: var(--mc-col-left, 0px); z-index: 1; background-color: #fff;
+  }
+  .mc-table-wrap tbody tr[data-selected] td:first-child { background-color: #eaf3fb; }
+  .mc-table-wrap.mc-col-animated th:first-child,
+  .mc-table-wrap.mc-col-animated tbody td:first-child { transition: left 0.18s ease; }
+  .mc-table-wrap.mc-col-cut th:first-child,
+  .mc-table-wrap.mc-col-cut tbody td:first-child { box-shadow: 2px 0 5px rgba(0, 0, 0, 0.14); }
+
+  /* The date header row: a copy of the same colgroup and thead in a box of the
+     same width, clipped to the revealed height and offset by the table's own
+     horizontal scroll, so its column edges land on the body cells beneath. */
+  .mc-head-reveal {
+    position: fixed; top: var(--mc-nav-offset, 0px); overflow: hidden; z-index: 30;
+    background: #fff; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14);
+  }
+  .mc-head-reveal.mc-animated { transition: height 0.18s ease, top 0.22s ease; }
+  .mc-head-reveal th:first-child {
+    position: relative; z-index: 1; background-color: #fff;
+    transform: translateX(var(--mc-corner-x, 0px));
+  }
+
+  /* Invisible handles riding each sliver's moving edge. The header one carries
+     no touch-action: it sits at the top of the screen, so it claims a gesture
+     per-move instead of reserving the whole axis. */
+  .mc-grab-head { position: fixed; z-index: 31; }
+  .mc-grab-col { position: absolute; top: 0; bottom: 0; z-index: 2; background: none; border: none; padding: 0; }
+
+  /* The discoverable half of the same interaction: a thumb-sized pill riding
+     just under the header's edge, so it moves with what it toggles and always
+     clears whatever the nav currently occupies. */
+  .mc-dates-chip {
+    position: fixed; right: 12px; z-index: 32;
+    display: inline-flex; align-items: center; gap: 6px;
+    min-width: 40px; min-height: 40px; padding: 0 14px;
+    border: 1.5px solid #1971c2; border-radius: 9999px;
+    background: #fff; color: #1971c2;
+    font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16); cursor: pointer;
+  }
+  .mc-dates-chip.mc-animated { transition: top 0.18s ease; }
+  .mc-dates-chip svg { transition: transform 0.18s ease; }
+  .mc-dates-chip[aria-expanded='true'] svg { transform: rotate(180deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-nav,
+  .mc-head-reveal.mc-animated,
+  .mc-table-wrap.mc-col-animated th:first-child,
+  .mc-table-wrap.mc-col-animated tbody td:first-child,
+  .mc-dates-chip.mc-animated,
+  .mc-dates-chip svg { transition: none; }
 }

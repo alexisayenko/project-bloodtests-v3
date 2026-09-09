@@ -1,9 +1,33 @@
+import { useEffect, useRef } from 'react';
 import { NAV_ITEMS, type Route } from './routing';
 import { pressable, tabStyle } from './ui';
+import { useHideOnScroll } from './useHideOnScroll';
 
 export function NavBar({ route, navigate, hasValidationErrors = false }: Readonly<{ route: Route; navigate: (r: Route) => void; hasValidationErrors?: boolean }>) {
+  // Mobile pins the nav over the content and slides it away while you read
+  // downwards; the CSS that does so is behind the mobile breakpoint, so on
+  // desktop this state is measured and then ignored.
+  const hidden = useHideOnScroll();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const publish = () => document.documentElement.style.setProperty('--mc-nav-h', `${el.offsetHeight}px`);
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    // Fixed overlays elsewhere (a table's pulled-open header row) read
+    // --mc-nav-offset to park below whatever the nav currently occupies.
+    document.documentElement.dataset.mcNavHidden = String(hidden);
+  }, [hidden]);
+
   return (
-    <div className="mc-nav">
+    <div ref={ref} className={hidden ? 'mc-nav mc-nav-hidden' : 'mc-nav'}>
       {NAV_ITEMS.map((item) => {
         const active =
           route.view === item.view ||

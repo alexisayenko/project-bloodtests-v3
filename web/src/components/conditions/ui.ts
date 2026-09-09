@@ -31,6 +31,21 @@ export const PANEL_WIDTH = 316;
 export const POPUP_WIDTH = 260;
 export const INDEX_POPUP_WIDTH = 380;
 
+// Shared across observations and both indices tables so they line up as one
+// block -- and read by the mobile reveal, whose overlays borrow the same grid.
+export const LABEL_COL_WIDTH = 180;
+
+// Fixed layout only kicks in with a non-auto table width; every column width
+// then comes from the colgroup, so tables given the same dates share one grid
+// whatever their content. The mobile header overlay renders the same colgroup
+// inside a box of the same width, which is what keeps it aligned.
+export const RESULT_TABLE = {
+  borderCollapse: 'collapse',
+  fontSize: 13,
+  tableLayout: 'fixed',
+  width: '100%',
+} as const;
+
 export function formatMonthYear(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   const month = d.toLocaleDateString('en-US', { month: 'short' });
