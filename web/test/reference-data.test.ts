@@ -11,6 +11,7 @@ import {
   molarPerMassUnit,
 } from '../src/data/molarMasses';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
+import { dimensionOf } from '../src/data/unitNormalization';
 
 const SCHEMA_ID = 'https://blood.isayenko.net/schema/analytes-1.schema.json';
 const MOLAR_SCHEMA_ID = 'https://blood.isayenko.net/schema/molar-masses-1.schema.json';
@@ -169,9 +170,24 @@ describe('molar masses are internally consistent', () => {
     }
   });
 
-  it('folds a catalogued molar sibling into its mass code rather than beside it', () => {
+  it('every sibling code is catalogued, and takes the unit the catalog gives it', () => {
     for (const pair of MASS_MOLAR_SIBLINGS) {
-      if (!ANALYTE_BY_LOINC[pair.molar.loinc] || !ANALYTE_BY_LOINC[pair.mass.loinc]) continue;
+      for (const side of [pair.mass, pair.molar]) {
+        expect(ANALYTE_BY_LOINC[side.loinc], `${pair.analyte}: ${side.loinc} is not in the catalog`).toBeDefined();
+        expect([side.loinc, side.unit]).toEqual([side.loinc, DEFAULT_UNITS[side.loinc]]);
+      }
+    }
+  });
+
+  it('gives each sibling code a unit on the scale its LOINC name declares', () => {
+    for (const pair of MASS_MOLAR_SIBLINGS) {
+      expect([pair.analyte, dimensionOf(pair.mass.unit)]).toEqual([pair.analyte, 'mass/volume']);
+      expect([pair.analyte, dimensionOf(pair.molar.unit)]).toEqual([pair.analyte, 'substance/volume']);
+    }
+  });
+
+  it('folds a molar sibling into its mass code rather than beside it', () => {
+    for (const pair of MASS_MOLAR_SIBLINGS) {
       const primary = ALIAS_TO_PRIMARY[pair.molar.loinc] ?? pair.molar.loinc;
       const massPrimary = ALIAS_TO_PRIMARY[pair.mass.loinc] ?? pair.mass.loinc;
       expect([pair.analyte, primary]).toEqual([pair.analyte, massPrimary]);

@@ -259,6 +259,18 @@
     }
   },
   {
+    "loinc": "14749-6",
+    "longCommonName": "Glucose [Moles/volume] in Serum or Plasma",
+    "displayName": "Glucose (Serum/Plasma)",
+    "unit": "mmol/L",
+    "aliasOf": "2339-0",
+    "aliasLabel": "serum/plasma, mmol/L unit",
+    "lang": {
+      "ru-RU": "Глюкоза (сыворотка/плазма)",
+      "uk-UA": "Глюкоза (сироватка/плазма)"
+    }
+  },
+  {
     "loinc": "15074-8",
     "longCommonName": "Glucose [Moles/volume] in Blood",
     "displayName": "Glucose Serum",
@@ -693,6 +705,18 @@
     "unit": "mg/dL",
     "aliasOf": "3094-0",
     "aliasLabel": "Urea",
+    "lang": {
+      "ru-RU": "Мочевина",
+      "uk-UA": "Сечовина"
+    }
+  },
+  {
+    "loinc": "22664-7",
+    "longCommonName": "Urea [Moles/volume] in Serum or Plasma",
+    "displayName": "Urea (BUN)",
+    "unit": "mmol/L",
+    "aliasOf": "3094-0",
+    "aliasLabel": "Urea, mmol/L unit",
     "lang": {
       "ru-RU": "Мочевина",
       "uk-UA": "Сечовина"
@@ -1557,7 +1581,7 @@
     "longCommonName": "Adiponectin [Mass/volume] in Serum or Plasma",
     "displayName": "Adiponectin",
     "short": "ADIPO",
-    "unit": "mcg/mL",
+    "unit": "ug/mL",
     "lang": {
       "ru-RU": "Адипонектин",
       "uk-UA": "Адипонектин"
@@ -1608,7 +1632,7 @@
     "longCommonName": "Sex hormone binding globulin [Mass/volume] in Serum or Plasma",
     "displayName": "SHBG",
     "short": "SHBG",
-    "unit": "µg/mL",
+    "unit": "ug/mL",
     "lang": {
       "ru-RU": "Глобулин, связывающий половые гормоны (ГСПГ)",
       "uk-UA": "Глобулін, що зв'язує статеві гормони (ГЗСГ)"
@@ -1686,7 +1710,7 @@
     "longCommonName": "Dehydroepiandrosterone sulfate [Mass/volume] in Serum or Plasma",
     "displayName": "DHEA-S",
     "short": "DHEA-S",
-    "unit": "mcg/dL",
+    "unit": "ug/dL",
     "lang": {
       "ru-RU": "Дегидроэпиандростерон-сульфат",
       "uk-UA": "Дегідроепіандростерон-сульфат"
@@ -1703,7 +1727,7 @@
     "longCommonName": "Zinc [Mass/volume] in Serum or Plasma",
     "displayName": "Zinc",
     "short": "Zn",
-    "unit": "mcg/dL",
+    "unit": "ug/dL",
     "lang": {
       "ru-RU": "Цинк",
       "uk-UA": "Цинк"
@@ -2024,7 +2048,7 @@
     "longCommonName": "Iron [Mass/volume] in Serum or Plasma",
     "displayName": "Iron Serum (Fe)",
     "short": "Fe",
-    "unit": "mcg/dL",
+    "unit": "ug/dL",
     "lang": {
       "ru-RU": "Железо сывороточное",
       "uk-UA": "Залізо сироваткове"
@@ -2054,11 +2078,23 @@
     }
   },
   {
+    "loinc": "14798-3",
+    "longCommonName": "Iron [Moles/volume] in Serum or Plasma",
+    "displayName": "Iron Serum (Fe)",
+    "unit": "umol/L",
+    "aliasOf": "2498-4",
+    "aliasLabel": "umol/L unit",
+    "lang": {
+      "ru-RU": "Железо сывороточное",
+      "uk-UA": "Залізо сироваткове"
+    }
+  },
+  {
     "loinc": "2500-7",
     "longCommonName": "Iron binding capacity [Mass/volume] in Serum or Plasma",
     "displayName": "Total Iron Binding Capacity (TIBC)",
     "short": "TIBC",
-    "unit": "mcg/dL",
+    "unit": "ug/dL",
     "lang": {
       "ru-RU": "Общая железосвязывающая способность (ОЖСС)",
       "uk-UA": "Загальна залізозв'язувальна здатність (ЗЗЗЗ)"
@@ -2075,7 +2111,7 @@
     "longCommonName": "Iron binding capacity.unsaturated [Mass/volume] in Serum or Plasma",
     "displayName": "Unsaturated Iron-Binding Capacity (UIBC)",
     "short": "UIBC",
-    "unit": "mcg/dL",
+    "unit": "ug/dL",
     "lang": {
       "ru-RU": "Ненасыщенная железосвязывающая способность (НЖСС)",
       "uk-UA": "Ненасичена залізозв'язувальна здатність (НЗЗЗ)"
@@ -2345,7 +2381,7 @@
     "longCommonName": "Cortisol [Mass/volume] in Serum or Plasma",
     "displayName": "Cortisol",
     "short": "CORT",
-    "unit": "mcg/dL",
+    "unit": "ug/dL",
     "lang": {
       "ru-RU": "Кортизол",
       "uk-UA": "Кортизол"

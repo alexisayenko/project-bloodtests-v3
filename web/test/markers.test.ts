@@ -9,7 +9,7 @@ import {
   testLoincs,
   type Observation,
 } from '../src/components/conditions/markers';
-import { ALIAS_TO_PRIMARY, ALSO_REFS, DEFAULT_UNITS, SHORT_LABELS } from '../src/data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS } from '../src/data/analyteCatalog';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
@@ -108,11 +108,9 @@ describe('mass/molar sibling aliases', () => {
     }
   });
 
-  it('gives every aliased molar code the sibling table’s molar unit', () => {
+  it('has a sibling-table entry for every aliased molar code', () => {
     for (const [, molar] of ALIASED_PAIRS) {
-      const pair = MASS_MOLAR_SIBLINGS.find((p) => p.molar.loinc === molar);
-      expect(pair, `no sibling entry for ${molar}`).toBeDefined();
-      expect([molar, DEFAULT_UNITS[molar]]).toEqual([molar, pair!.molar.unit]);
+      expect(MASS_MOLAR_SIBLINGS.find((p) => p.molar.loinc === molar), `no sibling entry for ${molar}`).toBeDefined();
     }
   });
 });
