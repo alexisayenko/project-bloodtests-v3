@@ -133,6 +133,18 @@ describe('computed indices — golden master (v2 parity)', () => {
     // 5 ng/mL = 500 ng/dL → T/LH = 100
     expect(computeIndex(tlh, withAliasT)).toBeCloseTo(100, 5);
   });
+
+  // Insulin is an arbitrary-unit analyte, so the "µU/mL" nine of the owner's
+  // fourteen draws are printed in is the same unit as the "µIU/mL" of the other
+  // five. Every insulin-dependent index must read it identically.
+  it('reads insulin printed µU/mL exactly as µIU/mL', () => {
+    const asU: Record<string, Result> = { ...RESULTS, ...Object.fromEntries([r('20448-7', 8, 'µU/mL')]) };
+    for (const key of ['homair', 'homab', 'gi']) {
+      const def = INDEX_DEFS.find((d) => d.key === key)!;
+      expect(markersForIndex(def, asU)['Insulin']).toBe(8);
+      expect([key, computeIndex(def, asU)]).toEqual([key, computeIndex(def, RESULTS)]);
+    }
+  });
 });
 
 describe('calculatedFreeTestosterone via the cft index (Vermeulen golden master)', () => {

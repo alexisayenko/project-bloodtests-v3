@@ -289,6 +289,34 @@ describe('sharedUnit', () => {
     // majority spelling does (ties to the earliest column).
     expect(sharedUnit(['uIU/mL', 'mIU/L'], 'mg/dL')).toBe('uIU/mL');
   });
+
+  it('folds U with IU on an enzyme row, where the printed IU is a U', () => {
+    // ALT is a catalytic activity, so "IU" is the 1964 enzyme unit = U.
+    expect(sharedUnit(['U/L', 'IU/L'], 'U/L', '1742-6')).toBe('U/L');
+    expect(sharedUnit(['Ед/л', 'МЕ/л'], 'U/L', '1742-6')).toBe('U/L');
+  });
+
+  it('folds U with IU on an arbitrary-unit row, where the printed U is an IU', () => {
+    // Insulin, the owner's real case: nine draws printed µU/mL, five µIU/mL.
+    // One row, one label — the catalog's own uIU/mL, since it is that unit.
+    expect(sharedUnit(['µU/mL', 'µIU/mL', 'µU/mL'], 'uIU/mL', '20448-7')).toBe('uIU/mL');
+    // With no catalog unit to prefer, the readings' own majority spelling names it.
+    expect(sharedUnit(['µU/mL', 'µU/mL', 'µIU/mL'], undefined, '20448-7')).toBe('µU/mL');
+    expect(sharedUnit(['U/L', 'IU/L'], 'IU/L', '15067-2')).toBe('IU/L');
+  });
+
+  it('folds them for no other analyte, and for none at all', () => {
+    // Cholesterol is a mass concentration: nothing licenses the fold there.
+    expect(sharedUnit(['U/L', 'IU/L'], 'U/L', '2093-3')).toBeUndefined();
+    expect(sharedUnit(['µU/mL', 'µIU/mL'], 'uIU/mL', '2093-3')).toBeUndefined();
+    expect(sharedUnit(['U/L', 'IU/L'], 'U/L')).toBeUndefined();
+    expect(sharedUnit(['µU/mL', 'µIU/mL'], 'uIU/mL')).toBeUndefined();
+  });
+
+  it('still splits a genuine scale gap on a folding row', () => {
+    expect(sharedUnit(['U/mL', 'µIU/mL'], 'uIU/mL', '20448-7')).toBeUndefined();
+    expect(sharedUnit(['U/L', 'mIU/L'], 'U/L', '1742-6')).toBeUndefined();
+  });
 });
 
 describe('buildRowCells', () => {

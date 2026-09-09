@@ -335,7 +335,6 @@ describe('sameUnitScale', () => {
       ['uIU/mL', 'mIU/L'],
       ['мкМЕ/мл', 'мМЕ/л'],
       ['mIU/mL', 'IU/L'],
-      ['U/L', 'IU/L'],
       ['mg/L', 'ug/mL'],
       ['mg/L', 'mcg/mL'],
       ['mg/L', 'µg/mL'],
@@ -373,6 +372,90 @@ describe('sameUnitScale', () => {
     expect(sameUnitScale('%', '%')).toBe(false);
     expect(sameUnitScale('', 'mIU/L')).toBe(false);
   });
+
+  // UCUM keeps U (exactly 1 umol/min) and [IU] (arbitrary, commensurable with
+  // nothing) apart. An analyte is measured in one of them, not both, so a lab
+  // that printed the other name wrote the same unit loosely — and that happens
+  // in BOTH directions: an enzyme's "IU" is the 1964 unit and IS U, while a
+  // WHO-standardised hormone's "U" is the international unit and IS IU.
+  describe('IU and U', () => {
+    const ALT = '1742-6'; // Alanine aminotransferase [Enzymatic activity/volume]
+    const AST = '1920-8';
+    const FSH = '15067-2'; // Follitropin [Units/volume] — a WHO arbitrary unit
+    const INSULIN = '20448-7'; // Insulin [Units/volume]
+    const TC = '2093-3'; // Cholesterol [Mass/volume] — neither property
+
+    it('folds them for a catalytic-activity analyte, where a printed IU is a U', () => {
+      expect(sameUnitScale('U/L', 'IU/L', ALT)).toBe(true);
+      expect(sameUnitScale('IU/L', 'U/L', ALT)).toBe(true);
+      expect(sameUnitScale('Ед/л', 'МЕ/л', AST)).toBe(true);
+      expect(sameUnitScale('mU/L', 'mIU/L', ALT)).toBe(true);
+    });
+
+    // The owner's own insulin history: nine draws printed µU/mL and five µIU/mL,
+    // one analyte at one lab. They must carry one label, not fourteen.
+    it('folds them for an arbitrary-unit analyte, where a printed U is an IU', () => {
+      expect(sameUnitScale('uU/mL', 'uIU/mL', INSULIN)).toBe(true);
+      expect(sameUnitScale('µU/mL', 'µIU/mL', INSULIN)).toBe(true);
+      expect(sameUnitScale('µIU/mL', 'µU/mL', INSULIN)).toBe(true);
+      expect(sameUnitScale('мкЕд/мл', 'мкМЕ/мл', INSULIN)).toBe(true);
+      expect(sameUnitScale('U/L', 'IU/L', FSH)).toBe(true);
+      expect(sameUnitScale('Ед/л', 'МЕ/л', FSH)).toBe(true);
+    });
+
+    it('keeps them apart for an analyte of neither property', () => {
+      expect(sameUnitScale('U/L', 'IU/L', TC)).toBe(false);
+      expect(sameUnitScale('uU/mL', 'uIU/mL', TC)).toBe(false);
+    });
+
+    it('keeps them apart with no analyte supplied, and for an unknown code', () => {
+      expect(sameUnitScale('U/L', 'IU/L')).toBe(false);
+      expect(sameUnitScale('IU/L', 'U/L')).toBe(false);
+      expect(sameUnitScale('uU/mL', 'uIU/mL')).toBe(false);
+      expect(sameUnitScale('U/L', 'IU/L', '99999-9')).toBe(false);
+    });
+
+    it('leaves a genuine scale difference a scale difference under either property', () => {
+      expect(sameUnitScale('U/L', 'mIU/L', ALT)).toBe(false);
+      expect(sameUnitScale('U/L', 'mg/dL', ALT)).toBe(false);
+      expect(sameUnitScale('U/mL', 'uIU/mL', INSULIN)).toBe(false);
+      expect(sameUnitScale('uU/mL', 'IU/L', INSULIN)).toBe(false);
+    });
+
+    it('never disturbs a decimal-prefix identity, with or without an analyte', () => {
+      const decimal: [string, string][] = [
+        ['mIU/mL', 'IU/L'],
+        ['uIU/mL', 'mIU/L'],
+        ['мкМЕ/мл', 'мМЕ/л'],
+        ['ng/mL', 'ug/L'],
+        ['mg/L', 'ug/mL'],
+        ['g/L', 'mg/mL'],
+      ];
+      for (const [a, b] of decimal) {
+        expect([a, b, sameUnitScale(a, b)]).toEqual([a, b, true]);
+        expect(sameUnitScale(a, b, ALT)).toBe(true);
+        expect(sameUnitScale(a, b, FSH)).toBe(true);
+        expect(sameUnitScale(a, b, TC)).toBe(true);
+      }
+    });
+
+    it('never converts across the mass/molar divide on this path', () => {
+      expect(sameUnitScale('mg/dL', 'mmol/L', INSULIN)).toBe(false);
+      expect(convertValue(100, 'uU/mL', 'mmol/L', INSULIN)).toBeUndefined();
+    });
+
+    it('lets convertValue carry a value between the two spellings, unchanged', () => {
+      expect(convertValue(12.4, 'uU/mL', 'u[IU]/mL', INSULIN)).toEqual({ value: 12.4, unit: 'u[IU]/mL' });
+      expect(convertValue(30, 'U/L', '[IU]/L', ALT)).toEqual({ value: 30, unit: '[IU]/L' });
+      expect(convertValue(12.4, 'uU/mL', 'u[IU]/mL', TC)).toBeUndefined();
+      expect(convertValue(12.4, 'uU/mL', 'u[IU]/mL', '')).toBeUndefined();
+    });
+
+    it('groups an analyte’s own printed spellings into one family', () => {
+      expect(unitScaleFamilies(['µU/mL', 'µIU/mL', 'мкМЕ/мл'], INSULIN)).toEqual([['uU/mL', 'uIU/mL']]);
+      expect(unitScaleFamilies(['µU/mL', 'µIU/mL'])).toEqual([]);
+    });
+  });
 });
 
 describe('unitScaleFamilies', () => {
@@ -393,6 +476,15 @@ describe('unitScaleFamilies', () => {
 
   it('keeps a shared dimension on a different scale apart', () => {
     expect(unitScaleFamilies(['mg/dL', 'g/L', 'mmol/L'])).toEqual([]);
+  });
+
+  it('groups U with IU for an analyte whose property permits it, and for no other', () => {
+    expect(unitScaleFamilies(['U/L', 'IU/L'])).toEqual([]);
+    // Catalytic activity (ALT) and arbitrary unit (FSH) both permit it; a mass
+    // concentration (cholesterol) does not.
+    expect(unitScaleFamilies(['U/L', 'IU/L'], '1742-6')).toEqual([['U/L', 'IU/L']]);
+    expect(unitScaleFamilies(['U/L', 'IU/L'], '15067-2')).toEqual([['U/L', 'IU/L']]);
+    expect(unitScaleFamilies(['U/L', 'IU/L'], '2093-3')).toEqual([]);
   });
 });
 

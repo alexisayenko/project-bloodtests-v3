@@ -2,6 +2,13 @@
 
 Status: accepted · 2026-09-07
 
+Qualified in one place by
+[ADR-0013](adr-0013-u-and-iu-fold-by-loinc-property.md): the vocabulary
+stays UCUM, but its rule that `U` and the arbitrary `[IU]` are
+commensurable with nothing is not applied when comparing two spellings
+printed for one analyte, whose LOINC property says which of the two
+units it is measured in. A label only; no value is converted.
+
 ## Context
 
 Labs print the same unit many ways, across years and across

@@ -242,13 +242,19 @@ function mostCommon(units: string[]): string {
  * converting to force a shared label is what ADR-0003 rules out. `preferred`
  * (the row's own catalog/SI-US unit) picks the spelling when it belongs to the
  * same unit; otherwise the readings' own majority spelling does.
+ *
+ * `loinc` is the row's code, and it is here because one question about two
+ * spellings cannot be settled without knowing the analyte: an enzyme printed
+ * U/L and IU/L is printed in one unit, a hormone printed both is not. Rows are
+ * the only place in the app where the analyte and the spellings are both known,
+ * so this is where it gets asked; omitting it keeps the conservative answer.
  */
-export function sharedUnit(units: string[], preferred?: string): string | undefined {
+export function sharedUnit(units: string[], preferred?: string, loinc?: string): string | undefined {
   const first = units[0];
   if (first === undefined) return undefined;
   if (units.every((u) => u === first)) return first;
-  if (!units.every((u) => sameUnitScale(u, first))) return undefined;
-  return preferred && sameUnitScale(preferred, first) ? preferred : mostCommon(units);
+  if (!units.every((u) => sameUnitScale(u, first, loinc))) return undefined;
+  return preferred && sameUnitScale(preferred, first, loinc) ? preferred : mostCommon(units);
 }
 
 /** One visible date column of an observation row: the reading, if any, as displayed. */
@@ -278,7 +284,7 @@ export function buildRowCells(
   });
   const units = cells.map((c) => c.display?.unit).filter((u): u is string => !!u);
   const preferred = (marker && SI_US_UNIT[marker]?.[unitSystem]) || test.unit;
-  const shared = sharedUnit(units, preferred);
+  const shared = sharedUnit(units, preferred, test.loinc);
   return {
     cells,
     rowUnit: units.length > 0 ? shared : preferred,

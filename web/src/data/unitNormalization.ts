@@ -17,7 +17,7 @@
 // Every function here is pure: no argument is mutated, nothing is stored, and
 // the untouched printed pair is always part of the result.
 
-import { DEFAULT_UNITS, ALLOWED_UNITS } from './analyteCatalog';
+import { DEFAULT_UNITS, ALLOWED_UNITS, U_IU_FOLD_REASON } from './analyteCatalog';
 import { MASS_MOLAR_SIBLINGS, SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from './massMolarSiblings';
 import type { MassMolarSibling } from './massMolarSiblings';
 
@@ -41,9 +41,11 @@ interface UnitToken {
   kind: TokenKind;
 }
 
-// IU and U share a kind on purpose: labs spell the same enzyme or hormone
-// activity both ways ("Ед/л" and "МЕ/л" for ALT), and loincCheck already folds
-// them together. Telling them apart here would raise mismatches that aren't.
+// IU and U share a KIND on purpose — both are arbitrary-per-volume as far as the
+// dimension check is concerned, so "Ед/л" and "МЕ/л" for ALT do not raise a
+// mismatch that isn't one, and loincCheck folds them the same way. Whether they
+// are the same SCALE is a separate and narrower question, answered by analyte
+// rather than by spelling: see `sameUnitScale`.
 export const LATIN_TOKENS: Record<string, UnitToken> = {
   mol: { latin: 'mol', ucum: 'mol', kind: 'substance' },
   mmol: { latin: 'mmol', ucum: 'mmol', kind: 'substance' },
@@ -355,14 +357,19 @@ const SI_PREFIX: Record<string, number> = {
 // converts.
 const SCALE_BASES = new Set(['mol', 'g', 'L', 'U', '[IU]']);
 
-function factorOfUcum(ucum: string): number | undefined {
-  if (SCALE_BASES.has(ucum)) return 1;
+// The base a UCUM token is a prefixed multiple of, with that multiple: "mmol" is
+// mol × 1e-3, "U" is U × 1. Undefined for anything with no defined magnitude.
+function baseOfUcum(ucum: string): { base: string; factor: number } | undefined {
+  if (SCALE_BASES.has(ucum)) return { base: ucum, factor: 1 };
   const prefix = SI_PREFIX[ucum.slice(0, 1)];
-  return prefix !== undefined && SCALE_BASES.has(ucum.slice(1)) ? prefix : undefined;
+  const base = ucum.slice(1);
+  return prefix !== undefined && SCALE_BASES.has(base) ? { base, factor: prefix } : undefined;
 }
 
 interface UnitScale {
   kinds: TokenKind[];
+  // The base unit of each part, prefix stripped: mol, g, L, U, [IU].
+  bases: string[];
   // Multiplier onto the dimension's base unit: g/L, mol/L, U/L, g, L.
   factor: number;
 }
@@ -371,22 +378,58 @@ function unitScale(unit: string): UnitScale | undefined {
   const parts = splitUnit(clean(unit));
   if (!parts || parts.length > 2) return undefined;
   const kinds: TokenKind[] = [];
+  const bases: string[] = [];
   const factors: number[] = [];
   for (const part of parts) {
     const token = resolveToken(part.replace(/[[\]]/g, ''));
     if (!token) return undefined;
-    const factor = factorOfUcum(token.ucum);
-    if (factor === undefined) return undefined;
+    const scale = baseOfUcum(token.ucum);
+    if (!scale) return undefined;
     kinds.push(token.kind);
-    factors.push(factor);
+    bases.push(scale.base);
+    factors.push(scale.factor);
   }
-  return { kinds, factor: parts.length === 1 ? factors[0] : factors[0] / factors[1] };
+  return { kinds, bases, factor: parts.length === 1 ? factors[0] : factors[0] / factors[1] };
 }
 
 // Kind-by-kind equality, not just equal dimensions: mmol/mol and mg/g are both
 // "dimensionless" yet measure different things, and must never convert.
 function sameKinds(a: TokenKind[], b: TokenKind[]): boolean {
   return a.length === b.length && a.every((kind, i) => kind === b[i]);
+}
+
+// The two arbitrary bases. UCUM keeps them strictly apart: U is defined as
+// exactly 1 umol/min, while [IU] is declared an arbitrary unit and is
+// commensurable with nothing at all -- the WHO fixes each International Unit
+// against its own reference preparation, so one analyte's IU says nothing about
+// another's. Labs nonetheless print both spellings for analytes measured in only
+// ONE of the two, and there the loose spelling means the other: "IU/L" on an
+// enzyme is the 1964 enzyme unit, and "uU/mL" on insulin is the WHO unit. Which
+// of the two an analyte is measured in is a fact about the analyte, so the
+// question is asked of it and not of the string -- see U_IU_FOLD_REASON.
+const ARBITRARY_BASES = new Set(['U', '[IU]']);
+
+// Whether this analyte is measured in exactly one arbitrary unit, so that its
+// two printed spellings of that unit are one unit. Both LOINC properties that
+// say so are treated alike here; their reasons differ and are recorded with the
+// data. Undefined loinc means no analyte was supplied, and the answer is the
+// conservative one.
+function foldsUAndIu(loinc: string | undefined): boolean {
+  return loinc !== undefined && U_IU_FOLD_REASON[loinc] !== undefined;
+}
+
+// Base-by-base equality, with U and [IU] treated as one base only for an analyte
+// whose property permits it. Without that permission the two stay apart, so
+// nothing folds on a guess: mIU/L and uIU/mL still meet here (both [IU]), and so
+// do mg/L and ug/mL, because those are decimal prefixes of one base.
+function sameBases(a: string[], b: string[], foldArbitraryBases: boolean): boolean {
+  return (
+    a.length === b.length &&
+    a.every(
+      (base, i) =>
+        base === b[i] || (foldArbitraryBases && ARBITRARY_BASES.has(base) && ARBITRARY_BASES.has(b[i]))
+    )
+  );
 }
 
 // Fold the printed spelling to Latin first: "mcg/dL" is a two-letter prefix
@@ -398,21 +441,33 @@ function latinScale(unit: string): UnitScale | undefined {
 }
 
 /**
- * Do two spellings denote the IDENTICAL unit — same kinds in the same order,
- * and a ratio of exactly one? uIU/mL and mIU/L do (1e-6/1e-3 = 1e-3 = mIU/L),
- * as do mg/L and ug/mL, or ng/mL and ug/L. A pair that shares a dimension on a
- * DIFFERENT scale (mg/dL vs g/L, mg/dL vs mmol/L) does not, and an unrecognized
- * unit never does — the answer is "no", never a throw and never an optimistic
- * yes.
+ * Do two spellings denote the IDENTICAL unit — same base quantities in the same
+ * order, and a ratio of exactly one? uIU/mL and mIU/L do (1e-6/1e-3 = 1e-3 =
+ * mIU/L), as do mg/L and ug/mL, or ng/mL and ug/L. A pair that shares a
+ * dimension on a DIFFERENT scale (mg/dL vs g/L, mg/dL vs mmol/L) does not, and
+ * an unrecognized unit never does — the answer is "no", never a throw and never
+ * an optimistic yes.
+ *
+ * `loinc` is the analyte the two spellings were printed for, and it decides one
+ * question a pair of strings cannot: whether a printed U and a printed IU are
+ * the same unit written two ways. They are whenever the analyte is measured in
+ * only one of the two, which its LOINC property states — and it happens in both
+ * directions. On a catalytic-activity code the unit is the 1964 enzyme unit, so
+ * a printed "IU/L" is U/L; on a "Units/volume" code (insulin, the WHO-
+ * standardised hormones) the unit is the International Unit, so a printed
+ * "uU/mL" is uIU/mL. Under any other property, and with no analyte supplied at
+ * all, the answer stays the conservative one — U and IU are different scales —
+ * so an anonymous caller can never fold them by accident.
  *
  * Comparing computed scale rather than spelling is the whole point. Nothing is
  * converted here: callers use it to decide whether ONE label may stand for
  * several readings whose numbers are already directly comparable.
  */
-export function sameUnitScale(a: string, b: string): boolean {
+export function sameUnitScale(a: string, b: string, loinc?: string): boolean {
   const left = latinScale(a);
   const right = latinScale(b);
   if (!left || !right || !sameKinds(left.kinds, right.kinds)) return false;
+  if (!sameBases(left.bases, right.bases, foldsUAndIu(loinc))) return false;
   return Math.abs(left.factor / right.factor - 1) < 1e-9;
 }
 
@@ -426,15 +481,20 @@ export function sameUnitScale(a: string, b: string): boolean {
  * Only families of more than one member are returned: a spelling with no
  * synonym is not a family, and a unit with no computable scale (a count, a
  * percentage, an annotation) can never join one.
+ *
+ * `loinc` is passed straight through, so a caller grouping one analyte's
+ * spellings gets that analyte's answer about IU and U; a caller grouping units
+ * from across the catalog has no single analyte to name and gets the
+ * conservative one.
  */
-export function unitScaleFamilies(units: Iterable<string>): string[][] {
+export function unitScaleFamilies(units: Iterable<string>, loinc?: string): string[][] {
   const seen = new Set<string>();
   const families: string[][] = [];
   for (const printed of units) {
     const latin = toLatinUnit(printed);
     if (latin === undefined || seen.has(latin)) continue;
     seen.add(latin);
-    const family = families.find((members) => sameUnitScale(members[0], latin));
+    const family = families.find((members) => sameUnitScale(members[0], latin, loinc));
     if (family) family.push(latin);
     else families.push([latin]);
   }
@@ -462,6 +522,10 @@ export function convertValue(
   const to = unitScale(toUcum);
   if (!from || !to) return undefined;
   if (sameKinds(from.kinds, to.kinds)) {
+    // Same kinds is not enough across the arbitrary bases: unless the analyte is
+    // measured in exactly one of them, there is no factor to apply and the honest
+    // answer is undefined.
+    if (!sameBases(from.bases, to.bases, foldsUAndIu(loinc))) return undefined;
     return { value: (value * from.factor) / to.factor, unit: toUcum };
   }
   if (from.kinds[1] !== 'volume' || to.kinds[1] !== 'volume') return undefined;
