@@ -508,7 +508,11 @@ yet). CI
 Automatic Analysis is off) split into a parallel `sonar` job that takes the
 full-history checkout and re-runs coverage for itself, so the ~6-minute scan
 still reports on every push and PR but no longer delays the deploy, which
-`needs: test` alone. Coverage metric is scoped to the testable logic —
+gates on nothing at all: the `deploy` job carries no `needs:` and starts at
+once beside `test` and `sonar`, so a push is live in about a minute and lint
+and the tests report *after* the code is already serving — a red suite means
+rolling forward rather than a blocked deploy, with `npm run build`'s `tsc -b`
+the only check that can still stop it. Coverage metric is scoped to the testable logic —
 `sonar.coverage.exclusions` skips the React view layer. Dependabot:
 weekly npm (minor+patch grouped) and github-actions bumps.
 

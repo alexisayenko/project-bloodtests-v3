@@ -11,7 +11,7 @@ Product / business / UX live in their own sections.
   see its status note). Its machine-readable form is published at
   [`blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json)
   (JSON Schema draft 2020-12, source `web/public/schema/`,
-  version 3 only), held to the exporter's output by
+  major version 3 only — every minor within it), held to the exporter's output by
   `web/test/envelope-schema.test.ts`.
 - [`molar-masses.md`](molar-masses.md) — the molar-mass reference
   data: what `web/public/data/molar-masses.json` stores, the
@@ -20,7 +20,7 @@ Product / business / UX live in their own sections.
   consolidation corrected
   ([ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)).
 - [`decisions/README.md`](decisions/README.md) — the ADR index
-  (eleven records, `adr-NNNN-<slug>.md`, numbered independently of
+  (thirteen records, `adr-NNNN-<slug>.md`, numbered independently of
   v2), with a per-ADR row and a note on which doc each decision
   governs. The index is the single list — don't duplicate it here.
 
@@ -134,7 +134,8 @@ from this module, so a Cyrillic printed unit (`ммоль/л`, `тыс/мкл`),
 superscript digit (`×10⁹/L`) and the micro sign all reduce to the
 catalog's Latin spelling before a code is derived from name + unit. The
 table layer borrows one more: `sameUnitScale` answers whether two printed
-spellings denote the identical unit — same token kinds, ratio exactly 1 —
+spellings denote the identical unit — same token kinds, same bases, ratio
+exactly 1 —
 so `ui.ts`'s `sharedUnit` can give a row one label when its readings only
 *look* like two units (`uIU/mL` / `mIU/L`), while a genuine scale
 difference still splits the label onto the cells. It compares, it never
@@ -160,7 +161,7 @@ conversion belonging at display time; and each code declaring only
 `{loinc, longCommonName}`, its unit taken from the catalog's
 `DEFAULT_UNITS`); their molar codes
 were added to `web/public/data/analyses.json` (124 → 139 entries then,
-163 now) and carry `aliasOf` pointing at the mass primary, so a molar
+164 now) and carry `aliasOf` pointing at the mass primary, so a molar
 code folds into the same panel row, badge and chart series without touching
 panels, tables or charts. To repair an
 existing file, `node scripts/recode-molar.mjs <input.json>` from
@@ -183,9 +184,12 @@ The app ships as a Cloudflare Worker serving static assets
 (`web/wrangler.jsonc`: worker `bloodtests`, `assets.directory` `./dist`,
 custom domain `blood.isayenko.net`). Deploys are automated: the `deploy`
 job in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs
-on every push to `main`, `needs:` the lint/test/build job — and only that
-one: the SonarCloud scan is its own parallel job, so the deploy does not
-wait on it — and is guarded
+on every push to `main` and deliberately gates on nothing — it carries no
+`needs:` and starts at once beside the `test` and `sonar` jobs, so a push is
+live in about a minute. The trade is that lint and the tests report *after*
+the code is already serving: a red suite means rolling forward, not a blocked
+deploy, and the only check that can still stop a publish is `npm run build`'s
+own `tsc -b`. It is guarded
 by `if: github.ref == 'refs/heads/main' && github.event_name == 'push'`
 so pull requests never publish. It uses `cloudflare/wrangler-action@v3`
 with `workingDirectory: web` and `command: deploy` — the same
@@ -231,8 +235,9 @@ scheduled. Format and round-trip gaps are listed separately, under
 - **An oversized entry chunk, now mostly catalog.** The two chart tabs
   are `React.lazy`-split (`LabExploreView` ≈ 78 kB, `PanelChartsView`
   ≈ 14 kB), which took the entry chunk from ~698 kB to ~616 kB raw; it
-  measures ~642 kB raw (~187 kB gzipped) now that the Reference Book has
-  its mass↔molar page and `INDEX_DEFS` its two LDL-C estimates, still over
+  measures ~688 kB raw (~201 kB gzipped) now that the Reference Book has
+  its mass↔molar, units and LOINC-database pages and `INDEX_DEFS` its two
+  LDL-C estimates, still over
   Vite's "larger than 500 kB" advisory.
   What is left is largely
   `analyteCatalog.ts` importing `analyses.json` statically, so the

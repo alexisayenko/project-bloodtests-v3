@@ -222,7 +222,8 @@ or one marker's own history, onto one scale — never for correcting a row.
 ## Where a reader sees it
 
 The Reference Book's **Mass ↔ molar conversion** page
-(`#reference/molar-masses`, under a "Units" heading) renders this file:
+(`#reference/molar-masses`, under the "Formulas and math" heading, beside
+"Units and how they are read") renders this file:
 why one analyte reports on two scales, the atomic weights → formula →
 g/mol → factor chain worked through cholesterol, the full table with its
 `basis` and its PubChem/CIAAW links, and the conventional entries with
