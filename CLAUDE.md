@@ -482,9 +482,12 @@ explore-model, markers, routing,
 scheduling, ui helpers, build stamp, format utils; the mobile reveal —
 `TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile` — has none
 yet). CI
-(`.github/workflows/ci.yml`) runs lint → tests+coverage → build and a
-SonarCloud scan (CI-based, `SONAR_TOKEN` secret; Automatic Analysis is
-off). Coverage metric is scoped to the testable logic —
+(`.github/workflows/ci.yml`) runs lint → tests+coverage → build in a
+`test` job, with the SonarCloud scan (CI-based, `SONAR_TOKEN` secret;
+Automatic Analysis is off) split into a parallel `sonar` job that takes the
+full-history checkout and re-runs coverage for itself, so the ~6-minute scan
+still reports on every push and PR but no longer delays the deploy, which
+`needs: test` alone. Coverage metric is scoped to the testable logic —
 `sonar.coverage.exclusions` skips the React view layer. Dependabot:
 weekly npm (minor+patch grouped) and github-actions bumps.
 

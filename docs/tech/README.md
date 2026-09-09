@@ -183,7 +183,9 @@ The app ships as a Cloudflare Worker serving static assets
 (`web/wrangler.jsonc`: worker `bloodtests`, `assets.directory` `./dist`,
 custom domain `blood.isayenko.net`). Deploys are automated: the `deploy`
 job in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs
-on every push to `main`, `needs:` the lint/test/build job, and is guarded
+on every push to `main`, `needs:` the lint/test/build job — and only that
+one: the SonarCloud scan is its own parallel job, so the deploy does not
+wait on it — and is guarded
 by `if: github.ref == 'refs/heads/main' && github.event_name == 'push'`
 so pull requests never publish. It uses `cloudflare/wrangler-action@v3`
 with `workingDirectory: web` and `command: deploy` — the same
