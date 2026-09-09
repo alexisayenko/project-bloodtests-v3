@@ -33,6 +33,8 @@ the index.
 | [task-0013](task-0013.md) | Reorganize the results controls area | done |
 | [task-0014](task-0014.md) | Rename the Analysis tab to Results and add a Trends tab | done |
 | [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | in progress |
+| [task-0016](task-0016.md) | Implement FIB-4 for fibrosis-risk staging | to do |
+| [task-0017](task-0017.md) | Audit the computed-index unit fallback for unchecked values | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
