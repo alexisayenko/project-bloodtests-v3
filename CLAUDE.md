@@ -86,7 +86,13 @@ because this repo is public, so a deploy needs them copied in locally
 first. `web/public/_headers` serves `/d/*` as
 `noindex`/`private`, and `robots.txt` disallows `/d/`. Deploys as
 a Cloudflare Worker (static assets) to `blood.isayenko.net` via
-`web/wrangler.jsonc`; deploy is manual (`wrangler deploy`), not CI-triggered.
+`web/wrangler.jsonc`. Deploy runs from CI: the `deploy` job in
+`.github/workflows/ci.yml` publishes on every push to `main` once the
+quality gates pass. Because a CI checkout has no `web/public/d/*.json`,
+an automated deploy carries NO share-link payloads and every existing
+`/?data=<guid>` link 404s until someone re-runs `wrangler deploy` by hand
+with the files copied in — accepted for now; the intended fix is serving
+`/d/` from R2 so the build carries no health data at all.
 The app shell is `web/src/components/conditions/MedicalConditionsPage.tsx`
 (route + results + shared settings + popup state); each section renders
 its own sibling view component (`PanelsGridView` / `PanelDetailView` /

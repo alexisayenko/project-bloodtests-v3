@@ -177,6 +177,49 @@ and the sibling pairs' last copy, each code's unit, derived from
 `DEFAULT_UNITS` rather than restated. What it handed on rather than
 finished is the UCUM parser itself, [task-0008](../tasks/task-0008.md).
 
+## Deploy
+
+The app ships as a Cloudflare Worker serving static assets
+(`web/wrangler.jsonc`: worker `bloodtests`, `assets.directory` `./dist`,
+custom domain `blood.isayenko.net`). Deploys are automated: the `deploy`
+job in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs
+on every push to `main`, `needs:` the lint/test/build job, and is guarded
+by `if: github.ref == 'refs/heads/main' && github.event_name == 'push'`
+so pull requests never publish. It uses `cloudflare/wrangler-action@v3`
+with `workingDirectory: web` and `command: deploy` — the same
+`wrangler deploy` that `npm run deploy` runs locally — authenticated by
+the `CLOUDFLARE_API_TOKEN` repository secret, with `permissions:
+contents: read` and a `deploy-production` concurrency group so two pushes
+cannot overtake each other. A manual `wrangler deploy` from `web/` still
+works and is still needed for the case below.
+
+### An automated deploy publishes no share links
+
+This is the one accepted cost of automating the deploy, and it is not
+subtle: **every existing `/?data=<guid>` share link returns 404 after a
+CI deploy.**
+
+The payloads live in `web/public/d/*.json`. They are real health data and
+this repo is public, so they are gitignored; a manual deploy only ever
+carried them because they had been copied into `web/public/d/` by hand
+first. A CI runner checks out the repo and finds nothing there, so the
+asset manifest it uploads simply has no `/d/` directory. The deploy does
+not fail — `assets.directory` points at `./dist`, which the Vite build
+always produces, an absent `public/` subdirectory is nothing for Vite to
+copy, and the `/d/*` rule in `web/public/_headers` matching no file is
+inert — the links just stop resolving. Re-publishing them means running
+`wrangler deploy` from `web/` by hand with the files in place, which the
+next push to `main` then undoes again.
+
+The intended fix is to serve `/d/` from R2 rather than from the asset
+bundle, so the build carries no health data at all and a share link no
+longer depends on what happens to sit in someone's working copy.
+
+The workflow says all of this twice: a comment block above the `deploy`
+job and a step that emits it as a GitHub Actions warning annotation on
+every run, so the consequence is visible in the run summary rather than
+only in a doc.
+
 ## Known limitations
 
 Build- and dependency-level, and all currently accepted rather than

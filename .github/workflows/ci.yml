@@ -46,3 +46,66 @@ jobs:
       - name: SonarCloud scan
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+
+  # ---------------------------------------------------------------------------
+  # KNOWN AND ACCEPTED: this deploy publishes NO share-link payloads.
+  #
+  # `web/public/d/*.json` holds real health data and is gitignored (this repo
+  # is public), so a manual deploy only carries those files because they were
+  # copied into `web/public/d/` by hand first. A CI runner checks out the repo
+  # and therefore has nothing there — the asset manifest it uploads omits the
+  # whole `/d/` directory, and EVERY EXISTING `/?data=<guid>` SHARE LINK STARTS
+  # RETURNING 404 after the first automated deploy.
+  #
+  # The deploy itself does not fail: `assets.directory` is `./dist`, which the
+  # Vite build always produces, and a missing `public/d/` is simply nothing to
+  # copy. The `_headers` rule for `/d/*` matching no file is inert too.
+  #
+  # Intended fix: serve `/d/` from R2, so the build carries no health data at
+  # all and share links stop depending on what happens to sit in a working
+  # copy. Until then, re-publish payloads by hand (`wrangler deploy` from
+  # `web/` with the files in place) after any automated deploy that must keep
+  # a link alive.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: deploy to Cloudflare
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+
+      - name: Warn — share-link payloads are not in this deploy
+        run: |
+          echo "::warning title=Share links will 404::web/public/d/*.json is gitignored real health data. CI has no copy, so this deploy publishes no /d/ assets and every existing /?data=<guid> link returns 404. Accepted for now; intended fix is serving /d/ from R2."
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: web
+          # Same thing `npm run deploy` runs (`wrangler deploy`), via the action.
+          command: deploy
