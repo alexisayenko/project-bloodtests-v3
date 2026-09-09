@@ -23,6 +23,23 @@ export function getLatest(latestByLoinc: LatestByLoinc, loincs: string[]): { res
   return current;
 }
 
+/**
+ * The newest entry recorded under each LOINC exactly as the lab printed it —
+ * deliberately not folded through the alias maps, unlike `getLatest`, because
+ * the one caller (the Reference Book's LOINC database) is answering "which of
+ * these codes has my lab actually used". A draw that lists a marker without a
+ * reading is not a test, so it never wins the slot.
+ */
+export function latestEntryByLoinc(entries: readonly ResultEntry[]): Record<string, ResultEntry> {
+  const map: Record<string, ResultEntry> = {};
+  for (const entry of entries) {
+    if (entry.result.value == null && !entry.result.rawValue) continue;
+    const existing = map[entry.loinc];
+    if (!existing || entry.date > existing.date) map[entry.loinc] = entry;
+  }
+  return map;
+}
+
 export function getStatus(latestByLoinc: LatestByLoinc, loincs: string[]): Status {
   const current = getLatest(latestByLoinc, loincs);
   if (!current) return 'never';

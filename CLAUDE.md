@@ -146,9 +146,7 @@ computes prefix × volume and demands identical kinds and a ratio of exactly 1,
 so a TSH history printed `uIU/mL`, `mIU/L` and `мкМЕ/мл` carries one `mIU/L`
 label (the row's own catalog/SI-US unit when that belongs to the same unit,
 else the readings' majority spelling) with no number converted, while `mg/dL`
-against `mmol/L` still splits onto the cells. The identities it folds are
-`IU/L` = `U/L` = `mIU/mL`, `ng/mL` = `ug/L`, `mg/L` = `ug/mL` and
-`mIU/L` = `uIU/mL`. The conversion itself is `computedIndices.ts`'s
+against `mmol/L` still splits onto the cells. The identities it folds unconditionally are the pure decimal-prefix ones — `IU/L` = `mIU/mL`, `mIU/L` = `uIU/mL`, `ng/mL` = `ug/L` and `mg/L` = `ug/mL`. `U` and `IU` fold too, but only where the analyte permits it, and the permission is asked of the LOINC property rather than of the spelling: an analyte is measured in one of the two arbitrary units, not both, so whichever name a lab printed there is only one unit it can have meant. Two properties grant it, in opposite directions — a catalytic activity (`[Enzymatic activity/volume]`, 8 codes: ALT, AST, ALP, GGT, amylase, lipase, cholinesterase, CK), where the unit is the 1964 enzyme unit and a printed `IU/L` is `U/L`; and the arbitrary WHO kind (`[Units/volume]`, 12 codes: insulin, TSH, FSH, LH, prolactin, thyroglobulin, anti-TPO, TRAb, anti-CCP, rheumatoid factor, antithrombin activity, oxLDL), where the unit is the International Unit and a printed `µU/mL` is `µIU/mL` — which is what keeps the owner's insulin history, printed `µU/mL` nine times and `µIU/mL` five, under one row label. Both sets are derived from the catalog's own long common names by `analyteCatalog.ts`'s `propertyOf` / `U_IU_FOLD_REASON` (ADR-0010), never hand-listed; under any other property, and with no analyte supplied, `U` and `IU` stay different scales, and one analyte's `IU` never meets another's. The conversion itself is `computedIndices.ts`'s
 `convertUnit`, which
 folds a printed spelling to Latin before matching, so `ммоль/л` converts like
 `mmol/L` (it used to match no rule, leaving the printed number under a
@@ -337,7 +335,19 @@ atomic-weights → formula → g/mol → factor chain worked through
 cholesterol, the 17-analyte table with `basis` pills and PubChem/CIAAW
 links, and the conventional cases quoting the JSON's own notes; like
 `HpAxisPage` it lives inside `ReferenceBookPage.tsx`, and `#reference/<key>`
-already routed generically) — each its own URL hash so
+already routed generically — and beside it a "Units and how they are read"
+page at `#reference/units`: why one unit has many spellings, UCUM as the
+target vocabulary, the three normalization stages, the families of spellings
+that are one unit (computed by asking `sameUnitScale`, not tabulated), a
+"When U and IU are one unit" section setting out the deliberate deviation from
+UCUM's refusal to make them commensurable and worked through a table of
+enzyme / hormone / analyte-unknown answers, the SI/US switch, what is never
+converted (ADR-0003), and a Sources block citing the UCUM spec, its licence,
+WHO TRS 932 Annex 2, Clinical Chemistry's instructions to authors and the
+LOINC Users' Guide, each with what it settles and a retrieval date; Analytes: a
+"LOINC database" page at `#reference/loinc-database` listing every analyte the
+app knows — code, name, specimen, units and panels, sortable by column) — each
+its own URL hash so
 browser back/forward works. Validation
 (`validateDiagnosticReports.ts`) marks an observation missing its name
 or value-or-rawValue, or carrying a non-empty code that isn't
@@ -353,8 +363,15 @@ tables need extending) are warnings; while errors exist, Monitoring Panels and A
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable). Upload
 accepts the v3 interchange envelope and nothing else
-(`{ schema: 3, diagnosticReports }` — `SCHEMA_VERSION` in
-`data/envelopeSchema.ts`; the earlier `schema: 1`, v2's
+(`{ schema: "3.1", diagnosticReports }` — `SCHEMA_VERSION` in
+`data/envelopeSchema.ts`, a `"major.minor"` STRING, since a JSON number
+cannot tell `3.10` from `3.1`: the major is the compatibility question and
+the minor rises on every envelope change, each a backward-compatible
+addition, so any `"3.x"` is read — an older `"3.0"` and a future `"3.2"`
+alike — plus the legacy bare number `3`, read as `3.0`, which is what
+existing files carry; `3.1` was recorded retroactively for the unit pair the
+exporter already wrote (ADR-0012, widening ADR-0009's `3`-only acceptance,
+with the minor history in the interchange doc). The earlier `schema: 1`, v2's
 canonical-draws and the two legacy shapes were all dropped in
 ADR-0009, and old files go through `npm run convert:v3`
 (`scripts/convert-to-v3.mjs`), which keeps every legacy branch;
@@ -391,8 +408,10 @@ stable — export → import → export is byte-identical, which is the
 property that catches drift. See
 `docs/tech/interchange-format.md` for exactly which envelope fields are
 implemented, and `web/public/schema/bloodtests-3.schema.json` (served at
-`blood.isayenko.net/schema/`, draft 2020-12, objects open, version-3 only —
-as is the parser, since ADR-0009) for the machine-readable form; the envelope's
+`blood.isayenko.net/schema/`, draft 2020-12, objects open, major-3 only —
+as is the parser, since ADR-0009; the file name stays major-only and its `$id`
+never moves, one document validating every minor, which is what makes a minor
+an addition rather than a new format) for the machine-readable form; the envelope's
 TypeScript types are generated from that schema by `npm run schema:types`
 (`scripts/generate-envelope-types.mjs` → `data/envelopeTypes.ts`), with a
 drift test failing CI on an ungenerated schema edit. Unit normalization
@@ -429,7 +448,7 @@ deliberately not auto-applied the way a confident LOINC fix is, since these
 warnings render on mount and auto-applying would mutate the draft on page load;
 the unmappable-unit warning gets no chip, there being nothing to suggest.
 Those molar codes were added to the analyte catalog
-(`web/public/data/analyses.json`, 124 → 139 entries then, 163 now — the last
+(`web/public/data/analyses.json`, 124 → 139 entries then, 164 now — the last
 three, `14749-6` glucose, `22664-7` urea and `14798-3` iron, added when the
 sibling pairs stopped declaring their own units and the catalog turned out not
 to carry them; the same pass corrected eight `mcg/…` unit spellings and one
@@ -463,12 +482,13 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (586 tests across 22 files, 1 skipped: index
+Vitest suites in `web/test/` (582 tests across 24 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
 report-detail row helpers, unit normalization (Latin/UCUM stages, dimension check,
-conversion), export
+conversion, and the property-gated U/IU fold in both directions and its refusal
+without an analyte), export
 envelope, published JSON Schema conformance and generated-type drift (ajv and
 json-schema-to-typescript, devDependencies only —
 nothing schema-related is bundled), reference-data conformance
@@ -505,6 +525,7 @@ weekly npm (minor+patch grouped) and github-actions bumps.
   panel, lab report, computed index, companion observation (planned),
   unit (printed and canonical are a pair: `rawUnit` and `unit`)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
-  (eleven records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08)
+  (thirteen records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
+  ADR-0012 and ADR-0013 2026-09-09)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
   envelope spec, and its published JSON Schema

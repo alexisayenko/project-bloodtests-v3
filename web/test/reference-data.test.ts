@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020';
 import { ANALYSES, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS } from './dataFiles';
-import { ALIAS_TO_PRIMARY, ANALYTE_BY_LOINC, DEFAULT_UNITS, SHORT_LABELS, SPECIMENS, specimenOf } from '../src/data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ANALYTE_BY_LOINC, DEFAULT_UNITS, SHORT_LABELS, SPECIMENS, specimenOf, trimmedLongName } from '../src/data/analyteCatalog';
 import {
   MOLAR_MASSES,
   MOLAR_MASS_BY_ID,
@@ -121,6 +121,97 @@ describe('reference data is internally consistent', () => {
       expect([pair.mass.loinc, property(pair.mass.loinc)]).toEqual([pair.mass.loinc, 'Mass']);
       expect([pair.molar.loinc, property(pair.molar.loinc)]).toEqual([pair.molar.loinc, 'Moles']);
     }
+  });
+
+  // "Glucose Serum" sat on 2339-0 and 15074-8, which LOINC names in *Blood*.
+  // Whole-blood glucose runs 10-15% below plasma, so the label was not a
+  // wording slip, it was the wrong quantity. A display name may abbreviate the
+  // code's system but never contradict it.
+  describe('a display name never claims a specimen the code contradicts', () => {
+    // A word a display name may use, and the LOINC systems it is true of.
+    const SPECIMEN_WORDS: [RegExp, RegExp][] = [
+      [/\bserum\b/, /serum/],
+      [/\bplasma\b/, /plasma/],
+      [/\bwhole blood\b/, /^blood$/],
+      [/\bblood\b/, /blood|red blood cells/],
+      [/\burine\b/, /urine/],
+      [/\bstool\b/, /stool|feces/],
+      [/\bsaliva\b/, /saliva/],
+      [/\bcsf\b|\bcerebrospinal\b/, /cerebrospinal/],
+    ];
+
+    it('names no specimen the code is not measured in', () => {
+      const wrong: string[] = [];
+      for (const a of ANALYSES) {
+        const system = SPECIMENS[a.loinc]?.toLowerCase();
+        if (!system) continue;
+        const name = a.displayName.toLowerCase();
+        for (const [word, allowed] of SPECIMEN_WORDS) {
+          if (word.test(name) && !allowed.test(system)) {
+            wrong.push(`${a.loinc} "${a.displayName}" is measured in ${SPECIMENS[a.loinc]}`);
+          }
+        }
+      }
+      expect(wrong).toEqual([]);
+    });
+
+    it('catches the fault it was written for', () => {
+      const bad = { system: 'blood', name: 'glucose serum' };
+      const [word, allowed] = SPECIMEN_WORDS[0]!;
+      expect(word.test(bad.name) && !allowed.test(bad.system)).toBe(true);
+    });
+  });
+
+  // 3091-6/22664-7 (Urea) were aliases of 3094-0 (Urea *nitrogen*) and shared
+  // its label, folding two quantities 2.14x apart into one row. An alias is a
+  // unit or method variant of its primary; a different measurand is not.
+  it('no alias measures a different quantity from its primary', () => {
+    // Words that turn a component into a different measurand of the same
+    // substance rather than another way of reporting it.
+    const MEASURAND_QUALIFIERS = new Set([
+      'nitrogen', 'free', 'total', 'bound', 'equivalents', 'ionized', 'oxidized',
+    ]);
+    const words = (loinc: string): string[] =>
+      (ANALYTE_BY_LOINC[loinc]?.longCommonName ?? '')
+        .split(/\s*\[/)[0]!
+        .toLowerCase()
+        .split(/[\s.]+/)
+        .filter(Boolean);
+
+    const wrong: string[] = [];
+    for (const [alias, primary] of Object.entries(ALIAS_TO_PRIMARY)) {
+      const a = new Set(words(alias));
+      const b = new Set(words(primary));
+      const extra = [...a].filter((w) => !b.has(w)).concat([...b].filter((w) => !a.has(w)));
+      const differing = extra.filter((w) => MEASURAND_QUALIFIERS.has(w));
+      if (differing.length && (a.size !== b.size || differing.length === extra.length)) {
+        wrong.push(`${alias} vs ${primary}: differ by ${differing.join(', ')}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  // 2998-3 and 30552-4 are [Mass/volume] codes the catalog recorded nmol/L
+  // against, and 49246-0 was a [Mass/volume] name (for a code LOINC does not
+  // have) carrying U/L. Per ADR-0003 that is a code error, so the catalog must
+  // not state the pairing in the first place.
+  it("every recorded unit matches the property its own LOINC name declares", () => {
+    const EXPECTED: Record<string, string> = {
+      Mass: 'mass/volume',
+      Moles: 'substance/volume',
+      Units: 'arbitrary/volume',
+    };
+    const wrong: string[] = [];
+    for (const a of ANALYSES) {
+      if (!a.unit) continue;
+      const property = /\[(Mass|Moles|Units)\/volume\]/.exec(a.longCommonName)?.[1];
+      const dimension = dimensionOf(a.unit);
+      if (!property || !dimension) continue;
+      if (dimension !== EXPECTED[property]) {
+        wrong.push(`${a.loinc} ${a.displayName}: [${property}/volume] but unit ${a.unit} is ${dimension}`);
+      }
+    }
+    expect(wrong).toEqual([]);
   });
 
   it('every Monitoring Panel resolves against the laboratory groups', () => {
@@ -283,5 +374,69 @@ describe('specimen derived from the long common name', () => {
     const without = ANALYSES.filter((a) => !SPECIMENS[a.loinc]);
     expect(without.length).toBeLessThanOrEqual(8);
     for (const a of without) expect(a.longCommonName).not.toMatch(/\s(?:in|of)\s/);
+  });
+});
+
+describe('long common name trimmed for display', () => {
+  it('drops both the property bracket and the specimen clause', () => {
+    expect(trimmedLongName('25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma')).toBe('25-hydroxyvitamin D3');
+  });
+
+  it('keeps the method whether or not a specimen clause preceded it', () => {
+    // The method is what tells two codes for one analyte apart, so it always stays.
+    expect(trimmedLongName('MCH [Entitic mass] by Automated count')).toBe('MCH by Automated count');
+    expect(trimmedLongName('Erythrocytes [#/volume] in Blood by Automated count')).toBe(
+      'Erythrocytes by Automated count'
+    );
+    expect(trimmedLongName('Hematocrit [Volume Fraction] of Blood by Automated count')).toBe(
+      'Hematocrit by Automated count'
+    );
+    expect(
+      trimmedLongName('C reactive protein [Mass/volume] in Serum or Plasma by High sensitivity method')
+    ).toBe('C reactive protein by High sensitivity method');
+  });
+
+  it('drops a specimen clause from a name that carries no property', () => {
+    expect(trimmedLongName('Hemoglobin A1c/Hemoglobin.total in Blood by calculation')).toBe(
+      'Hemoglobin A1c/Hemoglobin.total by calculation'
+    );
+  });
+
+  it('drops only the trailing clause, not an "in" that is part of the analyte name', () => {
+    expect(trimmedLongName('Cholesterol in HDL [Mass/volume] in Serum or Plasma')).toBe('Cholesterol in HDL');
+  });
+
+  it('leaves a name carrying neither part alone, parentheses included', () => {
+    expect(trimmedLongName('Prothrombin time (PT)')).toBe('Prothrombin time (PT)');
+    expect(trimmedLongName('Thrombin time')).toBe('Thrombin time');
+  });
+
+  it('never returns an empty name', () => {
+    expect(trimmedLongName('[Mass/volume] in Serum')).toBe('[Mass/volume] in Serum');
+    expect(trimmedLongName('')).toBe('');
+  });
+
+  it('leaves every catalog name non-empty and no longer than the stored one', () => {
+    for (const a of ANALYSES) {
+      const trimmed = trimmedLongName(a.longCommonName);
+      expect(trimmed).not.toBe('');
+      expect(trimmed.length).toBeLessThanOrEqual(a.longCommonName.length);
+      expect(trimmed).not.toMatch(/[[\]]/);
+    }
+  });
+
+  it('leaves no two catalog entries looking identical in the LOINC database table', () => {
+    // Name, specimen and unit are the three columns a reader tells rows apart by.
+    // Two codes agreeing on all three are indistinguishable on screen — which is
+    // what dropping the method used to do to CRP, ESR and HbA1c.
+    const seen = new Map<string, string>();
+    const collisions: string[] = [];
+    for (const a of ANALYSES) {
+      const key = [trimmedLongName(a.longCommonName), SPECIMENS[a.loinc] ?? '', a.unit ?? ''].join(' | ');
+      const first = seen.get(key);
+      if (first) collisions.push(`${first} vs ${a.loinc}: ${key}`);
+      else seen.set(key, a.loinc);
+    }
+    expect(collisions).toEqual([]);
   });
 });

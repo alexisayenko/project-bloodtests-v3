@@ -4,7 +4,9 @@
  * empty cells at the bottom in both directions -- are testable on their own.
  */
 
-export type AnalyteSortKey = 'loinc' | 'name' | 'short' | 'specimen' | 'unit';
+// 'lastTested' ranks on the ISO date behind the cell, never the "Aug 26 at …"
+// string it shows -- an ISO date sorts chronologically as plain text.
+export type AnalyteSortKey = 'loinc' | 'name' | 'short' | 'specimen' | 'unit' | 'lastTested';
 
 export type SortDirection = 'asc' | 'desc';
 

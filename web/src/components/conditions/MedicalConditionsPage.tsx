@@ -227,7 +227,7 @@ export function MedicalConditionsPage() {
           />
         );
       case 'reference':
-        return <ReferenceBookPage indexKey={route.key} navigate={navigate} />;
+        return <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} />;
       case 'panel':
         return (
           <PanelDetailView
