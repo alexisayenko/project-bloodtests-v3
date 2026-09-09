@@ -31,7 +31,9 @@ const LABEL_COL_WIDTH = 180;
 // separate block from the date grid while staying in the same table (exact
 // row alignment for free).
 const GAP_COL_WIDTH = 16;
-// Wide enough for the header's month pill; the body cells stay a single glyph.
+// Fits the header's widest row: the month pill at its longest option (91px),
+// the 8px gap, the select-all box and the cell padding. The body cells stay a
+// single glyph.
 const SCHEDULED_COL_WIDTH = 132;
 
 // Fixed layout only kicks in with a non-auto table width; every column width
@@ -48,14 +50,11 @@ const th = {
 const td = { padding: '8px 12px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', cursor: 'pointer' } as const;
 const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere' } as const;
 const gapCell = { padding: 0, border: 'none' } as const;
-// whiteSpace resets to normal so the month pill and the select-all box stack
-// instead of forcing the column past its colgroup width.
 const scheduledTh = {
   ...th,
   textAlign: 'center',
-  whiteSpace: 'normal',
   padding: '6px 8px',
-  verticalAlign: 'bottom',
+  verticalAlign: 'middle',
   borderLeft: '1px solid #ddd',
   borderRight: '1px solid #ddd',
 } as const;
@@ -101,7 +100,9 @@ function TableHead({ label, dates, schedule }: Readonly<{ label: string; dates: 
         {schedule && (
           <>
             <th style={gapCell} />
-            <th style={scheduledTh}>
+            {/* The header holds only controls, so aria-label supplies the column
+                name that the removed caption used to give it. */}
+            <th style={scheduledTh} aria-label="Scheduled">
               <ScheduleHeader {...schedule} />
             </th>
           </>

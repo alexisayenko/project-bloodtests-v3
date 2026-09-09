@@ -37,17 +37,6 @@ const MONTH_SELECT = {
   maxWidth: '100%',
 } as const;
 
-const ALL_LABEL = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 4,
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#1971c2',
-  cursor: 'pointer',
-  userSelect: 'none',
-} as const;
-
 export type ScheduleHeaderProps = {
   /** The table this header sits on, for the select-all box's accessible name. */
   label: string;
@@ -59,7 +48,8 @@ export type ScheduleHeaderProps = {
 
 /**
  * The Scheduled column's header: the schedule's target month plus a tri-state
- * select-all over the rows the table is currently showing.
+ * select-all over the rows the table is currently showing. Neither control
+ * carries visible text, so both name themselves through aria-label.
  */
 export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll }: Readonly<ScheduleHeaderProps>) {
   const box = useRef<HTMLInputElement>(null);
@@ -68,7 +58,7 @@ export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll }:
   }, [state]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
       <select
         aria-label="Month these tests are planned for"
         value={month ?? NO_MONTH}
@@ -82,17 +72,14 @@ export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll }:
           </option>
         ))}
       </select>
-      <label style={ALL_LABEL}>
-        <input
-          ref={box}
-          type="checkbox"
-          checked={state === 'all'}
-          onChange={(e) => onToggleAll(e.currentTarget.checked)}
-          aria-label={`Schedule every row shown in ${label}`}
-          style={{ margin: 0, accentColor: '#1971c2', cursor: 'pointer' }}
-        />
-        Scheduled
-      </label>
+      <input
+        ref={box}
+        type="checkbox"
+        checked={state === 'all'}
+        onChange={(e) => onToggleAll(e.currentTarget.checked)}
+        aria-label={`Schedule every row shown in ${label}`}
+        style={{ margin: 0, accentColor: '#1971c2', cursor: 'pointer' }}
+      />
     </div>
   );
 }
