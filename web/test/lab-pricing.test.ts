@@ -67,6 +67,21 @@ describe('quoteSchedule', () => {
     expect(quote.total).toBe(517);
     expect(quote.unpriced).toEqual(['11580-8']);
   });
+
+  it('prices one schedule at each laboratory from that laboratory alone', () => {
+    const schedule = ['2093-3', '2085-9', '13457-7', '2571-8', '718-7', '2345-7'];
+    const ownTotal = (candidate: Laboratory) =>
+      ['TC', 'HDL-C', 'LDL-C', 'TRIG', 'FBC', 'Glucose'].reduce(
+        (sum, label) => sum + candidate.prices.find((line) => line.label === label)!.price,
+        0
+      );
+    const esculab = LABORATORY_BY_ID.esculab!;
+    const synevo = LABORATORY_BY_ID.synevo!;
+    expect(quoteSchedule(schedule, esculab).total).toBe(ownTotal(esculab));
+    expect(quoteSchedule(schedule, synevo).total).toBe(ownTotal(synevo));
+    expect(quoteSchedule(schedule, esculab).total).toBe(1198);
+    expect(quoteSchedule(schedule, synevo).total).toBe(1420);
+  });
 });
 
 describe('formatPrice', () => {
