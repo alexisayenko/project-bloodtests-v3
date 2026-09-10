@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import { computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
-import { INDEX_LOINCS, testLoincs, type Observation } from './markers';
-import { STATUS_STYLES, ZONE_DOT, pressable } from './ui';
-import { getStatus, type LatestByLoinc } from './resultsLookup';
+import { INDEX_LOINCS, type Observation } from './markers';
+import { pressable } from './ui';
+import type { LatestByLoinc } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 import { getPanelMeta } from './panelMeta';
 
@@ -19,31 +19,29 @@ function latestZone(def: IndexDef, datesDesc: string[], resultsByDate: Record<st
   return null;
 }
 
-/** A small rounded chip for one marker or index. */
+/** White rounded-rectangle chip — bold label. */
 function Chip({
   label,
-  dotColor,
   onClick,
-}: Readonly<{ label: string; dotColor: string; onClick: (e: { currentTarget: HTMLElement }) => void }>) {
+}: Readonly<{ label: string; onClick: (e: { currentTarget: HTMLElement }) => void }>) {
   return (
     <div
       {...pressable(onClick)}
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
-        gap: 5,
-        padding: '4px 9px',
-        borderRadius: 9999,
-        background: COLOR.surfaceMuted,
-        border: `1px solid ${COLOR.borderSubtle}`,
-        fontSize: 12,
-        fontWeight: 500,
+        justifyContent: 'center',
+        padding: '8px 10px',
+        borderRadius: 12,
+        background: COLOR.surface,
+        fontSize: 13,
+        fontWeight: 600,
         color: COLOR.text,
         cursor: 'pointer',
-        whiteSpace: 'nowrap',
+        textAlign: 'center',
+        lineHeight: 1.2,
       }}
     >
-      <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
       {label}
     </div>
   );
@@ -51,7 +49,7 @@ function Chip({
 
 export function PanelsGridView({
   conditions,
-  latestByLoinc,
+  latestByLoinc: _latestByLoinc, // kept for API compatibility; status coloring deferred
   resultsByDate,
   onOpenDetail,
   onOpenPopup,
@@ -77,63 +75,51 @@ export function PanelsGridView({
           const observations = condition.tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
 
           return (
-            <div key={condition.name} className="mc-panel-card" style={{ padding: 0, overflow: 'hidden' }}>
-              {/* Card header */}
+            <div
+              key={condition.name}
+              className="mc-panel-card"
+              style={{ padding: '16px', background: `${meta.color}0f`, overflow: 'hidden' }}
+            >
+              {/* Header: icon + name + description */}
               <div
                 {...pressable(() => onOpenDetail(condition.name))}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '12px 14px',
-                  background: `${meta.color}14`, // ~8% opacity tint
-                  cursor: 'pointer',
-                  borderBottom: `1px solid ${meta.color}30`,
-                }}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14, cursor: 'pointer' }}
               >
                 <span
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 32,
-                    height: 32,
+                    width: 44,
+                    height: 44,
                     borderRadius: '50%',
-                    background: meta.color,
+                    background: `${meta.color}22`,
                     flexShrink: 0,
                   }}
                 >
-                  <Icon size={16} color="#fff" strokeWidth={2} aria-hidden="true" />
+                  <Icon size={20} color={meta.color} strokeWidth={1.75} aria-hidden="true" />
                 </span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.text, flex: 1, lineHeight: 1.3 }}>
-                  {condition.name}
-                </span>
-                <span style={{ color: meta.color, fontSize: 16, fontWeight: 400 }}>›</span>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: COLOR.text, lineHeight: 1.3 }}>
+                    {condition.name}
+                  </div>
+                  {meta.description && (
+                    <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 2, lineHeight: 1.4 }}>
+                      {meta.description}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Marker chips */}
-              <div style={{ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {observations.map((test) => {
-                  const dotColor = STATUS_STYLES[getStatus(latestByLoinc, testLoincs(test))].border;
-                  return (
-                    <Chip
-                      key={test.loinc}
-                      label={test.short}
-                      dotColor={dotColor}
-                      onClick={(e) => onOpenPopup(test, e)}
-                    />
-                  );
-                })}
+              {/* Marker + index chips — 3 columns */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                {observations.map((test) => (
+                  <Chip key={test.loinc} label={test.short} onClick={(e) => onOpenPopup(test, e)} />
+                ))}
                 {computedForPanel.map((def) => {
-                  const z = latestZone(def, datesDesc, resultsByDate);
-                  const dotColor = z ? ZONE_DOT[z] : STATUS_STYLES.never.border;
+                  latestZone(def, datesDesc, resultsByDate); // compute for future status use
                   return (
-                    <Chip
-                      key={def.key}
-                      label={def.nameCompact}
-                      dotColor={dotColor}
-                      onClick={(e) => onOpenIndexPopup(def, e)}
-                    />
+                    <Chip key={def.key} label={def.nameCompact} onClick={(e) => onOpenIndexPopup(def, e)} />
                   );
                 })}
               </div>
