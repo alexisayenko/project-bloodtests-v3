@@ -65,6 +65,13 @@ Prices in UAH as of 2026-09-10, entered by the user.
 - **TC** is `2093-3`. Its molar sibling `14647-2` folds into it.
 - **TRIG** is `2571-8`. Its molar sibling `14927-8` folds into it.
 
+## Medis
+
+Prices in UAH as of 2026-09-10, entered by the user, for the same ten labels
+as Esculab. Each label maps to the same codes for the same reasons given above,
+including the open questions: which codes Medis's FBC really includes, and
+whether its LDL-C is a direct assay, have not been recorded.
+
 ## Synevo
 
 Prices in UAH as of 2026-09-10, entered by the user, for the same ten labels

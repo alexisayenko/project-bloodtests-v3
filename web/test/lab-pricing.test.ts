@@ -76,10 +76,13 @@ describe('quoteSchedule', () => {
         0
       );
     const esculab = LABORATORY_BY_ID.esculab!;
+    const medis = LABORATORY_BY_ID.medis!;
     const synevo = LABORATORY_BY_ID.synevo!;
     expect(quoteSchedule(schedule, esculab).total).toBe(ownTotal(esculab));
+    expect(quoteSchedule(schedule, medis).total).toBe(ownTotal(medis));
     expect(quoteSchedule(schedule, synevo).total).toBe(ownTotal(synevo));
     expect(quoteSchedule(schedule, esculab).total).toBe(1198);
+    expect(quoteSchedule(schedule, medis).total).toBe(1164);
     expect(quoteSchedule(schedule, synevo).total).toBe(1420);
   });
 });
