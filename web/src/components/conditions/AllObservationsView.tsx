@@ -187,6 +187,7 @@ export function AllObservationsView({
                 <IndexTable
                   defs={visibleIndexDefs}
                   visibleDates={allDates}
+                  allResults={allResults}
                   resultsByDate={resultsByDate}
                   selectedLoinc={selectedLoinc}
                   onSelect={onSelect}

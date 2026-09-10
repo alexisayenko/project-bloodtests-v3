@@ -162,6 +162,7 @@ export function PanelDetailView({
                     <IndexTable
                       defs={visibleComputed}
                       visibleDates={visibleDates}
+                      allResults={allResults}
                       resultsByDate={resultsByDate}
                       selectedLoinc={selectedLoinc}
                       onSelect={onSelect}

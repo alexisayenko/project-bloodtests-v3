@@ -7,6 +7,9 @@ import type {
   InterchangeReport,
 } from './envelopeTypes';
 
+/** The interchange format's own spelling of "the report names no lab". */
+export const UNKNOWN_LAB = 'Unknown Lab';
+
 /**
  * Parses a visitor-uploaded JSON file into DiagnosticReport[].
  *
@@ -101,7 +104,7 @@ function v3ToGroup(report: InterchangeReport, index: number): DiagnosticReport {
   }
 
   const items = report.observations.map(v3ToResult);
-  const place = report.lab || 'Unknown Lab';
+  const place = report.lab || UNKNOWN_LAB;
   // The report's own identifier (visit/order/accession) disambiguates two
   // draws from the same lab on the same date — without it they'd collide on
   // the same session id and silently replace each other on merge.

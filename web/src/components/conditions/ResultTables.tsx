@@ -7,6 +7,8 @@ import {
   LABEL_COL_WIDTH,
   buildRowCells,
   formatMonthYear,
+  indexInputEntries,
+  labsByDate,
   pressable,
   cellBg,
   isCellArmed,
@@ -40,7 +42,18 @@ const SCHEDULED_COL_WIDTH = 132;
 const th = {
   textAlign: 'left',
   padding: '8px 12px',
+  verticalAlign: 'top',
   borderBottom: `1.5px solid ${COLOR.accent}`,
+  whiteSpace: 'nowrap',
+} as const;
+const labLine = {
+  height: 14,
+  lineHeight: '14px',
+  fontSize: 11,
+  fontWeight: 400,
+  color: COLOR.textMuted,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 } as const;
 const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap', cursor: 'pointer' } as const;
@@ -83,16 +96,24 @@ function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling:
   );
 }
 
-function TableHead({ label, dates, schedule }: Readonly<{ label: string; dates: string[]; schedule?: ScheduleHeaderProps }>) {
+function TableHead({
+  label, dates, labs, schedule,
+}: Readonly<{ label: string; dates: string[]; labs: Record<string, string[]>; schedule?: ScheduleHeaderProps }>) {
   return (
     <thead>
       <tr>
         <th style={th}>{label}</th>
-        {dates.map((date) => (
-          <th key={date} style={th}>
-            {formatMonthYear(date)}
-          </th>
-        ))}
+        {dates.map((date) => {
+          const names = labs[date]?.join(', ') ?? '';
+          return (
+            <th key={date} style={th}>
+              {formatMonthYear(date)}
+              <div style={labLine} title={names || undefined}>
+                {names}
+              </div>
+            </th>
+          );
+        })}
         {schedule && (
           <>
             <th style={gapCell} />
@@ -250,6 +271,8 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
   // panel and by name, and scheduling something the reader cannot see would be
   // a silent surprise.
   const visibleRowLoincs = rows.map(testLoincs);
+  const builtRows = rows.map((test) => ({ test, ...buildRowCells(test, visibleDates, allResults, unitSystem) }));
+  const labs = labsByDate(builtRows.flatMap(({ cells }) => cells.map((cell) => cell.match)));
   const schedule = scheduling && {
     label,
     month: scheduling.scheduled.month,
@@ -260,12 +283,11 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
   return (
     <TableScroller
       colgroup={<ColGroup dates={visibleDates} scheduling={!!scheduling} />}
-      head={<TableHead label={label} dates={visibleDates} schedule={schedule || undefined} />}
+      head={<TableHead label={label} dates={visibleDates} labs={labs} schedule={schedule || undefined} />}
     >
         <tbody>
-          {rows.map((test) => {
+          {builtRows.map(({ test, cells, rowUnit, showCellUnits }) => {
             const selected = selectedLoinc === test.loinc;
-            const { cells, rowUnit, showCellUnits } = buildRowCells(test, visibleDates, allResults, unitSystem);
             const rowLoincs = testLoincs(test);
             return (
               <tr key={test.loinc} data-selected={selected || undefined} style={{ background: selected ? COLOR.accentSoft : undefined }}>
@@ -307,10 +329,12 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
 }
 
 export function IndexTable({
-  defs, visibleDates, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup, scheduling, usedBy,
+  defs, visibleDates, allResults, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup, scheduling, usedBy,
 }: Readonly<{
   defs: IndexDef[];
   visibleDates: string[];
+  /** Read only to name the labs each date's index values were computed from. */
+  allResults: ResultEntry[];
   resultsByDate: Record<string, Record<string, Result>>;
   selectedLoinc: string | null;
   onSelect: (key: string) => void;
@@ -326,6 +350,7 @@ export function IndexTable({
   usedBy?: Relation;
 }>) {
   const visibleKeys = defs.map((def) => def.key);
+  const labs = labsByDate(indexInputEntries(defs, visibleDates, allResults, resultsByDate));
   const schedule = scheduling && {
     label: 'Indices',
     month: scheduling.scheduled.month,
@@ -336,7 +361,7 @@ export function IndexTable({
   return (
     <TableScroller
       colgroup={<ColGroup dates={visibleDates} scheduling={!!scheduling} />}
-      head={<TableHead label="Indices" dates={visibleDates} schedule={schedule || undefined} />}
+      head={<TableHead label="Indices" dates={visibleDates} labs={labs} schedule={schedule || undefined} />}
     >
         <tbody>
           {defs.map((def) => {
