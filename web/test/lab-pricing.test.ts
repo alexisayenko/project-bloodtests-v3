@@ -85,6 +85,15 @@ describe('quoteSchedule', () => {
     expect(quoteSchedule(schedule, medis).total).toBe(1164);
     expect(quoteSchedule(schedule, synevo).total).toBe(1420);
   });
+
+  it('adds ApoB and insulin where a laboratory prices them and leaves them unpriced where it does not', () => {
+    const schedule = ['2093-3', '2085-9', '13457-7', '2571-8', '718-7', '2345-7', '1884-6', '20448-7'];
+    expect(quoteSchedule(schedule, LABORATORY_BY_ID.medis!).total).toBe(1744);
+    expect(quoteSchedule(schedule, LABORATORY_BY_ID.synevo!).total).toBe(2210);
+    const esculab = quoteSchedule(schedule, LABORATORY_BY_ID.esculab!);
+    expect(esculab.total).toBe(1198);
+    expect(esculab.unpriced).toEqual(['1884-6', '20448-7']);
+  });
 });
 
 describe('formatPrice', () => {

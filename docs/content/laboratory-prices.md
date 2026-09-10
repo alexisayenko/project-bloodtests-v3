@@ -68,16 +68,22 @@ Prices in UAH as of 2026-09-10, entered by the user.
 ## Medis
 
 Prices in UAH as of 2026-09-10, entered by the user, for the same ten labels
-as Esculab. Each label maps to the same codes for the same reasons given above,
-including the open questions: which codes Medis's FBC really includes, and
-whether its LDL-C is a direct assay, have not been recorded.
+as Esculab plus two Esculab does not price. Each shared label maps to the same
+codes for the same reasons given above, including the open questions: which
+codes Medis's FBC really includes, and whether its LDL-C is a direct assay,
+have not been recorded.
+
+- **ApoB** is `1884-6`, apolipoprotein B by mass. The catalog holds no molar
+  or method variant of it.
+- **Insulin** is `20448-7`, serum or plasma insulin in International Units. The
+  catalog holds no other insulin code, so the label has only one code to mean.
 
 ## Synevo
 
-Prices in UAH as of 2026-09-10, entered by the user, for the same ten labels
-as Esculab. Each label maps to the same codes for the same reasons given above,
-including the open questions: which codes Synevo's FBC really includes, and
-whether its LDL-C is a direct assay, have not been recorded.
+Prices in UAH as of 2026-09-10, entered by the user, for the same twelve
+labels as Medis. Each label maps to the same codes for the same reasons given
+above, including the open questions: which codes Synevo's FBC really includes,
+and whether its LDL-C is a direct assay, have not been recorded.
 
 ## Synevo Ukraine, removed
 

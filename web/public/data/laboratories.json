@@ -49,6 +49,7 @@
     "prices": [
       { "label": "ALP", "price": 166, "covers": ["6768-6"] },
       { "label": "ALT", "price": 166, "covers": ["1742-6"] },
+      { "label": "ApoB", "price": 256, "covers": ["1884-6"] },
       { "label": "AST", "price": 166, "covers": ["1920-8"] },
       {
         "label": "FBC",
@@ -68,6 +69,7 @@
         "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
       },
       { "label": "HDL-C", "price": 162, "covers": ["2085-9"] },
+      { "label": "Insulin", "price": 324, "covers": ["20448-7"] },
       {
         "label": "LDL-C",
         "price": 157,
@@ -89,6 +91,7 @@
     "prices": [
       { "label": "ALP", "price": 220, "covers": ["6768-6"] },
       { "label": "ALT", "price": 200, "covers": ["1742-6"] },
+      { "label": "ApoB", "price": 360, "covers": ["1884-6"] },
       { "label": "AST", "price": 190, "covers": ["1920-8"] },
       {
         "label": "FBC",
@@ -108,6 +111,7 @@
         "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
       },
       { "label": "HDL-C", "price": 210, "covers": ["2085-9"] },
+      { "label": "Insulin", "price": 430, "covers": ["20448-7"] },
       {
         "label": "LDL-C",
         "price": 200,
