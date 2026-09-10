@@ -341,7 +341,12 @@ the indices), Monitoring Panels
 errors: every scheduled observation, folded to its primary code, as a LOINC /
 full name / short name row beside one price column per laboratory, a bundle
 priced on its first covered row and marked "in <label>" on the rest by
-`data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own), Reference Book (Indices and derived
+`data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own), Medications (`#medications`, reachable despite
+validation errors: a free-text medication / dosage table with a Jan–Dec month
+grid per shown year, edited behind an Edit / Done toggle and kept by
+`data/medications.ts`'s `useMedications` under its own localStorage key
+`bloodtests_medications_v1`, outside the envelope, export, import and share
+links — task-0018), Reference Book (Indices and derived
 measurements: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Organism-wide aspects: HP Axis page with v2's

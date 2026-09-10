@@ -1,13 +1,225 @@
+import { useEffect, useRef, useState } from 'react';
+import { MONTH_LABELS, monthKey, useMedications, type MedicationRow } from '../../data/medications';
 import { COLOR } from '../../styles/tokens';
-// A placeholder: the section ships empty on purpose, because its data model
-// and storage are still undecided (task-0018).
+
+const NAME_COL_WIDTH = 220;
+const DOSAGE_COL_WIDTH = 160;
+const MONTH_COL_WIDTH = 32;
+
+const BUTTON = {
+  padding: '4px 14px',
+  borderRadius: 9999,
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  border: `1.5px solid ${COLOR.accent}`,
+  color: COLOR.accent,
+  background: 'none',
+  cursor: 'pointer',
+} as const;
+const th = {
+  textAlign: 'left',
+  padding: '8px 12px',
+  verticalAlign: 'bottom',
+  borderBottom: `1.5px solid ${COLOR.accent}`,
+  whiteSpace: 'nowrap',
+} as const;
+const yearTh = {
+  ...th,
+  textAlign: 'center',
+  padding: '6px 0',
+  borderBottom: `1px solid ${COLOR.borderMuted}`,
+  borderLeft: `1px solid ${COLOR.borderMuted}`,
+} as const;
+const td = { padding: '6px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap' } as const;
+const input = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '4px 8px',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  border: `1px solid ${COLOR.border}`,
+  borderRadius: 6,
+  background: COLOR.surface,
+  color: COLOR.text,
+} as const;
+
+// The first month of each year carries the stronger edge, so years read as blocks.
+function monthEdge(monthIndex: number) {
+  return `1px solid ${monthIndex === 0 ? COLOR.borderMuted : COLOR.borderSubtle}`;
+}
+
+function monthTh(monthIndex: number) {
+  return { ...th, textAlign: 'center', padding: '6px 0', fontSize: 11, fontWeight: 500, color: COLOR.textMuted, borderLeft: monthEdge(monthIndex) } as const;
+}
+
+function monthTd(monthIndex: number, marked: boolean) {
+  return {
+    padding: 0,
+    height: 34,
+    borderBottom: `1px solid ${COLOR.borderSubtle}`,
+    borderLeft: monthEdge(monthIndex),
+    background: marked ? COLOR.accent : undefined,
+  } as const;
+}
+
+function monthLabel(row: MedicationRow, year: number, monthIndex: number): string {
+  return `${row.name.trim() || 'Unnamed medication'}, ${MONTH_LABELS[monthIndex]} ${year}`;
+}
+
 export function MedicationsView() {
+  const { medications, onAddRow, onUpdateRow, onRemoveRow, onToggleMonth, onAddPastYear, onDropUnnamed } = useMedications();
+  const [editing, setEditing] = useState(false);
+  const [focusId, setFocusId] = useState<string>();
+  const nameInputs = useRef(new Map<string, HTMLInputElement>());
+  const { years, rows } = medications;
+
+  useEffect(() => {
+    if (focusId) nameInputs.current.get(focusId)?.focus();
+  }, [focusId]);
+
+  const toggleEditing = () => {
+    if (editing) onDropUnnamed();
+    setEditing(!editing);
+  };
+
   return (
     <>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Medications</h1>
-      <div style={{ color: COLOR.textMuted, fontSize: 14 }}>
-        Medication history — what was taken and at what dosage, month by month — is planned.
+      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 16 }}>
+        What was taken, at what dosage, month by month.
       </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+        <button type="button" style={BUTTON} onClick={toggleEditing}>
+          {editing ? 'Done' : 'Edit'}
+        </button>
+        {editing && (
+          <>
+            <button type="button" style={BUTTON} onClick={() => setFocusId(onAddRow())}>
+              Add medication
+            </button>
+            <button type="button" style={BUTTON} onClick={onAddPastYear}>
+              Add past year
+            </button>
+          </>
+        )}
+      </div>
+      {!editing && rows.length === 0 ? (
+        <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No medications recorded yet — press Edit to add the first one.</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table
+            style={{
+              borderCollapse: 'collapse',
+              fontSize: 13,
+              tableLayout: 'fixed',
+              width: NAME_COL_WIDTH + DOSAGE_COL_WIDTH + MONTH_COL_WIDTH * 12 * years.length,
+            }}
+          >
+            <colgroup>
+              <col style={{ width: NAME_COL_WIDTH }} />
+              <col style={{ width: DOSAGE_COL_WIDTH }} />
+              {years.flatMap((year) => MONTH_LABELS.map((m) => <col key={`${year}-${m}`} style={{ width: MONTH_COL_WIDTH }} />))}
+            </colgroup>
+            <thead>
+              <tr>
+                <th rowSpan={2} scope="col" style={th}>
+                  Medication
+                </th>
+                <th rowSpan={2} scope="col" style={th}>
+                  Dosage
+                </th>
+                {years.map((year) => (
+                  <th key={year} colSpan={12} scope="colgroup" style={yearTh}>
+                    {year}
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {years.flatMap((year) =>
+                  MONTH_LABELS.map((m, i) => (
+                    <th key={`${year}-${m}`} scope="col" style={monthTh(i)}>
+                      {m}
+                    </th>
+                  ))
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td style={td}>
+                    {editing ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${row.name.trim() || 'unnamed medication'}`}
+                          onClick={() => onRemoveRow(row.id)}
+                          style={{ ...BUTTON, padding: '0 7px', border: `1px solid ${COLOR.border}`, color: COLOR.textMuted, lineHeight: '18px' }}
+                        >
+                          ×
+                        </button>
+                        <input
+                          ref={(el) => {
+                            if (el) nameInputs.current.set(row.id, el);
+                            else nameInputs.current.delete(row.id);
+                          }}
+                          aria-label="Medication name"
+                          value={row.name}
+                          onChange={(e) => onUpdateRow(row.id, { name: e.target.value })}
+                          style={input}
+                        />
+                      </div>
+                    ) : (
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</span>
+                    )}
+                  </td>
+                  <td style={td}>
+                    {editing ? (
+                      <input
+                        aria-label={`Dosage of ${row.name.trim() || 'unnamed medication'}`}
+                        value={row.dosage}
+                        onChange={(e) => onUpdateRow(row.id, { dosage: e.target.value })}
+                        style={input}
+                      />
+                    ) : (
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.dosage}</span>
+                    )}
+                  </td>
+                  {years.flatMap((year) =>
+                    MONTH_LABELS.map((_label, i) => {
+                      const key = monthKey(year, i);
+                      const marked = row.months.includes(key);
+                      if (!editing) {
+                        return <td key={key} style={monthTd(i, marked)} title={marked ? monthLabel(row, year, i) : undefined} />;
+                      }
+                      const toggle = () => onToggleMonth(row.id, key);
+                      return (
+                        <td key={key} style={monthTd(i, marked)}>
+                          <div
+                            role="checkbox"
+                            aria-checked={marked}
+                            aria-label={monthLabel(row, year, i)}
+                            tabIndex={0}
+                            onClick={toggle}
+                            onKeyDown={(e) => {
+                              if (e.key === ' ' || e.key === 'Enter') {
+                                e.preventDefault();
+                                toggle();
+                              }
+                            }}
+                            style={{ height: '100%', minHeight: 34, cursor: 'pointer' }}
+                          />
+                        </td>
+                      );
+                    })
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
