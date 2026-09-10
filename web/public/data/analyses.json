@@ -2730,6 +2730,28 @@
     }
   },
   {
+    "loinc": "71695-1",
+    "longCommonName": "Immature granulocytes/Leukocytes in Blood by Automated count",
+    "displayName": "Immature Granulocytes (IG%)",
+    "short": "IG%",
+    "unit": "%",
+    "lang": {
+      "ru-RU": "Незрелые гранулоциты (%)",
+      "uk-UA": "Незрілі гранулоцити (%)"
+    },
+    "info": {
+      "description": "The share of your white cells that left the bone marrow before finishing their development. In healthy adults they are barely present, so a rise mostly shows the marrow releasing cells early — as it does during infection or inflammation, but also in pregnancy or after surgery. On its own it names no cause; it is read alongside the white cell count and neutrophils.",
+      "scientific": "Immature granulocytes (IG) are the precursors of neutrophils, eosinophils and basophils — promyelocytes, myelocytes and metamyelocytes — that are normally confined to the bone marrow. Automated hematology analyzers report them as a fraction of total leukocytes, and in healthy adults the value is typically below about 1%. An increased IG percentage reflects early release of myeloid cells into the circulation and is seen in bacterial infection and sepsis, acute inflammation and tissue injury, pregnancy, treatment with glucocorticoids or granulocyte colony-stimulating factor, and in myeloproliferative neoplasms or bone marrow infiltration. The finding is non-specific and is interpreted together with the total leukocyte count, the differential and, where values are markedly raised, a blood smear review.",
+      "why": "Flags early release of myeloid cells from the bone marrow as part of the white cell differential.",
+      "frequency": "Annually, or as clinically indicated",
+      "lang": {
+        "ru-RU": {
+          "description": "Доля белых клеток, покинувших костный мозг до окончания созревания. У здоровых взрослых их почти нет, поэтому рост в основном показывает, что мозг выпускает клетки раньше срока — как при инфекции или воспалении, но также при беременности или после операции. Сам по себе показатель не называет причину и оценивается вместе с лейкоцитами и нейтрофилами."
+        }
+      }
+    }
+  },
+  {
     "loinc": "787-2",
     "longCommonName": "MCV [Entitic mean volume] in Red Blood Cells by Automated count",
     "displayName": "MCV",
