@@ -13,6 +13,7 @@ import { NavBar } from './NavBar';
 import { Popup, type PopupPosition, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
+import { MedicationsView } from './MedicationsView';
 import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
@@ -227,6 +228,8 @@ export function MedicalConditionsPage() {
             loadGenerated={loadGenerated}
           />
         );
+      case 'medications':
+        return <MedicationsView />;
       case 'reference':
         return <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} />;
       case 'panel':
