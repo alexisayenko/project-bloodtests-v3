@@ -19,12 +19,12 @@ export type Route =
 
 export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'profile' | 'medications' | 'plan' | 'account'; label: string }[] = [
   { view: 'profile',      label: 'Get Started' },
-  { view: 'reports',      label: 'Reports' },
-  { view: 'all',          label: 'Timeline' },
-  { view: 'panels',       label: 'Panels' },
+  { view: 'reports',      label: 'Diagnostic Reports' },
+  { view: 'all',          label: 'All Observations' },
+  { view: 'panels',       label: 'Monitoring Panels' },
   { view: 'plan',         label: 'Scheduled Visits' },
   { view: 'medications',  label: 'Medications' },
-  { view: 'reference',    label: 'Reference' },
+  { view: 'reference',    label: 'Reference Book' },
   { view: 'account',      label: 'Account' },
 ];
 
