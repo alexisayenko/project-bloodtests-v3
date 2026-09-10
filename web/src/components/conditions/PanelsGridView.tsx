@@ -239,10 +239,7 @@ export function PanelsGridView({
                       key={test.loinc}
                       label={test.short}
                       dotColor={dotColor}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenPopup(test, e);
-                      }}
+                      onClick={(e) => onOpenPopup(test, e)}
                     />
                   );
                 })}
@@ -256,10 +253,7 @@ export function PanelsGridView({
                       key={def.key}
                       label={def.nameCompact}
                       dotColor={dotColor}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenIndexPopup(def, e);
-                      }}
+                      onClick={(e) => onOpenIndexPopup(def, e)}
                     />
                   );
                 })}
