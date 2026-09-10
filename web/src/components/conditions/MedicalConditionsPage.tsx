@@ -263,7 +263,7 @@ export function MedicalConditionsPage() {
       case 'account':
         return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':
-        return <PlanVisitView scheduled={scheduled} />;
+        return <PlanVisitView scheduled={scheduled} onOpenPopup={openPopup} />;
       case 'reference':
         return <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} />;
       case 'panel':

@@ -16,7 +16,7 @@ import { controlsForTab, pressable, visibleDatesOf, type SelectedCell } from './
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
-import { ObservationTable, IndexTable } from './ResultTables';
+import { ResultsTable } from './ResultTables';
 import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
 import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
@@ -154,31 +154,20 @@ export function PanelDetailView({
               {nothingMatches && (
                 <div style={{ color: COLOR.textMuted, fontSize: 14 }}>Nothing in {name} matches “{query.trim()}”.</div>
               )}
-              {visibleObservations.length > 0 && (
-                <ObservationTable label="Observations" rows={visibleObservations} {...tableProps} inputsOf={inputsOf} />
-              )}
-              {(visibleIndices.length > 0 || visibleComputed.length > 0) && (
-                <div style={{ marginTop: 16 }}>
-                  {visibleIndices.length > 0 && <ObservationTable label="Indices" rows={visibleIndices} {...tableProps} />}
-                  {visibleComputed.length > 0 && (
-                    <IndexTable
-                      defs={visibleComputed}
-                      visibleDates={visibleDates}
-                      allResults={allResults}
-                      resultsByDate={resultsByDate}
-                      selectedLoinc={selectedLoinc}
-                      onSelect={onSelect}
-                      onOpenPopup={onOpenIndexPopup}
-                      selectedCell={selectedCell}
-                      onSelectCell={onSelectCell}
-                      onOpenIndexResultPopup={onOpenIndexResultPopup}
-                      scheduling={indexScheduling}
-                      showPricing
-                      showLabs
-                      usedBy={usedBy}
-                    />
-                  )}
-                </div>
+              {(visibleObservations.length > 0 || visibleIndices.length > 0 || visibleComputed.length > 0) && (
+                <ResultsTable
+                  label="Observations"
+                  rows={visibleObservations}
+                  indices={visibleIndices}
+                  defs={visibleComputed}
+                  {...tableProps}
+                  resultsByDate={resultsByDate}
+                  onOpenIndexPopup={onOpenIndexPopup}
+                  onOpenIndexResultPopup={onOpenIndexResultPopup}
+                  indexScheduling={indexScheduling}
+                  inputsOf={inputsOf}
+                  usedBy={usedBy}
+                />
               )}
             </>
           )}

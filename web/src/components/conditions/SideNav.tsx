@@ -1,16 +1,16 @@
-import { Upload, FileText, Activity, LayoutGrid, CalendarCheck, Pill, BookOpen, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { Rocket, FileText, Activity, LayoutGrid, CalendarCheck, Pill, BookOpen, CircleUser, type LucideIcon } from 'lucide-react';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
 
 const ICONS: Record<NavView, LucideIcon> = {
-  profile:     Upload,
+  profile:     Rocket,
   reports:     FileText,
   all:         Activity,
   panels:      LayoutGrid,
   plan:        CalendarCheck,
   medications: Pill,
   reference:   BookOpen,
-  account:     SlidersHorizontal,
+  account:     CircleUser,
 };
 
 export function SideNav({
@@ -50,7 +50,7 @@ export function SideNav({
 
       <div>
         {accountItem && (
-          <nav aria-label="Settings" className="mc-side-list" style={{ marginBottom: 12 }}>
+          <nav aria-label="Account" className="mc-side-list" style={{ marginBottom: 12 }}>
             {renderItem(accountItem)}
           </nav>
         )}

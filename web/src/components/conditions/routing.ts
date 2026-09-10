@@ -18,14 +18,14 @@ export type Route =
   | { view: 'account' };
 
 export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'profile' | 'medications' | 'plan' | 'account'; label: string }[] = [
-  { view: 'profile',      label: 'Upload' },
+  { view: 'profile',      label: 'Get Started' },
   { view: 'reports',      label: 'Reports' },
   { view: 'all',          label: 'Timeline' },
   { view: 'panels',       label: 'Panels' },
   { view: 'plan',         label: 'Scheduled Visits' },
   { view: 'medications',  label: 'Medications' },
   { view: 'reference',    label: 'Reference' },
-  { view: 'account',      label: 'Settings' },
+  { view: 'account',      label: 'Account' },
 ];
 
 export type NavView = (typeof NAV_ITEMS)[number]['view'];

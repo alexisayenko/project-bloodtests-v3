@@ -1,7 +1,9 @@
 import { formatScheduleMonth, type Scheduled } from './scheduled';
 import { LABORATORIES, formatPrice, quoteSchedule, type Laboratory } from '../../data/labPricing';
 import { planCells, planRows, type PlanCell } from '../../data/visitPlan';
-import { ANALYTE_BY_LOINC, SHORT_LABELS } from '../../data/analyteCatalog';
+import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
+import type { Observation } from './markers';
+import { pressable } from './ui';
 import { COLOR } from '../../styles/tokens';
 
 const GAP_COL_WIDTH = 16;
@@ -46,7 +48,13 @@ function TotalCell({ lab, loincs }: Readonly<{ lab: Laboratory; loincs: string[]
 }
 
 /** What the scheduled draw costs at each laboratory, row by row and in total. */
-export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>) {
+export function PlanVisitView({
+  scheduled,
+  onOpenPopup,
+}: Readonly<{
+  scheduled: Scheduled;
+  onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
+}>) {
   const rows = planRows(scheduled.loincs);
   const cells = LABORATORIES.map((lab) => planCells(rows, lab));
 
@@ -66,8 +74,7 @@ export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>)
           <table style={{ borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr>
-                <th style={th}>LOINC</th>
-                <th style={th}>Test</th>
+                <th style={th}>Observation</th>
                 <th style={gapCell} />
                 {LABORATORIES.map((lab) => (
                   <th key={lab.id} style={labTh} title={`Prices as of ${lab.pricesAsOf}`}>
@@ -83,10 +90,29 @@ export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>)
                 const short = SHORT_LABELS[code]?.short;
                 const label = short && short !== displayName ? `${displayName} (${short})` : displayName;
 
+                const observation: Observation = {
+                  short: short ?? displayName,
+                  full: displayName,
+                  longCommonName: a?.longCommonName ?? '',
+                  loinc: code,
+                  unit: a?.unit,
+                  also: ALSO_REFS[code],
+                };
+
                 return (
                   <tr key={code}>
-                    <td style={td}>{code}</td>
-                    <td style={{ ...td, whiteSpace: 'normal', minWidth: 240 }}>{label}</td>
+                    <td
+                      {...(onOpenPopup ? pressable((e) => onOpenPopup(observation, e)) : {})}
+                      style={{
+                        ...td,
+                        whiteSpace: 'normal',
+                        minWidth: 240,
+                        cursor: onOpenPopup ? 'pointer' : 'default',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {label}
+                    </td>
                     <td style={gapCell} />
                     {LABORATORIES.map((lab, l) => (
                       <PriceCell key={lab.id} cell={cells[l]![i]!} lab={lab} />
@@ -95,8 +121,7 @@ export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>)
                 );
               })}
               <tr>
-                <td style={totalTd} />
-                <td style={totalTd}>Total</td>
+                <td style={{ ...totalTd, textAlign: 'left' }}>Total</td>
                 <td style={gapCell} />
                 {LABORATORIES.map((lab) => (
                   <TotalCell key={lab.id} lab={lab} loincs={scheduled.loincs} />

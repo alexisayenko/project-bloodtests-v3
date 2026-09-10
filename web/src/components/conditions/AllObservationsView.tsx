@@ -17,7 +17,7 @@ import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
 import { controlsForTab, visibleDatesOf, type SelectedCell } from './ui';
-import { IndexTable, ObservationTable } from './ResultTables';
+import { ResultsTable } from './ResultTables';
 import type { Condition } from './exploreModel';
 import type { IndexScheduling, RowScheduling } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
@@ -168,39 +168,27 @@ export function AllObservationsView({
           <div style={{ color: COLOR.textMuted, fontSize: 14 }}>{emptyMessage(activePanel?.name, query)}</div>
         ) : (
           <>
-            {visibleRows.length > 0 && (
-              <ObservationTable
+            {(visibleRows.length > 0 || visibleIndexDefs.length > 0) && (
+              <ResultsTable
                 label="Observations"
                 rows={visibleRows}
+                defs={visibleIndexDefs}
                 visibleDates={allDates}
                 allResults={allResults}
+                resultsByDate={resultsByDate}
                 unitSystem={controls.unitSystem}
                 selectedLoinc={selectedLoinc}
                 onSelect={onSelect}
                 onOpenPopup={onOpenPopup}
+                onOpenIndexPopup={onOpenIndexPopup}
                 selectedCell={selectedCell}
                 onSelectCell={onSelectCell}
                 onOpenResultPopup={onOpenResultPopup}
+                onOpenIndexResultPopup={onOpenIndexResultPopup}
                 scheduling={scheduling}
+                indexScheduling={indexScheduling}
                 preferRaw
               />
-            )}
-            {visibleIndexDefs.length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <IndexTable
-                  defs={visibleIndexDefs}
-                  visibleDates={allDates}
-                  allResults={allResults}
-                  resultsByDate={resultsByDate}
-                  selectedLoinc={selectedLoinc}
-                  onSelect={onSelect}
-                  onOpenPopup={onOpenIndexPopup}
-                  selectedCell={selectedCell}
-                  onSelectCell={onSelectCell}
-                  onOpenIndexResultPopup={onOpenIndexResultPopup}
-                  scheduling={indexScheduling}
-                />
-              </div>
             )}
           </>
         )}
