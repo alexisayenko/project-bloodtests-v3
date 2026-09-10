@@ -256,7 +256,7 @@ across five sections — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
-synthetic test data (merges)), Diagnostic Reports (`#reports`: the
+a showcase test dataset (15 demo reports under their own ids, 5 medications, and a sample schedule only when none exists)), Diagnostic Reports (`#reports`: the
 data-management hub — a collapsible "Database details" card editing
 export-envelope metadata (read-only `generatedAt` stamped on each
 export, plus subject / sex / birth year / notes; persisted under

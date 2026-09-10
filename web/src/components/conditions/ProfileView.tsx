@@ -1,4 +1,5 @@
-import { generateTestData } from '../../data/generateTestData';
+import type { DiagnosticReport } from '../../types';
+import { applyTestData } from '../../data/generateTestData';
 import { pressable } from './ui';
 import { COLOR } from '../../styles/tokens';
 
@@ -27,11 +28,14 @@ export function ProfileView({
   uploadError,
   uploadFile,
   loadGenerated,
+  onStoredStateChanged,
 }: Readonly<{
   sessionCount: number;
   uploadError: string | null;
   uploadFile: (file: File) => Promise<void>;
-  loadGenerated: (groups: ReturnType<typeof generateTestData>) => void;
+  loadGenerated: (groups: DiagnosticReport[]) => void;
+  /** Re-reads what the generator may have written straight to storage (the schedule). */
+  onStoredStateChanged: () => void;
 }>) {
   return (
     <>
@@ -85,11 +89,15 @@ export function ProfileView({
       <div style={SECTION_DIVIDER}>
         <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Want a demo first?</h2>
         <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
-          Add 6 randomly generated lab reports — merges with whatever is already loaded ({sessionCount} report
-          {sessionCount === 1 ? '' : 's'} currently).
+          Add 15 sample lab reports from four labs and 5 medications — the reports merge with whatever is already
+          loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'} currently), medications you already list keep
+          their entries, and a sample schedule is set only if nothing is scheduled yet.
         </div>
         <div
-          {...pressable(() => loadGenerated(generateTestData()))}
+          {...pressable(() => {
+            applyTestData(loadGenerated);
+            onStoredStateChanged();
+          })}
           style={{ ...ACTION, border: `1.5px solid ${COLOR.accent}`, color: COLOR.accent }}
         >
           Generate Test Data

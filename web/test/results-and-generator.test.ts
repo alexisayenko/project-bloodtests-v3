@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getLatest, getStatus, hasReference, type LatestByLoinc } from '../src/components/conditions/resultsLookup';
-import { generateTestData } from '../src/data/generateTestData';
-import { buildConditions, SHORT_LABELS } from '../src/components/conditions/markers';
+import { buildConditions } from '../src/components/conditions/markers';
 import { MONITORING_PANELS } from './dataFiles';
 import { HP_AXIS_HTML } from '../src/components/conditions/hpAxisContent';
 import type { Result } from '../src/types';
@@ -45,35 +44,6 @@ describe('resultsLookup', () => {
     expect(hasReference(result({ value: 1, refMin: 0 }))).toBe(true);
     expect(hasReference(result({ value: 1 }))).toBe(false);
     expect(hasReference(result({ refMin: 0 }))).toBe(false);
-  });
-});
-
-describe('generateTestData', () => {
-  it('produces 6 dated sessions from the Test Data Lab', () => {
-    const groups = generateTestData();
-    expect(groups).toHaveLength(6);
-    for (const g of groups) {
-      expect(g.file).toBe(`generated__${g.date}`);
-      expect(g.place).toBe('Test Data Lab');
-      expect(g.itemCount).toBe(g.items.length);
-    }
-  });
-
-  it('gives each LOINC a stable reference range across regenerations', () => {
-    const a = generateTestData().flatMap((g) => g.items);
-    const b = generateTestData().flatMap((g) => g.items);
-    const refA = new Map(a.map((i) => [i.loinc, i.refText]));
-    for (const item of b) {
-      if (refA.has(item.loinc)) expect(item.refText).toBe(refA.get(item.loinc));
-    }
-  });
-
-  it('values are non-negative numbers with matching rawValue', () => {
-    for (const item of generateTestData().flatMap((g) => g.items)) {
-      expect(item.value).toBeGreaterThanOrEqual(0);
-      expect(item.rawValue).toBe(String(item.value));
-      expect(SHORT_LABELS[item.loinc]).toBeDefined();
-    }
   });
 });
 

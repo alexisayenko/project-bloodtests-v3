@@ -252,6 +252,7 @@ export function MedicalConditionsPage() {
             uploadError={uploadError}
             uploadFile={uploadFile}
             loadGenerated={loadGenerated}
+            onStoredStateChanged={reloadStoredState}
           />
         );
       case 'medications':

@@ -10,6 +10,7 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-10 — Generate Test Data becomes a showcase: 15 reports from four laboratories over five years with a gap year, 5 medications over two years, and a sample schedule seeded only when none exists. The set exercises alias folding, Cyrillic printouts, computed indices, bundle pricing, a two-lab date, a below-detection-limit result, one sibling-code warning and one unrecognized unit, and no errors; demo reports carry their own ids, so they never replace real ones and regenerating does not duplicate them.
 - 2026-09-10 — Desktop and tablet get an app shell: a white top bar with the mark and a "Your data stays in this browser" badge over a left sidebar of all eight sections, each with a line icon; phones keep the top nav until [task-0020](tasks/task-0020.md).
 - 2026-09-10 — The woven knot becomes Paneloom's mark: redrawn by hand as a vector from the generated raster, it replaces the favicon, heads the nav beside the wordmark, and renames the page title from "Blood Tests Viewer" to "Paneloom".
 - 2026-09-10 — An Account section exports everything the user has as one zip: lab reports, medications, scheduled visits, laboratory prices, settings and a manifest.
