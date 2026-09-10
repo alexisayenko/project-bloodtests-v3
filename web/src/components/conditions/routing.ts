@@ -17,7 +17,7 @@ export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'pr
   { view: 'reports', label: 'Diagnostic Reports' },
   { view: 'all', label: 'All Observations' },
   { view: 'panels', label: 'Monitoring Panels' },
-  { view: 'plan', label: 'Plan Visit' },
+  { view: 'plan', label: 'Scheduled Visits' },
   { view: 'medications', label: 'Medications' },
   { view: 'reference', label: 'Reference Book' },
 ];

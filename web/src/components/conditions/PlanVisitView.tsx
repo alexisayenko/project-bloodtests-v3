@@ -52,7 +52,7 @@ export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>)
 
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Plan Visit</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Scheduled Visits</h1>
       <div style={{ fontSize: 14, marginBottom: 16 }}>
         <span style={{ color: COLOR.textMuted }}>Planned for </span>
         <strong>{scheduled.month ? formatScheduleMonth(scheduled.month) : 'No month selected'}</strong>
