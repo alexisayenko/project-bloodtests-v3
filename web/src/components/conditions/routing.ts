@@ -22,7 +22,7 @@ export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'pr
   { view: 'reports',      label: 'Reports' },
   { view: 'all',          label: 'Timeline' },
   { view: 'panels',       label: 'Panels' },
-  { view: 'plan',         label: 'Visits' },
+  { view: 'plan',         label: 'Scheduled Visits' },
   { view: 'medications',  label: 'Medications' },
   { view: 'reference',    label: 'Reference' },
   { view: 'account',      label: 'Settings' },

@@ -67,8 +67,7 @@ export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>)
             <thead>
               <tr>
                 <th style={th}>LOINC</th>
-                <th style={th}>Full name</th>
-                <th style={th}>Short name</th>
+                <th style={th}>Test</th>
                 <th style={gapCell} />
                 {LABORATORIES.map((lab) => (
                   <th key={lab.id} style={labTh} title={`Prices as of ${lab.pricesAsOf}`}>
@@ -78,19 +77,25 @@ export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>)
               </tr>
             </thead>
             <tbody>
-              {rows.map((code, i) => (
-                <tr key={code}>
-                  <td style={td}>{code}</td>
-                  <td style={{ ...td, whiteSpace: 'normal', minWidth: 240 }}>{ANALYTE_BY_LOINC[code]?.longCommonName ?? '—'}</td>
-                  <td style={td}>{SHORT_LABELS[code]?.short ?? '—'}</td>
-                  <td style={gapCell} />
-                  {LABORATORIES.map((lab, l) => (
-                    <PriceCell key={lab.id} cell={cells[l]![i]!} lab={lab} />
-                  ))}
-                </tr>
-              ))}
+              {rows.map((code, i) => {
+                const a = ANALYTE_BY_LOINC[code];
+                const displayName = a?.displayName ?? code;
+                const short = SHORT_LABELS[code]?.short;
+                const label = short && short !== displayName ? `${displayName} (${short})` : displayName;
+
+                return (
+                  <tr key={code}>
+                    <td style={td}>{code}</td>
+                    <td style={{ ...td, whiteSpace: 'normal', minWidth: 240 }}>{label}</td>
+                    <td style={gapCell} />
+                    {LABORATORIES.map((lab, l) => (
+                      <PriceCell key={lab.id} cell={cells[l]![i]!} lab={lab} />
+                    ))}
+                  </tr>
+                );
+              })}
               <tr>
-                <td colSpan={2} style={totalTd} />
+                <td style={totalTd} />
                 <td style={totalTd}>Total</td>
                 <td style={gapCell} />
                 {LABORATORIES.map((lab) => (
