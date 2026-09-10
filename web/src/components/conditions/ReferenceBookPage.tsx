@@ -913,6 +913,21 @@ const FILTER_INPUT = {
 
 const wrapTd = { ...td, whiteSpace: 'normal' } as const;
 
+// Under table-layout: auto a cell's max-width is ignored; its width caps the
+// column only while min-content fits inside it, which overflow-wrap: anywhere
+// guarantees even for an unbroken "25-Hydroxyvitamin D3+25-Hydroxyvitamin D2".
+// That same near-zero min-content lets a squeezed table crush the column, hence
+// the min-width.
+const LONG_NAME_WIDTH = 340;
+const longNameTd = {
+  ...wrapTd,
+  minWidth: 260,
+  width: LONG_NAME_WIDTH,
+  maxWidth: LONG_NAME_WIDTH,
+  boxSizing: 'border-box',
+  overflowWrap: 'anywhere',
+} as const;
+
 const sortableTh = { ...th, padding: 0 } as const;
 
 // The whole header cell is the target -- the span carries the padding so a
@@ -1129,7 +1144,7 @@ function LoincDatabasePage({
                 <td style={td}>
                   <LoincLink loinc={analyte.loinc} />
                 </td>
-                <td style={{ ...wrapTd, minWidth: 260 }} title={analyte.longCommonName}>
+                <td style={longNameTd} title={analyte.longCommonName}>
                   {trimmedName}
                   <div style={{ color: COLOR.textMuted }}>{analyte.displayName}</div>
                 </td>
