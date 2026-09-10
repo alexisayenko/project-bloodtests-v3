@@ -1,21 +1,34 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import type { IndexDef } from '../../data/computedIndices';
+import { computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
-import { INDEX_LOINCS, type Observation } from './markers';
+import { INDEX_LOINCS, testLoincs, type Observation } from './markers';
 import { pressable } from './ui';
-import type { LatestByLoinc } from './resultsLookup';
+import { getStatus, type LatestByLoinc } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 import { getPanelMeta } from './panelMeta';
 
 export type Condition = { name: string; tests: Observation[] };
 
-/** A white pill chip that shrinks individually to its label's width. */
-function Chip({
+/** Newest-first scan for the first draw with a computable value. */
+function latestZone(def: IndexDef, datesDesc: string[], resultsByDate: Record<string, Record<string, Result>>): Zone | null {
+  for (const date of datesDesc) {
+    const value = computeIndex(def, resultsByDate[date]!);
+    if (value != null) return zone(value, def.cut[0], def.cut[1], def.hi);
+  }
+  return null;
+}
+
+/**
+ * A white rounded pill chip with an individual status dot indicator.
+ * Shrinks to fit its label width naturally.
+ */
+function DotChip({
   label,
+  dotColor,
   onClick,
-}: Readonly<{ label: string; onClick: (e: { currentTarget: HTMLElement }) => void }>) {
+}: Readonly<{ label: string; dotColor: string; onClick: (e: { currentTarget: HTMLElement }) => void }>) {
   return (
     <button
       type="button"
@@ -23,18 +36,19 @@ function Chip({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: 8,
         padding: '6px 14px',
         borderRadius: 9999,
         background: '#ffffff',
-        border: '1px solid rgba(0, 0, 0, 0.04)',
-        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+        border: '1px solid rgba(0, 0, 0, 0.05)',
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
         fontSize: 13,
         fontWeight: 500,
         color: COLOR.text,
         cursor: 'pointer',
         whiteSpace: 'nowrap',
         flex: '0 0 auto',
+        width: 'auto',
         fontFamily: 'inherit',
         lineHeight: 1.3,
         transition: 'transform 0.1s ease, box-shadow 0.1s ease',
@@ -45,18 +59,28 @@ function Chip({
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'none';
-        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.03)';
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04)';
       }}
     >
-      {label}
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: dotColor,
+          flexShrink: 0,
+        }}
+        aria-hidden="true"
+      />
+      <span>{label}</span>
     </button>
   );
 }
 
 export function PanelsGridView({
   conditions,
-  latestByLoinc: _latestByLoinc,
-  resultsByDate: _resultsByDate,
+  latestByLoinc,
+  resultsByDate,
   onOpenDetail,
   onOpenPopup,
   onOpenIndexPopup,
@@ -69,6 +93,7 @@ export function PanelsGridView({
   onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
 }>) {
   const [search, setSearch] = useState('');
+  const datesDesc = useMemo(() => Object.keys(resultsByDate).sort((a, b) => b.localeCompare(a)), [resultsByDate]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -105,7 +130,7 @@ export function PanelsGridView({
           </p>
         </div>
 
-        {/* Optional search */}
+        {/* Search */}
         <label
           style={{
             display: 'flex',
@@ -196,28 +221,48 @@ export function PanelsGridView({
                 </div>
               </div>
 
-              {/* Chips: shrink individually, flex-wrap */}
+              {/* Chips with status indicators, shrinking individually */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                {observations.map((test) => (
-                  <Chip
-                    key={test.loinc}
-                    label={test.short}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenPopup(test, e);
-                    }}
-                  />
-                ))}
-                {computedForPanel.map((def) => (
-                  <Chip
-                    key={def.key}
-                    label={def.nameCompact}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenIndexPopup(def, e);
-                    }}
-                  />
-                ))}
+                {observations.map((test) => {
+                  const status = getStatus(latestByLoinc, testLoincs(test));
+                  const dotColor =
+                    status === 'in-range'
+                      ? '#10b981'
+                      : status === 'out-of-range'
+                      ? '#ef4444'
+                      : status === 'unknown'
+                      ? '#f59e0b'
+                      : '#9ca3af';
+
+                  return (
+                    <DotChip
+                      key={test.loinc}
+                      label={test.short}
+                      dotColor={dotColor}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenPopup(test, e);
+                      }}
+                    />
+                  );
+                })}
+                {computedForPanel.map((def) => {
+                  const z = latestZone(def, datesDesc, resultsByDate);
+                  const dotColor =
+                    z === 'ok' ? '#10b981' : z === 'warn' ? '#f59e0b' : z === 'bad' ? '#ef4444' : '#9ca3af';
+
+                  return (
+                    <DotChip
+                      key={def.key}
+                      label={def.nameCompact}
+                      dotColor={dotColor}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenIndexPopup(def, e);
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           );
