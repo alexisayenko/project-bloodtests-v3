@@ -37,10 +37,10 @@ function DotChip({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 8,
-        padding: '6px 14px',
+        padding: '7px 15px',
         borderRadius: 9999,
         background: '#ffffff',
-        border: '1px solid rgba(0, 0, 0, 0.05)',
+        border: '1px solid rgba(0, 0, 0, 0.06)',
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
         fontSize: 13,
         fontWeight: 500,
@@ -55,7 +55,7 @@ function DotChip({
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.08)';
+        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.08)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'none';
@@ -223,22 +223,22 @@ export function PanelsGridView({
               key={condition.name}
               className="mc-panel-card"
               style={{
-                padding: '22px 20px',
+                padding: '24px 22px',
                 background: meta.bgColor,
                 borderRadius: 16,
-                border: '1px solid rgba(0, 0, 0, 0.04)',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+                border: `1px solid ${meta.borderColor}`,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 18,
+                gap: 16,
               }}
             >
-              {/* Header: Circle Icon + Panel Name + Subtitle */}
+              {/* Header: Circle Icon + Panel Name + Subtitle + Count */}
               <div
                 {...pressable(() => onOpenDetail(condition.name))}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   gap: 14,
                   cursor: 'pointer',
                 }}
@@ -255,11 +255,16 @@ export function PanelsGridView({
                     flexShrink: 0,
                   }}
                 >
-                  <Icon size={22} color={meta.color} strokeWidth={2} aria-hidden="true" />
+                  <Icon size={22} color={meta.color} strokeWidth={2.2} aria-hidden="true" />
                 </span>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: COLOR.text, lineHeight: 1.3 }}>
-                    {condition.name}
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: COLOR.text, lineHeight: 1.3 }}>
+                      {condition.name}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: COLOR.textMuted, flexShrink: 0 }}>
+                      {observations.length} markers
+                    </div>
                   </div>
                   {meta.description && (
                     <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 3, lineHeight: 1.35 }}>
@@ -269,42 +274,76 @@ export function PanelsGridView({
                 </div>
               </div>
 
-              {/* Chips with status indicators, shrinking individually */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                {observations.map((test) => {
-                  const status = getStatus(latestByLoinc, testLoincs(test));
-                  const dotColor =
-                    status === 'in-range'
-                      ? '#10b981'
-                      : status === 'out-of-range'
-                      ? '#ef4444'
-                      : status === 'unknown'
-                      ? '#f59e0b'
-                      : '#9ca3af';
+              {/* Section 1: Observations */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: COLOR.text, marginBottom: 10 }}>
+                  Observations
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                  {observations.map((test) => {
+                    const status = getStatus(latestByLoinc, testLoincs(test));
+                    const dotColor =
+                      status === 'in-range'
+                        ? '#16a34a'
+                        : status === 'out-of-range'
+                        ? '#dc2626'
+                        : status === 'unknown'
+                        ? '#f59e0b'
+                        : '#94a3b8';
 
-                  return (
-                    <DotChip
-                      key={test.loinc}
-                      label={test.short}
-                      dotColor={dotColor}
-                      onClick={(e) => onOpenPopup(test, e)}
-                    />
-                  );
-                })}
-                {computedForPanel.map((def) => {
-                  const z = latestZone(def, datesDesc, resultsByDate);
-                  const dotColor =
-                    z === 'ok' ? '#10b981' : z === 'warn' ? '#f59e0b' : z === 'bad' ? '#ef4444' : '#9ca3af';
+                    return (
+                      <DotChip
+                        key={test.loinc}
+                        label={test.full}
+                        dotColor={dotColor}
+                        onClick={(e) => onOpenPopup(test, e)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
 
-                  return (
-                    <DotChip
-                      key={def.key}
-                      label={def.nameCompact}
-                      dotColor={dotColor}
-                      onClick={(e) => onOpenIndexPopup(def, e)}
-                    />
-                  );
-                })}
+              {/* Section 2: Indices */}
+              {computedForPanel.length > 0 && (
+                <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.06)', paddingTop: 14 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: COLOR.text, marginBottom: 10 }}>
+                    Indices
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                    {computedForPanel.map((def) => {
+                      const z = latestZone(def, datesDesc, resultsByDate);
+                      const dotColor =
+                        z === 'ok' ? '#16a34a' : z === 'warn' ? '#f59e0b' : z === 'bad' ? '#dc2626' : '#94a3b8';
+
+                      return (
+                        <DotChip
+                          key={def.key}
+                          label={def.nameCompact}
+                          dotColor={dotColor}
+                          onClick={(e) => onOpenIndexPopup(def, e)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer: View panel → */}
+              <div style={{ marginTop: 'auto', paddingTop: 6 }}>
+                <span
+                  {...pressable(() => onOpenDetail(condition.name))}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: COLOR.accent,
+                    cursor: 'pointer',
+                  }}
+                >
+                  View panel →
+                </span>
               </div>
             </div>
           );
