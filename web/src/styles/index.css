@@ -287,10 +287,8 @@ img.panel-icon { display: none; }
 
 .mc-page { padding: 56px 48px; }
 .mc-nav { display: flex; gap: 32px; margin-bottom: 32px; border-bottom: 1.5px solid var(--border-subtle); }
-.mc-panels-grid { display: grid; grid-template-columns: repeat(auto-fill, 316px); gap: 24px; }
-.mc-panels-list { display: flex; flex-direction: column; gap: 12px; }
-.mc-panel-card { width: 316px; box-sizing: border-box; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-subtle); }
-.mc-panels-list .mc-panel-card { width: auto; }
+.mc-panels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+.mc-panel-card { width: 100%; box-sizing: border-box; }
 .mc-panel-dots { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); column-gap: 8px; row-gap: 4px; }
 
 /* Desktop and tablet shell: a top bar over a sidebar. Phones keep .mc-nav
