@@ -18,7 +18,7 @@ const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}
 const labTh = { ...th, textAlign: 'right', width: LAB_COL_WIDTH } as const;
 const labTd = { ...td, textAlign: 'right' } as const;
 const gapCell = { padding: 0, border: 'none', width: GAP_COL_WIDTH } as const;
-const totalTd = { ...labTd, borderTop: `1.5px solid ${COLOR.border}`, borderBottom: 'none', fontWeight: 600 } as const;
+const totalTd = { ...labTd, borderTop: th.borderBottom, borderBottom: 'none', fontWeight: 600 } as const;
 const muted = { color: COLOR.textMuted, fontSize: 12, fontWeight: 400 } as const;
 
 function PriceCell({ cell, lab }: Readonly<{ cell: PlanCell; lab: Laboratory }>) {
@@ -90,9 +90,8 @@ export function PlanVisitView({ scheduled }: Readonly<{ scheduled: Scheduled }>)
                 </tr>
               ))}
               <tr>
-                <td colSpan={3} style={{ ...totalTd, textAlign: 'left' }}>
-                  Total
-                </td>
+                <td colSpan={2} style={totalTd} />
+                <td style={totalTd}>Total</td>
                 <td style={gapCell} />
                 {LABORATORIES.map((lab) => (
                   <TotalCell key={lab.id} lab={lab} loincs={scheduled.loincs} />
