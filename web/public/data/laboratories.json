@@ -98,6 +98,8 @@
       { "label": "ALT", "price": 200, "covers": ["1742-6"] },
       { "label": "ApoB", "price": 360, "covers": ["1884-6"] },
       { "label": "AST", "price": 190, "covers": ["1920-8"] },
+      { "label": "C-peptide", "price": 460, "covers": ["1986-9"] },
+      { "label": "Creatinine", "price": 210, "covers": ["2160-0"] },
       {
         "label": "FBC",
         "price": 370,
@@ -115,7 +117,9 @@
         "covers": ["2345-7", "2339-0"],
         "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
       },
+      { "label": "HbA1c", "price": 400, "covers": ["4548-4"] },
       { "label": "HDL-C", "price": 210, "covers": ["2085-9"] },
+      { "label": "hsCRP", "price": 450, "covers": ["30522-7"] },
       { "label": "Insulin", "price": 430, "covers": ["20448-7"] },
       {
         "label": "LDL-C",
@@ -125,7 +129,8 @@
       },
       { "label": "TBIL", "price": 190, "covers": ["1975-2"] },
       { "label": "TC", "price": 190, "covers": ["2093-3"] },
-      { "label": "TRIG", "price": 230, "covers": ["2571-8"] }
+      { "label": "TRIG", "price": 230, "covers": ["2571-8"] },
+      { "label": "Uric acid", "price": 210, "covers": ["3084-1"] }
     ]
   }
 ]

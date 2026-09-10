@@ -90,8 +90,8 @@ have not been recorded.
 
 ## Synevo
 
-Prices in UAH as of 2026-09-10, entered by the user, for twelve of Medis's
-labels: the ten Esculab prices plus ApoB and Insulin. Each label maps to the same codes for the same reasons given
+Prices in UAH as of 2026-09-10, entered by the user, for all seventeen of
+Medis's labels. Each label maps to the same codes for the same reasons given
 above, including the open questions: which codes Synevo's FBC really includes,
 and whether its LDL-C is a direct assay, have not been recorded.
 

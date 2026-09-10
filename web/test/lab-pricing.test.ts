@@ -104,6 +104,15 @@ describe('quoteSchedule', () => {
       ['C-peptide', 'Creatinine', 'HbA1c', 'Uric acid', 'hsCRP'].sort()
     );
   });
+
+  it("prices Synevo's C-peptide, hsCRP, creatinine, HbA1c and uric acid, a molar-coded creatinine included", () => {
+    const quote = quoteSchedule(['1986-9', '30522-7', '14682-9', '4548-4', '3084-1'], LABORATORY_BY_ID.synevo!);
+    expect(quote.total).toBe(1730);
+    expect(quote.unpriced).toEqual([]);
+    expect(quote.charged.map((line) => line.label).sort()).toEqual(
+      ['C-peptide', 'Creatinine', 'HbA1c', 'Uric acid', 'hsCRP'].sort()
+    );
+  });
 });
 
 describe('formatPrice', () => {
