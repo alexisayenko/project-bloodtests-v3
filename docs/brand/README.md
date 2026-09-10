@@ -1,7 +1,7 @@
 # Brand
 
-Taking shape. A working name, Paneloom, and four candidate lockups
-exist; nothing is locked and there is no vector source yet. The
+Taking shape. A working name, Paneloom, and a chosen mark: the woven
+knot, redrawn as SVG on 2026-09-10. The name is still not locked. The
 direction is flat and geometric in navy and teal, deliberately not
 looking like a laboratory.
 
@@ -38,16 +38,20 @@ owns identity / spirit; the style guide operationalizes it.
 - **Visual direction**: flat, geometric, calm. Clinical without being
   cold — no red, no droplets, nothing that reads as a laboratory or a
   diagnosis.
-  - **Palette**: sampled from `logo-woven-knot.png`, so approximate
-    until a vector source exists — deep navy `#062A4F` (dominant),
-    teal `#249C9C` / `#3CA8A8`, mid blue-teal `#188490`. The landing
-    concept adds near-white grounds and soft mint gradients.
+  - **Palette**: fixed by the SVG redraw of the mark — deep navy
+    `#062A4F` (dominant), teals `#3EB0B0` / `#2A9EA4`, mid blue-teals
+    `#1F8D9A` / `#0D768F`. The landing concept adds near-white grounds
+    and soft mint gradients.
   - **Texture**: flat vector, no gradients inside the mark itself.
   - **Typography**: geometric sans, rounded terminals, lowercase-heavy
     wordmark. Exact typeface unidentified — the lockups are generated
-    raster, not set type.
-  - **Mark**: abstract, four candidates below. The interlaced knot is
-    the one the landing concept uses.
+    raster, not set type. The app sets the wordmark as live text in its
+    own font stack rather than tracing the raster letters.
+  - **Mark**: the **woven knot**, chosen 2026-09-10 — two navy bands
+    woven through two teal bands. Source of truth:
+    [`paneloom-mark.svg`](paneloom-mark.svg), hand-drawn from
+    `logo-woven-knot.png` as four rotated copies of one arm and stub,
+    with no embedded raster.
 - **Domain**: `blood.isayenko.net` — subdomain, no separate
   registration. `paneloom.app` / `.com` / `.net` were unregistered on
   2026-09-08.
@@ -62,13 +66,12 @@ the product's positioning.
 ## Logo candidates
 
 Generated 2026-09-09, all 1254×1254 PNG with transparent backgrounds.
-**Raster only — there is no vector source yet**, which blocks a real
-favicon, print, and clean scaling. Whichever is chosen needs redrawing
-as SVG before it ships.
+The woven knot was chosen and redrawn as SVG on 2026-09-10; the other
+three remain raster-only candidates, kept for the record.
 
 | File | Mark | Note |
 | --- | --- | --- |
-| [`logo-woven-knot.png`](logo-woven-knot.png) | interlaced square knot | the loom idea read literally; used by the landing concept |
+| [`logo-woven-knot.png`](logo-woven-knot.png) | interlaced square knot | **chosen** — the loom idea read literally; used by the landing concept |
 | [`logo-panel-cards.png`](logo-panel-cards.png) | four linked cards | the panel idea read literally; busiest of the four at small sizes |
 | [`logo-monogram-p.png`](logo-monogram-p.png) | letter P with a woven counter | most conventional; least tied to the product |
 | [`logo-network-ring.png`](logo-network-ring.png) | ring of orbiting nodes | reads as network or community rather than weaving |
@@ -86,7 +89,10 @@ Per-folder applications live with their code.
 
 | Where it appears | Location |
 | --- | --- |
-| Web favicon | `web/public/favicon.png` |
+| Web favicon (vector) | `web/public/favicon.svg` |
+| Web favicon (PNG fallback) | `web/public/favicon.png` |
+| iOS home-screen icon | `web/public/apple-touch-icon.png` |
+| App header mark | `web/public/brand/paneloom-mark.svg`, rendered by `NavBar.tsx` |
 
 ## Names considered
 

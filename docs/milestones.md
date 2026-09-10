@@ -10,6 +10,7 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-10 — The woven knot becomes Paneloom's mark: redrawn by hand as a vector from the generated raster, it replaces the favicon, heads the nav beside the wordmark, and renames the page title from "Blood Tests Viewer" to "Paneloom".
 - 2026-09-10 — An Account section exports everything the user has as one zip: lab reports, medications, scheduled visits, laboratory prices, settings and a manifest.
 - 2026-09-10 — Account imports that zip back, validating every part before it clears and restores anything, and clears all data in this browser from one button.
 - 2026-09-10 — The LOINC cross-check reads units by dimension: the unit
