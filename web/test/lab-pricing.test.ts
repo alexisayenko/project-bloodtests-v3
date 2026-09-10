@@ -94,6 +94,16 @@ describe('quoteSchedule', () => {
     expect(esculab.total).toBe(1198);
     expect(esculab.unpriced).toEqual(['1884-6', '20448-7']);
   });
+
+  it("prices Medis's C-peptide, hsCRP, creatinine, HbA1c and uric acid, a molar-coded creatinine included", () => {
+    expect(ALIAS_TO_PRIMARY['14682-9']).toBe('2160-0');
+    const quote = quoteSchedule(['1986-9', '30522-7', '14682-9', '4548-4', '3084-1'], LABORATORY_BY_ID.medis!);
+    expect(quote.total).toBe(1408);
+    expect(quote.unpriced).toEqual([]);
+    expect(quote.charged.map((line) => line.label).sort()).toEqual(
+      ['C-peptide', 'Creatinine', 'HbA1c', 'Uric acid', 'hsCRP'].sort()
+    );
+  });
 });
 
 describe('formatPrice', () => {

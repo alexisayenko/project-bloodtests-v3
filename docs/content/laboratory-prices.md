@@ -68,20 +68,30 @@ Prices in UAH as of 2026-09-10, entered by the user.
 ## Medis
 
 Prices in UAH as of 2026-09-10, entered by the user, for the same ten labels
-as Esculab plus two Esculab does not price. Each shared label maps to the same
+as Esculab plus seven Esculab does not price. Each shared label maps to the same
 codes for the same reasons given above, including the open questions: which
 codes Medis's FBC really includes, and whether its LDL-C is a direct assay,
 have not been recorded.
 
 - **ApoB** is `1884-6`, apolipoprotein B by mass. The catalog holds no molar
   or method variant of it.
+- **C-peptide** is `1986-9`, serum or plasma C-peptide by mass. The catalog
+  holds no molar or method variant of it.
+- **Creatinine** is `2160-0`, serum or plasma. Its molar sibling `14682-9`
+  (umol/L) folds into it.
+- **HbA1c** is `4548-4`. The calculated code `17855-8` and the IFCC code
+  `59261-8` are both aliased to it, so the one code covers all three.
+- **hsCRP** is `30522-7`, CRP by the high-sensitivity method. Standard CRP
+  (`1988-5`) is a separate test in the catalog and is not what this label names.
 - **Insulin** is `20448-7`, serum or plasma insulin in International Units. The
   catalog holds no other insulin code, so the label has only one code to mean.
+- **Uric acid** is `3084-1`, urate by mass. Its molar sibling `14933-6`
+  (umol/L) folds into it.
 
 ## Synevo
 
-Prices in UAH as of 2026-09-10, entered by the user, for the same twelve
-labels as Medis. Each label maps to the same codes for the same reasons given
+Prices in UAH as of 2026-09-10, entered by the user, for twelve of Medis's
+labels: the ten Esculab prices plus ApoB and Insulin. Each label maps to the same codes for the same reasons given
 above, including the open questions: which codes Synevo's FBC really includes,
 and whether its LDL-C is a direct assay, have not been recorded.
 
