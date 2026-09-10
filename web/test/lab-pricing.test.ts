@@ -113,6 +113,14 @@ describe('quoteSchedule', () => {
       ['C-peptide', 'Creatinine', 'HbA1c', 'Uric acid', 'hsCRP'].sort()
     );
   });
+
+  it('prices GGT at Medis and Synevo and leaves it unpriced at Esculab', () => {
+    expect(quoteSchedule(['2324-2'], LABORATORY_BY_ID.medis!).total).toBe(153);
+    expect(quoteSchedule(['2324-2'], LABORATORY_BY_ID.synevo!).total).toBe(200);
+    const esculab = quoteSchedule(['2324-2'], LABORATORY_BY_ID.esculab!);
+    expect(esculab.total).toBe(0);
+    expect(esculab.unpriced).toEqual(['2324-2']);
+  });
 });
 
 describe('formatPrice', () => {

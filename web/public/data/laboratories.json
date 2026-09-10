@@ -64,6 +64,7 @@
         ],
         "note": "A bundle, taken to be the catalog's whole fbc group. Whether Medis's FBC includes the differential has not been recorded."
       },
+      { "label": "GGT", "price": 153, "covers": ["2324-2"] },
       {
         "label": "Glucose",
         "price": 184,
@@ -111,6 +112,7 @@
         ],
         "note": "A bundle, taken to be the catalog's whole fbc group. Whether Synevo's FBC includes the differential has not been recorded."
       },
+      { "label": "GGT", "price": 200, "covers": ["2324-2"] },
       {
         "label": "Glucose",
         "price": 220,

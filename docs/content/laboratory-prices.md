@@ -68,7 +68,7 @@ Prices in UAH as of 2026-09-10, entered by the user.
 ## Medis
 
 Prices in UAH as of 2026-09-10, entered by the user, for the same ten labels
-as Esculab plus seven Esculab does not price. Each shared label maps to the same
+as Esculab plus eight Esculab does not price. Each shared label maps to the same
 codes for the same reasons given above, including the open questions: which
 codes Medis's FBC really includes, and whether its LDL-C is a direct assay,
 have not been recorded.
@@ -79,6 +79,8 @@ have not been recorded.
   holds no molar or method variant of it.
 - **Creatinine** is `2160-0`, serum or plasma. Its molar sibling `14682-9`
   (umol/L) folds into it.
+- **GGT** is `2324-2`, gamma-glutamyl transferase, a catalytic activity with no
+  molar or method variant in the catalog.
 - **HbA1c** is `4548-4`. The calculated code `17855-8` and the IFCC code
   `59261-8` are both aliased to it, so the one code covers all three.
 - **hsCRP** is `30522-7`, CRP by the high-sensitivity method. Standard CRP
@@ -90,7 +92,7 @@ have not been recorded.
 
 ## Synevo
 
-Prices in UAH as of 2026-09-10, entered by the user, for all seventeen of
+Prices in UAH as of 2026-09-10, entered by the user, for all eighteen of
 Medis's labels. Each label maps to the same codes for the same reasons given
 above, including the open questions: which codes Synevo's FBC really includes,
 and whether its LDL-C is a direct assay, have not been recorded.
