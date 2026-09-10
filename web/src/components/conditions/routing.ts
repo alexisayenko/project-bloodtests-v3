@@ -1,11 +1,15 @@
 // Top-level sections (the nav menu), each its own URL hash, so the browser's
 // back/forward always works. Panel detail nests under Monitoring Panels.
 // Popups are transient overlays, not routes -- they never touch history.
+export const OBSERVATIONS_TAB_IDS = ['analysis', 'trends', 'in-range'] as const;
+export type ObservationsTab = (typeof OBSERVATIONS_TAB_IDS)[number];
+export const DEFAULT_OBSERVATIONS_TAB: ObservationsTab = 'analysis';
+
 export type Route =
   | { view: 'panels' }
   | { view: 'panel'; name: string }
   | { view: 'reference'; key?: string }
-  | { view: 'all' }
+  | { view: 'all'; tab?: ObservationsTab }
   | { view: 'reports' }
   | { view: 'report'; file: string }
   | { view: 'profile' }
@@ -34,10 +38,17 @@ export function isNavItemBlocked(view: NavView, hasValidationErrors: boolean): b
   return hasValidationErrors && (view === 'panels' || view === 'all');
 }
 
+// The default tab and an unknown segment both collapse to bare #all, so one
+// view has one canonical hash.
+export function allObservationsRoute(tab: string): Route {
+  const known = OBSERVATIONS_TAB_IDS.find((id) => id === tab);
+  return known && known !== DEFAULT_OBSERVATIONS_TAB ? { view: 'all', tab: known } : { view: 'all' };
+}
+
 export function routeToHash(route: Route): string {
   if (route.view === 'panel') return `#panels/${encodeURIComponent(route.name)}`;
   if (route.view === 'reference') return route.key ? `#reference/${encodeURIComponent(route.key)}` : '#reference';
-  if (route.view === 'all') return '#all';
+  if (route.view === 'all') return route.tab && route.tab !== DEFAULT_OBSERVATIONS_TAB ? `#all/${route.tab}` : '#all';
   if (route.view === 'report') return `#reports/${encodeURIComponent(route.file)}`;
   if (route.view === 'reports') return '#reports';
   if (route.view === 'profile') return '#profile';
@@ -53,6 +64,7 @@ export function hashToRoute(hash: string): Route {
   if (value === 'reference') return { view: 'reference' };
   if (value.startsWith('reference/')) return { view: 'reference', key: value.slice('reference/'.length) };
   if (value === 'all') return { view: 'all' };
+  if (value.startsWith('all/')) return allObservationsRoute(value.slice('all/'.length));
   if (value === 'reports') return { view: 'reports' };
   if (value.startsWith('reports/')) return { view: 'report', file: value.slice('reports/'.length) };
   if (value === 'profile') return { view: 'profile' };

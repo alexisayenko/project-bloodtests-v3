@@ -5,7 +5,7 @@ import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnos
 import type { IndexDef } from '../../data/computedIndices';
 import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
-import { routeToHash, hashToRoute, type Route } from './routing';
+import { routeToHash, hashToRoute, allObservationsRoute, DEFAULT_OBSERVATIONS_TAB, type Route } from './routing';
 import { ReferenceBookPage } from './ReferenceBookPage';
 import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadViewSettings, saveViewSettings, hasStoredViewSettings, seedViewSettings, popupPosition, type SelectedCell } from './ui';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
@@ -231,6 +231,8 @@ export function MedicalConditionsPage() {
             resultsByDate={resultsByDate}
             scheduling={rowScheduling}
             indexScheduling={indexScheduling}
+            tab={route.tab ?? DEFAULT_OBSERVATIONS_TAB}
+            onTabChange={(tab) => navigate(allObservationsRoute(tab))}
           />
         );
       case 'reports':
@@ -253,6 +255,7 @@ export function MedicalConditionsPage() {
             uploadFile={uploadFile}
             loadGenerated={loadGenerated}
             onStoredStateChanged={reloadStoredState}
+            onGenerated={() => navigate({ view: 'all', tab: 'in-range' })}
           />
         );
       case 'medications':

@@ -166,7 +166,10 @@ in the formula's unit or declines it, so a molar-coded history computes the
 same indices a mass-coded one does — before that it computed none at all.
 Panel Detail has a back
 chevron (‹) before its title, back to the grid. Panel Detail and All
-Observations each carry a "What's in range" tab — a normalized-overlay
+Observations each carry a "What's in range" tab (in All Observations the tab
+is part of the route — `#all/in-range`, `#all/trends`, bare `#all` for
+Results, an unknown segment falling back to it — and switching tabs pushes
+history the way section navigation does) — a normalized-overlay
 time chart (every marker, and every panel's
 computed indices, plotted as % of its own reference range or ok-zone
 band on one shared axis, with a panel picker (a marker or index shared
@@ -256,7 +259,7 @@ across five sections — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
-a showcase test dataset (15 demo reports under their own ids, 5 medications, and a sample schedule only when none exists)), Diagnostic Reports (`#reports`: the
+a showcase test dataset (15 demo reports under their own ids, 5 medications, and a sample schedule only when none exists), then opens `#all/in-range` once it has finished), Diagnostic Reports (`#reports`: the
 data-management hub — a collapsible "Database details" card editing
 export-envelope metadata (read-only `generatedAt` stamped on each
 export, plus subject / sex / birth year / notes; persisted under

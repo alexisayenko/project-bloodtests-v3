@@ -1,5 +1,5 @@
 import type { DiagnosticReport } from '../../types';
-import { applyTestData } from '../../data/generateTestData';
+import { generateTestDataThen } from '../../data/generateTestData';
 import { pressable } from './ui';
 import { COLOR } from '../../styles/tokens';
 
@@ -29,6 +29,7 @@ export function ProfileView({
   uploadFile,
   loadGenerated,
   onStoredStateChanged,
+  onGenerated,
 }: Readonly<{
   sessionCount: number;
   uploadError: string | null;
@@ -36,6 +37,8 @@ export function ProfileView({
   loadGenerated: (groups: DiagnosticReport[]) => void;
   /** Re-reads what the generator may have written straight to storage (the schedule). */
   onStoredStateChanged: () => void;
+  /** Runs once generation has finished, to show the result. */
+  onGenerated: () => void;
 }>) {
   return (
     <>
@@ -94,10 +97,7 @@ export function ProfileView({
           their entries, and a sample schedule is set only if nothing is scheduled yet.
         </div>
         <div
-          {...pressable(() => {
-            applyTestData(loadGenerated);
-            onStoredStateChanged();
-          })}
+          {...pressable(() => generateTestDataThen(loadGenerated, [onStoredStateChanged, onGenerated]))}
           style={{ ...ACTION, border: `1.5px solid ${COLOR.accent}`, color: COLOR.accent }}
         >
           Generate Test Data

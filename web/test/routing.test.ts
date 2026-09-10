@@ -23,6 +23,8 @@ describe('routeToHash ↔ hashToRoute', () => {
     { view: 'reference' },
     { view: 'reference', key: 'homair' },
     { view: 'all' },
+    { view: 'all', tab: 'in-range' },
+    { view: 'all', tab: 'trends' },
     { view: 'reports' },
     { view: 'report', file: 'dev__2024-06-15' },
     { view: 'profile' },
@@ -36,6 +38,16 @@ describe('routeToHash ↔ hashToRoute', () => {
     for (const route of roundTrips) {
       expect([route, hashToRoute(routeToHash(route))]).toEqual([route, route]);
     }
+  });
+
+  it('All Observations tabs: #all/in-range addresses a tab, the default and an unknown segment collapse to #all', () => {
+    expect(routeToHash({ view: 'all', tab: 'in-range' })).toBe('#all/in-range');
+    expect(routeToHash({ view: 'all', tab: 'analysis' })).toBe('#all');
+    expect(hashToRoute('#all')).toEqual({ view: 'all' });
+    expect(hashToRoute('#all/in-range')).toEqual({ view: 'all', tab: 'in-range' });
+    expect(hashToRoute('#all/analysis')).toEqual({ view: 'all' });
+    expect(hashToRoute('#all/nope')).toEqual({ view: 'all' });
+    expect(hashToRoute('#all/')).toEqual({ view: 'all' });
   });
 
   it('reference without a key maps to plain #reference', () => {

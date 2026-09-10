@@ -408,3 +408,12 @@ export function applyTestData(loadReports: (groups: DiagnosticReport[]) => void,
   const nextScheduled = withTestSchedule(scheduled, today);
   if (nextScheduled !== scheduled) saveScheduled(nextScheduled);
 }
+
+export function generateTestDataThen(
+  loadReports: (groups: DiagnosticReport[]) => void,
+  afterwards: readonly (() => void)[],
+  today = new Date(),
+): void {
+  applyTestData(loadReports, today);
+  for (const step of afterwards) step();
+}

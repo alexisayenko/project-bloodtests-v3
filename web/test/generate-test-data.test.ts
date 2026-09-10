@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyTestData,
   buildTestEnvelope,
+  generateTestDataThen,
   generateTestData,
   TEST_SCHEDULE_LOINCS,
   withTestMedications,
@@ -183,5 +184,19 @@ describe('applyTestData', () => {
     applyTestData(merge, TODAY);
     expect(store.get(SCHEDULED_KEY)).toBe(scheduled);
     expect(store.get(MEDICATIONS_KEY)).toBe(meds);
+  });
+
+  it('runs the follow-up steps, in order, only once reports, medications and schedule are all written', () => {
+    const seen: string[] = [];
+    const snapshot = (label: string) => () =>
+      seen.push(`${label}:${sessions.length}:${loadMedications(2026).rows.length}:${loadScheduled().loincs.length > 0}`);
+    generateTestDataThen(merge, [snapshot('reload'), snapshot('navigate')], TODAY);
+    expect(seen).toEqual(['reload:15:5:true', 'navigate:15:5:true']);
+  });
+
+  it('never navigates when generation throws', () => {
+    const navigate = vi.fn();
+    expect(() => generateTestDataThen(() => { throw new Error('boom'); }, [navigate], TODAY)).toThrow('boom');
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

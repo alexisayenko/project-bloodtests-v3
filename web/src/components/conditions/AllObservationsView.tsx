@@ -21,6 +21,7 @@ import { IndexTable, ObservationTable } from './ResultTables';
 import type { Condition } from './exploreModel';
 import type { IndexScheduling, RowScheduling } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
+import type { ObservationsTab } from './routing';
 import { COLOR } from '../../styles/tokens';
 
 // Not the default tab, and it pulls uPlot plus the vendored
@@ -31,8 +32,6 @@ const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ defa
 // Matches the muted empty-state text below; the min-height reserves roughly a
 // chart's worth of room so the tab doesn't jump on load.
 const chartFallback = <div style={{ color: COLOR.textMuted, fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
-
-type ObservationsTab = 'analysis' | 'trends' | 'in-range';
 
 const OBSERVATIONS_TABS: readonly { id: ObservationsTab; label: string }[] = [
   { id: 'analysis', label: 'Results' },
@@ -88,6 +87,8 @@ export function AllObservationsView({
   resultsByDate,
   scheduling,
   indexScheduling,
+  tab,
+  onTabChange,
 }: Readonly<{
   allResults: ResultEntry[];
   conditions: Condition[];
@@ -118,8 +119,10 @@ export function AllObservationsView({
   /** Shared with Panel Detail, so a row toggled in either view is the same row. */
   scheduling: RowScheduling;
   indexScheduling: IndexScheduling;
+  /** Owned by the route (`#all/<tab>`), so a tab is linkable and back/forward returns to it. */
+  tab: ObservationsTab;
+  onTabChange: (tab: ObservationsTab) => void;
 }>) {
-  const [tab, setTab] = useState<ObservationsTab>('analysis');
   // Deliberately not persisted: a stored filter that hides observations would
   // outlive the session that chose it, with nothing on screen explaining the
   // gap -- the failure mode the shared-meta showPanels allowlist already had.
@@ -214,7 +217,7 @@ export function AllObservationsView({
         markerQuery={{ value: query, onChange: setQuery }}
         enabled={controlsForTab(tab)}
       />
-      <TabBar tabs={OBSERVATIONS_TABS} active={tab} onChange={setTab} />
+      <TabBar tabs={OBSERVATIONS_TABS} active={tab} onChange={onTabChange} />
 
       {tab === 'analysis' && analysisTab}
       {tab === 'trends' && <TrendsView />}
