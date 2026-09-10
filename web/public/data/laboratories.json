@@ -1,23 +1,42 @@
 [
   {
-    "id": "synevo-ua",
-    "name": "Synevo Ukraine",
-    "url": "https://www.synevo.ua",
-    "lang": {
-      "ru-RU": "Синэво Украина",
-      "uk-UA": "Синево Україна"
-    },
-    "tests": {
-      "11580-8": {
-        "code": "1004",
-        "name": "Тиреотропный гормон (ТТГ)",
-        "url": "https://www.synevo.ua/ru/tests/1004"
+    "id": "esculab",
+    "name": "Esculab",
+    "locale": "uk-UA",
+    "currency": "UAH",
+    "pricesAsOf": "2026-09-10",
+    "source": "entered by the user",
+    "prices": [
+      { "label": "ALP", "price": 171, "covers": ["6768-6"] },
+      { "label": "ALT", "price": 171, "covers": ["1742-6"] },
+      { "label": "AST", "price": 171, "covers": ["1920-8"] },
+      {
+        "label": "FBC",
+        "price": 328,
+        "panelId": "fbc",
+        "covers": [
+          "6690-2", "751-8", "731-0", "742-7", "711-2", "704-7", "770-8", "736-9", "5905-5", "713-8", "706-2", "71695-1",
+          "789-8", "718-7", "4544-3", "787-2", "785-6", "786-4", "788-0", "21000-5",
+          "777-3", "32623-1", "32207-3", "48386-7", "96354-6", "61928-1"
+        ],
+        "note": "A bundle, taken to be the catalog's whole fbc group. Whether Esculab's FBC includes the differential has not been recorded."
       },
-      "1992-7": {
-        "code": "2068",
-        "name": "Кальцитонин",
-        "url": "https://www.synevo.ua/ru/tests/2068"
-      }
-    }
+      {
+        "label": "Glucose",
+        "price": 189,
+        "covers": ["2345-7", "2339-0"],
+        "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
+      },
+      { "label": "HDL-C", "price": 167, "covers": ["2085-9"] },
+      {
+        "label": "LDL-C",
+        "price": 162,
+        "covers": ["13457-7"],
+        "note": "The label names no method. The catalog holds only the calculated code; a separately priced LDL-C may be a direct assay."
+      },
+      { "label": "TBIL", "price": 171, "covers": ["1975-2"] },
+      { "label": "TC", "price": 167, "covers": ["2093-3"] },
+      { "label": "TRIG", "price": 185, "covers": ["2571-8"] }
+    ]
   }
 ]

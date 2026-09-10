@@ -10,3 +10,4 @@ export const PANELS = load<Panel[]>('panels.json');
 export const MONITORING_PANELS = load<MonitoringPanelDef[]>('monitoring-panels.json');
 /** Read from disk, not imported, so the conformance suite validates the file itself. */
 export const MOLAR_MASS_FILE = load<unknown>('molar-masses.json');
+export const LABORATORY_FILE = load<unknown>('laboratories.json');

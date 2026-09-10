@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useEffect, useState } from 'react';
 import { MARKER_LOINC } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
+import { LABORATORY_BY_ID } from '../../data/labPricing';
 import { LOINC_TO_MARKER } from './markers';
 
 // Which observations (by LOINC) and computed indices (by key) are marked for
@@ -12,7 +13,9 @@ export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
 // leaves every checked row checked. Stored as YYYY-MM because it is a calendar
 // month, not an instant: it sorts lexicographically, needs no timezone, and is
 // what an <input type="month"> would have produced anyway.
-export type Scheduled = { loincs: string[]; indices: string[]; month?: string };
+// `lab` is the laboratories.json id the schedule is costed at. Like `month` it
+// labels the whole schedule, and an absent key means none chosen.
+export type Scheduled = { loincs: string[]; indices: string[]; month?: string; lab?: string };
 export const EMPTY_SCHEDULED: Scheduled = { loincs: [], indices: [] };
 
 /** How many of a table's rows are scheduled, for the header's tri-state box. */
@@ -33,10 +36,23 @@ export type IndexScheduling = {
   onSetMonth: (month: string | undefined) => void;
 };
 
+/**
+ * The shell's schedule and laboratory setter. The header's laboratory total
+ * costs the whole schedule rather than the rows one table shows, so it reads
+ * this from context instead of through each table.
+ */
+export type ScheduleLab = { scheduled: Scheduled; onSetLab: (lab: string | undefined) => void };
+export const ScheduleLabContext = createContext<ScheduleLab | null>(null);
+
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export function isScheduleMonth(value: unknown): value is string {
   return typeof value === 'string' && MONTH_RE.test(value);
+}
+
+/** A laboratory id the registry still carries; anything else reads as no laboratory. */
+export function isScheduleLab(value: unknown): value is string {
+  return typeof value === 'string' && Object.keys(LABORATORY_BY_ID).includes(value);
 }
 
 export function loadScheduled(): Scheduled {
@@ -48,6 +64,7 @@ export function loadScheduled(): Scheduled {
         loincs: Array.isArray(parsed.loincs) ? parsed.loincs.filter((x): x is string => typeof x === 'string') : [],
         indices: Array.isArray(parsed.indices) ? parsed.indices.filter((x): x is string => typeof x === 'string') : [],
         month: isScheduleMonth(parsed.month) ? parsed.month : undefined,
+        lab: isScheduleLab(parsed.lab) ? parsed.lab : undefined,
       };
     }
   } catch {
@@ -148,6 +165,10 @@ export function setScheduleMonth(scheduled: Scheduled, month: string | undefined
   return { ...scheduled, month: isScheduleMonth(month) ? month : undefined };
 }
 
+export function setScheduleLab(scheduled: Scheduled, lab: string | undefined): Scheduled {
+  return { ...scheduled, lab: isScheduleLab(lab) ? lab : undefined };
+}
+
 export function selectionState(flags: readonly boolean[]): SelectionState {
   if (flags.length === 0 || flags.every((f) => !f)) return 'none';
   return flags.every(Boolean) ? 'all' : 'some';
@@ -187,6 +208,7 @@ export function useScheduled() {
     []
   );
   const onSetMonth = useCallback((month: string | undefined) => setScheduled((s) => setScheduleMonth(s, month)), []);
+  const onSetLab = useCallback((lab: string | undefined) => setScheduled((s) => setScheduleLab(s, lab)), []);
 
-  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth };
+  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onSetLab };
 }

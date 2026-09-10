@@ -12,6 +12,7 @@ import {
   selectionState,
   setIndicesScheduled,
   setRowsScheduled,
+  setScheduleLab,
   setScheduleMonth,
   toggleIndex,
   toggleRow,
@@ -181,6 +182,53 @@ describe('the target month', () => {
     expect(choices).toEqual(['2025-01', '2026-09', '2026-10', '2026-11', '2026-12']);
     expect(monthChoices(new Date(2026, 8, 8), 3, '2026-10')).toHaveLength(4);
     expect(formatScheduleMonth('2027-03')).toBe('Mar 2027');
+  });
+});
+
+describe('the chosen laboratory', () => {
+  const store = new Map<string, string>();
+
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, String(v)),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('round-trips through storage beside the month', () => {
+    saveScheduled({ loincs: ['2093-3'], indices: [], month: '2027-03', lab: 'esculab' });
+    expect(loadScheduled()).toEqual({ loincs: ['2093-3'], indices: [], month: '2027-03', lab: 'esculab' });
+  });
+
+  it('reads a payload stored before the laboratory existed as none, the rest intact', () => {
+    store.set(SCHEDULED_KEY, '{"loincs":["2093-3"],"indices":["ka"],"month":"2027-03"}');
+    const loaded = loadScheduled();
+    expect(loaded).toEqual({ loincs: ['2093-3'], indices: ['ka'], month: '2027-03' });
+    expect(loaded.lab).toBeUndefined();
+  });
+
+  it('writes no lab key when none is chosen, so the stored shape stays as it was', () => {
+    saveScheduled(setScheduleLab({ loincs: ['2093-3'], indices: [] }, undefined));
+    expect(store.get(SCHEDULED_KEY)).toBe('{"loincs":["2093-3"],"indices":[]}');
+  });
+
+  it('loads a malformed or unknown laboratory as none', () => {
+    for (const lab of ['42', 'null', '"no-such-lab"', '"toString"']) {
+      store.set(SCHEDULED_KEY, `{"loincs":["2093-3"],"indices":[],"lab":${lab}}`);
+      expect(loadScheduled()).toEqual({ loincs: ['2093-3'], indices: [] });
+    }
+    expect(setScheduleLab(EMPTY_SCHEDULED, 'no-such-lab').lab).toBeUndefined();
+  });
+
+  it('survives every kind of toggle and a month change', () => {
+    const base = setScheduleLab(EMPTY_SCHEDULED, 'esculab');
+    expect(toggleRow(base, ['2093-3']).lab).toBe('esculab');
+    expect(toggleIndex(base, 'ka').lab).toBe('esculab');
+    expect(setRowsScheduled(base, [['2093-3']], true).lab).toBe('esculab');
+    expect(setIndicesScheduled(base, ['ka'], true).lab).toBe('esculab');
+    expect(setScheduleMonth(base, '2027-03').lab).toBe('esculab');
   });
 });
 

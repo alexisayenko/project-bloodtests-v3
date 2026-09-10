@@ -17,7 +17,7 @@ import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
-import { useScheduled } from './scheduled';
+import { ScheduleLabContext, useScheduled } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 
@@ -42,7 +42,8 @@ export function MedicalConditionsPage() {
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
-  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth } = useScheduled();
+  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onSetLab } = useScheduled();
+  const scheduleLab = useMemo(() => ({ scheduled, onSetLab }), [scheduled, onSetLab]);
 
   useEffect(() => {
     saveViewSettings({ unitSystem, sampleLimit });
@@ -271,7 +272,7 @@ export function MedicalConditionsPage() {
           Errors in diagnostic reports must be resolved before accessing other sections.
         </div>
       )}
-      {view}
+      <ScheduleLabContext.Provider value={scheduleLab}>{view}</ScheduleLabContext.Provider>
       <Popup
         popup={popup}
         latestByLoinc={latestByLoinc}
