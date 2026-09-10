@@ -3,7 +3,7 @@ import { BarChart2, Calculator, Link2, Search } from 'lucide-react';
 import { computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
-import { INDEX_LOINCS, testLoincs, type Observation } from './markers';
+import { INDEX_LOINCS, testLoincs, observationMatchesQuery, indexMatchesQuery, type Observation } from './markers';
 import { pressable } from './ui';
 import { getStatus, type LatestByLoinc } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
@@ -98,11 +98,12 @@ export function PanelsGridView({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return conditions;
-    return conditions.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.tests.some((t) => t.short.toLowerCase().includes(q))
-    );
+    return conditions.filter((c) => {
+      if (c.name.toLowerCase().includes(q)) return true;
+      if (c.tests.some((t) => observationMatchesQuery(t, q))) return true;
+      const indices = INDEX_DEFS.filter((d) => d.panels.includes(c.name));
+      return indices.some((d) => indexMatchesQuery(d, q));
+    });
   }, [conditions, search]);
 
   return (
