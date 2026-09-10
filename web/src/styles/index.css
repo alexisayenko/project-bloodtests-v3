@@ -288,7 +288,9 @@ img.panel-icon { display: none; }
 .mc-page { padding: 56px 48px; }
 .mc-nav { display: flex; gap: 32px; margin-bottom: 32px; border-bottom: 1.5px solid var(--border-subtle); }
 .mc-panels-grid { display: grid; grid-template-columns: repeat(auto-fill, 316px); gap: 24px; }
-.mc-panel-card { width: 316px; padding: 20px; box-sizing: border-box; }
+.mc-panels-list { display: flex; flex-direction: column; gap: 12px; }
+.mc-panel-card { width: 316px; box-sizing: border-box; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-subtle); }
+.mc-panels-list .mc-panel-card { width: auto; }
 .mc-panel-dots { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); column-gap: 8px; row-gap: 4px; }
 
 /* Desktop and tablet shell: a top bar over a sidebar. Phones keep .mc-nav
@@ -327,7 +329,7 @@ img.panel-icon { display: none; }
   .mc-page { padding: 20px 12px; padding-top: calc(20px + var(--mc-nav-h, 0px)); }
   .mc-nav { gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
   .mc-panels-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .mc-panel-card { width: auto; min-width: 0; padding: 12px 10px; }
+  .mc-panel-card { width: auto; min-width: 0; }
   .mc-panel-dots { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 6px; }
   .mc-panel-dots > * { min-width: 0; overflow-wrap: anywhere; }
 
