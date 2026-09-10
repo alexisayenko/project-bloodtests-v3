@@ -59,7 +59,7 @@
   {
     "loinc": "789-8",
     "longCommonName": "Erythrocytes [#/volume] in Blood by Automated count",
-    "displayName": "Red Blood Cells (RBC)",
+    "displayName": "RBC",
     "short": "RBC",
     "unit": "x10^6/uL",
     "lang": {
@@ -81,7 +81,7 @@
   {
     "loinc": "6690-2",
     "longCommonName": "Leukocytes [#/volume] in Blood by Automated count",
-    "displayName": "White Blood Cells (WBC)",
+    "displayName": "WBC",
     "short": "WBC",
     "unit": "x10^3/uL",
     "lang": {
@@ -103,7 +103,7 @@
   {
     "loinc": "2991-8",
     "longCommonName": "Testosterone Free [Mass/volume] in Serum or Plasma",
-    "displayName": "Testosterone, Free (FT)",
+    "displayName": "Free Testosterone",
     "short": "FT",
     "unit": "pg/mL",
     "lang": {
@@ -120,7 +120,7 @@
   {
     "loinc": "14913-8",
     "longCommonName": "Testosterone [Moles/volume] in Serum or Plasma",
-    "displayName": "Testosterone (T)",
+    "displayName": "Total Testosterone",
     "short": "T",
     "unit": "nmol/L",
     "lang": {
@@ -137,7 +137,7 @@
   {
     "loinc": "2986-8",
     "longCommonName": "Testosterone [Mass/volume] in Serum or Plasma",
-    "displayName": "Testosterone (T)",
+    "displayName": "Total Testosterone",
     "unit": "ng/dL",
     "aliasOf": "14913-8",
     "aliasLabel": "ng/dL unit",
@@ -149,7 +149,7 @@
   {
     "loinc": "10501-5",
     "longCommonName": "Lutropin [Units/volume] in Serum or Plasma",
-    "displayName": "Luteinizing Hormone (LH)",
+    "displayName": "LH",
     "short": "LH",
     "unit": "mIU/mL",
     "lang": {
@@ -166,7 +166,7 @@
   {
     "loinc": "15067-2",
     "longCommonName": "Follitropin [Units/volume] in Serum or Plasma",
-    "displayName": "Follicle Stimulating Hormone (FSH)",
+    "displayName": "FSH",
     "short": "FSH",
     "unit": "mIU/mL",
     "lang": {
@@ -183,7 +183,7 @@
   {
     "loinc": "15081-3",
     "longCommonName": "Prolactin [Units/volume] in Serum or Plasma",
-    "displayName": "Total Prolactin (PRL)",
+    "displayName": "Prolactin",
     "short": "PRL",
     "unit": "mIU/L",
     "lang": {
@@ -200,7 +200,7 @@
   {
     "loinc": "2842-3",
     "longCommonName": "Prolactin [Mass/volume] in Serum or Plasma",
-    "displayName": "Total Prolactin (PRL)",
+    "displayName": "Prolactin",
     "unit": "ng/mL",
     "aliasOf": "15081-3",
     "aliasLabel": "Mass/volume variant",
@@ -230,7 +230,7 @@
   {
     "loinc": "2345-7",
     "longCommonName": "Glucose [Mass/volume] in Serum or Plasma",
-    "displayName": "Glucose (Serum/Plasma)",
+    "displayName": "Glucose",
     "short": "GLU",
     "unit": "mg/dL",
     "lang": {
@@ -261,7 +261,7 @@
   {
     "loinc": "14749-6",
     "longCommonName": "Glucose [Moles/volume] in Serum or Plasma",
-    "displayName": "Glucose (Serum/Plasma)",
+    "displayName": "Glucose",
     "unit": "mmol/L",
     "aliasOf": "2345-7",
     "aliasLabel": "mmol/L unit",
@@ -305,7 +305,7 @@
   {
     "loinc": "2085-9",
     "longCommonName": "Cholesterol in HDL [Mass/volume] in Serum or Plasma",
-    "displayName": "HDL-Cholesterol",
+    "displayName": "HDL-C",
     "short": "HDL-C",
     "unit": "mg/dL",
     "lang": {
@@ -322,7 +322,7 @@
   {
     "loinc": "14646-4",
     "longCommonName": "Cholesterol in HDL [Moles/volume] in Serum or Plasma",
-    "displayName": "HDL-Cholesterol",
+    "displayName": "HDL-C",
     "unit": "mmol/L",
     "aliasOf": "2085-9",
     "aliasLabel": "mmol/L unit",
@@ -375,7 +375,7 @@
   {
     "loinc": "13457-7",
     "longCommonName": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation",
-    "displayName": "LDL-Cholesterol",
+    "displayName": "LDL-C (calc)",
     "short": "LDL-C",
     "unit": "mg/dL",
     "lang": {
@@ -410,7 +410,7 @@
   {
     "loinc": "6768-6",
     "longCommonName": "Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "Alkaline Phosphatase (ALP)",
+    "displayName": "ALP",
     "short": "ALP",
     "unit": "U/L",
     "lang": {
@@ -432,7 +432,7 @@
   {
     "loinc": "1742-6",
     "longCommonName": "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "Alanine Aminotransferase (ALT/SGPT)",
+    "displayName": "ALT (GPT)",
     "short": "ALT",
     "unit": "U/L",
     "lang": {
@@ -454,7 +454,7 @@
   {
     "loinc": "2324-2",
     "longCommonName": "Gamma glutamyl transferase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "Gamma Glutamyltransferase (γ-GT)",
+    "displayName": "GGT",
     "short": "GGT",
     "unit": "U/L",
     "lang": {
@@ -476,7 +476,7 @@
   {
     "loinc": "1920-8",
     "longCommonName": "Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "Aspartate Aminotransferase (AST/SGOT)",
+    "displayName": "AST (GOT)",
     "short": "AST",
     "unit": "U/L",
     "lang": {
@@ -529,7 +529,7 @@
   {
     "loinc": "2951-2",
     "longCommonName": "Sodium [Moles/volume] in Serum or Plasma",
-    "displayName": "Sodium (Na)",
+    "displayName": "Sodium",
     "short": "Na",
     "unit": "mmol/L",
     "lang": {
@@ -546,7 +546,7 @@
   {
     "loinc": "2823-3",
     "longCommonName": "Potassium [Moles/volume] in Serum or Plasma",
-    "displayName": "Potassium (K)",
+    "displayName": "Potassium",
     "short": "K",
     "unit": "mmol/L",
     "lang": {
@@ -639,7 +639,7 @@
   {
     "loinc": "1975-2",
     "longCommonName": "Bilirubin.total [Mass/volume] in Serum or Plasma",
-    "displayName": "Total Bilirubin",
+    "displayName": "Bilirubin (total)",
     "short": "TBIL",
     "unit": "mg/dL",
     "lang": {
@@ -661,7 +661,7 @@
   {
     "loinc": "14631-6",
     "longCommonName": "Bilirubin.total [Moles/volume] in Serum or Plasma",
-    "displayName": "Total Bilirubin",
+    "displayName": "Bilirubin (total)",
     "unit": "umol/L",
     "aliasOf": "1975-2",
     "aliasLabel": "umol/L unit",
@@ -684,7 +684,7 @@
   {
     "loinc": "3094-0",
     "longCommonName": "Urea nitrogen [Mass/volume] in Serum or Plasma",
-    "displayName": "Urea Nitrogen (BUN)",
+    "displayName": "Urea",
     "short": "BUN",
     "unit": "mg/dL",
     "lang": {
@@ -730,7 +730,7 @@
   {
     "loinc": "14937-7",
     "longCommonName": "Urea nitrogen [Moles/volume] in Serum or Plasma",
-    "displayName": "Urea Nitrogen (BUN)",
+    "displayName": "Urea",
     "unit": "mmol/L",
     "aliasOf": "3094-0",
     "aliasLabel": "mmol/L unit",
@@ -814,7 +814,7 @@
   {
     "loinc": "3051-0",
     "longCommonName": "Triiodothyronine (T3) Free [Mass/volume] in Serum or Plasma",
-    "displayName": "Free T3 (FT3)",
+    "displayName": "Free T3",
     "short": "FT3",
     "unit": "pg/mL",
     "lang": {
@@ -845,7 +845,7 @@
   {
     "loinc": "3024-7",
     "longCommonName": "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
-    "displayName": "Free T4 (FT4)",
+    "displayName": "Free T4",
     "short": "FT4",
     "unit": "ng/dL",
     "lang": {
@@ -876,7 +876,7 @@
   {
     "loinc": "14920-3",
     "longCommonName": "Thyroxine (T4) free [Moles/volume] in Serum or Plasma",
-    "displayName": "Free T4 (FT4)",
+    "displayName": "Free T4",
     "unit": "pmol/L",
     "aliasOf": "3024-7",
     "aliasLabel": "pmol/L unit",
@@ -908,7 +908,7 @@
   {
     "loinc": "8099-4",
     "longCommonName": "Thyroperoxidase Ab [Units/volume] in Serum or Plasma",
-    "displayName": "Anti-TPO",
+    "displayName": "Anti-Tg",
     "short": "TPO",
     "unit": "IU/mL",
     "lang": {
@@ -939,7 +939,7 @@
   {
     "loinc": "8098-6",
     "longCommonName": "Thyroglobulin Ab [Units/volume] in Serum or Plasma",
-    "displayName": "Anti-TG",
+    "displayName": "Anti-TPO",
     "short": "TG",
     "unit": "IU/mL",
     "lang": {
@@ -1001,7 +1001,7 @@
   {
     "loinc": "1992-7",
     "longCommonName": "Calcitonin [Mass/volume] in Serum or Plasma",
-    "displayName": "Calcitonin (CT)",
+    "displayName": "Calcitonin",
     "short": "CT",
     "unit": "pg/mL",
     "lang": {
@@ -1032,7 +1032,7 @@
   {
     "loinc": "4548-4",
     "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood",
-    "displayName": "HbA1c (NGSP)",
+    "displayName": "HbA1c",
     "short": "HbA1c",
     "unit": "%",
     "lang": {
@@ -1063,7 +1063,7 @@
   {
     "loinc": "17855-8",
     "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood by calculation",
-    "displayName": "HbA1c (DCCT)",
+    "displayName": "HbA1c",
     "unit": "%",
     "aliasOf": "4548-4",
     "aliasLabel": "by calculation",
@@ -1081,7 +1081,7 @@
   {
     "loinc": "59261-8",
     "longCommonName": "Hemoglobin A1c/Hemoglobin.total standardized per IFCC-RMP for CDT in Blood",
-    "displayName": "HbA1c (IFCC)",
+    "displayName": "HbA1c",
     "unit": "mmol/mol",
     "aliasOf": "4548-4",
     "aliasLabel": "IFCC unit",
@@ -1237,7 +1237,7 @@
   {
     "loinc": "1971-1",
     "longCommonName": "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
-    "displayName": "Indirect Bilirubin (IBIL)",
+    "displayName": "Indirect Bilirubin",
     "short": "IBIL",
     "unit": "mg/dL",
     "lang": {
@@ -1259,7 +1259,7 @@
   {
     "loinc": "14630-8",
     "longCommonName": "Bilirubin.indirect [Moles/volume] in Serum or Plasma",
-    "displayName": "Indirect Bilirubin (IBIL)",
+    "displayName": "Indirect Bilirubin",
     "unit": "umol/L",
     "aliasOf": "1971-1",
     "aliasLabel": "umol/L unit",
@@ -1282,7 +1282,7 @@
   {
     "loinc": "2098-2",
     "longCommonName": "Cholinesterase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "Pseudocholinesterase (PChE)",
+    "displayName": "Pseudocholinesterase",
     "short": "PChE",
     "unit": "U/L",
     "lang": {
@@ -1348,7 +1348,7 @@
   {
     "loinc": "1751-7",
     "longCommonName": "Albumin [Mass/volume] in Serum or Plasma",
-    "displayName": "Albumin (ALB)",
+    "displayName": "Albumin",
     "short": "ALB",
     "unit": "g/dL",
     "lang": {
@@ -1392,7 +1392,7 @@
   {
     "loinc": "2885-2",
     "longCommonName": "Protein [Mass/volume] in Serum or Plasma",
-    "displayName": "Total Protein (TP)",
+    "displayName": "Total Protein",
     "short": "TP",
     "unit": "g/dL",
     "lang": {
@@ -1431,7 +1431,7 @@
   {
     "loinc": "1884-6",
     "longCommonName": "Apolipoprotein B [Mass/volume] in Serum or Plasma",
-    "displayName": "Apolipoprotein B (ApoB)",
+    "displayName": "ApoB",
     "short": "ApoB",
     "unit": "mg/dL",
     "lang": {
@@ -1448,7 +1448,7 @@
   {
     "loinc": "1869-7",
     "longCommonName": "Apolipoprotein A-I [Mass/volume] in Serum or Plasma",
-    "displayName": "Apolipoprotein A1 (ApoA1)",
+    "displayName": "ApoA1",
     "short": "ApoA1",
     "unit": "mg/dL",
     "lang": {
@@ -1465,7 +1465,7 @@
   {
     "loinc": "10835-7",
     "longCommonName": "Lipoprotein a [Mass/volume] in Serum or Plasma",
-    "displayName": "Lipoprotein (a) [Lp(a)]",
+    "displayName": "Lp(a)",
     "short": "Lp(a)",
     "unit": "mg/dL",
     "lang": {
@@ -1482,7 +1482,7 @@
   {
     "loinc": "1988-5",
     "longCommonName": "C reactive protein [Mass/volume] in Serum or Plasma",
-    "displayName": "C-Reactive Protein (CRP)",
+    "displayName": "CRP",
     "short": "CRP",
     "unit": "mg/L",
     "lang": {
@@ -1499,7 +1499,7 @@
   {
     "loinc": "30522-7",
     "longCommonName": "C reactive protein [Mass/volume] in Serum or Plasma by High sensitivity method",
-    "displayName": "hs-CRP",
+    "displayName": "hsCRP",
     "short": "hsCRP",
     "unit": "mg/L",
     "lang": {
@@ -1550,7 +1550,7 @@
   {
     "loinc": "54238-1",
     "longCommonName": "LDL.oxidized [Units/volume] in Serum or Plasma",
-    "displayName": "Oxidized LDL (oxLDL)",
+    "displayName": "oxLDL",
     "short": "oxLDL",
     "unit": "U/L",
     "lang": {
@@ -1747,7 +1747,7 @@
   {
     "loinc": "32554-8",
     "longCommonName": "Thiamine [Moles/volume] in Blood",
-    "displayName": "Vitamin B1 (Thiamine)",
+    "displayName": "Vitamin B1",
     "short": "Vit B1",
     "unit": "nmol/L",
     "lang": {
@@ -1764,7 +1764,7 @@
   {
     "loinc": "62236-5",
     "longCommonName": "Pyridoxal phosphate [Moles/volume] in Serum or Plasma",
-    "displayName": "Vitamin B6 (Pyridoxal-5-Phosphate)",
+    "displayName": "Vitamin B6",
     "short": "Vit B6",
     "unit": "nmol/L",
     "lang": {
@@ -1781,7 +1781,7 @@
   {
     "loinc": "2284-8",
     "longCommonName": "Folate [Mass/volume] in Serum or Plasma",
-    "displayName": "Vitamin B9 (Folate)",
+    "displayName": "Folate",
     "short": "Vit B9",
     "unit": "ng/mL",
     "lang": {
@@ -1798,7 +1798,7 @@
   {
     "loinc": "2132-9",
     "longCommonName": "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
-    "displayName": "Vitamin B12 (Cobalamin)",
+    "displayName": "Vitamin B12",
     "short": "Vit B12",
     "unit": "pg/mL",
     "lang": {
@@ -1815,7 +1815,7 @@
   {
     "loinc": "62292-8",
     "longCommonName": "25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma",
-    "displayName": "Vitamin D (25-OH)",
+    "displayName": "25(OH)D",
     "short": "Vit D",
     "unit": "ng/mL",
     "lang": {
@@ -1832,7 +1832,7 @@
   {
     "loinc": "1989-3",
     "longCommonName": "25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma",
-    "displayName": "Vitamin D3 (25-OH)",
+    "displayName": "Vitamin D3",
     "short": "Vit D3",
     "unit": "ng/mL",
     "aliasOf": "62292-8",
@@ -1849,7 +1849,7 @@
   {
     "loinc": "17861-6",
     "longCommonName": "Calcium [Mass/volume] in Serum or Plasma",
-    "displayName": "Calcium (Ca)",
+    "displayName": "Calcium",
     "short": "Ca",
     "unit": "mg/dL",
     "lang": {
@@ -1866,7 +1866,7 @@
   {
     "loinc": "2000-8",
     "longCommonName": "Calcium [Moles/volume] in Serum or Plasma",
-    "displayName": "Calcium (Ca)",
+    "displayName": "Calcium",
     "unit": "mmol/L",
     "aliasOf": "17861-6",
     "aliasLabel": "mmol/L unit",
@@ -1884,7 +1884,7 @@
   {
     "loinc": "1994-3",
     "longCommonName": "Calcium.ionized [Moles/volume] in Blood",
-    "displayName": "Ionized Calcium (iCa)",
+    "displayName": "Ionized Calcium",
     "short": "iCa",
     "unit": "mmol/L",
     "lang": {
@@ -1901,7 +1901,7 @@
   {
     "loinc": "2075-0",
     "longCommonName": "Chloride [Moles/volume] in Serum or Plasma",
-    "displayName": "Chloride (Cl)",
+    "displayName": "Chloride",
     "short": "Cl",
     "unit": "mmol/L",
     "lang": {
@@ -1918,7 +1918,7 @@
   {
     "loinc": "2777-1",
     "longCommonName": "Phosphate [Mass/volume] in Serum or Plasma",
-    "displayName": "Phosphorus (P)",
+    "displayName": "Phosphorus",
     "short": "P",
     "unit": "mg/dL",
     "lang": {
@@ -1935,7 +1935,7 @@
   {
     "loinc": "2774-8",
     "longCommonName": "Phosphate [Mass/volume] in Blood",
-    "displayName": "Phosphorus (P)",
+    "displayName": "Phosphorus",
     "unit": "mg/dL",
     "aliasOf": "2777-1",
     "aliasLabel": "whole blood",
@@ -1947,7 +1947,7 @@
   {
     "loinc": "14879-1",
     "longCommonName": "Phosphate [Moles/volume] in Serum or Plasma",
-    "displayName": "Phosphorus (P)",
+    "displayName": "Phosphorus",
     "unit": "mmol/L",
     "aliasOf": "2777-1",
     "aliasLabel": "mmol/L unit",
@@ -1965,7 +1965,7 @@
   {
     "loinc": "19123-9",
     "longCommonName": "Magnesium [Mass/volume] in Serum or Plasma",
-    "displayName": "Magnesium (Mg)",
+    "displayName": "Magnesium",
     "short": "Mg",
     "unit": "mg/dL",
     "lang": {
@@ -1982,7 +1982,7 @@
   {
     "loinc": "2601-3",
     "longCommonName": "Magnesium [Moles/volume] in Serum or Plasma",
-    "displayName": "Magnesium (Mg)",
+    "displayName": "Magnesium",
     "unit": "mmol/L",
     "aliasOf": "19123-9",
     "aliasLabel": "mmol/L unit",
@@ -2000,7 +2000,7 @@
   {
     "loinc": "29900-7",
     "longCommonName": "Magnesium [Mass/volume] in Red Blood Cells",
-    "displayName": "Magnesium RBC (Mg RBC)",
+    "displayName": "Magnesium RBC",
     "short": "Mg RBC",
     "unit": "mg/dL",
     "lang": {
@@ -2017,7 +2017,7 @@
   {
     "loinc": "2731-8",
     "longCommonName": "Parathyrin.intact [Mass/volume] in Serum or Plasma",
-    "displayName": "Parathyroid Hormone (PTH)",
+    "displayName": "PTH",
     "short": "PTH",
     "unit": "pg/mL",
     "lang": {
@@ -2034,7 +2034,7 @@
   {
     "loinc": "4544-3",
     "longCommonName": "Hematocrit [Volume Fraction] of Blood by Automated count",
-    "displayName": "Hematocrit (HCT)",
+    "displayName": "Hematocrit",
     "short": "HCT",
     "unit": "%",
     "lang": {
@@ -2056,7 +2056,7 @@
   {
     "loinc": "2498-4",
     "longCommonName": "Iron [Mass/volume] in Serum or Plasma",
-    "displayName": "Iron Serum (Fe)",
+    "displayName": "Iron",
     "short": "Fe",
     "unit": "ug/dL",
     "lang": {
@@ -2090,7 +2090,7 @@
   {
     "loinc": "14798-3",
     "longCommonName": "Iron [Moles/volume] in Serum or Plasma",
-    "displayName": "Iron Serum (Fe)",
+    "displayName": "Iron",
     "unit": "umol/L",
     "aliasOf": "2498-4",
     "aliasLabel": "umol/L unit",
@@ -2102,7 +2102,7 @@
   {
     "loinc": "2500-7",
     "longCommonName": "Iron binding capacity [Mass/volume] in Serum or Plasma",
-    "displayName": "Total Iron Binding Capacity (TIBC)",
+    "displayName": "TIBC",
     "short": "TIBC",
     "unit": "ug/dL",
     "lang": {
@@ -2119,7 +2119,7 @@
   {
     "loinc": "2501-5",
     "longCommonName": "Iron binding capacity.unsaturated [Mass/volume] in Serum or Plasma",
-    "displayName": "Unsaturated Iron-Binding Capacity (UIBC)",
+    "displayName": "UIBC",
     "short": "UIBC",
     "unit": "ug/dL",
     "lang": {
@@ -2136,7 +2136,7 @@
   {
     "loinc": "3034-6",
     "longCommonName": "Transferrin [Mass/volume] in Serum or Plasma",
-    "displayName": "Transferrin Serum (TRF)",
+    "displayName": "Transferrin",
     "short": "TRF",
     "unit": "mg/dL",
     "lang": {
@@ -2153,7 +2153,7 @@
   {
     "loinc": "2502-3",
     "longCommonName": "Iron saturation [Mass Fraction] in Serum or Plasma",
-    "displayName": "% Iron Saturation (Calc)",
+    "displayName": "% Iron Saturation",
     "short": "TSAT",
     "unit": "%",
     "lang": {
@@ -2864,7 +2864,7 @@
   {
     "loinc": "777-3",
     "longCommonName": "Platelets [#/volume] in Blood by Automated count",
-    "displayName": "Platelets (PLT)",
+    "displayName": "Platelets",
     "short": "PLT",
     "unit": "x10^3/uL",
     "lang": {
@@ -3118,7 +3118,7 @@
   {
     "loinc": "4537-7",
     "longCommonName": "Erythrocyte [Sedimentation Rate] in Blood by Westergren method",
-    "displayName": "Erythrocyte Sedimentation Rate (Westergren)",
+    "displayName": "ESR",
     "short": "ESR",
     "unit": "mm/hr",
     "lang": {
