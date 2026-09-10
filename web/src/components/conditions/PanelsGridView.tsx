@@ -6,45 +6,47 @@ import { INDEX_LOINCS, testLoincs, type Observation } from './markers';
 import { STATUS_STYLES, ZONE_DOT, pressable } from './ui';
 import { getStatus, type LatestByLoinc } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
+import { getPanelMeta } from './panelMeta';
 
 export type Condition = { name: string; tests: Observation[] };
 
-const rowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '7px 0',
-  borderBottom: `1px solid ${COLOR.borderSubtle}`,
-  fontSize: 13,
-  cursor: 'pointer',
-} as const;
-
-// Status is conveyed by a small colored dot next to the label instead of a
-// filled/bordered pill, so the label text stays legible dark text even for a
-// 'never' (no result on file) status -- a pill's `STATUS_STYLES['never']`
-// (grey border+background+text) could wash out to near-invisible against
-// the card's white background. Shared by both the observations list and the
-// computed-indices list below it, so the two groups read as one dot language.
-function DotRow({
-  color,
-  label,
-  onClick,
-}: Readonly<{ color: string; label: string; onClick: (e: { currentTarget: HTMLElement }) => void }>) {
-  return (
-    <div {...pressable(onClick)} style={rowStyle}>
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <span style={{ color: COLOR.text }}>{label}</span>
-    </div>
-  );
-}
-
-/** Newest-first scan for the first draw with a computable value, same as Popup.tsx's IndexPopupBody. */
+/** Newest-first scan for the first draw with a computable value. */
 function latestZone(def: IndexDef, datesDesc: string[], resultsByDate: Record<string, Record<string, Result>>): Zone | null {
   for (const date of datesDesc) {
     const value = computeIndex(def, resultsByDate[date]!);
     if (value != null) return zone(value, def.cut[0], def.cut[1], def.hi);
   }
   return null;
+}
+
+/** A small rounded chip for one marker or index. */
+function Chip({
+  label,
+  dotColor,
+  onClick,
+}: Readonly<{ label: string; dotColor: string; onClick: (e: { currentTarget: HTMLElement }) => void }>) {
+  return (
+    <div
+      {...pressable(onClick)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '4px 9px',
+        borderRadius: 9999,
+        background: COLOR.surfaceMuted,
+        border: `1px solid ${COLOR.borderSubtle}`,
+        fontSize: 12,
+        fontWeight: 500,
+        color: COLOR.text,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+      {label}
+    </div>
+  );
 }
 
 export function PanelsGridView({
@@ -62,56 +64,79 @@ export function PanelsGridView({
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
 }>) {
-  // Sorted once and reused for every panel's indices, instead of re-sorting
-  // the same date keys per index.
   const datesDesc = useMemo(() => Object.keys(resultsByDate).sort((a, b) => b.localeCompare(a)), [resultsByDate]);
 
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 32 }}>Monitoring Panels</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 32, letterSpacing: -0.3 }}>Monitoring Panels</h1>
       <div className="mc-panels-grid">
         {conditions.map((condition) => {
+          const meta = getPanelMeta(condition.name);
+          const Icon = meta.icon;
           const computedForPanel = INDEX_DEFS.filter((d) => d.panels.includes(condition.name));
+          const observations = condition.tests.filter((t) => !INDEX_LOINCS.has(t.loinc));
+
           return (
-            <div key={condition.name} className="mc-panel-card">
+            <div key={condition.name} className="mc-panel-card" style={{ padding: 0, overflow: 'hidden' }}>
+              {/* Card header */}
               <div
                 {...pressable(() => onOpenDetail(condition.name))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  letterSpacing: '0.04em',
-                  paddingBottom: 10,
-                  marginBottom: 16,
-                  borderBottom: `1.5px solid ${COLOR.accent}`,
+                  gap: 10,
+                  padding: '12px 14px',
+                  background: `${meta.color}14`, // ~8% opacity tint
                   cursor: 'pointer',
+                  borderBottom: `1px solid ${meta.color}30`,
                 }}
               >
-                {condition.name}
-                <span style={{ color: COLOR.accent, fontWeight: 400 }}>›</span>
-              </div>
-              <div className="mc-panel-dots">
-                {condition.tests
-                  .filter((test) => !INDEX_LOINCS.has(test.loinc))
-                  .map((test) => {
-                    const style = STATUS_STYLES[getStatus(latestByLoinc, testLoincs(test))];
-                    return <DotRow key={test.loinc} color={style.border} label={test.short} onClick={(e) => onOpenPopup(test, e)} />;
-                  })}
-              </div>
-              {computedForPanel.length > 0 && (
-                <div
-                  className="mc-panel-dots"
-                  style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${COLOR.accentLine}` }}
+                <span
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: meta.color,
+                    flexShrink: 0,
+                  }}
                 >
-                  {computedForPanel.map((def) => {
-                    const z = latestZone(def, datesDesc, resultsByDate);
-                    const color = z ? ZONE_DOT[z] : STATUS_STYLES.never.border;
-                    return <DotRow key={def.key} color={color} label={def.nameCompact} onClick={(e) => onOpenIndexPopup(def, e)} />;
-                  })}
-                </div>
-              )}
+                  <Icon size={16} color="#fff" strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: COLOR.text, flex: 1, lineHeight: 1.3 }}>
+                  {condition.name}
+                </span>
+                <span style={{ color: meta.color, fontSize: 16, fontWeight: 400 }}>›</span>
+              </div>
+
+              {/* Marker chips */}
+              <div style={{ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {observations.map((test) => {
+                  const dotColor = STATUS_STYLES[getStatus(latestByLoinc, testLoincs(test))].border;
+                  return (
+                    <Chip
+                      key={test.loinc}
+                      label={test.short}
+                      dotColor={dotColor}
+                      onClick={(e) => onOpenPopup(test, e)}
+                    />
+                  );
+                })}
+                {computedForPanel.map((def) => {
+                  const z = latestZone(def, datesDesc, resultsByDate);
+                  const dotColor = z ? ZONE_DOT[z] : STATUS_STYLES.never.border;
+                  return (
+                    <Chip
+                      key={def.key}
+                      label={def.nameCompact}
+                      dotColor={dotColor}
+                      onClick={(e) => onOpenIndexPopup(def, e)}
+                    />
+                  );
+                })}
+              </div>
             </div>
           );
         })}
