@@ -210,6 +210,8 @@ export type ObservationTableProps = {
   preferRaw?: boolean;
   /** When set, appends the Scheduled toggle column. */
   scheduling?: RowScheduling;
+  /** Adds the laboratory select and total to the Scheduled header (Panel Detail only). */
+  showPricing?: boolean;
   /** The selected computed index: rows answering for any of its input `loincs` get a mark before their name (Panel Detail only). */
   inputsOf?: Relation;
 };
@@ -265,7 +267,7 @@ function ObservationCells({
 export function ObservationTable(props: Readonly<ObservationTableProps>) {
   const {
     label, rows, visibleDates, allResults, unitSystem, selectedLoinc, onSelect, onOpenPopup,
-    onSelectCell, onOpenResultPopup, selectedCell, preferRaw, scheduling, inputsOf,
+    onSelectCell, onOpenResultPopup, selectedCell, preferRaw, scheduling, inputsOf, showPricing,
   } = props;
   // Select-all covers exactly the rows on screen: All Observations filters by
   // panel and by name, and scheduling something the reader cannot see would be
@@ -279,6 +281,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
     onSetMonth: scheduling.onSetMonth,
     state: selectionState(visibleRowLoincs.map((loincs) => isRowScheduled(scheduling.scheduled, loincs))),
     onToggleAll: (on: boolean) => scheduling.onToggleAll(visibleRowLoincs, on),
+    showPricing,
   };
   return (
     <TableScroller
@@ -329,7 +332,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
 }
 
 export function IndexTable({
-  defs, visibleDates, allResults, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup, scheduling, usedBy,
+  defs, visibleDates, allResults, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup, scheduling, showPricing, usedBy,
 }: Readonly<{
   defs: IndexDef[];
   visibleDates: string[];
@@ -348,6 +351,8 @@ export function IndexTable({
   scheduling?: IndexScheduling;
   /** The selected observation: indices reading any of its `loincs` get a mark before their name (Panel Detail only). */
   usedBy?: Relation;
+  /** Adds the laboratory select and total to the Scheduled header (Panel Detail only). */
+  showPricing?: boolean;
 }>) {
   const visibleKeys = defs.map((def) => def.key);
   const labs = labsByDate(indexInputEntries(defs, visibleDates, allResults, resultsByDate));
@@ -357,6 +362,7 @@ export function IndexTable({
     onSetMonth: scheduling.onSetMonth,
     state: selectionState(visibleKeys.map((key) => isIndexScheduled(scheduling.scheduled, key))),
     onToggleAll: (on: boolean) => scheduling.onToggleAll(visibleKeys, on),
+    showPricing,
   };
   return (
     <TableScroller

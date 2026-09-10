@@ -59,6 +59,8 @@ export type ScheduleHeaderProps = {
   onSetMonth: (month: string | undefined) => void;
   state: SelectionState;
   onToggleAll: (on: boolean) => void;
+  /** Show the laboratory select and the schedule's total beneath the controls. */
+  showPricing?: boolean;
 };
 
 function LabTotal({ labId, loincs }: Readonly<{ labId: string; loincs: string[] }>) {
@@ -82,11 +84,12 @@ function LabTotal({ labId, loincs }: Readonly<{ labId: string; loincs: string[] 
 
 /**
  * The Scheduled column's header: the schedule's target month plus a tri-state
- * select-all over the rows the table is currently showing, and beneath them the
- * laboratory the whole schedule is costed at with its total. The selects and
+ * select-all over the rows the table is currently showing, and, with
+ * `showPricing`, beneath them the laboratory the whole schedule is costed at
+ * with its total (Panel Detail sets it; All Observations does not). The selects and
  * the box carry no visible text, so they name themselves through aria-label.
  */
-export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll }: Readonly<ScheduleHeaderProps>) {
+export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll, showPricing }: Readonly<ScheduleHeaderProps>) {
   const box = useRef<HTMLInputElement>(null);
   const scheduleLab = useContext(ScheduleLabContext);
   useEffect(() => {
@@ -118,7 +121,7 @@ export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll }:
           style={{ margin: 0, accentColor: COLOR.accent, cursor: 'pointer' }}
         />
       </div>
-      {scheduleLab && (
+      {showPricing && scheduleLab && (
         <>
           <select
             aria-label="Laboratory to price the scheduled tests at"

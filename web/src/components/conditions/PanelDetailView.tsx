@@ -125,6 +125,7 @@ export function PanelDetailView({
     onSelectCell,
     onOpenResultPopup,
     scheduling,
+    showPricing: true,
   };
 
   return (
@@ -171,6 +172,7 @@ export function PanelDetailView({
                       onSelectCell={onSelectCell}
                       onOpenIndexResultPopup={onOpenIndexResultPopup}
                       scheduling={indexScheduling}
+                      showPricing
                       usedBy={usedBy}
                     />
                   )}
