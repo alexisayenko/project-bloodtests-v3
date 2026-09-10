@@ -1,6 +1,8 @@
 import type { DiagnosticReport } from '../../types';
 import { generateTestDataThen } from '../../data/generateTestData';
 import { pressable } from './ui';
+import { Shield, Upload, Sparkles } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { COLOR } from '../../styles/tokens';
 
 const ACTION = {
@@ -42,20 +44,20 @@ export function ProfileView({
 }>) {
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Get Started</h1>
-      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
-        A LOINC-coded blood-test monitoring tool. Upload a lab-results export and it is organized into monitoring
-        panels by condition and organ system, tracked over time against reference ranges and computed indices.
-      </div>
-      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
-        All processing occurs locally, within this browser. Uploaded results are parsed client-side and persisted
-        only to this device's local storage; no data is transmitted to, or retained by, any server.
-      </div>
-      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 24 }}>
-        Every reference range and computed index is sourced from a cited paper or clinical guideline, and labeled
-        by how strong that evidence is: <b>guideline</b> (a professional-society standard), <b>consensus</b> (a
-        widely used but secondary source), or <b>heuristic</b> (orientation only — no validated cutoff).
-      </div>
+      <PageHeader
+        overline="Local-First Health Vault"
+        titlePrimary="Get"
+        titleAccent="Started"
+        description={[
+          'A LOINC-coded blood-test monitoring tool. Upload a lab-results export and it is organized into monitoring panels by condition and organ system.',
+          'All processing occurs locally in your browser — client-side persistence, zero server transmission, and evidence-graded reference ranges.',
+        ]}
+        pillars={[
+          { icon: Shield, line1: '100% private', line2: 'client-side only' },
+          { icon: Upload, line1: 'Direct PDF & JSON', line2: 'import support' },
+          { icon: Sparkles, line1: 'Evidence-graded', line2: 'clinical indices' },
+        ]}
+      />
 
       <div>
         <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Import your diagnostic reports database.</h2>

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MONTH_LABELS, monthKey, useMedications, type MedicationRow } from '../../data/medications';
+import { Pill, Clock, TrendingUp } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { COLOR } from '../../styles/tokens';
 
 const NAME_COL_WIDTH = 220;
@@ -85,10 +87,20 @@ export function MedicationsView() {
 
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Medications</h1>
-      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 16 }}>
-        What was taken, at what dosage, month by month.
-      </div>
+      <PageHeader
+        overline="Treatment & Supplement History"
+        titlePrimary="Active"
+        titleAccent="Medications"
+        description={[
+          'Track active prescriptions, dietary supplements, and dosage adjustments over time.',
+          'Correlate medication changes with biomarker movements across your timeline.',
+        ]}
+        pillars={[
+          { icon: Pill, line1: 'Dosage & intake', line2: 'monthly log' },
+          { icon: Clock, line1: 'Chronological', line2: 'regimen history' },
+          { icon: TrendingUp, line1: 'Biomarker shift', line2: 'correlation' },
+        ]}
+      />
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         <button type="button" style={BUTTON} onClick={toggleEditing}>
           {editing ? 'Done' : 'Edit'}

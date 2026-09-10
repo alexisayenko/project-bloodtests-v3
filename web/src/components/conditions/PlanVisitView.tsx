@@ -4,6 +4,8 @@ import { planCells, planRows, type PlanCell } from '../../data/visitPlan';
 import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
 import type { Observation } from './markers';
 import { pressable } from './ui';
+import { CalendarCheck, Coins, CheckSquare } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { COLOR } from '../../styles/tokens';
 
 const GAP_COL_WIDTH = 16;
@@ -60,7 +62,20 @@ export function PlanVisitView({
 
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Scheduled Visits</h1>
+      <PageHeader
+        overline="Laboratory Draw Planner"
+        titlePrimary="Scheduled"
+        titleAccent="Visits"
+        description={[
+          'Plan upcoming diagnostic appointments and calculate expected laboratory prices.',
+          'Select markers across panels to generate a complete ordering checklist.',
+        ]}
+        pillars={[
+          { icon: CalendarCheck, line1: 'Target month', line2: 'draw planning' },
+          { icon: Coins, line1: 'Transparent pricing', line2: 'by laboratory' },
+          { icon: CheckSquare, line1: 'One-click test', line2: 'selection' },
+        ]}
+      />
       <div style={{ fontSize: 14, marginBottom: 16 }}>
         <span style={{ color: COLOR.textMuted }}>Planned for </span>
         <strong>{scheduled.month ? formatScheduleMonth(scheduled.month) : 'No month selected'}</strong>

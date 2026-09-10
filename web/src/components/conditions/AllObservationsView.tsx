@@ -22,6 +22,8 @@ import type { Condition } from './exploreModel';
 import type { IndexScheduling, RowScheduling } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
 import type { ObservationsTab } from './routing';
+import { List, Search, Layers } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { COLOR } from '../../styles/tokens';
 
 // Not the default tab, and it pulls uPlot plus the vendored
@@ -198,7 +200,20 @@ export function AllObservationsView({
 
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>All Observations</h1>
+      <PageHeader
+        overline="Comprehensive Biomarker Timeline"
+        titlePrimary="All"
+        titleAccent="Observations"
+        description={[
+          'Chronological timeline of every test result and computed index across your health history.',
+          'Filter by panel or search across aliases and LOINC codes with automatic unit conversion.',
+        ]}
+        pillars={[
+          { icon: List, line1: 'Unified history', line2: 'across all draws' },
+          { icon: Search, line1: 'Fast multi-code', line2: 'marker search' },
+          { icon: Layers, line1: 'Normalized SI & US', line2: 'unit systems' },
+        ]}
+      />
       <ControlsBar
         {...controls}
         panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: setPanelFilter }}

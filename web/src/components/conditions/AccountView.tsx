@@ -4,6 +4,8 @@ import { backupFilename, buildBackupFiles, zipBackupFiles } from '../../data/bac
 import { BackupImportError, readBackup, unzipBackup, type BackupContents } from '../../data/backupRestore';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { pressable } from './ui';
+import { Database, HardDriveDownload, SlidersHorizontal } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { COLOR } from '../../styles/tokens';
 
 const ACTION = {
@@ -93,11 +95,20 @@ export function AccountView({
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Account</h1>
-      <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 16, maxWidth: 640 }}>
-        Download everything this browser holds for you — lab reports, medications, scheduled visits, laboratory
-        prices and view settings — as one zip file, or import one to replace it.
-      </div>
+      <PageHeader
+        overline="Data Vault & Management"
+        titlePrimary="Account &"
+        titleAccent="Storage"
+        description={[
+          'Download everything this browser holds for you — lab reports, medications, scheduled visits, laboratory prices and view settings — as one zip file, or import one to replace it.',
+          'Your complete clinical data history stays locally under your ownership and control.',
+        ]}
+        pillars={[
+          { icon: Database, line1: 'Offline-first', line2: 'browser storage' },
+          { icon: HardDriveDownload, line1: 'Complete zip', line2: 'backup export' },
+          { icon: SlidersHorizontal, line1: 'Instant restore', line2: 'at any time' },
+        ]}
+      />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <div {...pressable(() => run('export', () => downloadBackup(sessions), 'Export failed. Please try again.'))} style={ACTION}>
           {busy === 'export' ? 'Exporting...' : 'Export all data'}

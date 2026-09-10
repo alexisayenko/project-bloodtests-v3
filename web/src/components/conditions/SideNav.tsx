@@ -1,11 +1,11 @@
-import { Rocket, FileText, Activity, LayoutGrid, CalendarCheck, Pill, BookOpen, CircleUser, type LucideIcon } from 'lucide-react';
+import { Rocket, FileText, List, LayoutGrid, CalendarCheck, Pill, BookOpen, CircleUser, type LucideIcon } from 'lucide-react';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
 
 const ICONS: Record<NavView, LucideIcon> = {
   profile:     Rocket,
   reports:     FileText,
-  all:         Activity,
+  all:         List,
   panels:      LayoutGrid,
   plan:        CalendarCheck,
   medications: Pill,

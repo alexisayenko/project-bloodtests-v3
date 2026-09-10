@@ -8,6 +8,7 @@ import { pressable } from './ui';
 import { getStatus, type LatestByLoinc } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 import { getPanelMeta } from './panelMeta';
+import { PageHeader } from './PageHeader';
 
 export type Condition = { name: string; tests: Observation[] };
 
@@ -109,74 +110,20 @@ export function PanelsGridView({
   return (
     <>
       {/* Page Header Banner */}
-      <div
-        style={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 32,
-          marginBottom: 32,
-          padding: '8px 4px 28px',
-          borderBottom: `1px solid ${COLOR.borderSubtle}`,
-          flexWrap: 'wrap',
-          background: 'radial-gradient(ellipse 60% 90% at 88% 20%, rgba(20, 117, 126, 0.06) 0%, rgba(20, 117, 126, 0) 70%)',
-        }}
-      >
-        <div style={{ flex: '1 1 460px', minWidth: 300 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: COLOR.accent,
-              marginBottom: 8,
-            }}
-          >
-            Condition-Oriented Tracking
-          </div>
-          <h1 style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.6, marginBottom: 12, lineHeight: 1.15 }}>
-            <span style={{ color: COLOR.text }}>Monitoring </span>
-            <span style={{ color: COLOR.accent }}>Panels</span>
-          </h1>
-          <div style={{ fontSize: 14, color: COLOR.textSecondary, lineHeight: 1.55 }}>
-            <div>Follow condition-oriented monitoring panels instead of browsing report by report.</div>
-            <div>Paneloom unifies markers across laboratories and helps you track what matters over time.</div>
-          </div>
-        </div>
-
-        {/* Right side 3 feature pillars */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexShrink: 0 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <BarChart2 size={20} color={COLOR.accent} strokeWidth={2.2} aria-hidden="true" />
-            <div style={{ fontSize: 12, color: COLOR.textSecondary, lineHeight: 1.35 }}>
-              <div>One timeline</div>
-              <div>across labs</div>
-            </div>
-          </div>
-
-          <div style={{ width: 1, height: 44, background: COLOR.borderSubtle }} />
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Link2 size={20} color={COLOR.accent} strokeWidth={2.2} aria-hidden="true" />
-            <div style={{ fontSize: 12, color: COLOR.textSecondary, lineHeight: 1.35 }}>
-              <div>Values normalized</div>
-              <div>with LOINC codes</div>
-            </div>
-          </div>
-
-          <div style={{ width: 1, height: 44, background: COLOR.borderSubtle }} />
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Calculator size={20} color={COLOR.accent} strokeWidth={2.2} aria-hidden="true" />
-            <div style={{ fontSize: 12, color: COLOR.textSecondary, lineHeight: 1.35 }}>
-              <div>Focus on trends,</div>
-              <div>not PDFs</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        overline="Condition-Oriented Tracking"
+        titlePrimary="Monitoring"
+        titleAccent="Panels"
+        description={[
+          'Follow condition-oriented monitoring panels instead of browsing report by report.',
+          'Paneloom unifies markers across laboratories and helps you track what matters over time.',
+        ]}
+        pillars={[
+          { icon: BarChart2, line1: 'One timeline', line2: 'across labs' },
+          { icon: Link2, line1: 'Values normalized', line2: 'with LOINC codes' },
+          { icon: Calculator, line1: 'Focus on trends,', line2: 'not PDFs' },
+        ]}
+      />
 
       {/* Search Row */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>

@@ -6,6 +6,8 @@ import { formatFullDate, pressable } from './ui';
 import { exportData } from '../../utils/exportData';
 import { loadEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from '../../data/envelopeMeta';
 import { CHATBOT_PROMPT } from '../../data/chatbotPrompt';
+import { FileText, CheckCircle2, Sparkles } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { COLOR } from '../../styles/tokens';
 
 const th = {
@@ -198,7 +200,20 @@ export function DiagnosticReportsView({
 
   return (
     <>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>Diagnostic Reports</h1>
+      <PageHeader
+        overline="Laboratory Encounter Archive"
+        titlePrimary="Diagnostic"
+        titleAccent="Reports"
+        description={[
+          'Uploaded laboratory sessions organized chronologically by draw date and provider.',
+          'Inspect raw lab results, verify validation rules, or import new reports.',
+        ]}
+        pillars={[
+          { icon: FileText, line1: 'Chronological', line2: 'report archive' },
+          { icon: CheckCircle2, line1: 'Validation & error', line2: 'gating checks' },
+          { icon: Sparkles, line1: 'Chatbot prompt', line2: 'JSON extraction' },
+        ]}
+      />
       {sessions.length > 0 && (
         <details style={{ marginBottom: 24 }}>
           <summary style={{ fontWeight: 600, fontSize: 14, marginBottom: 10, cursor: 'pointer', listStyle: 'none' }}>

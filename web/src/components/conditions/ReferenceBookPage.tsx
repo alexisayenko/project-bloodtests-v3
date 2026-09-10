@@ -54,6 +54,8 @@ import {
   trimmedLongName,
 } from '../../data/analyteCatalog';
 import type { Analysis } from '../../types';
+import { BookOpen, Calculator, ShieldCheck } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 
 // Reference Book — one page per computed index, carrying the full clinical
 // prose (meaning + evidence standing) and its cited sources with verbatim
@@ -1209,7 +1211,20 @@ export function ReferenceBookPage({
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 28 }}>Reference Book</h1>
+      <PageHeader
+        overline="Clinical Knowledge Base"
+        titlePrimary="Reference"
+        titleAccent="Book"
+        description={[
+          'Evidence-graded clinical guidance, reference ranges, and index calculation formulas.',
+          'Understand your results through published consensus standards and clinical trials.',
+        ]}
+        pillars={[
+          { icon: BookOpen, line1: 'Curated clinical', line2: 'guidelines' },
+          { icon: Calculator, line1: 'Evidence-based', line2: 'index formulas' },
+          { icon: ShieldCheck, line1: 'Graded reference', line2: 'ranges' },
+        ]}
+      />
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Organism-wide aspects</h2>
       <div
         {...pressable(() => navigate({ view: 'reference', key: 'hp-axis' }))}
