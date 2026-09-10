@@ -9,7 +9,7 @@ import { routeToHash, hashToRoute, type Route } from './routing';
 import { ReferenceBookPage } from './ReferenceBookPage';
 import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadViewSettings, saveViewSettings, hasStoredViewSettings, seedViewSettings, popupPosition, type SelectedCell } from './ui';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
-import { NavBar } from './NavBar';
+import { AppShell } from './AppShell';
 import { Popup, type PopupPosition, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
@@ -295,8 +295,7 @@ export function MedicalConditionsPage() {
   }
 
   return (
-    <div className="mc-page">
-      <NavBar route={route} navigate={navigate} hasValidationErrors={hasValidationErrors} />
+    <AppShell route={route} navigate={navigate} hasValidationErrors={hasValidationErrors}>
       {sharedLinkError && (
         <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 12 }}>{sharedLinkError}</div>
       )}
@@ -313,6 +312,6 @@ export function MedicalConditionsPage() {
         onClose={() => setPopup(null)}
         onLearnMore={(key) => navigate({ view: 'reference', key })}
       />
-    </div>
+    </AppShell>
   );
 }

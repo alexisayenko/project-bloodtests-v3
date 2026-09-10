@@ -243,6 +243,14 @@ row there marks each input observation with a blue • in a fixed 10px
 gutter left of its name, and selecting an observation marks each index
 that uses it; the gutter is reserved on every row so names never shift
 (All Observations indents names by the same 13px, no marks there).
+From 768px up the nav is an app shell (`AppShell.tsx`): a white top bar
+(`TopBar.tsx` — mark and wordmark linking to Monitoring Panels, a lock and
+"Your data stays in this browser") over a left sidebar (`SideNav.tsx`) listing
+all eight `NAV_ITEMS` with a `lucide-react` line icon each, the active one a
+soft teal pill, active and blocked state coming from `routing.ts`'s
+`isNavItemActive` / `isNavItemBlocked`; phones keep the old wrapping `NavBar`
+described below, untouched, until task-0020 designs their shell, and every
+slot stays in place across the breakpoint so rotating a phone remounts nothing.
 Persistent top nav
 across five sections — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"

@@ -1,5 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { hashToRoute, routeToHash, NAV_ITEMS, type Route } from '../src/components/conditions/routing';
+import { hashToRoute, routeToHash, isNavItemActive, isNavItemBlocked, NAV_ITEMS, type Route } from '../src/components/conditions/routing';
+
+describe('nav item state', () => {
+  const activeViews = (route: Route) => NAV_ITEMS.filter((item) => isNavItemActive(route, item.view)).map((item) => item.view);
+
+  it('lights exactly one section, nesting Panel Detail and a report under their lists', () => {
+    expect(activeViews({ view: 'panel', name: 'Thyroid' })).toEqual(['panels']);
+    expect(activeViews({ view: 'report', file: 'dev__2024-06-15' })).toEqual(['reports']);
+    expect(activeViews({ view: 'reference', key: 'homair' })).toEqual(['reference']);
+    expect(activeViews({ view: 'plan' })).toEqual(['plan']);
+  });
+
+  it('blocks Monitoring Panels and All Observations only while reports have errors', () => {
+    expect(NAV_ITEMS.filter((item) => isNavItemBlocked(item.view, true)).map((item) => item.view)).toEqual(['all', 'panels']);
+    expect(NAV_ITEMS.some((item) => isNavItemBlocked(item.view, false))).toBe(false);
+  });
+});
 
 describe('routeToHash ↔ hashToRoute', () => {
   const roundTrips: Route[] = [

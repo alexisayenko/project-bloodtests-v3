@@ -291,6 +291,38 @@ img.panel-icon { display: none; }
 .mc-panel-card { width: 316px; padding: 20px; box-sizing: border-box; }
 .mc-panel-dots { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); column-gap: 8px; row-gap: 4px; }
 
+/* Desktop and tablet shell: a top bar over a sidebar. Phones keep .mc-nav
+   (task-0020), so nothing here may reach below the mobile breakpoint. */
+@media (min-width: 768px) {
+  :root { --mc-topbar-h: 60px; }
+  .mc-topbar {
+    position: sticky; top: 0; z-index: 40; height: var(--mc-topbar-h);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border-subtle);
+  }
+  .mc-shell-body { display: flex; align-items: flex-start; }
+  .mc-sidebar {
+    position: sticky; top: var(--mc-topbar-h); flex: none; width: 232px;
+    height: calc(100dvh - var(--mc-topbar-h)); overflow-y: auto;
+    padding: 20px 12px; background: var(--surface); border-right: 1px solid var(--border-subtle);
+  }
+  .mc-side-list { display: flex; flex-direction: column; gap: 2px; }
+  .mc-side-item {
+    display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+  }
+  .mc-side-item:hover { background: var(--surface-muted); color: var(--text); }
+  .mc-side-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .mc-side-item[aria-current='page'] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .mc-side-item[aria-disabled='true'] { cursor: not-allowed; opacity: 0.5; }
+  .mc-side-item[aria-disabled='true']:not([aria-current='page']) { background: none; color: var(--text-disabled); }
+  .mc-page { flex: 1; min-width: 0; padding: 32px 40px 56px; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .mc-sidebar { width: 200px; }
+  .mc-page { padding: 28px 24px 48px; }
+}
+
 @media (max-width: 767px) {
   .mc-page { padding: 20px 12px; padding-top: calc(20px + var(--mc-nav-h, 0px)); }
   .mc-nav { gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }

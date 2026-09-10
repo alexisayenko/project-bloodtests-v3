@@ -24,6 +24,16 @@ export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'pr
   { view: 'account', label: 'Account' },
 ];
 
+export type NavView = (typeof NAV_ITEMS)[number]['view'];
+
+export function isNavItemActive(route: Route, view: NavView): boolean {
+  return route.view === view || (view === 'panels' && route.view === 'panel') || (view === 'reports' && route.view === 'report');
+}
+
+export function isNavItemBlocked(view: NavView, hasValidationErrors: boolean): boolean {
+  return hasValidationErrors && (view === 'panels' || view === 'all');
+}
+
 export function routeToHash(route: Route): string {
   if (route.view === 'panel') return `#panels/${encodeURIComponent(route.name)}`;
   if (route.view === 'reference') return route.key ? `#reference/${encodeURIComponent(route.key)}` : '#reference';
