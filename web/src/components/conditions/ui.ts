@@ -319,6 +319,12 @@ export function visibleDatesOf(dates: string[], sampleLimit: number | 'all'): st
 /** A printed "—" or "?" in the lab field is a placeholder, not a lab. */
 const NAMES_A_LAB = /[\p{L}\p{N}]/u;
 
+/** The lab a reading names, or undefined for an empty field, a placeholder or the format's "Unknown Lab". */
+export function namedLab(place: string): string | undefined {
+  const name = place.trim();
+  return NAMES_A_LAB.test(name) && name !== UNKNOWN_LAB ? name : undefined;
+}
+
 /**
  * The labs behind each date column, named from the readings actually shown in
  * it. Columns are keyed by date alone, so two same-day draws from different
@@ -329,9 +335,9 @@ export function labsByDate(entries: readonly (ResultEntry | null)[]): Record<str
   const labs: Record<string, string[]> = {};
   for (const entry of entries) {
     if (!entry || (entry.result.value == null && !entry.result.rawValue)) continue;
-    const place = entry.place.trim();
     const names = (labs[entry.date] ??= []);
-    if (NAMES_A_LAB.test(place) && place !== UNKNOWN_LAB && !names.includes(place)) names.push(place);
+    const place = namedLab(entry.place);
+    if (place && !names.includes(place)) names.push(place);
   }
   return labs;
 }

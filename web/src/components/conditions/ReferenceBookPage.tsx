@@ -28,7 +28,7 @@ import {
 } from '../../data/molarMasses';
 import { MASS_MOLAR_SIBLINGS } from '../../data/massMolarSiblings';
 import { HP_AXIS_HTML } from './hpAxisContent';
-import { greenRangeOf, pressable } from './ui';
+import { greenRangeOf, namedLab, pressable } from './ui';
 import {
   buildConditions,
   buildPanelsByLoinc,
@@ -1022,10 +1022,31 @@ function PanelsCell({
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-/** "2026-08-19" + "MS LAB Diagnostics" → "Aug 26 at MS LAB Diagnostics". */
-function formatLastTested(date: string, place: string): string {
-  const [year, month] = date.split('-');
-  return `${MONTHS[Number(month) - 1] ?? month} ${year.slice(2)} at ${place}`;
+const labLine = {
+  maxWidth: 180,
+  fontSize: 11,
+  lineHeight: '14px',
+  color: COLOR.textMuted,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+
+/** "2026-08-19" at "MS LAB Diagnostics" → "Aug 26" over a muted "MS LAB Diagnostics". */
+function LastTestedCell({ entry }: Readonly<{ entry?: ResultEntry }>) {
+  if (!entry) return <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>;
+  const [year, month] = entry.date.split('-');
+  const lab = namedLab(entry.place);
+  return (
+    <>
+      {`${MONTHS[Number(month) - 1] ?? month} ${year.slice(2)}`}
+      {lab && (
+        <div style={labLine} title={lab}>
+          {lab}
+        </div>
+      )}
+    </>
+  );
 }
 
 function UnitsCell({ analyte }: Readonly<{ analyte: Analysis }>) {
@@ -1066,7 +1087,6 @@ function LoincDatabasePage({
         sortValues: {
           loinc: analyte.loinc,
           name: trimmedName,
-          short: SHORT_LABELS[analyte.loinc]?.short,
           specimen: SPECIMENS[analyte.loinc],
           unit: analyte.unit,
           lastTested: latest?.date,
@@ -1129,7 +1149,6 @@ function LoincDatabasePage({
             <tr>
               <SortableHeader label="LOINC" column="loinc" sort={sort} onSort={toggle} />
               <SortableHeader label="Long name" column="name" sort={sort} onSort={toggle} />
-              <SortableHeader label="Short" column="short" sort={sort} onSort={toggle} />
               <SortableHeader label="Specimen" column="specimen" sort={sort} onSort={toggle} />
               <SortableHeader label="Units" column="unit" sort={sort} onSort={toggle} />
               <SortableHeader label="Last tested" column="lastTested" sort={sort} onSort={toggle} />
@@ -1149,20 +1168,13 @@ function LoincDatabasePage({
                   <div style={{ color: COLOR.textMuted }}>{analyte.displayName}</div>
                 </td>
                 <td style={td}>
-                  {SHORT_LABELS[analyte.loinc]?.short ?? <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>}
-                </td>
-                <td style={td}>
                   {SPECIMENS[analyte.loinc] ?? <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>}
                 </td>
                 <td style={td}>
                   <UnitsCell analyte={analyte} />
                 </td>
                 <td style={td}>
-                  {latest ? (
-                    formatLastTested(latest.date, latest.place)
-                  ) : (
-                    <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>
-                  )}
+                  <LastTestedCell entry={latest} />
                 </td>
                 <td style={{ ...wrapTd, minWidth: 180 }}>
                   <PanelsCell membership={membership} navigate={navigate} />

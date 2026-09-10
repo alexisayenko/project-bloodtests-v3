@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { compareAnalytes, sortAnalytes, type AnalyteSortValues } from '../src/components/conditions/analyteSort';
 
 function row(values: Partial<AnalyteSortValues> & { loinc: string }): AnalyteSortValues {
-  return { name: undefined, short: undefined, specimen: undefined, unit: undefined, ...values };
+  return { name: undefined, specimen: undefined, unit: undefined, lastTested: undefined, ...values };
 }
 
 const order = (rows: AnalyteSortValues[], key: Parameters<typeof compareAnalytes>[2], direction: 'asc' | 'desc') =>
@@ -26,23 +26,23 @@ describe('LOINC code order', () => {
 
 describe('empty cells', () => {
   const rows = [
-    row({ loinc: '3-1', short: 'HGB' }),
+    row({ loinc: '3-1', specimen: 'Urine' }),
     row({ loinc: '1-1' }),
-    row({ loinc: '4-1', short: 'ALT' }),
+    row({ loinc: '4-1', specimen: 'Blood' }),
     row({ loinc: '2-1' }),
   ];
 
   it('puts absent values last when ascending', () => {
-    expect(order(rows, 'short', 'asc')).toEqual(['4-1', '3-1', '1-1', '2-1']);
+    expect(order(rows, 'specimen', 'asc')).toEqual(['4-1', '3-1', '1-1', '2-1']);
   });
 
   it('keeps absent values last when descending', () => {
-    expect(order(rows, 'short', 'desc')).toEqual(['3-1', '4-1', '1-1', '2-1']);
+    expect(order(rows, 'specimen', 'desc')).toEqual(['3-1', '4-1', '1-1', '2-1']);
   });
 
   it('orders two absent values by LOINC, in both directions', () => {
-    expect(order(rows, 'short', 'asc').slice(2)).toEqual(['1-1', '2-1']);
-    expect(order(rows, 'short', 'desc').slice(2)).toEqual(['1-1', '2-1']);
+    expect(order(rows, 'specimen', 'asc').slice(2)).toEqual(['1-1', '2-1']);
+    expect(order(rows, 'specimen', 'desc').slice(2)).toEqual(['1-1', '2-1']);
   });
 
   it('treats an empty string as absent', () => {
@@ -74,6 +74,19 @@ describe('text columns', () => {
     const input = [...rows];
     sortAnalytes(input, (r) => r, 'name', 'desc');
     expect(input.map((r) => r.loinc)).toEqual(['10-1', '2-1', '30-1']);
+  });
+});
+
+describe('last tested', () => {
+  it('ranks by ISO date, oldest first when ascending', () => {
+    const rows = [
+      row({ loinc: '1-1', lastTested: '2025-11-03' }),
+      row({ loinc: '2-1', lastTested: '2026-02-10' }),
+      row({ loinc: '3-1' }),
+      row({ loinc: '4-1', lastTested: '2024-12-31' }),
+    ];
+    expect(order(rows, 'lastTested', 'asc')).toEqual(['4-1', '1-1', '2-1', '3-1']);
+    expect(order(rows, 'lastTested', 'desc')).toEqual(['2-1', '1-1', '4-1', '3-1']);
   });
 });
 
