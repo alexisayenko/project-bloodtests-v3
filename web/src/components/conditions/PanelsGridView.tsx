@@ -255,7 +255,7 @@ export function PanelsGridView({
                     flexShrink: 0,
                   }}
                 >
-                  <Icon size={22} color={meta.color} strokeWidth={2.2} aria-hidden="true" />
+                  <Icon size={26} color={meta.color} strokeWidth={2.2} aria-hidden="true" />
                 </span>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>

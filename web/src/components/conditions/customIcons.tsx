@@ -4,83 +4,64 @@ import type { FC, SVGProps } from 'react';
 export type IconComponent = FC<SVGProps<SVGSVGElement> & { size?: number; strokeWidth?: number; color?: string }>;
 
 /**
- * Liver organ silhouette — filled shape with anatomical lobe divider,
- * matching media_1789067706421.png.
+ * Liver organ silhouette — exact vector extracted from design mockup.
  */
-export const LiverIcon: IconComponent = ({ size = 24, color = 'currentColor', ...rest }) => (
+export const LiverIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
-    viewBox="0 0 24 24"
+    viewBox="0 0 32 27"
     fill="none"
     aria-hidden="true"
     {...rest}
   >
-    {/* Main liver mass (filled) with lobe contour */}
     <path
-      d="M3 11 C3 6.8 6.5 4.5 12 4.5 C17 4.5 21 6.5 21 11 C21 15 17.5 19.5 13 19.5 C8 19.5 4.5 17 3.5 14 C3.2 13 3 12 3 11 Z"
+      d="M 26.25 1.00 L 32.00 1.25 L 32.00 11.00 L 26.25 16.00 L 23.25 17.00 L 22.25 16.25 L 22.25 1.75 L 23.25 1.00 L 26.25 1.00 Z M 13.00 0.00 L 19.00 1.00 L 20.25 2.25 L 20.00 18.25 L 16.75 21.00 L 11.00 23.00 L 6.25 27.00 L 1.75 27.00 L 1.00 25.50 L 0.75 16.75 L 0.00 16.00 L 0.00 7.75 L 2.25 3.50 L 4.50 1.50 L 7.00 0.75 L 7.25 0.00 Z"
       fill={color}
+      fillRule="evenodd"
     />
-    {/* Fine anatomical division line between right and left lobes */}
+  </svg>
+);
+
+/**
+ * Kidney pair with ureters — exact vector extracted from design mockup.
+ */
+export const KidneyIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 27 31"
+    fill="none"
+    aria-hidden="true"
+    {...rest}
+  >
     <path
-      d="M13.5 4.8 C13 9 13.8 14 15 19.2"
-      stroke="#ffffff"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      fill="none"
+      d="M 24.00 13.75 L 22.75 15.75 L 23.00 19.75 L 24.25 21.00 L 27.00 21.25 L 27.00 24.00 L 24.00 23.75 L 21.75 21.75 L 20.75 21.75 L 21.00 28.75 L 20.00 30.25 L 18.75 30.75 L 18.00 29.75 L 18.00 17.00 L 19.25 12.75 L 20.75 11.75 L 20.75 10.50 L 19.00 8.00 L 19.00 3.00 L 21.50 0.00 L 27.00 0.00 L 27.00 2.50 L 23.25 2.00 L 21.75 3.50 L 22.00 8.00 L 24.25 11.00 L 24.00 13.75 Z M 8.75 24.75 L 10.50 24.25 L 12.00 22.25 L 12.00 20.00 L 9.75 18.00 L 9.75 16.50 L 10.75 15.75 L 10.25 12.75 L 13.00 10.25 L 13.00 7.25 L 10.75 5.25 L 8.00 5.50 L 5.50 7.25 L 3.75 10.00 L 2.50 14.75 L 2.75 18.50 L 4.25 22.50 L 6.25 24.25 L 8.75 24.75 Z M 16.00 16.50 L 16.25 30.00 L 15.75 31.00 L 14.75 31.00 L 14.00 30.00 L 13.50 25.25 L 11.00 27.00 L 7.75 27.50 L 4.00 26.00 L 1.75 23.50 L 0.00 20.00 L 0.00 11.25 L 2.25 7.00 L 5.25 4.00 L 8.25 2.75 L 12.25 3.00 L 14.00 4.00 L 15.75 7.00 L 15.75 10.25 L 14.25 14.50 L 15.75 15.25 L 16.00 16.50 Z"
+      fill={color}
+      fillRule="evenodd"
     />
   </svg>
 );
 
 /**
- * Kidney pair with renal pelvis & ureters,
- * matching media_1789067706421.png.
+ * Thyroid gland butterfly outline — exact vector extracted from design mockup.
  */
-export const KidneyIcon: IconComponent = ({ size = 24, strokeWidth = 2, color = 'currentColor', ...rest }) => (
+export const ThyroidIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
-    viewBox="0 0 24 24"
+    viewBox="0 0 32 28"
     fill="none"
-    stroke={color}
-    strokeWidth={strokeWidth}
-    strokeLinecap="round"
-    strokeLinejoin="round"
     aria-hidden="true"
     {...rest}
   >
-    {/* Left kidney */}
-    <path d="M10 5.5 C7.5 4.8 5 6.5 4.5 9.5 C4 13 5.5 16.5 8 18 C9.8 19 11.5 18 11.5 16 C11.5 14.5 10.8 13.8 10.8 12 C10.8 10.2 11.5 9.5 11.5 7.8 C11.5 6.4 10.8 5.7 10 5.5 Z" />
-    {/* Left ureter */}
-    <path d="M10.5 14.5 V19.5" />
-
-    {/* Right kidney */}
-    <path d="M14 5.5 C16.5 4.8 19 6.5 19.5 9.5 C20 13 18.5 16.5 16 18 C14.2 19 12.5 18 12.5 16 C12.5 14.5 13.2 13.8 13.2 12 C13.2 10.2 12.5 9.5 12.5 7.8 C12.5 6.4 13.2 5.7 14 5.5 Z" />
-    {/* Right ureter */}
-    <path d="M13.5 14.5 V19.5" />
-  </svg>
-);
-
-/**
- * Thyroid gland butterfly outline with symmetrical lobes & isthmus,
- * matching media_1789067706421.png.
- */
-export const ThyroidIcon: IconComponent = ({ size = 24, strokeWidth = 2, color = 'currentColor', ...rest }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={color}
-    strokeWidth={strokeWidth}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    {...rest}
-  >
-    <path d="M7 6 C5 6 4 8 4 11.5 C4 15 5.5 18 8 18 C10 18 11 16.5 12 15 C13 16.5 14 18 16 18 C18.5 18 20 15 20 11.5 C20 8 19 6 17 6 C15 6 13.5 8 13.2 10.5 C13 12 11 12 10.8 10.5 C10.5 8 9 6 7 6 Z" />
+    <path
+      d="M 3.25 15.50 L 4.00 19.75 L 6.25 23.75 L 7.75 25.00 L 9.75 24.75 L 11.75 20.50 L 14.50 18.75 L 19.00 19.00 L 21.00 20.75 L 22.25 24.50 L 24.50 25.00 L 26.75 22.50 L 29.00 16.50 L 28.75 4.50 L 27.75 2.75 L 25.50 3.00 L 21.00 10.00 L 17.50 11.75 L 15.25 11.75 L 11.50 10.00 L 9.25 7.00 L 8.00 3.75 L 6.50 2.50 L 5.25 2.50 L 4.00 3.50 L 3.00 7.50 L 3.25 15.50 Z M 2.00 22.00 L 0.75 16.25 L 0.00 15.50 L 0.00 6.25 L 1.50 2.50 L 3.50 0.00 L 8.00 0.00 L 10.75 3.00 L 12.00 6.50 L 13.50 8.00 L 15.50 8.75 L 18.75 8.00 L 22.00 2.50 L 24.50 0.00 L 28.75 0.00 L 30.00 1.50 L 32.00 6.25 L 32.00 16.25 L 28.75 24.00 L 24.75 28.00 L 22.25 28.00 L 21.00 27.00 L 18.00 22.00 L 13.75 22.25 L 12.00 25.75 L 9.75 28.00 L 6.75 28.00 L 4.00 25.50 L 2.00 22.00 Z"
+      fill={color}
+      fillRule="evenodd"
+    />
   </svg>
 );
