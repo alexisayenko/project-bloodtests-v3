@@ -1,4 +1,4 @@
-import { Upload, FileText, Activity, LayoutGrid, CalendarCheck, Pill, BookOpen, Settings2, type LucideIcon } from 'lucide-react';
+import { Upload, FileText, Activity, LayoutGrid, CalendarCheck, Pill, BookOpen, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
 
@@ -10,7 +10,7 @@ const ICONS: Record<NavView, LucideIcon> = {
   plan:        CalendarCheck,
   medications: Pill,
   reference:   BookOpen,
-  account:     Settings2,
+  account:     SlidersHorizontal,
 };
 
 export function SideNav({
