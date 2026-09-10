@@ -162,6 +162,7 @@ docs/
 │   ├── compliance.md                   # external obligations
 │   └── budget.md                       # out-of-pocket costs
 ├── content/                            # entry: content/README.md
+│   └── laboratory-prices.md            # prices per laboratory (manual)
 ├── milestones.md                       # dated project events
 ├── product/                            # entry: product/README.md
 │   ├── concepts/                       # entry: concepts/README.md
@@ -197,6 +198,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Out-of-pocket project costs (one-time + recurring) | [`business/budget.md`](business/budget.md) | Tracking spend; planning a renewal; FX or pricing question |
 | Cross-cutting axes (C1, C2, …) referenced by tasks | [`concerns.md`](concerns.md) | Picking which work area a task belongs to; orienting at session start |
 | Source material — quantities, lists, corpora | [`content/`](content/) | Sourcing data, citing a fact, planning ingest |
+| Laboratory prices (per laboratory: currency, as-of date, source, LOINC mapping) | [`content/laboratory-prices.md`](content/laboratory-prices.md) | Recording a laboratory's prices; costing a set of tests |
 | Project milestones (launches, releases, evidence) | [`milestones.md`](milestones.md) | Looking up when an event happened, or what shipped in a release |
 | Product core idea + section glossary | [`product/README.md`](product/README.md) | Orienting on what the product is at the conceptual level |
 | Product entities (one file per noun) | [`product/concepts/`](product/concepts/) | Modeling a stable noun the product reasons about |
