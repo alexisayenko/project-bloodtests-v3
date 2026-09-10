@@ -212,7 +212,7 @@
   {
     "loinc": "2339-0",
     "longCommonName": "Glucose [Mass/volume] in Blood",
-    "displayName": "Glucose (Whole Blood)",
+    "displayName": "Glucose",
     "unit": "mg/dL",
     "aliasOf": "2345-7",
     "aliasLabel": "whole blood",
@@ -273,7 +273,7 @@
   {
     "loinc": "15074-8",
     "longCommonName": "Glucose [Moles/volume] in Blood",
-    "displayName": "Glucose (Whole Blood)",
+    "displayName": "Glucose",
     "unit": "mmol/L",
     "aliasOf": "2345-7",
     "aliasLabel": "whole blood, mmol/L unit",
@@ -639,7 +639,7 @@
   {
     "loinc": "1975-2",
     "longCommonName": "Bilirubin.total [Mass/volume] in Serum or Plasma",
-    "displayName": "Bilirubin (total)",
+    "displayName": "Total Bilirubin",
     "short": "TBIL",
     "unit": "mg/dL",
     "lang": {
@@ -661,7 +661,7 @@
   {
     "loinc": "14631-6",
     "longCommonName": "Bilirubin.total [Moles/volume] in Serum or Plasma",
-    "displayName": "Bilirubin (total)",
+    "displayName": "Total Bilirubin",
     "unit": "umol/L",
     "aliasOf": "1975-2",
     "aliasLabel": "umol/L unit",
@@ -1113,7 +1113,7 @@
   {
     "loinc": "13979-8",
     "longCommonName": "Glycated albumin/Albumin.total in Serum or Plasma",
-    "displayName": "Glycated Albumin (GA)",
+    "displayName": "Glycated Albumin",
     "short": "GA",
     "unit": "%",
     "lang": {
@@ -1516,7 +1516,7 @@
   {
     "loinc": "26881-3",
     "longCommonName": "Interleukin 6 [Mass/volume] in Serum or Plasma",
-    "displayName": "Interleukin-6 (IL-6)",
+    "displayName": "IL-6",
     "short": "IL6",
     "unit": "pg/mL",
     "lang": {
@@ -1664,7 +1664,7 @@
   {
     "loinc": "2243-4",
     "longCommonName": "Estradiol (E2) [Mass/volume] in Serum or Plasma",
-    "displayName": "Estradiol (E2)",
+    "displayName": "Estradiol",
     "short": "E2",
     "unit": "pg/mL",
     "lang": {
@@ -1681,7 +1681,7 @@
   {
     "loinc": "1848-1",
     "longCommonName": "Androstanolone [Mass/volume] in Serum or Plasma",
-    "displayName": "Dihydrotestosterone (DHT)",
+    "displayName": "DHT",
     "short": "DHT",
     "unit": "ng/dL",
     "allowedUnits": [
@@ -1701,7 +1701,7 @@
   {
     "loinc": "15057-3",
     "longCommonName": "Androstanolone [Moles/volume] in Serum or Plasma",
-    "displayName": "Dihydrotestosterone (DHT)",
+    "displayName": "DHT",
     "unit": "nmol/L",
     "aliasOf": "1848-1",
     "aliasLabel": "nmol/L unit",
@@ -2271,7 +2271,7 @@
   {
     "loinc": "5902-2",
     "longCommonName": "Prothrombin time (PT)",
-    "displayName": "Prothrombin Time (PT)",
+    "displayName": "Prothrombin Time",
     "short": "PT",
     "unit": "sec",
     "lang": {
@@ -2303,7 +2303,7 @@
   {
     "loinc": "5894-1",
     "longCommonName": "Prothrombin time (PT) actual/Normal",
-    "displayName": "PT Ratio (Actual/Normal)",
+    "displayName": "PT Ratio",
     "unit": "%",
     "lang": {
       "ru-RU": "Протромбиновое отношение (актуальное/норма)",
@@ -2354,7 +2354,7 @@
   {
     "loinc": "3174-0",
     "longCommonName": "Antithrombin [Units/volume] in Platelet poor plasma by Chromogenic method",
-    "displayName": "Antithrombin (Activity)",
+    "displayName": "Antithrombin",
     "lang": {
       "ru-RU": "Антитромбин (активность)",
       "uk-UA": "Антитромбін (активність)"
@@ -2434,7 +2434,7 @@
   {
     "loinc": "11572-5",
     "longCommonName": "Rheumatoid factor [Units/volume] in Serum or Plasma",
-    "displayName": "Rheumatoid Factor (RF)",
+    "displayName": "Rheumatoid Factor",
     "lang": {
       "ru-RU": "Ревматоидный фактор",
       "uk-UA": "Ревматоїдний фактор"
@@ -2449,7 +2449,7 @@
   {
     "loinc": "2484-4",
     "longCommonName": "Insulin-like growth factor-I [Mass/volume] in Serum or Plasma",
-    "displayName": "IGF-1 (Somatomedin C)",
+    "displayName": "IGF-1",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "ИФР-1 (соматомедин C)",
@@ -2480,7 +2480,7 @@
   {
     "loinc": "53027-9",
     "longCommonName": "Cyclic citrullinated peptide Ab [Units/volume] in Serum",
-    "displayName": "Anti-CCP (ACCP)",
+    "displayName": "Anti-CCP",
     "lang": {
       "ru-RU": "Антитела к циклическому цитруллинированному пептиду (АЦЦП)",
       "uk-UA": "Антитіла до циклічного цитрулінованого пептиду (АЦЦП)"
@@ -2495,7 +2495,7 @@
   {
     "loinc": "2157-6",
     "longCommonName": "Creatine kinase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "Creatine Kinase (CK)",
+    "displayName": "Creatine Kinase",
     "short": "CK",
     "unit": "U/L",
     "lang": {
@@ -2512,7 +2512,7 @@
   {
     "loinc": "751-8",
     "longCommonName": "Neutrophils [#/volume] in Blood by Automated count",
-    "displayName": "Neutrophils (NEUT#)",
+    "displayName": "Neutrophils",
     "short": "NEUT#",
     "unit": "x10^3/uL",
     "lang": {
@@ -2534,7 +2534,7 @@
   {
     "loinc": "731-0",
     "longCommonName": "Lymphocytes [#/volume] in Blood by Automated count",
-    "displayName": "Lymphocytes (LYMPH#)",
+    "displayName": "Lymphocytes",
     "short": "LYMPH#",
     "unit": "x10^3/uL",
     "lang": {
@@ -2556,7 +2556,7 @@
   {
     "loinc": "742-7",
     "longCommonName": "Monocytes [#/volume] in Blood by Automated count",
-    "displayName": "Monocytes (MONO#)",
+    "displayName": "Monocytes",
     "short": "MONO#",
     "unit": "x10^3/uL",
     "lang": {
@@ -2578,7 +2578,7 @@
   {
     "loinc": "711-2",
     "longCommonName": "Eosinophils [#/volume] in Blood by Automated count",
-    "displayName": "Eosinophils (EO#)",
+    "displayName": "Eosinophils",
     "short": "EOS#",
     "unit": "x10^3/uL",
     "lang": {
@@ -2600,7 +2600,7 @@
   {
     "loinc": "704-7",
     "longCommonName": "Basophils [#/volume] in Blood by Automated count",
-    "displayName": "Basophils (BASO#)",
+    "displayName": "Basophils",
     "short": "BASO#",
     "unit": "x10^3/uL",
     "lang": {
@@ -2622,7 +2622,7 @@
   {
     "loinc": "770-8",
     "longCommonName": "Neutrophils/Leukocytes in Blood by Automated count",
-    "displayName": "Neutrophils (NEUT%)",
+    "displayName": "Neutrophils %",
     "short": "NEUT%",
     "unit": "%",
     "lang": {
@@ -2644,7 +2644,7 @@
   {
     "loinc": "736-9",
     "longCommonName": "Lymphocytes/Leukocytes in Blood by Automated count",
-    "displayName": "Lymphocytes (LYMPH%)",
+    "displayName": "Lymphocytes %",
     "short": "LYMPH%",
     "unit": "%",
     "lang": {
@@ -2666,7 +2666,7 @@
   {
     "loinc": "5905-5",
     "longCommonName": "Monocytes/Leukocytes in Blood by Automated count",
-    "displayName": "Monocytes (MONO%)",
+    "displayName": "Monocytes %",
     "short": "MONO%",
     "unit": "%",
     "lang": {
@@ -2688,7 +2688,7 @@
   {
     "loinc": "713-8",
     "longCommonName": "Eosinophils/Leukocytes in Blood by Automated count",
-    "displayName": "Eosinophils (EO%)",
+    "displayName": "Eosinophils %",
     "short": "EOS%",
     "unit": "%",
     "lang": {
@@ -2710,7 +2710,7 @@
   {
     "loinc": "706-2",
     "longCommonName": "Basophils/Leukocytes in Blood by Automated count",
-    "displayName": "Basophils (BASO%)",
+    "displayName": "Basophils %",
     "short": "BASO%",
     "unit": "%",
     "lang": {
@@ -2732,7 +2732,7 @@
   {
     "loinc": "71695-1",
     "longCommonName": "Immature granulocytes/Leukocytes in Blood by Automated count",
-    "displayName": "Immature Granulocytes (IG%)",
+    "displayName": "Immature Granulocytes",
     "short": "IG%",
     "unit": "%",
     "lang": {
@@ -2974,7 +2974,7 @@
   {
     "loinc": "61928-1",
     "longCommonName": "Plateletcrit [Volume Fraction] in Blood by Automated count",
-    "displayName": "Plateletcrit (PCT)",
+    "displayName": "Plateletcrit",
     "short": "PCT",
     "unit": "%?",
     "lang": {
@@ -3019,7 +3019,7 @@
   {
     "loinc": "9318-7",
     "longCommonName": "Albumin/Creatinine [Mass Ratio] in Urine",
-    "displayName": "Albumin/Creatinine Ratio (Urine)",
+    "displayName": "Albumin/Creatinine Ratio",
     "short": "ACR",
     "unit": "mg/g",
     "lang": {
@@ -3041,7 +3041,7 @@
   {
     "loinc": "41171-0",
     "longCommonName": "Collagen crosslinked C-telopeptide [Mass/volume] in Serum or Plasma",
-    "displayName": "Beta-CrossLaps (CTX)",
+    "displayName": "Beta-CrossLaps",
     "short": "CTX",
     "unit": "ng/mL",
     "lang": {
@@ -3052,7 +3052,7 @@
   {
     "loinc": "77370-5",
     "longCommonName": "Procollagen type I.N-terminal propeptide [Mass/volume] in Serum or Plasma by Immunoassay",
-    "displayName": "Procollagen Type I N-Terminal Propeptide (P1NP)",
+    "displayName": "P1NP",
     "short": "P1NP",
     "unit": "ng/mL",
     "lang": {
@@ -3085,7 +3085,7 @@
   {
     "loinc": "25907-7",
     "longCommonName": "Elastase.pancreatic [Mass/mass] in Stool",
-    "displayName": "Pancreatic Elastase-1 (Stool)",
+    "displayName": "Pancreatic Elastase",
     "short": "ELA1",
     "unit": "ug/g",
     "lang": {
