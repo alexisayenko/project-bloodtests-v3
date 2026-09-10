@@ -637,6 +637,19 @@ describe('cross-check against the real catalog', () => {
     expect(codes('Мочевая кислота', 'мкмоль/л')).toEqual(['14933-6']);
   });
 
+  it('reads a Cyrillic folic acid as folate, while uric acid stays urate and other acids gain nothing', () => {
+    for (const printed of ['Фолиевая кислота', 'Фолієва кислота', 'Витамин B9 (фолиевая кислота)']) {
+      const res = resolveLoinc(createResult({ loinc: '', analysis: printed, unit: 'нг/мл' }), ANALYTES);
+      expect(res.candidates.map((c) => c.loinc)).toEqual(['2284-8']);
+      expect(res.confident).toBe(true);
+    }
+    expect(codes('Мочевая кислота', 'мг/дл')).toEqual(['3084-1']);
+    expect(codes('Сечова кислота', 'мкмоль/л')).toEqual(['14933-6']);
+    for (const printed of ['Аскорбиновая кислота', 'Молочная кислота', 'Вальпроевая кислота', 'Вальпроєва кислота']) {
+      expect(codes(printed, '')).toEqual([]);
+    }
+  });
+
   it('lets no generic word make a suggestion on its own, while one still settles between siblings', () => {
     for (const printed of ['Acid', 'Total', 'Serum', 'Blood Count', 'Ascorbic Acid', 'Total IgE']) {
       expect(codes(printed, '')).toEqual([]);

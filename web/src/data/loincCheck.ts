@@ -133,17 +133,27 @@ function isDecisive(token: string): boolean {
   return !GENERIC_TOKENS.has(token);
 }
 
+const CYRILLIC_ACID_ADJECTIVE = /^(\p{L}{2,}?)(?:иевая|евая|овая|ієва|єва|ова)$/u;
+
+function anionOf(acid: string, adjective: string): string | undefined {
+  if (acid === 'acid' || acid === 'acids') {
+    return adjective.length > 3 && adjective.endsWith('ic') ? `${adjective.slice(0, -2)}ate` : undefined;
+  }
+  if (acid !== 'кислота') return undefined;
+  const m = CYRILLIC_ACID_ADJECTIVE.exec(adjective);
+  return m ? `${m[1]}ат` : undefined;
+}
+
 // A lab reports an -ic acid under its -ate anion (uric acid is urate, folic
-// acid is folate), so a printed "Folic Acid" reads as the catalog's "folate".
+// acid is folate), so a printed "Folic Acid" reads as the catalog's "folate",
+// and "Фолиевая кислота" / "Фолієва кислота" as "фолат".
 function foldAcidToAnion(tokens: string[]): string[] {
   const out: string[] = [];
   for (const t of tokens) {
     const prev = out.at(-1);
-    if ((t === 'acid' || t === 'acids') && prev && prev.length > 3 && prev.endsWith('ic')) {
-      out[out.length - 1] = `${prev.slice(0, -2)}ate`;
-    } else {
-      out.push(t);
-    }
+    const anion = prev ? anionOf(t, prev) : undefined;
+    if (anion) out[out.length - 1] = anion;
+    else out.push(t);
   }
   return out;
 }
@@ -398,13 +408,20 @@ function translationScore(queryTokens: string[], name: string): number {
 }
 
 // Ladder stage b: the full printed name vs each catalog `lang` translation.
+// The printout is read both as printed and with its acid folded to the anion, so
+// "Мочевая кислота" still meets its own translation while "Фолиевая кислота"
+// meets "фолат".
 function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string, string>): CrossCheckSuggestion[] {
-  const queryTokens = unicodeTokens(item.analysis);
-  if (queryTokens.length === 0) return [];
+  const printed = unicodeTokens(item.analysis);
+  if (printed.length === 0) return [];
+  const readings = [printed, foldAcidToAnion(printed)];
   const rowUnit = canonicalUnit(item.unit);
   return rankCandidates(
     entries.map((a) => {
-      const base = Math.max(0, ...Object.values(a.lang ?? {}).map((name) => translationScore(queryTokens, name)));
+      const base = Math.max(
+        0,
+        ...Object.values(a.lang ?? {}).flatMap((name) => readings.map((tokens) => translationScore(tokens, name)))
+      );
       return {
         loinc: a.loinc,
         name: a.displayName || a.longCommonName,

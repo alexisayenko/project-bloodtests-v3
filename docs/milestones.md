@@ -16,7 +16,7 @@ events accumulate enough to warrant their own pages — see
   instead of down-ranking it, and a Cyrillic qualifier ("общий", "ЛПВП") now
   decides between cholesterol siblings. The suite is 614 tests across 25 files.
   Generic words (acid, total, serum, "общий") no longer make a match alone,
-  "Folic Acid" resolves to folate, and total cholesterol, calcium and
+  "Folic Acid" and "Фолиевая кислота" resolve to folate, and total cholesterol, calcium and
   testosterone carry "общий"/"загальний", so an uncoded "Холестерин общий"
   is filled automatically.
 
