@@ -126,6 +126,7 @@ export function PanelDetailView({
     onOpenResultPopup,
     scheduling,
     showPricing: true,
+    showLabs: true,
   };
 
   return (
@@ -173,6 +174,7 @@ export function PanelDetailView({
                       onOpenIndexResultPopup={onOpenIndexResultPopup}
                       scheduling={indexScheduling}
                       showPricing
+                      showLabs
                       usedBy={usedBy}
                     />
                   )}

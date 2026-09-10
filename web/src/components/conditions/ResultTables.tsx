@@ -98,19 +98,21 @@ function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling:
 
 function TableHead({
   label, dates, labs, schedule,
-}: Readonly<{ label: string; dates: string[]; labs: Record<string, string[]>; schedule?: ScheduleHeaderProps }>) {
+}: Readonly<{ label: string; dates: string[]; labs?: Record<string, string[]>; schedule?: ScheduleHeaderProps }>) {
   return (
     <thead>
       <tr>
         <th style={th}>{label}</th>
         {dates.map((date) => {
-          const names = labs[date]?.join(', ') ?? '';
+          const names = labs?.[date]?.join(', ') ?? '';
           return (
             <th key={date} style={th}>
               {formatMonthYear(date)}
-              <div style={labLine} title={names || undefined}>
-                {names}
-              </div>
+              {labs && (
+                <div style={labLine} title={names || undefined}>
+                  {names}
+                </div>
+              )}
             </th>
           );
         })}
@@ -212,6 +214,8 @@ export type ObservationTableProps = {
   scheduling?: RowScheduling;
   /** Adds the laboratory select and total to the Scheduled header (Panel Detail only). */
   showPricing?: boolean;
+  /** Names the laboratories under each date in the header (Panel Detail only). */
+  showLabs?: boolean;
   /** The selected computed index: rows answering for any of its input `loincs` get a mark before their name (Panel Detail only). */
   inputsOf?: Relation;
 };
@@ -267,14 +271,14 @@ function ObservationCells({
 export function ObservationTable(props: Readonly<ObservationTableProps>) {
   const {
     label, rows, visibleDates, allResults, unitSystem, selectedLoinc, onSelect, onOpenPopup,
-    onSelectCell, onOpenResultPopup, selectedCell, preferRaw, scheduling, inputsOf, showPricing,
+    onSelectCell, onOpenResultPopup, selectedCell, preferRaw, scheduling, inputsOf, showPricing, showLabs,
   } = props;
   // Select-all covers exactly the rows on screen: All Observations filters by
   // panel and by name, and scheduling something the reader cannot see would be
   // a silent surprise.
   const visibleRowLoincs = rows.map(testLoincs);
   const builtRows = rows.map((test) => ({ test, ...buildRowCells(test, visibleDates, allResults, unitSystem) }));
-  const labs = labsByDate(builtRows.flatMap(({ cells }) => cells.map((cell) => cell.match)));
+  const labs = showLabs ? labsByDate(builtRows.flatMap(({ cells }) => cells.map((cell) => cell.match))) : undefined;
   const schedule = scheduling && {
     label,
     month: scheduling.scheduled.month,
@@ -332,7 +336,7 @@ export function ObservationTable(props: Readonly<ObservationTableProps>) {
 }
 
 export function IndexTable({
-  defs, visibleDates, allResults, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup, scheduling, showPricing, usedBy,
+  defs, visibleDates, allResults, resultsByDate, selectedLoinc, onSelect, onOpenPopup, selectedCell, onSelectCell, onOpenIndexResultPopup, scheduling, showPricing, showLabs, usedBy,
 }: Readonly<{
   defs: IndexDef[];
   visibleDates: string[];
@@ -353,9 +357,11 @@ export function IndexTable({
   usedBy?: Relation;
   /** Adds the laboratory select and total to the Scheduled header (Panel Detail only). */
   showPricing?: boolean;
+  /** Names the laboratories under each date in the header (Panel Detail only). */
+  showLabs?: boolean;
 }>) {
   const visibleKeys = defs.map((def) => def.key);
-  const labs = labsByDate(indexInputEntries(defs, visibleDates, allResults, resultsByDate));
+  const labs = showLabs ? labsByDate(indexInputEntries(defs, visibleDates, allResults, resultsByDate)) : undefined;
   const schedule = scheduling && {
     label: 'Indices',
     month: scheduling.scheduled.month,
