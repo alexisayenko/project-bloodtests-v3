@@ -432,7 +432,7 @@
   {
     "loinc": "1742-6",
     "longCommonName": "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "ALT (GPT)",
+    "displayName": "ALT",
     "short": "ALT",
     "unit": "U/L",
     "lang": {
@@ -476,7 +476,7 @@
   {
     "loinc": "1920-8",
     "longCommonName": "Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma",
-    "displayName": "AST (GOT)",
+    "displayName": "AST",
     "short": "AST",
     "unit": "U/L",
     "lang": {
