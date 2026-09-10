@@ -371,13 +371,27 @@ LOINC Users' Guide, each with what it settles and a retrieval date; Analytes: a
 app knows — code, name, specimen, units and panels, sortable by column) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
-while validation errors exist) has one "Export all data" button that downloads
+while validation errors exist) has an "Export all data" button that downloads
 `blood-tests-backup-<yyyymmdd>.zip` — `lab-reports.json` (the Export JSON
 envelope), `medications.json`, `scheduled-visits.json`,
 `laboratory-prices.json`, `settings.json` (view settings and per-panel chart
 preferences, only keys that exist) and `manifest.json` — built by
 `data/backupArchive.ts` and zipped with `fflate`, loaded by dynamic `import()`
-on click. Validation
+on click. Beside it "Import all data" reads such a zip back through
+`data/backupRestore.ts`: the manifest (`format: "blood-tests-backup"`,
+`version: 1`) and every present part are parsed and shape-checked before
+anything changes, so a bad file changes nothing; after a confirm it runs Clear
+all data, then restores `lab-reports.json` through the same replacing import as
+Import JSON (Database details from its envelope) and medications, scheduled
+visits and settings through their own modules' save functions, a part missing
+from the zip left empty and `laboratory-prices.json` never restored — the
+shipped registry wins — with the result reported per part. "Clear all data",
+after a confirm, runs the reports' own Clear and `clearSharedMeta`, then sweeps
+`backupArchive.ts`'s `USER_DATA_KEYS` (reports, Database details, medications,
+schedule, view settings, share-link meta, imported links) plus the
+chart-preference prefixes — one list the export, the clear and the import all
+read; the shell then reloads its schedule and table controls from storage, so
+nothing stale stays on screen. Validation
 (`validateDiagnosticReports.ts`) marks an observation missing its name
 or value-or-rawValue, or carrying a non-empty code that isn't
 LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like

@@ -11,6 +11,7 @@ events accumulate enough to warrant their own pages — see
 ## Events
 
 - 2026-09-10 — An Account section exports everything the user has as one zip: lab reports, medications, scheduled visits, laboratory prices, settings and a manifest.
+- 2026-09-10 — Account imports that zip back, validating every part before it clears and restores anything, and clears all data in this browser from one button.
 - 2026-09-10 — The LOINC cross-check reads units by dimension: the unit
   warning fires only on another kind of quantity, never another scale (g/L
   on a g/dL hemoglobin code), the resolver drops a wrong-dimension candidate

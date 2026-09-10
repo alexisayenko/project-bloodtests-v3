@@ -21,6 +21,7 @@ import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
 import { ScheduleLabContext, useScheduled } from './scheduled';
+import { clearAllData, restoreBackup, type BackupContents } from '../../data/backupRestore';
 import type { ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 
@@ -45,7 +46,7 @@ export function MedicalConditionsPage() {
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
-  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onSetLab } = useScheduled();
+  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onSetLab, onReload: reloadScheduled } = useScheduled();
   const scheduleLab = useMemo(() => ({ scheduled, onSetLab }), [scheduled, onSetLab]);
 
   useEffect(() => {
@@ -152,6 +153,29 @@ export function MedicalConditionsPage() {
 
   const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
 
+  // The schedule and the table controls live in this shell's state, so a clear
+  // or restore that rewrites storage underneath has to read them back.
+  const reloadStoredState = () => {
+    reloadScheduled();
+    const stored = loadViewSettings();
+    setUnitSystem(stored.unitSystem);
+    setSampleLimit(stored.sampleLimit);
+  };
+
+  const onClearAll = () => {
+    clearAllData(clearData);
+    reloadStoredState();
+  };
+
+  const onImportAll = async (backup: BackupContents) => {
+    const lines = await restoreBackup(backup, {
+      clearReports: clearData,
+      importReports: (text) => uploadFile(new File([text], 'lab-reports.json', { type: 'application/json' })),
+    });
+    reloadStoredState();
+    return lines;
+  };
+
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit };
   const rowScheduling = { scheduled, onToggle: onToggleRow, onToggleAll: onToggleAllRows, onSetMonth };
   const indexScheduling = { scheduled, onToggle: onToggleIndex, onToggleAll: onToggleAllIndices, onSetMonth };
@@ -233,7 +257,7 @@ export function MedicalConditionsPage() {
       case 'medications':
         return <MedicationsView />;
       case 'account':
-        return <AccountView sessions={sessions} />;
+        return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':
         return <PlanVisitView scheduled={scheduled} />;
       case 'reference':

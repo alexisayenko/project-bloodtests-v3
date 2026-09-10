@@ -77,6 +77,13 @@ function parseRow(value: unknown): MedicationRow | undefined {
   };
 }
 
+/** Whether a payload from outside (a backup) has the stored shape at all, before parseMedications forgives its rows. */
+export function isMedicationsShape(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const meds = value as Record<string, unknown>;
+  return Array.isArray(meds.years) && Array.isArray(meds.rows);
+}
+
 /** A stored payload read back; anything missing or malformed reads as empty, and an unnamed row is dropped. */
 export function parseMedications(raw: string | null, currentYear: number): Medications {
   try {

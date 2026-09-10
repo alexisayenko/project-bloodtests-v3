@@ -1,4 +1,4 @@
-const ENVELOPE_META_KEY = 'bloodtests_envelope_meta_v1';
+export const ENVELOPE_META_KEY = 'bloodtests_envelope_meta_v1';
 
 export type EnvelopeMeta = {
   generatedAt?: string;
@@ -12,7 +12,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-function sanitizeEnvelopeMeta(raw: unknown): EnvelopeMeta {
+export function sanitizeEnvelopeMeta(raw: unknown): EnvelopeMeta {
   if (!isRecord(raw)) return {};
   const out: EnvelopeMeta = {};
   if (typeof raw.generatedAt === 'string') out.generatedAt = raw.generatedAt;

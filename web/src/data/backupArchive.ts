@@ -1,9 +1,12 @@
 import type { strToU8, zipSync } from 'fflate';
 import type { DiagnosticReport } from '../types';
-import type { EnvelopeMeta } from './envelopeMeta';
+import { ENVELOPE_META_KEY, type EnvelopeMeta } from './envelopeMeta';
 import { buildExportEnvelope } from '../utils/exportData';
 import { LABORATORIES } from './labPricing';
 import { MEDICATIONS_KEY, parseMedications } from './medications';
+import { RESULTS_STORAGE_KEY } from './resultsStorage';
+import { SHARED_META_KEY } from './sharedMeta';
+import { IMPORTED_LINKS_KEY } from './sharedLink';
 import { parseScheduled, SCHEDULED_KEY } from '../components/conditions/scheduled';
 import { VIEW_SETTINGS_KEY } from '../components/conditions/ui';
 
@@ -19,7 +22,27 @@ export type BackupInput = {
 export const BACKUP_FORMAT = 'blood-tests-backup';
 export const BACKUP_VERSION = 1;
 
-const CHART_PREFIX_KEYS = ['exploreSel:', 'hpgChartView:', 'hpgAutoscale:', 'exploreEv:'];
+export const CHART_PREFIX_KEYS = ['exploreSel:', 'hpgChartView:', 'hpgAutoscale:', 'exploreEv:'];
+
+// Every whole key that holds user data; with CHART_PREFIX_KEYS this is what
+// Clear all data removes, so export, clear and import read one list.
+export const USER_DATA_KEYS = [
+  RESULTS_STORAGE_KEY,
+  ENVELOPE_META_KEY,
+  MEDICATIONS_KEY,
+  SCHEDULED_KEY,
+  VIEW_SETTINGS_KEY,
+  SHARED_META_KEY,
+  IMPORTED_LINKS_KEY,
+];
+
+export function isSettingsKey(key: string): boolean {
+  return key === VIEW_SETTINGS_KEY || CHART_PREFIX_KEYS.some((prefix) => key.startsWith(prefix));
+}
+
+export function isUserDataKey(key: string): boolean {
+  return USER_DATA_KEYS.includes(key) || isSettingsKey(key);
+}
 
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 
@@ -46,7 +69,7 @@ function readSettings(storage: StorageReader): Record<string, unknown> {
   const keys: string[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
-    if (key && (key === VIEW_SETTINGS_KEY || CHART_PREFIX_KEYS.some((prefix) => key.startsWith(prefix)))) keys.push(key);
+    if (key && isSettingsKey(key)) keys.push(key);
   }
   const settings: Record<string, unknown> = {};
   for (const key of keys.sort((a, b) => a.localeCompare(b))) {

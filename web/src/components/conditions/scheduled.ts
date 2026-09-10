@@ -63,6 +63,13 @@ export function loadScheduled(): Scheduled {
   }
 }
 
+/** Whether a payload from outside (a backup) has the stored shape at all, before parseScheduled forgives its entries. */
+export function isScheduledShape(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const scheduled = value as Record<string, unknown>;
+  return Array.isArray(scheduled.loincs) && Array.isArray(scheduled.indices);
+}
+
 /** A stored schedule read back; anything missing or malformed reads as empty. */
 export function parseScheduled(raw: string | null): Scheduled {
   try {
@@ -217,6 +224,7 @@ export function useScheduled() {
   );
   const onSetMonth = useCallback((month: string | undefined) => setScheduled((s) => setScheduleMonth(s, month)), []);
   const onSetLab = useCallback((lab: string | undefined) => setScheduled((s) => setScheduleLab(s, lab)), []);
+  const onReload = useCallback(() => setScheduled(loadScheduled()), []);
 
-  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onSetLab };
+  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onSetLab, onReload };
 }
