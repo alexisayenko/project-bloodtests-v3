@@ -303,7 +303,7 @@ img.panel-icon { display: none; }
   .mc-shell-body { display: flex; align-items: flex-start; }
   .mc-sidebar {
     position: sticky; top: var(--mc-topbar-h); flex: none; width: 232px;
-    height: calc(100dvh - var(--mc-topbar-h)); overflow-y: auto;
+    height: calc(100dvh - var(--mc-topbar-h)); overflow: hidden;
     padding: 20px 12px; background: var(--surface); border-right: 1px solid var(--border-subtle);
   }
   .mc-side-list { display: flex; flex-direction: column; gap: 2px; }
