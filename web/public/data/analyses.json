@@ -1815,7 +1815,7 @@
   {
     "loinc": "62292-8",
     "longCommonName": "25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma",
-    "displayName": "25(OH)D",
+    "displayName": "Vitamin D",
     "short": "Vit D",
     "unit": "ng/mL",
     "lang": {
