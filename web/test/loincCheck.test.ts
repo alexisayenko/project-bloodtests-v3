@@ -177,6 +177,10 @@ describe('tokenOverlap', () => {
     expect(tokenOverlap('GLUCOSE serum', official)).toBe(1);
     expect(tokenOverlap('Ferritin', official)).toBe(0);
   });
+
+  it('is 0 when the only shared words are generic ones', () => {
+    expect(tokenOverlap('Total Serum', 'Protein [Mass/volume] in Serum or Plasma, total')).toBe(0);
+  });
 });
 
 describe('resolveLoinc', () => {
@@ -599,6 +603,45 @@ describe('cross-check against the real catalog', () => {
     expect(codes('Холестерин ЛПВП', 'ммоль/л')[0]).toBe('14646-4');
     expect(codes('Холестерин ЛПНП', 'ммоль/л')[0]).toBe('22748-8');
     expect(codes('ЛПНП', 'ммоль/л')[0]).toBe('22748-8');
+  });
+
+  it('fills an uncoded "Холестерин общий" automatically, and resolves a bare "Холестерин" as before', () => {
+    const [total, bare] = crossCheckLocal(
+      [
+        createResult({ loinc: '', analysis: 'Холестерин общий', unit: 'ммоль/л' }),
+        createResult({ loinc: '', analysis: 'Холестерин', unit: 'ммоль/л' }),
+      ],
+      ANALYTES
+    );
+    expect(total).toMatchObject({ status: 'no-code', confident: true });
+    expect(total?.suggestions?.map((s) => s.loinc)).toEqual(['14647-2']);
+    expect(bare).toMatchObject({ status: 'no-code', confident: true });
+    expect(bare?.suggestions?.map((s) => s.loinc)).toEqual(['14647-2', '14646-4', '22748-8']);
+  });
+
+  it('reads a total qualifier beside calcium and testosterone as the total, not the fraction', () => {
+    expect(codes('Кальций общий', 'ммоль/л')).toEqual(['2000-8']);
+    expect(codes('Тестостерон общий', 'нмоль/л')).toEqual(['14913-8']);
+    expect(codes('Кальций ионизированный', 'ммоль/л')[0]).toBe('1994-3');
+  });
+
+  it('reads "Folic Acid" as folate, never as uric acid, while uric acid stays urate', () => {
+    for (const printed of ['Folic Acid', 'Folate']) {
+      const res = resolveLoinc(createResult({ loinc: '', analysis: printed, unit: 'ng/mL' }), ANALYTES);
+      expect(res.candidates.map((c) => c.loinc)).toEqual(['2284-8']);
+      expect(res.confident).toBe(true);
+    }
+    expect(codes('Folic Acid', '')).toEqual(['2284-8']);
+    expect(codes('Uric Acid', 'mg/dL')).toEqual(['3084-1']);
+    expect(codes('Uric Acid', 'umol/L')).toEqual(['14933-6']);
+    expect(codes('Мочевая кислота', 'мкмоль/л')).toEqual(['14933-6']);
+  });
+
+  it('lets no generic word make a suggestion on its own, while one still settles between siblings', () => {
+    for (const printed of ['Acid', 'Total', 'Serum', 'Blood Count', 'Ascorbic Acid', 'Total IgE']) {
+      expect(codes(printed, '')).toEqual([]);
+    }
+    expect(codes('Glucose (Whole Blood)', 'mmol/L')).toEqual(['15074-8']);
   });
 
   it('agrees, offering nothing, when the printed code is already the best derivation', () => {

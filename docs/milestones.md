@@ -14,7 +14,11 @@ events accumulate enough to warrant their own pages — see
   warning fires only on another kind of quantity, never another scale (g/L
   on a g/dL hemoglobin code), the resolver drops a wrong-dimension candidate
   instead of down-ranking it, and a Cyrillic qualifier ("общий", "ЛПВП") now
-  decides between cholesterol siblings. The suite is 609 tests across 25 files.
+  decides between cholesterol siblings. The suite is 614 tests across 25 files.
+  Generic words (acid, total, serum, "общий") no longer make a match alone,
+  "Folic Acid" resolves to folate, and total cholesterol, calcium and
+  testosterone carry "общий"/"загальний", so an uncoded "Холестерин общий"
+  is filled automatically.
 
 - 2026-09-09 — `paneloom.com` registered, the project's first domain
   and first out-of-pocket cost. The name is still *working* rather

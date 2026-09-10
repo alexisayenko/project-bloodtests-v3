@@ -28,8 +28,8 @@
     "short": "TC",
     "unit": "mg/dL",
     "lang": {
-      "ru-RU": "Холестерин",
-      "uk-UA": "Холестерин"
+      "ru-RU": "Холестерин общий",
+      "uk-UA": "Холестерин загальний"
     },
     "info": {
       "description": "Waxy fat-like substance found in all cells, essential for hormone and cell membrane production.",
@@ -46,8 +46,8 @@
     "aliasOf": "2093-3",
     "aliasLabel": "mmol/L unit",
     "lang": {
-      "ru-RU": "Холестерин",
-      "uk-UA": "Холестерин"
+      "ru-RU": "Холестерин общий",
+      "uk-UA": "Холестерин загальний"
     },
     "info": {
       "description": "Waxy fat-like substance found in all cells, essential for hormone and cell membrane production.",
@@ -124,8 +124,8 @@
     "short": "T",
     "unit": "nmol/L",
     "lang": {
-      "ru-RU": "Тестостерон",
-      "uk-UA": "Тестостерон"
+      "ru-RU": "Тестостерон общий",
+      "uk-UA": "Тестостерон загальний"
     },
     "info": {
       "description": "Primary male sex hormone responsible for reproductive development and muscle mass.",
@@ -142,8 +142,8 @@
     "aliasOf": "14913-8",
     "aliasLabel": "ng/dL unit",
     "lang": {
-      "ru-RU": "Тестостерон",
-      "uk-UA": "Тестостерон"
+      "ru-RU": "Тестостерон общий",
+      "uk-UA": "Тестостерон загальний"
     }
   },
   {
@@ -1853,8 +1853,8 @@
     "short": "Ca",
     "unit": "mg/dL",
     "lang": {
-      "ru-RU": "Кальций",
-      "uk-UA": "Кальцій"
+      "ru-RU": "Кальций общий",
+      "uk-UA": "Кальцій загальний"
     },
     "info": {
       "description": "Mineral essential for bone structure, muscle contraction, nerve function, and blood clotting.",
@@ -1871,8 +1871,8 @@
     "aliasOf": "17861-6",
     "aliasLabel": "mmol/L unit",
     "lang": {
-      "ru-RU": "Кальций",
-      "uk-UA": "Кальцій"
+      "ru-RU": "Кальций общий",
+      "uk-UA": "Кальцій загальний"
     },
     "info": {
       "description": "Mineral essential for bone structure, muscle contraction, nerve function, and blood clotting.",

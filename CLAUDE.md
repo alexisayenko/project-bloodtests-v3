@@ -274,7 +274,11 @@ choose between variant codes and set confidence, while a candidate
 whose unit dimension contradicts the row's is dropped outright, so
 hemoglobin in g/L is never offered HbA1c's %; a Cyrillic name must
 also cover a candidate's translation, so a qualifier — "общий",
-"ЛПВП", "ЛПНП" — decides between siblings sharing "холестерин"; and
+"ЛПВП", "ЛПНП" — decides between siblings sharing "холестерин", while
+a word that names no analyte (acid, total, serum, blood, "общий") may
+settle between siblings but never makes a match alone, and a
+translation carrying "общий" asks no printout to repeat it; a printed
+-ic acid reads as its -ate anion, so "Folic Acid" is folate; and
 alias-group members collapse into one suggestion, the kept code picked
 by the row's unit) and treats a printed code as evidence only — ✓
 derivation agrees (a code already the top match agrees even without

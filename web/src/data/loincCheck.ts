@@ -106,15 +106,69 @@ export function latinPart(name: string): string {
     .trim();
 }
 
+// Words printed beside an analyte's name that name no analyte themselves. They
+// may still settle between siblings ("Whole Blood", "общий"), but a name met on
+// them alone is no match, and a translation carrying one ("Холестерин общий")
+// does not require the printout to repeat it.
+const GENERIC_TOKENS = new Set([
+  'acid',
+  'acids',
+  'total',
+  'serum',
+  'plasma',
+  'blood',
+  'level',
+  'levels',
+  'count',
+  'кислота',
+  'общий',
+  'общая',
+  'общее',
+  'загальний',
+  'загальна',
+  'загальне',
+]);
+
+function isDecisive(token: string): boolean {
+  return !GENERIC_TOKENS.has(token);
+}
+
+// A lab reports an -ic acid under its -ate anion (uric acid is urate, folic
+// acid is folate), so a printed "Folic Acid" reads as the catalog's "folate".
+function foldAcidToAnion(tokens: string[]): string[] {
+  const out: string[] = [];
+  for (const t of tokens) {
+    const prev = out.at(-1);
+    if ((t === 'acid' || t === 'acids') && prev && prev.length > 3 && prev.endsWith('ic')) {
+      out[out.length - 1] = `${prev.slice(0, -2)}ate`;
+    } else {
+      out.push(t);
+    }
+  }
+  return out;
+}
+
 // British ae/oe digraphs fold to the American spelling (haemoglobin →
 // hemoglobin, oestradiol → estradiol) so en-GB printouts tokenize like the
 // catalog's en-US names.
-function tokensOf(text: string): string[] {
+function plainTokens(text: string): string[] {
   return text
     .toLowerCase()
     .replace(/ae|oe/g, 'e')
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length >= 2);
+}
+
+function tokensOf(text: string): string[] {
+  return foldAcidToAnion(plainTokens(text));
+}
+
+// A catalog name answers to both spellings: "Uric Acid" folded alone would take
+// "acid" out of the vocabulary, leaving "Acid Phosphatase" an unknown word that
+// barely counts beside "phosphatase".
+function nameTokensOf(text: string): string[] {
+  const plain = plainTokens(text);
+  return [...plain, ...foldAcidToAnion(plain)];
 }
 
 // Any-script tokenizer for the translation pass — Greek/Cyrillic printed names
@@ -131,12 +185,12 @@ function unicodeTokens(text: string): string[] {
 export function tokenOverlap(printed: string, official: string): number {
   const printedTokens = tokensOf(printed);
   if (printedTokens.length === 0) return 0;
-  const officialTokens = tokensOf(official);
+  const officialTokens = nameTokensOf(official);
   const officialSet = new Set(officialTokens);
   const matched = printedTokens.filter(
     (t) => officialSet.has(t) || officialTokens.some((o) => tokensFuzzyEqual(t, o))
-  ).length;
-  return matched / printedTokens.length;
+  );
+  return matched.some(isDecisive) ? matched.length / printedTokens.length : 0;
 }
 
 function catalogEntries(catalog: Map<string, Analysis> | Analysis[]): Analysis[] {
@@ -159,7 +213,7 @@ const UNKNOWN_TOKEN_WEIGHT = 0.25;
 function tokenWeights(entries: Analysis[]): Map<string, number> {
   const df = new Map<string, number>();
   for (const a of entries) {
-    for (const t of new Set(tokensOf(catalogNameText(a)))) {
+    for (const t of new Set(nameTokensOf(catalogNameText(a)))) {
       df.set(t, (df.get(t) ?? 0) + 1);
     }
   }
@@ -291,11 +345,11 @@ function stageLatin(
   if (totalWeight === 0) return [];
   return rankCandidates(
     entries.map((a) => {
-      const officialTokens = new Set(tokensOf(catalogNameText(a)));
-      const base =
-        queryTokens
-          .filter((t) => tokenInfo.get(t)!.matches.some((m) => officialTokens.has(m)))
-          .reduce((s, t) => s + tokenInfo.get(t)!.weight, 0) / totalWeight;
+      const officialTokens = new Set(nameTokensOf(catalogNameText(a)));
+      const matched = queryTokens.filter((t) => tokenInfo.get(t)!.matches.some((m) => officialTokens.has(m)));
+      const base = matched.some(isDecisive)
+        ? matched.reduce((s, t) => s + tokenInfo.get(t)!.weight, 0) / totalWeight
+        : 0;
       return {
         loinc: a.loinc,
         name: a.displayName || a.longCommonName,
@@ -330,12 +384,16 @@ function nameReadings(name: string, queryTokens: string[]): string[][] {
 // The share of the printed name the translation covers stays the score; the
 // share of the translation the printout leaves out discounts it by up to half,
 // so a candidate carrying a qualifier the printout lacks ("Холестерин ЛПВП"
-// against "Холестерин общий") falls behind one that carries none.
+// against "Холестерин общий") falls behind one that carries none. A generic
+// qualifier is not one the printout has to repeat.
 function translationScore(queryTokens: string[], name: string): number {
-  const queryCoverage = coverage(queryTokens, new Set(unicodeTokens(name)));
-  if (queryCoverage === 0) return 0;
+  const nameTokens = new Set(unicodeTokens(name));
+  if (!queryTokens.some((t) => isDecisive(t) && nameTokens.has(t))) return 0;
+  const queryCoverage = coverage(queryTokens, nameTokens);
   const printed = new Set(queryTokens);
-  const nameCoverage = Math.max(...nameReadings(name, queryTokens).map((tokens) => coverage(tokens, printed)));
+  const nameCoverage = Math.max(
+    ...nameReadings(name, queryTokens).map((tokens) => coverage(tokens.filter(isDecisive), printed))
+  );
   return (queryCoverage * (1 + nameCoverage)) / 2;
 }
 
@@ -410,7 +468,8 @@ function unicodeOverlap(printed: string, official: string): number {
   const printedTokens = unicodeTokens(printed);
   if (printedTokens.length === 0) return 0;
   const officialTokens = new Set(unicodeTokens(official));
-  return printedTokens.filter((t) => officialTokens.has(t)).length / printedTokens.length;
+  const matched = printedTokens.filter((t) => officialTokens.has(t));
+  return matched.some(isDecisive) ? matched.length / printedTokens.length : 0;
 }
 
 // A printed name agrees with a code when it is one of the code's own names —
