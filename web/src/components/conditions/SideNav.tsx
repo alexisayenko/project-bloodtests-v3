@@ -1,16 +1,16 @@
-import { BookOpen, CalendarCheck, CircleUser, FileText, LayoutGrid, List, Pill, Rocket, type LucideIcon } from 'lucide-react';
+import { Upload, FileText, Activity, LayoutGrid, CalendarCheck, Pill, BookOpen, Settings2, type LucideIcon } from 'lucide-react';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
 
 const ICONS: Record<NavView, LucideIcon> = {
-  profile: Rocket,
-  reports: FileText,
-  all: List,
-  panels: LayoutGrid,
-  plan: CalendarCheck,
+  profile:     Upload,
+  reports:     FileText,
+  all:         Activity,
+  panels:      LayoutGrid,
+  plan:        CalendarCheck,
   medications: Pill,
-  reference: BookOpen,
-  account: CircleUser,
+  reference:   BookOpen,
+  account:     Settings2,
 };
 
 export function SideNav({ route, navigate, hasValidationErrors = false }: Readonly<{ route: Route; navigate: (r: Route) => void; hasValidationErrors?: boolean }>) {
