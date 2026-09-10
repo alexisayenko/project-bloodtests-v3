@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { BarChart2, Calculator, Link2, Search } from 'lucide-react';
 import { computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
@@ -107,9 +107,22 @@ export function PanelsGridView({
 
   return (
     <>
-      {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
-        <div>
+      {/* Page Header Banner */}
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 32,
+          marginBottom: 32,
+          padding: '8px 4px 28px',
+          borderBottom: `1px solid ${COLOR.borderSubtle}`,
+          flexWrap: 'wrap',
+          background: 'radial-gradient(ellipse 60% 90% at 88% 20%, rgba(20, 117, 126, 0.06) 0%, rgba(20, 117, 126, 0) 70%)',
+        }}
+      >
+        <div style={{ flex: '1 1 460px', minWidth: 300 }}>
           <div
             style={{
               fontSize: 11,
@@ -117,20 +130,55 @@ export function PanelsGridView({
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               color: COLOR.accent,
-              marginBottom: 6,
+              marginBottom: 8,
             }}
           >
             Condition-Oriented Tracking
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.5, color: COLOR.text, marginBottom: 8 }}>
-            Monitoring Panels
+          <h1 style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.6, marginBottom: 12, lineHeight: 1.15 }}>
+            <span style={{ color: COLOR.text }}>Monitoring </span>
+            <span style={{ color: COLOR.accent }}>Panels</span>
           </h1>
-          <p style={{ fontSize: 15, color: COLOR.textSecondary, maxWidth: 680, lineHeight: 1.45 }}>
-            Follow key markers, indices and trends over time, grouped by health condition.
-          </p>
+          <div style={{ fontSize: 14, color: COLOR.textSecondary, lineHeight: 1.55 }}>
+            <div>Follow condition-oriented monitoring panels instead of browsing report by report.</div>
+            <div>Paneloom unifies markers across laboratories and helps you track what matters over time.</div>
+          </div>
         </div>
 
-        {/* Search */}
+        {/* Right side 3 feature pillars */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <BarChart2 size={20} color={COLOR.accent} strokeWidth={2.2} aria-hidden="true" />
+            <div style={{ fontSize: 12, color: COLOR.textSecondary, lineHeight: 1.35 }}>
+              <div>One timeline</div>
+              <div>across labs</div>
+            </div>
+          </div>
+
+          <div style={{ width: 1, height: 44, background: COLOR.borderSubtle }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Link2 size={20} color={COLOR.accent} strokeWidth={2.2} aria-hidden="true" />
+            <div style={{ fontSize: 12, color: COLOR.textSecondary, lineHeight: 1.35 }}>
+              <div>Values normalized</div>
+              <div>with LOINC codes</div>
+            </div>
+          </div>
+
+          <div style={{ width: 1, height: 44, background: COLOR.borderSubtle }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Calculator size={20} color={COLOR.accent} strokeWidth={2.2} aria-hidden="true" />
+            <div style={{ fontSize: 12, color: COLOR.textSecondary, lineHeight: 1.35 }}>
+              <div>Focus on trends,</div>
+              <div>not PDFs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search Row */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
         <label
           style={{
             display: 'flex',
@@ -139,9 +187,8 @@ export function PanelsGridView({
             background: COLOR.surface,
             border: `1px solid ${COLOR.borderSubtle}`,
             borderRadius: 9999,
-            padding: '7px 16px',
+            padding: '6px 14px',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-            alignSelf: 'flex-start',
           }}
         >
           <Search size={14} color={COLOR.textMuted} strokeWidth={2} aria-hidden="true" />
