@@ -26,8 +26,20 @@ export type LabQuote = {
   unpriced: string[];
 };
 
-function primaryOf(loinc: string): string {
+export function primaryOf(loinc: string): string {
   return ALIAS_TO_PRIMARY[loinc] ?? loinc;
+}
+
+/** The cheapest line covering each primary code; on a tie the laboratory's earlier line wins. */
+export function cheapestLineByCode(lab: Laboratory): Map<string, PriceLine> {
+  const cheapest = new Map<string, PriceLine>();
+  for (const line of lab.prices) {
+    for (const code of new Set(line.covers.map(primaryOf))) {
+      const best = cheapest.get(code);
+      if (!best || line.price < best.price) cheapest.set(code, line);
+    }
+  }
+  return cheapest;
 }
 
 /**
@@ -37,13 +49,7 @@ function primaryOf(loinc: string): string {
  * cheapest combination of lines overall.
  */
 export function quoteSchedule(loincs: readonly string[], lab: Laboratory): LabQuote {
-  const cheapest = new Map<string, PriceLine>();
-  for (const line of lab.prices) {
-    for (const code of new Set(line.covers.map(primaryOf))) {
-      const best = cheapest.get(code);
-      if (!best || line.price < best.price) cheapest.set(code, line);
-    }
-  }
+  const cheapest = cheapestLineByCode(lab);
   const chosen = new Set<PriceLine>();
   const unpriced: string[] = [];
   for (const code of new Set(loincs.map(primaryOf))) {

@@ -337,7 +337,11 @@ Detail renders, scoped the way Panel Detail scopes it — the selected panel's
 indices, or the union over the panels on offer, so a share link's allowlist,
 which limits the panel options but never the observation rows, does narrow
 the indices), Monitoring Panels
-(the default/entry route), Reference Book (Indices and derived
+(the default/entry route), Plan Visit (`#plan`, reachable despite validation
+errors: every scheduled observation, folded to its primary code, as a LOINC /
+full name / short name row beside one price column per laboratory, a bundle
+priced on its first covered row and marked "in <label>" on the rest by
+`data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own), Reference Book (Indices and derived
 measurements: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Organism-wide aspects: HP Axis page with v2's

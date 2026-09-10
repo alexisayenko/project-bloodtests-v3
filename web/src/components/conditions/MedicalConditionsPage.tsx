@@ -14,6 +14,7 @@ import { Popup, type PopupPosition, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
 import { MedicationsView } from './MedicationsView';
+import { PlanVisitView } from './PlanVisitView';
 import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
@@ -230,6 +231,8 @@ export function MedicalConditionsPage() {
         );
       case 'medications':
         return <MedicationsView />;
+      case 'plan':
+        return <PlanVisitView scheduled={scheduled} />;
       case 'reference':
         return <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} />;
       case 'panel':
