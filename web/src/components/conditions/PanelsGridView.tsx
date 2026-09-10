@@ -78,7 +78,7 @@ export function PanelsGridView({
             <div
               key={condition.name}
               className="mc-panel-card"
-              style={{ padding: '16px', background: `${meta.color}0f`, overflow: 'hidden' }}
+              style={{ padding: '16px', background: `${meta.color}0f`, overflow: 'hidden', borderRadius: 'var(--radius)' }}
             >
               {/* Header: icon + name + description */}
               <div
