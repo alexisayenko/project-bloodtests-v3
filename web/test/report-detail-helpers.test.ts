@@ -20,8 +20,8 @@ import {
   type SuggestionChip,
 } from '../src/components/conditions/reportDetailHelpers';
 import { COLOR } from '../src/styles/tokens';
-import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../src/data/analyteCatalog';
-import type { CrossCheckResult } from '../src/data/loincCheck';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, ANALYTE_BY_LOINC } from '../src/data/analyteCatalog';
+import { crossCheckLocal, type CrossCheckResult } from '../src/data/loincCheck';
 import type { NlmEntry } from '../src/data/loincNlm';
 import type { Analysis, Result } from '../src/types';
 import type { ValidationIssue } from '../src/data/validateDiagnosticReports';
@@ -345,6 +345,32 @@ describe('getChipSuggestions', () => {
     expect(getChipSuggestions({ status: 'no-code' }, nlm)).toEqual(nlm);
     expect(getChipSuggestions({ status: 'no-code' }, undefined)).toEqual([]);
     expect(getChipSuggestions(undefined, nlm)).toEqual([]);
+  });
+});
+
+describe('a Cyrillic polyclinic report after "Cross-check LOINCs"', () => {
+  const expanded = buildExpandedCatalog(ANALYTE_BY_LOINC);
+  const rowsOf = (items: Result[]) =>
+    crossCheckLocal(items, expanded).map((check, i) => ({
+      note: getMismatchMessage(items[i]!, check, check.status === 'mismatch'),
+      chips: getChipSuggestions(check, undefined, unitRepairFor(items[i]!)).map((s) => s.loinc),
+    }));
+
+  it('leaves correctly coded hemoglobin and total cholesterol rows without a note or a chip', () => {
+    expect(
+      rowsOf([
+        createResult({ loinc: '718-7', analysis: 'Гемоглобин', unit: 'г/л', value: 142 }),
+        createResult({ loinc: '14647-2', analysis: 'Холестерин общий', unit: 'mmol/L', value: 5.1 }),
+      ])
+    ).toEqual([
+      { note: null, chips: [] },
+      { note: null, chips: [] },
+    ]);
+  });
+
+  it('keeps the printed-name note for a name that is not the code at all', () => {
+    const [row] = rowsOf([createResult({ loinc: '718-7', analysis: 'Лактатдегидрогеназа', unit: 'г/л' })]);
+    expect(row?.note).toBe('Printed name differs from the LOINC name');
   });
 });
 

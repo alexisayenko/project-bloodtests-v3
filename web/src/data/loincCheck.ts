@@ -1,7 +1,7 @@
 import type { Result, Analysis } from '../types';
 import { ALIAS_TO_PRIMARY, ALLOWED_UNITS, DEFAULT_UNITS } from './analyteCatalog';
 import { fuzzyVocabHits, groupVocabByLength, tokensFuzzyEqual } from './fuzzyMatch';
-import { foldUnitGlyphs, toLatinUnit } from './unitNormalization';
+import { dimensionOf, foldUnitGlyphs, toLatinUnit, type UnitDimension } from './unitNormalization';
 
 export const LOINC_RE = /^\d{1,7}-\d$/;
 
@@ -73,19 +73,27 @@ export function canonicalUnit(unit: string | undefined | null): string {
   return m ? `${PREFIX_UP[m[1]!]}${m[2]}/l` : u;
 }
 
-// Every known unit for a code (catalog reference unit first, then extras), canonicalized.
-function knownUnits(loinc: string, unitByLoinc: Record<string, string>): string[] {
-  return [unitByLoinc[loinc], ...(ALLOWED_UNITS[loinc] ?? [])]
-    .filter((u): u is string => Boolean(u))
-    .map((u) => canonicalUnit(u));
+// Every known unit for a code, catalog reference unit first, then extras.
+function catalogUnits(loinc: string, unitByLoinc: Record<string, string>): string[] {
+  return [unitByLoinc[loinc], ...(ALLOWED_UNITS[loinc] ?? [])].filter((u): u is string => Boolean(u));
 }
 
-// undefined — we know nothing about the code's units; true — the unit matches
-// the DEFAULT_UNITS entry or any ALLOWED_UNITS member; false otherwise.
-export function unitAllowed(loinc: string, unit: string): boolean | undefined {
-  const known = knownUnits(loinc, DEFAULT_UNITS);
-  if (known.length === 0) return undefined;
-  return known.includes(canonicalUnit(unit));
+function knownUnits(loinc: string, unitByLoinc: Record<string, string>): string[] {
+  return catalogUnits(loinc, unitByLoinc).map((u) => canonicalUnit(u));
+}
+
+// A candidate whose every known unit measures another kind of quantity than the
+// row's (HbA1c's % against a hemoglobin row in g/L) is ruled out rather than
+// down-ranked. A unit either side cannot place rules nothing out, and a scale of
+// the same dimension (g/L against g/dL) is left to unitAdjust.
+function contradictsRowUnit(
+  rowDimension: UnitDimension | undefined,
+  loinc: string,
+  unitByLoinc: Record<string, string>
+): boolean {
+  if (!rowDimension) return false;
+  const dimensions = new Set(catalogUnits(loinc, unitByLoinc).map((u) => dimensionOf(u)).filter(Boolean));
+  return dimensions.size > 0 && !dimensions.has(rowDimension);
 }
 
 // Keeps only whitespace-separated words whose letters are all Latin-script,
@@ -301,16 +309,44 @@ function stageLatin(
   );
 }
 
-// Ladder stage b: the full printed name vs catalog `lang` translations.
+function coverage(tokens: string[], by: Set<string>): number {
+  return tokens.length === 0 ? 0 : tokens.filter((t) => by.has(t)).length / tokens.length;
+}
+
+function readingTokens(reading: string): string[] {
+  return [...new Set(unicodeTokens(reading))];
+}
+
+// A translated name read whole, without its brackets, and as a bracket holding
+// the entire printed name: a bracket is either a synonym a printout may use alone
+// ("(ТТГ)") or a qualifier that only counts beside the rest ("(абс.)").
+function nameReadings(name: string, queryTokens: string[]): string[][] {
+  const synonyms = [...name.matchAll(/\(([^()]*)\)/g)]
+    .map((m) => readingTokens(m[1]!))
+    .filter((tokens) => queryTokens.every((t) => tokens.includes(t)));
+  return [readingTokens(name), readingTokens(name.replace(/\([^()]*\)/g, ' ')), ...synonyms];
+}
+
+// The share of the printed name the translation covers stays the score; the
+// share of the translation the printout leaves out discounts it by up to half,
+// so a candidate carrying a qualifier the printout lacks ("Холестерин ЛПВП"
+// against "Холестерин общий") falls behind one that carries none.
+function translationScore(queryTokens: string[], name: string): number {
+  const queryCoverage = coverage(queryTokens, new Set(unicodeTokens(name)));
+  if (queryCoverage === 0) return 0;
+  const printed = new Set(queryTokens);
+  const nameCoverage = Math.max(...nameReadings(name, queryTokens).map((tokens) => coverage(tokens, printed)));
+  return (queryCoverage * (1 + nameCoverage)) / 2;
+}
+
+// Ladder stage b: the full printed name vs each catalog `lang` translation.
 function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string, string>): CrossCheckSuggestion[] {
   const queryTokens = unicodeTokens(item.analysis);
   if (queryTokens.length === 0) return [];
   const rowUnit = canonicalUnit(item.unit);
   return rankCandidates(
     entries.map((a) => {
-      const langTokens = new Set(unicodeTokens(Object.values(a.lang ?? {}).join(' ')));
-      const base =
-        langTokens.size === 0 ? 0 : queryTokens.filter((t) => langTokens.has(t)).length / queryTokens.length;
+      const base = Math.max(0, ...Object.values(a.lang ?? {}).map((name) => translationScore(queryTokens, name)));
       return {
         loinc: a.loinc,
         name: a.displayName || a.longCommonName,
@@ -348,8 +384,10 @@ function resolveWith(
   weights: Map<string, number>,
   unitByLoinc: Record<string, string>
 ): ResolveResult {
-  let candidates = stageLatin(item, entries, weights, unitByLoinc);
-  if (candidates.length === 0) candidates = stageLang(item, entries, unitByLoinc);
+  const rowDimension = item.unit ? dimensionOf(item.unit) : undefined;
+  const compatible = entries.filter((a) => !contradictsRowUnit(rowDimension, a.loinc, unitByLoinc));
+  let candidates = stageLatin(item, compatible, weights, unitByLoinc);
+  if (candidates.length === 0) candidates = stageLang(item, compatible, unitByLoinc);
   return { candidates, confident: isConfident(candidates, item, unitByLoinc) };
 }
 
@@ -362,6 +400,32 @@ export function resolveLoinc(
 ): ResolveResult {
   const entries = catalogEntries(catalog);
   return resolveWith(item, entries, tokenWeights(entries), unitByLoinc);
+}
+
+function nameKey(text: string): string {
+  return text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean).join(' ');
+}
+
+function unicodeOverlap(printed: string, official: string): number {
+  const printedTokens = unicodeTokens(printed);
+  if (printedTokens.length === 0) return 0;
+  const officialTokens = new Set(unicodeTokens(official));
+  return printedTokens.filter((t) => officialTokens.has(t)).length / printedTokens.length;
+}
+
+// A printed name agrees with a code when it is one of the code's own names —
+// display, badge or a translation, up to case, spacing and punctuation — or
+// shares a meaningful share of tokens with its English or translated names.
+function printedNameAgrees(printed: string, entry: Analysis): boolean {
+  const translations = Object.values(entry.lang ?? {});
+  const key = nameKey(printed);
+  if ([entry.displayName, entry.short, ...translations].some((name) => name && nameKey(name) === key)) return true;
+  const latin = latinPart(printed);
+  const official = catalogNameText(entry);
+  if (Math.max(tokenOverlap(latin, official), tokenOverlap(official, latin)) >= MISMATCH_THRESHOLD) return true;
+  return translations.some(
+    (name) => Math.max(unicodeOverlap(printed, name), unicodeOverlap(name, printed)) >= MISMATCH_THRESHOLD
+  );
 }
 
 export function crossCheckLocal(
@@ -385,14 +449,17 @@ export function crossCheckLocal(
     const entry = byCode.get(code);
     const loincName = entry ? entry.displayName || entry.longCommonName : undefined;
     const top = candidates[0];
-    // The derivation is the authority: a printed code is only evidence.
+    // A printed alias of the derived code (or vice versa) is the same analyte —
+    // panels fold it via ALIAS_TO_PRIMARY — so it's a match.
+    const primaryOf = (c: string) => ALIAS_TO_PRIMARY[c] ?? c;
+    const agreesWithTop = top !== undefined && primaryOf(top.loinc) === primaryOf(code);
+    // The derivation is the authority: a printed code is only evidence. When
+    // the best derivation is the printed code, the row agrees even without
+    // confidence, and there is nothing to offer in its place.
+    if (agreesWithTop) {
+      return { status: 'match' as const, loincName: loincName ?? top.name, ...(confident ? { confident } : {}) };
+    }
     if (confident && top) {
-      // A printed alias of the derived code (or vice versa) is the same
-      // analyte — panels fold it via ALIAS_TO_PRIMARY — so it's a match.
-      const primaryOf = (c: string) => ALIAS_TO_PRIMARY[c] ?? c;
-      if (top.loinc === code || primaryOf(top.loinc) === primaryOf(code)) {
-        return { status: 'match' as const, loincName: loincName ?? top.name, confident: true };
-      }
       return {
         status: 'mismatch' as const,
         loincName,
@@ -405,12 +472,7 @@ export function crossCheckLocal(
     if (!entry) {
       return { status: 'unknown-code' as const };
     }
-    const printed = latinPart(item.analysis);
-    const overlap = Math.max(
-      tokenOverlap(printed, catalogNameText(entry)),
-      tokenOverlap(catalogNameText(entry), printed)
-    );
-    if (overlap < MISMATCH_THRESHOLD) {
+    if (!printedNameAgrees(item.analysis, entry)) {
       return {
         status: 'mismatch' as const,
         loincName,

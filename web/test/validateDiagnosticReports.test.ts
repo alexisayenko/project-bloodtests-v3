@@ -61,9 +61,24 @@ describe('validateDiagnosticReports', () => {
   });
 
   it('still warns on a Cyrillic unit that is wrong for the code', () => {
-    const groups = [createGroup({ items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'ммоль/л', refText: '1-2' })] })];
+    const groups = [createGroup({ items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'Ед/л', refText: '1-2' })] })];
     const issue = validateDiagnosticReports(groups).find((i) => i.message.includes('unexpected for 14682-9'));
     expect(issue?.level).toBe('warning');
+  });
+
+  it('does not warn on another scale of the quantity the code measures (hemoglobin in g/L)', () => {
+    const groups = [
+      createGroup({ items: [createResult({ unit: 'g/L', value: 142 })] }),
+      createGroup({ file: 'f2', items: [createResult({ analysis: 'Гемоглобин', unit: 'г/л', value: 142 })] }),
+      createGroup({ file: 'f3', items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'ммоль/л' })] }),
+    ];
+    expect(validateDiagnosticReports(groups)).toHaveLength(0);
+  });
+
+  it('warns when the unit measures another quantity than the code, in the existing wording', () => {
+    const groups = [createGroup({ items: [createResult({ unit: '%' })] })];
+    const issues = validateDiagnosticReports(groups);
+    expect(issues.map((i) => i.message)).toEqual([`Unit '%' unexpected for 718-7 (expected g/dL)`]);
   });
 
   it('accepts every allowed unit for a code with a unit set (DHT ng/dL and pg/mL)', () => {

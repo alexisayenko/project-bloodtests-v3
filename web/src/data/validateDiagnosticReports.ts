@@ -1,5 +1,5 @@
 import type { DiagnosticReport, Result } from '../types';
-import { LOINC_RE, unitAllowed } from './loincCheck';
+import { LOINC_RE } from './loincCheck';
 import { DEFAULT_UNITS, ALLOWED_UNITS } from './analyteCatalog';
 import { normalizeObservationUnit, type UnitNormalization } from './unitNormalization';
 
@@ -40,28 +40,28 @@ function checkLoinc(item: Result): Issue | null {
 function checkUnitDimension(item: Result, normalization: UnitNormalization): Issue | null {
   if (!item.loinc || !LOINC_RE.test(item.loinc)) return null;
 
+  // Only a different quantity is a problem: another scale of the same one (g/L
+  // for a g/dL code) is a spelling the catalog's unit list merely omits, and a
+  // unit the tables cannot place carries its own warning below.
   const { check } = normalization;
-  const sibling = check.kind === 'dimension-mismatch' ? check.suggestedLoinc : undefined;
-  if (sibling) {
+  if (check.kind !== 'dimension-mismatch') return null;
+
+  if (check.suggestedLoinc) {
     // The value is right and the code is wrong: converting the number
     // would invent a reading no lab printed (ADR-0003).
     return {
       level: 'warning',
-      message: `Unit '${item.unit}' measures a different quantity than ${item.loinc} — ${sibling} is the same analyte on that scale (change the code, not the value)`,
+      message: `Unit '${item.unit}' measures a different quantity than ${item.loinc} — ${check.suggestedLoinc} is the same analyte on that scale (change the code, not the value)`,
     };
   }
 
-  if (unitAllowed(item.loinc, item.unit) === false) {
-    const accepted = [DEFAULT_UNITS[item.loinc], ...(ALLOWED_UNITS[item.loinc] ?? [])].filter(
-      (u): u is string => Boolean(u)
-    );
-    return {
-      level: 'warning',
-      message: `Unit '${item.unit}' unexpected for ${item.loinc} (expected ${accepted.join(' or ')})`,
-    };
-  }
-
-  return null;
+  const accepted = [DEFAULT_UNITS[item.loinc], ...(ALLOWED_UNITS[item.loinc] ?? [])].filter(
+    (u): u is string => Boolean(u)
+  );
+  return {
+    level: 'warning',
+    message: `Unit '${item.unit}' unexpected for ${item.loinc} (expected ${accepted.join(' or ')})`,
+  };
 }
 
 function checkUnit(item: Result): Issue[] {

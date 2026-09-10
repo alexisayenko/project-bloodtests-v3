@@ -270,17 +270,25 @@ among unit variants — the unit comparison key borrows
 tabulating them twice, so a Cyrillic spelling ("ммоль/л", "тыс/мкл"),
 a superscript digit (×10⁹/L) and the micro sign all fold to the
 catalog's Latin form; per-code allowed-unit sets (`ALLOWED_UNITS`)
-drive the validation unit warning — it fires only when a unit is
-outside the code's accepted set, listing that set — and alias-group
-members collapse into one suggestion, the kept code picked by the
-row's unit) and treats a printed code as evidence only — ✓
-derivation agrees / ⚠ confident derivation contradicts it (warning
+choose between variant codes and set confidence, while a candidate
+whose unit dimension contradicts the row's is dropped outright, so
+hemoglobin in g/L is never offered HbA1c's %; a Cyrillic name must
+also cover a candidate's translation, so a qualifier — "общий",
+"ЛПВП", "ЛПНП" — decides between siblings sharing "холестерин"; and
+alias-group members collapse into one suggestion, the kept code picked
+by the row's unit) and treats a printed code as evidence only — ✓
+derivation agrees (a code already the top match agrees even without
+confidence, and gets no chips) / ⚠ confident derivation contradicts it (warning
 names both codes; running the check applies every confident fix
 straight into the edit draft and reports it as "✓ N codes filled
 automatically — review and Save", re-running the check over the
 updated rows, and leaves unit-labeled suggestion chips on the rows it
 could not settle, each filling that row's LOINC on click — Save/Cancel
-still gate persistence) / ✗ unknown with no derivation — shows the official LOINC name
+still gate persistence) / ✗ unknown with no derivation (without a
+confident derivation, "Printed name differs from the LOINC name" shows
+only when the printed name is none of the code's display, badge or
+ru-RU/uk-UA names, case and punctuation ignored, and shares too few
+words with its English or translated ones) — shows the official LOINC name
 in grey under the printed name (printed name kept as provenance;
 resolved names are session-only, never stored); a second-stage "Check
 online (NLM)" button,
@@ -355,9 +363,11 @@ LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like
 "900101"), as an error; an empty LOINC (the observation won't appear in
 panels or All Observations), a missing unit, a missing reference
 range, a printed unit whose dimension contradicts the code's property
-when `massMolarSiblings.ts` knows the sibling code to move to (the
-message names printed unit, current code and sibling — the value is
-never converted, ADR-0003), and, lower-severity, a unit that resolves
+(`checkCodeUnit` decides, so another scale of the same dimension — g/L
+on a g/dL hemoglobin code — is no warning; the message names printed
+unit, current code and the sibling to move to when `massMolarSiblings.ts`
+knows one, the value never converted, ADR-0003, and the code's accepted
+units otherwise), and, lower-severity, a unit that resolves
 to neither a Latin spelling nor a UCUM code (the rows whose curated
 tables need extending) are warnings; while errors exist, Monitoring Panels and All
 Observations are disabled in the nav and their routes redirect to
@@ -482,7 +492,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (582 tests across 24 files, 1 skipped: index
+Vitest suites in `web/test/` (609 tests across 25 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the

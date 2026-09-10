@@ -10,6 +10,12 @@ events accumulate enough to warrant their own pages — see
 
 ## Events
 
+- 2026-09-10 — The LOINC cross-check reads units by dimension: the unit
+  warning fires only on another kind of quantity, never another scale (g/L
+  on a g/dL hemoglobin code), the resolver drops a wrong-dimension candidate
+  instead of down-ranking it, and a Cyrillic qualifier ("общий", "ЛПВП") now
+  decides between cholesterol siblings. The suite is 609 tests across 25 files.
+
 - 2026-09-09 — `paneloom.com` registered, the project's first domain
   and first out-of-pocket cost. The name is still *working* rather
   than locked: the mark has four candidate lockups and no vector

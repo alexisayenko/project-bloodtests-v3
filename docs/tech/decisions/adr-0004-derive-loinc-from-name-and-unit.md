@@ -74,6 +74,17 @@ derived code counts as a match, and alias-group members merge into
 one suggestion whose kept code is chosen by the row's unit
 (same-scale groups fall back to the primary).
 
+*Update 2026-09-10:* a candidate whose known units all measure a
+different dimension than the row's printed unit is no longer
+penalized but dropped before either stage ranks (hemoglobin in g/L is
+never offered HbA1c's %); a different scale of the same dimension
+still only adjusts the score. A printed code that is already the top
+candidate counts as a match even without confidence, and the
+name-overlap fallback also accepts the code's display, badge or
+ru-RU/uk-UA name, so a Cyrillic printout is no longer compared by an
+empty Latin part. The validation unit warning no longer reads the
+allowed-unit sets directly; it fires on a dimension contradiction only.
+
 ## Consequences
 
 - Codes the report never printed now arrive blank and get filled

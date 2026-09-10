@@ -7,9 +7,8 @@ import {
   tokenOverlap,
   resolveLoinc,
   crossCheckLocal,
-  unitAllowed,
 } from '../src/data/loincCheck';
-import { ALLOWED_UNITS, DEFAULT_UNITS } from '../src/data/analyteCatalog';
+import { ALLOWED_UNITS, ANALYTES, DEFAULT_UNITS } from '../src/data/analyteCatalog';
 import type { Analysis, Result } from '../src/types';
 
 const createResult = (overrides?: Partial<Result>): Result => ({
@@ -156,7 +155,7 @@ describe('canonicalUnit', () => {
     expect(canonicalUnit('усл.ед')).toBe(normalizeUnit('усл.ед'));
   });
 
-  // unitAllowed canonicalises both the printed unit and the catalog's own, so a
+  // The resolver's unit agreement canonicalises both the printed unit and the catalog's own, so a
   // catalog unit's key must be a fixed point: were it not, a lab printing a unit
   // exactly as the catalog spells its key would still fail to match.
   const catalogUnits = [
@@ -579,44 +578,57 @@ describe('crossCheckLocal', () => {
   });
 });
 
-describe('unitAllowed', () => {
-  it('returns undefined for a code with no known units', () => {
-    expect(unitAllowed('9999999-9', 'mg/dL')).toBeUndefined();
+describe('cross-check against the real catalog', () => {
+  const codes = (analysis: string, unit: string) =>
+    resolveLoinc(createResult({ loinc: '', analysis, unit }), ANALYTES).candidates.map((c) => c.loinc);
+
+  it('rules out HbA1c, whose % is another quantity, for a hemoglobin row in g/L', () => {
+    expect(codes('Гемоглобин', 'г/л')).toEqual(['718-7']);
+    const latin = codes('Hemoglobin', 'g/L');
+    expect(latin[0]).toBe('718-7');
+    expect(latin).not.toContain('4548-4');
+    expect(latin).not.toContain('59261-8');
   });
 
-  it('accepts the curated primary unit', () => {
-    expect(unitAllowed('1848-1', 'ng/dL')).toBe(true);
+  it('reads "общий" as total: "Холестерин общий" in mmol/L is total cholesterol alone', () => {
+    expect(codes('Холестерин общий', 'ммоль/л')).toEqual(['14647-2']);
+    expect(codes('Общий холестерин', 'mmol/L')).toEqual(['14647-2']);
   });
 
-  it('accepts an ALLOWED_UNITS extra across spellings', () => {
-    expect(unitAllowed('1848-1', 'pg/ml')).toBe(true);
+  it('still resolves the HDL and LDL qualifiers to their own fractions', () => {
+    expect(codes('Холестерин ЛПВП', 'ммоль/л')[0]).toBe('14646-4');
+    expect(codes('Холестерин ЛПНП', 'ммоль/л')[0]).toBe('22748-8');
+    expect(codes('ЛПНП', 'ммоль/л')[0]).toBe('22748-8');
   });
 
-  it('rejects a unit outside the set', () => {
-    expect(unitAllowed('1848-1', 'nmol/L')).toBe(false);
+  it('agrees, offering nothing, when the printed code is already the best derivation', () => {
+    const [cholesterol, hemoglobin] = crossCheckLocal(
+      [
+        createResult({ loinc: '14647-2', analysis: 'Холестерин общий', unit: 'ммоль/л' }),
+        createResult({ loinc: '718-7', analysis: 'Гемоглобин', unit: 'г/л' }),
+      ],
+      ANALYTES
+    );
+    expect(cholesterol).toMatchObject({ status: 'match', loincName: 'Total Cholesterol' });
+    expect(cholesterol?.suggestions).toBeUndefined();
+    expect(hemoglobin).toMatchObject({ status: 'match', loincName: 'Hemoglobin' });
+    expect(hemoglobin?.suggestions).toBeUndefined();
   });
 
-  it('accepts a Cyrillic spelling of an allowed unit', () => {
-    expect(unitAllowed('2951-2', 'ммоль/л')).toBe(true);
-    expect(unitAllowed('14682-9', 'мкмоль/л')).toBe(true);
-    expect(unitAllowed('20448-7', 'мкМЕ/мл')).toBe(true);
-    expect(unitAllowed('777-3', 'тыс/мкл')).toBe(true);
-  });
-
-  it('still rejects a Cyrillic unit that is genuinely wrong for the code', () => {
-    expect(unitAllowed('2951-2', 'мг/дл')).toBe(false);
-    expect(unitAllowed('14682-9', 'ммоль/л')).toBe(false);
-  });
-
-  it('accepts a count unit printed with superscripts and the micro sign', () => {
-    expect(unitAllowed('6690-2', 'x10³/µL')).toBe(true);
-    expect(unitAllowed('777-3', 'x10³/µL')).toBe(true);
-    expect(unitAllowed('789-8', 'x10⁶/µL')).toBe(true);
-  });
-
-  it('still rejects a genuinely wrong unit for a count code', () => {
-    expect(unitAllowed('6690-2', 'x10⁶/µL')).toBe(false);
-    expect(unitAllowed('789-8', 'mg/dL')).toBe(false);
+  // Units that rule every candidate out, so the name comparison alone decides.
+  it('matches a code by its translated or badge name, and still flags a name that is neither', () => {
+    const [translated, badge, unrelated] = crossCheckLocal(
+      [
+        createResult({ loinc: '718-7', analysis: 'ГЕМОГЛОБИН:', unit: 'ммоль/л' }),
+        createResult({ loinc: '718-7', analysis: 'Hb', unit: '' }),
+        createResult({ loinc: '718-7', analysis: 'Лактатдегидрогеназа', unit: 'г/л' }),
+      ],
+      ANALYTES
+    );
+    expect(translated?.status).toBe('match');
+    expect(badge?.status).toBe('match');
+    expect(unrelated?.status).toBe('mismatch');
+    expect(unrelated?.derived).toBeUndefined();
   });
 });
 
