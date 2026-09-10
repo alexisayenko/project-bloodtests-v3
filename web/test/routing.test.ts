@@ -12,6 +12,7 @@ describe('routeToHash ↔ hashToRoute', () => {
     { view: 'profile' },
     { view: 'medications' },
     { view: 'plan' },
+    { view: 'account' },
     { view: 'panel', name: 'Bone and Mineral Metabolism' },
   ];
 
@@ -40,7 +41,7 @@ describe('routeToHash ↔ hashToRoute', () => {
 });
 
 describe('NAV_ITEMS', () => {
-  it('lists the seven top-level sections in order', () => {
-    expect(NAV_ITEMS.map((i) => i.view)).toEqual(['profile', 'reports', 'all', 'panels', 'plan', 'medications', 'reference']);
+  it('lists the eight top-level sections in order', () => {
+    expect(NAV_ITEMS.map((i) => i.view)).toEqual(['profile', 'reports', 'all', 'panels', 'plan', 'medications', 'reference', 'account']);
   });
 });

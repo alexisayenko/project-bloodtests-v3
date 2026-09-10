@@ -57,7 +57,15 @@ export function isScheduleLab(value: unknown): value is string {
 
 export function loadScheduled(): Scheduled {
   try {
-    const raw = localStorage.getItem(SCHEDULED_KEY);
+    return parseScheduled(localStorage.getItem(SCHEDULED_KEY));
+  } catch {
+    return { ...EMPTY_SCHEDULED };
+  }
+}
+
+/** A stored schedule read back; anything missing or malformed reads as empty. */
+export function parseScheduled(raw: string | null): Scheduled {
+  try {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Scheduled>;
       return {

@@ -10,9 +10,10 @@ export type Route =
   | { view: 'report'; file: string }
   | { view: 'profile' }
   | { view: 'medications' }
-  | { view: 'plan' };
+  | { view: 'plan' }
+  | { view: 'account' };
 
-export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'profile' | 'medications' | 'plan'; label: string }[] = [
+export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'profile' | 'medications' | 'plan' | 'account'; label: string }[] = [
   { view: 'profile', label: 'Get Started' },
   { view: 'reports', label: 'Diagnostic Reports' },
   { view: 'all', label: 'All Observations' },
@@ -20,6 +21,7 @@ export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'pr
   { view: 'plan', label: 'Scheduled Visits' },
   { view: 'medications', label: 'Medications' },
   { view: 'reference', label: 'Reference Book' },
+  { view: 'account', label: 'Account' },
 ];
 
 export function routeToHash(route: Route): string {
@@ -31,6 +33,7 @@ export function routeToHash(route: Route): string {
   if (route.view === 'profile') return '#profile';
   if (route.view === 'medications') return '#medications';
   if (route.view === 'plan') return '#plan';
+  if (route.view === 'account') return '#account';
   return '#panels';
 }
 
@@ -45,6 +48,7 @@ export function hashToRoute(hash: string): Route {
   if (value === 'profile') return { view: 'profile' };
   if (value === 'medications') return { view: 'medications' };
   if (value === 'plan') return { view: 'plan' };
+  if (value === 'account') return { view: 'account' };
   if (value.startsWith('panels/')) return { view: 'panel', name: value.slice('panels/'.length) };
   return { view: 'panel', name: value }; // back-compat with pre-nav-menu links
 }

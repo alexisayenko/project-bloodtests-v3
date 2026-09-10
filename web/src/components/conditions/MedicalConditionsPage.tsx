@@ -14,6 +14,7 @@ import { Popup, type PopupPosition, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
 import { MedicationsView } from './MedicationsView';
+import { AccountView } from './AccountView';
 import { PlanVisitView } from './PlanVisitView';
 import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
@@ -231,6 +232,8 @@ export function MedicalConditionsPage() {
         );
       case 'medications':
         return <MedicationsView />;
+      case 'account':
+        return <AccountView sessions={sessions} />;
       case 'plan':
         return <PlanVisitView scheduled={scheduled} />;
       case 'reference':

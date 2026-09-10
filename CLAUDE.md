@@ -370,7 +370,14 @@ LOINC Users' Guide, each with what it settles and a retrieval date; Analytes: a
 "LOINC database" page at `#reference/loinc-database` listing every analyte the
 app knows — code, name, specimen, units and panels, sortable by column) — each
 its own URL hash so
-browser back/forward works. Validation
+browser back/forward works. Account (`#account`, last in the nav and reachable
+while validation errors exist) has one "Export all data" button that downloads
+`blood-tests-backup-<yyyymmdd>.zip` — `lab-reports.json` (the Export JSON
+envelope), `medications.json`, `scheduled-visits.json`,
+`laboratory-prices.json`, `settings.json` (view settings and per-panel chart
+preferences, only keys that exist) and `manifest.json` — built by
+`data/backupArchive.ts` and zipped with `fflate`, loaded by dynamic `import()`
+on click. Validation
 (`validateDiagnosticReports.ts`) marks an observation missing its name
 or value-or-rawValue, or carrying a non-empty code that isn't
 LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like
