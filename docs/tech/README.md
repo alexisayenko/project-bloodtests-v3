@@ -53,6 +53,13 @@ them mirrored in TypeScript
   Described by
   [`blood.isayenko.net/schema/molar-masses-1.schema.json`](https://blood.isayenko.net/schema/molar-masses-1.schema.json)
   and detailed in [`molar-masses.md`](molar-masses.md).
+- **`laboratories.json`** — the laboratory registry and the single source
+  of truth for prices: per laboratory a currency, locale and as-of date,
+  and price lines each covering every catalog LOINC they can satisfy.
+  `web/src/data/labPricing.ts` costs the schedule from it. Described by
+  [`blood.isayenko.net/schema/laboratories-1.schema.json`](https://blood.isayenko.net/schema/laboratories-1.schema.json);
+  the mapping reasoning is in
+  [`../content/laboratory-prices.md`](../content/laboratory-prices.md).
 
 `web/src/data/analyteCatalog.ts` imports the catalog and derives every
 lookup map the app uses from it — short labels, expected and allowed
@@ -62,8 +69,8 @@ them can drift from the file. `buildConditions` in
 against the groups and the catalog. The first three files are described
 by
 [`blood.isayenko.net/schema/analytes-1.schema.json`](https://blood.isayenko.net/schema/analytes-1.schema.json)
-(source `web/public/schema/analytes-1.schema.json`) and the fourth by
-its own schema; all four are validated with ajv by
+(source `web/public/schema/analytes-1.schema.json`) and the other two by
+their own schemas; all five are validated with ajv by
 `web/test/reference-data.test.ts`, which also recomputes every molar
 mass from its formula. Unlike the interchange envelope, these objects
 are closed, so a mistyped key fails the suite.

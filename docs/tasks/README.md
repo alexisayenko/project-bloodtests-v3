@@ -36,7 +36,7 @@ the index.
 | [task-0016](task-0016.md) | Implement FIB-4 for fibrosis-risk staging | to do |
 | [task-0017](task-0017.md) | Audit the computed-index unit fallback for unchecked values | to do |
 | [task-0018](task-0018.md) | Add a Medications history section for tracking what was taken and at what dosage | to do |
-| [task-0019](task-0019.md) | Record laboratory prices for the tests each laboratory sells | to do |
+| [task-0019](task-0019.md) | Record laboratory prices for the tests each laboratory sells | done |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
