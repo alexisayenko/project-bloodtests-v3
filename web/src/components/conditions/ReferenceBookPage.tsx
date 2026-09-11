@@ -561,7 +561,7 @@ function UnitSourceItem({ source }: Readonly<{ source: UnitSource }>) {
 
 function markerName(marker: string): string | undefined {
   const loinc = MARKER_LOINC[marker]?.[0];
-  return loinc ? ANALYTE_BY_LOINC[loinc]?.displayName : undefined;
+  return loinc ? ANALYTE_BY_LOINC[loinc]?.friendlyName : undefined;
 }
 
 function Mono({ children }: Readonly<{ children: ReactNode }>) {
@@ -1094,8 +1094,8 @@ function LoincDatabasePage({
           lastTested: latest?.date,
         } satisfies AnalyteSortValues,
         observation: {
-          short: SHORT_LABELS[analyte.loinc]?.short ?? analyte.displayName,
-          full: analyte.displayName,
+          short: SHORT_LABELS[analyte.loinc]?.short ?? analyte.friendlyName,
+          full: analyte.friendlyName,
           longCommonName: analyte.longCommonName,
           loinc: analyte.loinc,
           also: ALSO_REFS[analyte.loinc],
@@ -1167,7 +1167,7 @@ function LoincDatabasePage({
                 </td>
                 <td style={longNameTd} title={analyte.longCommonName}>
                   {trimmedName}
-                  <div style={{ color: COLOR.textMuted }}>{analyte.displayName}</div>
+                  <div style={{ color: COLOR.textMuted }}>{analyte.friendlyName}</div>
                 </td>
                 <td style={td}>
                   {SPECIMENS[analyte.loinc] ?? <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>}

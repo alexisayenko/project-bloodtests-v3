@@ -4,7 +4,7 @@ export function getAnalysisName(loinc: string, catalog: Record<string, Analysis>
   const a = catalog[loinc];
   if (!a) return loinc;
   if (lang !== 'en' && a.lang[lang]) return a.lang[lang];
-  return a.displayName;
+  return a.friendlyName;
 }
 
 export function getPanelName(p: Panel, lang: Lang): string {
@@ -23,7 +23,7 @@ export function getOtherLangNames(a: Analysis, lang: Lang): string[] {
   const names: string[] = [];
   if (lang !== 'ru-RU' && a.lang['ru-RU']) names.push(a.lang['ru-RU']);
   if (lang !== 'uk-UA' && a.lang['uk-UA']) names.push(a.lang['uk-UA']);
-  if (lang !== 'en') names.unshift(a.displayName);
+  if (lang !== 'en') names.unshift(a.friendlyName);
   return names;
 }
 

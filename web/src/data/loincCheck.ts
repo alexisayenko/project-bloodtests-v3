@@ -208,7 +208,7 @@ function catalogEntries(catalog: Map<string, Analysis> | Analysis[]): Analysis[]
 }
 
 function catalogNameText(a: Analysis): string {
-  return `${a.displayName} ${a.longCommonName}`;
+  return `${a.friendlyName} ${a.longCommonName}`;
 }
 
 // Printed names vary wildly across labs, so any meaningful token overlap
@@ -362,7 +362,7 @@ function stageLatin(
         : 0;
       return {
         loinc: a.loinc,
-        name: a.displayName || a.longCommonName,
+        name: a.friendlyName || a.longCommonName,
         score: unitAdjust(base, rowUnit, knownUnits(a.loinc, unitByLoinc)),
         baseScore: base,
         unit: unitByLoinc[a.loinc],
@@ -424,7 +424,7 @@ function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string
       );
       return {
         loinc: a.loinc,
-        name: a.displayName || a.longCommonName,
+        name: a.friendlyName || a.longCommonName,
         score: unitAdjust(base, rowUnit, knownUnits(a.loinc, unitByLoinc)),
         baseScore: base,
         unit: unitByLoinc[a.loinc],
@@ -495,7 +495,7 @@ function unicodeOverlap(printed: string, official: string): number {
 function printedNameAgrees(printed: string, entry: Analysis): boolean {
   const translations = Object.values(entry.lang ?? {});
   const key = nameKey(printed);
-  if ([entry.displayName, entry.short, ...translations].some((name) => name && nameKey(name) === key)) return true;
+  if ([entry.friendlyName, entry.short, ...translations].some((name) => name && nameKey(name) === key)) return true;
   const latin = latinPart(printed);
   const official = catalogNameText(entry);
   if (Math.max(tokenOverlap(latin, official), tokenOverlap(official, latin)) >= MISMATCH_THRESHOLD) return true;
@@ -523,7 +523,7 @@ export function crossCheckLocal(
       return { status: 'malformed' as const, suggestions: candidates, confident };
     }
     const entry = byCode.get(code);
-    const loincName = entry ? entry.displayName || entry.longCommonName : undefined;
+    const loincName = entry ? entry.friendlyName || entry.longCommonName : undefined;
     const top = candidates[0];
     // A printed alias of the derived code (or vice versa) is the same analyte —
     // panels fold it via ALIAS_TO_PRIMARY — so it's a match.

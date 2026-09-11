@@ -1,7 +1,7 @@
 export interface Analysis {
   loinc: string;
   longCommonName: string;
-  displayName: string;
+  friendlyName: string;
   /** Badge label shown in Monitoring Panels and All Observations. */
   short?: string;
   /** The unit this analyte is expected in — the reference for unit checks. */

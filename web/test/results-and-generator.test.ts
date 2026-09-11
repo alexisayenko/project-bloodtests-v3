@@ -74,10 +74,10 @@ describe('buildConditions', () => {
     expect(buildConditions([], {}, MONITORING_PANELS).map((c) => c.name)).toEqual(MONITORING_PANELS.map((d) => d.name));
   });
 
-  it('short labels win over catalog display names', () => {
+  it('short labels win over catalog friendly names', () => {
     const conditions = buildConditions(
       panels,
-      { '14913-8': { loinc: '14913-8', displayName: 'Testosterone (Total)', longCommonName: 'x' } },
+      { '14913-8': { loinc: '14913-8', friendlyName: 'Testosterone (Total)', longCommonName: 'x' } },
       MONITORING_PANELS
     );
     const t = conditions.find((c) => c.name === 'Hypogonadism')!.tests.find((x) => x.loinc === '14913-8')!;

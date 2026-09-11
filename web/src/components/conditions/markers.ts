@@ -171,8 +171,8 @@ export function buildConditions(
       const analysis = analysesCatalog[loinc];
       const labelInfo = SHORT_LABELS[loinc];
       return {
-        short: labelInfo?.short ?? analysis?.displayName ?? loinc,
-        full: analysis?.displayName ?? loinc,
+        short: labelInfo?.short ?? analysis?.friendlyName ?? loinc,
+        full: analysis?.friendlyName ?? loinc,
         longCommonName: analysis?.longCommonName ?? '',
         loinc,
         unit: labelInfo?.unit,

@@ -205,7 +205,7 @@ describe('buildExpandedCatalog', () => {
   const [primary, refs] = Object.entries(ALSO_REFS)[0]!;
   const canonical: Analysis = {
     loinc: primary,
-    displayName: 'Primary',
+    friendlyName: 'Primary',
     longCommonName: 'Primary long name',
     lang: {},
   };
@@ -214,7 +214,7 @@ describe('buildExpandedCatalog', () => {
     const out = buildExpandedCatalog({ [primary]: canonical });
     expect(out).toHaveLength(1 + refs.length);
     const added = out.find((a) => a.loinc === refs[0]!.loinc)!;
-    expect(added.displayName).toBe('Primary');
+    expect(added.friendlyName).toBe('Primary');
     expect(added.longCommonName).toBe(refs[0]!.longCommonName);
   });
 

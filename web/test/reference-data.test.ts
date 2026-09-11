@@ -55,7 +55,7 @@ describe('reference data conforms to analytes-1.schema.json', () => {
 
   it('rejects an entry with an unknown key or a badge label lacking a unit', () => {
     const validate = validator('#/$defs/analyte');
-    const base = { loinc: '1-8', longCommonName: 'x', displayName: 'x', lang: { 'ru-RU': 'x' } };
+    const base = { loinc: '1-8', longCommonName: 'x', friendlyName: 'x', lang: { 'ru-RU': 'x' } };
     expect(validate(base)).toBe(true);
     expect(validate({ ...base, shortt: 'T' })).toBe(false);
     expect(validate({ ...base, short: 'T' })).toBe(false);
@@ -103,7 +103,7 @@ describe('reference data is internally consistent', () => {
     it('matches the service name for every code the service knows', () => {
       const drifted = ANALYSES.filter(
         (a) => fixture.names[a.loinc] && fixture.names[a.loinc] !== a.longCommonName,
-      ).map((a) => `${a.loinc} ${a.displayName}: "${a.longCommonName}" vs "${fixture.names[a.loinc]}"`);
+      ).map((a) => `${a.loinc} ${a.friendlyName}: "${a.longCommonName}" vs "${fixture.names[a.loinc]}"`);
       expect(drifted).toEqual([]);
     });
 
@@ -128,10 +128,10 @@ describe('reference data is internally consistent', () => {
 
   // "Glucose Serum" sat on 2339-0 and 15074-8, which LOINC names in *Blood*.
   // Whole-blood glucose runs 10-15% below plasma, so the label was not a
-  // wording slip, it was the wrong quantity. A display name may abbreviate the
+  // wording slip, it was the wrong quantity. A friendly name may abbreviate the
   // code's system but never contradict it.
-  describe('a display name never claims a specimen the code contradicts', () => {
-    // A word a display name may use, and the LOINC systems it is true of.
+  describe('a friendly name never claims a specimen the code contradicts', () => {
+    // A word a friendly name may use, and the LOINC systems it is true of.
     const SPECIMEN_WORDS: [RegExp, RegExp][] = [
       [/\bserum\b/, /serum/],
       [/\bplasma\b/, /plasma/],
@@ -148,10 +148,10 @@ describe('reference data is internally consistent', () => {
       for (const a of ANALYSES) {
         const system = SPECIMENS[a.loinc]?.toLowerCase();
         if (!system) continue;
-        const name = a.displayName.toLowerCase();
+        const name = a.friendlyName.toLowerCase();
         for (const [word, allowed] of SPECIMEN_WORDS) {
           if (word.test(name) && !allowed.test(system)) {
-            wrong.push(`${a.loinc} "${a.displayName}" is measured in ${SPECIMENS[a.loinc]}`);
+            wrong.push(`${a.loinc} "${a.friendlyName}" is measured in ${SPECIMENS[a.loinc]}`);
           }
         }
       }
@@ -211,7 +211,7 @@ describe('reference data is internally consistent', () => {
       const dimension = dimensionOf(a.unit);
       if (!property || !dimension) continue;
       if (dimension !== EXPECTED[property]) {
-        wrong.push(`${a.loinc} ${a.displayName}: [${property}/volume] but unit ${a.unit} is ${dimension}`);
+        wrong.push(`${a.loinc} ${a.friendlyName}: [${property}/volume] but unit ${a.unit} is ${dimension}`);
       }
     }
     expect(wrong).toEqual([]);

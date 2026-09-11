@@ -146,3 +146,8 @@ data.**
   being an internal contract and the closed objects become a
   compatibility question, the way the interchange envelope's open
   ones already are.
+
+## Notes
+
+- 2026-09-11: the entry field this record calls the display name is
+  now `friendlyName` (formerly `displayName`); nothing else changed.

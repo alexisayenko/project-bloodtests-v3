@@ -31,19 +31,19 @@ const catalog: Analysis[] = [
   {
     loinc: '2345-7',
     longCommonName: 'Glucose [Mass/volume] in Serum or Plasma',
-    displayName: 'Glucose',
+    friendlyName: 'Glucose',
     lang: { 'el-GR': 'Γλυκόζη', 'ru-RU': 'Глюкоза' },
   },
   {
     loinc: '2093-3',
     longCommonName: 'Cholesterol [Mass/volume] in Serum or Plasma',
-    displayName: 'Total Cholesterol',
+    friendlyName: 'Total Cholesterol',
     lang: {},
   },
   {
     loinc: '718-7',
     longCommonName: 'Hemoglobin [Mass/volume] in Blood',
-    displayName: 'Hemoglobin',
+    friendlyName: 'Hemoglobin',
     lang: {},
   },
 ];
@@ -189,19 +189,19 @@ describe('resolveLoinc', () => {
     {
       loinc: '15081-3',
       longCommonName: 'Prolactin [Units/volume] in Serum or Plasma',
-      displayName: 'Prolactin',
+      friendlyName: 'Prolactin',
       lang: {},
     },
     {
       loinc: '2842-3',
       longCommonName: 'Prolactin [Mass/volume] in Serum or Plasma',
-      displayName: 'Prolactin',
+      friendlyName: 'Prolactin',
       lang: {},
     },
     {
       loinc: '2345-7',
       longCommonName: 'Glucose [Mass/volume] in Serum or Plasma',
-      displayName: 'Glucose',
+      friendlyName: 'Glucose',
       lang: {},
     },
   ];
@@ -234,7 +234,7 @@ describe('resolveLoinc', () => {
   // DHEA-S rows got zero suggestions).
   it('treats a curated mcg unit as agreeing with a printed µg unit', () => {
     const zincCatalog: Analysis[] = [
-      { loinc: '5763-8', longCommonName: 'Zinc [Mass/volume] in Serum or Plasma', displayName: 'Zinc (Zn)', lang: {} },
+      { loinc: '5763-8', longCommonName: 'Zinc [Mass/volume] in Serum or Plasma', friendlyName: 'Zinc (Zn)', lang: {} },
     ];
     const res = resolveLoinc(
       createResult({ loinc: '', analysis: 'Zinc (Zn)', unit: 'μg/dL' }),
@@ -288,31 +288,31 @@ describe('resolveLoinc on real lab-report names', () => {
     {
       loinc: '3016-3',
       longCommonName: 'Thyrotropin [Units/volume] in Serum or Plasma',
-      displayName: 'Thyroid-stimulating hormone (TSH)',
+      friendlyName: 'Thyroid-stimulating hormone (TSH)',
       lang: {},
     },
     {
       loinc: '3024-7',
       longCommonName: 'Thyroxine (T4) free [Mass/volume] in Serum or Plasma',
-      displayName: 'Free Thyroxine (FT4)',
+      friendlyName: 'Free Thyroxine (FT4)',
       lang: {},
     },
     {
       loinc: '718-7',
       longCommonName: 'Hemoglobin [Mass/volume] in Blood',
-      displayName: 'Hemoglobin (HGB)',
+      friendlyName: 'Hemoglobin (HGB)',
       lang: {},
     },
     {
       loinc: '2143-6',
       longCommonName: 'Cortisol [Mass/volume] in Serum or Plasma',
-      displayName: 'Cortisol',
+      friendlyName: 'Cortisol',
       lang: {},
     },
     {
       loinc: '2243-4',
       longCommonName: 'Estradiol (E2) [Mass/volume] in Serum or Plasma',
-      displayName: 'Estradiol (E2)',
+      friendlyName: 'Estradiol (E2)',
       lang: {},
     },
   ];
@@ -393,31 +393,31 @@ describe('resolveLoinc on real lab-report names', () => {
       {
         loinc: '3236-2',
         longCommonName: 'Tumor necrosis factor.alpha [Mass/volume] in Serum or Plasma',
-        displayName: 'TNF-alpha',
+        friendlyName: 'TNF-alpha',
         lang: {},
       },
       {
         loinc: '5964-2',
         longCommonName: 'Prothrombin time (PT) actual/normal in Platelet poor plasma by Coagulation assay',
-        displayName: 'Prothrombin Time (PT)',
+        friendlyName: 'Prothrombin Time (PT)',
         lang: {},
       },
       {
         loinc: '3289-6',
         longCommonName: 'Coagulation factor II activity actual/normal in Platelet poor plasma',
-        displayName: 'Factor II Activity',
+        friendlyName: 'Factor II Activity',
         lang: {},
       },
       {
         loinc: '41770-1',
         longCommonName: 'Free androgen index in Serum or Plasma',
-        displayName: 'Free Androgen Index (FAI)',
+        friendlyName: 'Free Androgen Index (FAI)',
         lang: {},
       },
       {
         loinc: '47690-5',
         longCommonName: 'Insulin resistance index in Serum or Plasma',
-        displayName: 'HOMA-IR Index',
+        friendlyName: 'HOMA-IR Index',
         lang: {},
       },
     ];
@@ -435,7 +435,7 @@ describe('resolveLoinc on real lab-report names', () => {
       {
         loinc: '21000-5',
         longCommonName: 'Erythrocyte distribution width [Entitic volume] by Automated count',
-        displayName: 'RDW-SD',
+        friendlyName: 'RDW-SD',
         lang: {},
       },
     ];
@@ -473,13 +473,13 @@ describe('crossCheckLocal', () => {
       {
         loinc: '3016-3',
         longCommonName: 'Thyrotropin [Units/volume] in Serum or Plasma',
-        displayName: 'Thyrotropin',
+        friendlyName: 'Thyrotropin',
         lang: {},
       },
       {
         loinc: '3051-0',
         longCommonName: 'Triiodothyronine (T3) Free [Mass/volume] in Serum or Plasma',
-        displayName: 'Free T3',
+        friendlyName: 'Free T3',
         lang: {},
       },
     ];
@@ -502,13 +502,13 @@ describe('crossCheckLocal', () => {
       {
         loinc: '2484-4',
         longCommonName: 'Insulin-like growth factor 1 [Mass/volume] in Serum or Plasma',
-        displayName: 'IGF-1 (Somatomedin C)',
+        friendlyName: 'IGF-1 (Somatomedin C)',
         lang: {},
       },
       {
         loinc: '20448-7',
         longCommonName: 'Insulin [Units/volume] in Serum or Plasma',
-        displayName: 'Insulin',
+        friendlyName: 'Insulin',
         lang: {},
       },
     ];
@@ -529,7 +529,7 @@ describe('crossCheckLocal', () => {
       {
         loinc: '718-7',
         longCommonName: 'Hemoglobin [Mass/volume] in Blood',
-        displayName: 'Hemoglobin (HGB)',
+        friendlyName: 'Hemoglobin (HGB)',
         lang: {},
       },
     ];
@@ -694,7 +694,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
     {
       loinc: '1848-1',
       longCommonName: 'Androstanolone (Dihydrotestosterone) [Mass/volume] in Serum or Plasma',
-      displayName: 'Dihydrotestosterone (DHT)',
+      friendlyName: 'Dihydrotestosterone (DHT)',
       lang: {},
     },
   ];
@@ -721,13 +721,13 @@ describe('per-code allowed unit sets and alias collapsing', () => {
     {
       loinc: '2339-0',
       longCommonName: 'Glucose [Mass/volume] in Blood',
-      displayName: 'Glucose (Whole Blood)',
+      friendlyName: 'Glucose (Whole Blood)',
       lang: {},
     },
     {
       loinc: '2345-7',
       longCommonName: 'Glucose [Mass/volume] in Serum or Plasma',
-      displayName: 'Glucose (Serum/Plasma)',
+      friendlyName: 'Glucose (Serum/Plasma)',
       lang: {},
     },
   ];
@@ -756,13 +756,13 @@ describe('per-code allowed unit sets and alias collapsing', () => {
       {
         loinc: '2942-1',
         longCommonName: 'Sex hormone binding globulin [Mass/volume] in Serum or Plasma',
-        displayName: 'SHBG',
+        friendlyName: 'SHBG',
         lang: {},
       },
       {
         loinc: '13967-5',
         longCommonName: 'Sex hormone binding globulin [Moles/volume] in Serum or Plasma',
-        displayName: 'SHBG',
+        friendlyName: 'SHBG',
         lang: {},
       },
     ];
@@ -778,13 +778,13 @@ describe('per-code allowed unit sets and alias collapsing', () => {
       {
         loinc: '20448-7',
         longCommonName: 'Insulin [Units/volume] in Serum or Plasma',
-        displayName: 'Insulin',
+        friendlyName: 'Insulin',
         lang: {},
       },
       {
         loinc: '2484-4',
         longCommonName: 'Insulin-like growth factor 1 [Mass/volume] in Serum or Plasma',
-        displayName: 'IGF-1 (Somatomedin C)',
+        friendlyName: 'IGF-1 (Somatomedin C)',
         lang: {},
       },
     ];
