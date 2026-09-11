@@ -4,6 +4,8 @@ import {
   MARKER_LOINC,
   computeIndex,
   convertUnit,
+  indexBands,
+  indexZone,
   markersForIndex,
   zone,
 } from '../src/data/computedIndices';
@@ -91,6 +93,7 @@ const GOLD: Record<string, number> = {
   homair: 1.874918,
   homab: 90.231958,
   cft: 93.162473,
+  biot: 7.569375,
   fai: 43.3375,
   tlh: 99.999028,
   te2: 16.666505,
@@ -170,6 +173,113 @@ describe('calculatedFreeTestosterone via the cft index (Vermeulen golden master)
     const ft = cft.fn(fixture(446, 24.9, 4.3))!;
     const pct = (ft / 10 / 446) * 100;
     expect(pct).toBeCloseTo(2.41, 1);
+  });
+});
+
+describe('biot (bioavailable testosterone, Vermeulen 1999)', () => {
+  const biot = INDEX_DEFS.find((d) => d.key === 'biot')!;
+  const cft = INDEX_DEFS.find((d) => d.key === 'cft')!;
+  const KA = 3.6e4;
+  const KS = 1e9;
+  const albMolL = (gdl: number) => (gdl * 10) / 69000;
+
+  // Solved by bisection on the mass balance T = FT + Ka·A·FT + S·Ks·FT/(1 + Ks·FT),
+  // not by the quadratic the index uses, so the two are independent.
+  const freeTByBisection = (tNmol: number, sNmol: number, albGdl: number): number => {
+    const T = tNmol * 1e-9;
+    const S = sNmol * 1e-9;
+    const A = albMolL(albGdl);
+    const excess = (ft: number) => ft + KA * A * ft + (S * KS * ft) / (1 + KS * ft) - T;
+    let lo = 0;
+    let hi = T;
+    for (let i = 0; i < 200; i++) {
+      const mid = (lo + hi) / 2;
+      if (excess(mid) > 0) hi = mid;
+      else lo = mid;
+    }
+    return ((lo + hi) / 2) * 1e9;
+  };
+
+  it('TT 15 nmol/L, SHBG 40 nmol/L, albumin 43 g/L -> bio-T 6.409456 nmol/L', () => {
+    const ft = freeTByBisection(15, 40, 4.3);
+    expect(ft).toBeCloseTo(0.273502, 5);
+    expect((ft / 15) * 100).toBeGreaterThan(1);
+    expect((ft / 15) * 100).toBeLessThan(3);
+    expect(biot.fn({ T: 15, SHBG: 40, ALB: 4.3 })!).toBeCloseTo(6.409456, 5);
+  });
+
+  it('is free T × (1 + Ka·albumin)', () => {
+    for (const [t, s, alb] of [[15, 40, 4.3], [15, 40, 4.5], [30, 20, 3.5], [8, 70, 3.9]] as const) {
+      const expected = freeTByBisection(t, s, alb) * (1 + KA * albMolL(alb));
+      expect(biot.fn({ T: t, SHBG: s, ALB: alb })!).toBeCloseTo(expected, 6);
+    }
+  });
+
+  it('agrees with cft scaled by the albumin term', () => {
+    const tNgdl = convertUnit(15, 'T', 'nmol/L', 'ng/dL')!;
+    const ftNmol = convertUnit(cft.fn({ T: tNgdl, SHBG: 40, ALB: 4.3 })! / 10, 'T', 'ng/dL', 'nmol/L')!;
+    expect(biot.fn({ T: 15, SHBG: 40, ALB: 4.3 })!).toBeCloseTo(ftNmol * (1 + KA * albMolL(4.3)), 6);
+  });
+
+  it('matches the ISSAM calculator arithmetic within 1% (T 446 ng/dL, SHBG 24.9, ALB 4.3 -> 56.59% of total)', () => {
+    const tNmol = convertUnit(446, 'T', 'ng/dL', 'nmol/L')!;
+    const pct = (biot.fn({ T: tNmol, SHBG: 24.9, ALB: 4.3 })! / tNmol) * 100;
+    expect(Math.abs(pct - 56.59) / 56.59).toBeLessThan(0.01);
+  });
+
+  it('takes albumin as 4.3 g/dL when no reading exists', () => {
+    expect(biot.fn({ T: 15, SHBG: 40 })).toBe(biot.fn({ T: 15, SHBG: 40, ALB: 4.3 }));
+    const draw = Object.fromEntries([r('14913-8', 15, 'nmol/L'), r('13967-5', 40, 'nmol/L')]);
+    expect(markersForIndex(biot, draw)['ALB']).toBeUndefined();
+    expect(computeIndex(biot, draw)).toBeCloseTo(6.41, 10);
+  });
+
+  it('converts albumin printed in g/L and testosterone printed in ng/dL', () => {
+    const draw = Object.fromEntries([
+      r('2986-8', convertUnit(15, 'T', 'nmol/L', 'ng/dL')!, 'ng/dL'),
+      r('13967-5', 40, 'nmol/L'),
+      r('1751-7', 43, 'г/л'),
+    ]);
+    const m = markersForIndex(biot, draw);
+    expect(m['ALB']).toBeCloseTo(4.3, 10);
+    expect(m['T']).toBeCloseTo(15, 10);
+    expect(biot.fn(m)!).toBeCloseTo(6.409456, 5);
+  });
+
+  it('declines an albumin it cannot place in g/dL and falls back to the default', () => {
+    const draw = Object.fromEntries([r('14913-8', 15, 'nmol/L'), r('13967-5', 40, 'nmol/L'), r('1751-7', 620, 'umol/L')]);
+    expect(markersForIndex(biot, draw)['ALB']).toBeUndefined();
+    expect(computeIndex(biot, draw)).toBeCloseTo(6.41, 10);
+  });
+
+  it('bands are Mayo\'s reference limits converted from ng/dL, per sex', () => {
+    const nmol = (ngdl: number) => convertUnit(ngdl, 'T', 'ng/dL', 'nmol/L')!;
+    const male = indexBands(biot, { sex: 'male' })!;
+    expect(male.hi).toBe(true);
+    expect(male.cut[0]).toBeCloseTo(nmol(83), 10);
+    expect(male.cut[1]).toBeCloseTo(nmol(40), 10);
+    expect(male.cut[0]).toBeCloseTo(2.8776, 4);
+    const female = indexBands(biot, { sex: 'female' })!;
+    expect(female.hi).toBeFalsy();
+    expect(female.cut[0]).toBeCloseTo(nmol(4), 10);
+    expect(female.cut[1]).toBeCloseTo(nmol(10), 10);
+  });
+
+  it('zones by sex, and carries no zone while sex is unset', () => {
+    expect(indexZone(biot, 3.0, { sex: 'male' })).toBe('ok');
+    expect(indexZone(biot, 2.0, { sex: 'male' })).toBe('warn');
+    expect(indexZone(biot, 1.0, { sex: 'male' })).toBe('bad');
+    expect(indexZone(biot, 0.1, { sex: 'female' })).toBe('ok'); // low for a man, normal for a woman
+    expect(indexZone(biot, 0.2, { sex: 'female' })).toBe('warn');
+    expect(indexZone(biot, 0.5, { sex: 'female' })).toBe('bad');
+    expect(indexBands(biot, {})).toBeNull();
+    expect(indexZone(biot, 3.0)).toBeNull();
+  });
+
+  it('returns null when SHBG or total T is missing', () => {
+    expect(biot.fn({ T: 15, ALB: 4.3 })).toBeNull();
+    expect(biot.fn({ SHBG: 40, ALB: 4.3 })).toBeNull();
+    expect(computeIndex(biot, Object.fromEntries([r('14913-8', 15, 'nmol/L'), r('1751-7', 4.3, 'g/dL')]))).toBeNull();
   });
 });
 
@@ -336,6 +446,15 @@ describe('zone (3-band coloring, ported from v2 flag tests)', () => {
     expect(zone(100, 100, 65, true)).toBe('ok'); // boundary: >= good
     expect(zone(80, 100, 65, true)).toBe('warn');
     expect(zone(50, 100, 65, true)).toBe('bad');
+  });
+
+  it('every index has a band to judge by: fixed cut-points or bands by sex', () => {
+    for (const def of INDEX_DEFS) expect(def.cut != null || def.bandsBySex != null, def.key).toBe(true);
+  });
+
+  it('an index without bands by sex ignores the profile', () => {
+    const tchdl = INDEX_DEFS.find((d) => d.key === 'tchdl')!;
+    for (const sex of [undefined, 'male', 'female'] as const) expect(indexZone(tchdl, 4, { sex })).toBe(zone(4, 3.5, 5));
   });
 });
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { fmtNum, isOutOfRange } from '../../utils/format';
-import { computeIndex, zone, type IndexDef } from '../../data/computedIndices';
+import { computeIndex, indexZone, type IndexDef } from '../../data/computedIndices';
+import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { testLoincs, type Observation } from './markers';
 import {
   ZONE_BG,
@@ -26,7 +27,7 @@ import {
 } from './scheduled';
 import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
 import type { Result } from '../../types';
-import { COLOR, FONT } from '../../styles/tokens';
+import { COLOR } from '../../styles/tokens';
 import { CARD_TABLE_TD, CARD_TABLE_TH, TABLE_CARD } from '../primitives/styles';
 import { Card } from '../primitives/Card';
 
@@ -269,33 +270,20 @@ function ObservationCells({
   );
 }
 
-const sectionDividerTd = {
-  textAlign: 'left',
-  padding: '14px 12px 4px',
-  fontSize: FONT.overline,
-  fontWeight: FONT.overlineWeight,
-  letterSpacing: FONT.overlineTracking,
-  textTransform: 'uppercase',
-  color: COLOR.textMuted,
-  borderBottom: `1px solid ${COLOR.borderSubtle}`,
-  whiteSpace: 'nowrap',
-} as const;
-
-const sectionDividerRestTd = { padding: 0, borderBottom: `1px solid ${COLOR.borderSubtle}` } as const;
-
 /**
- * Spans exactly the grid's real columns -- never the trailing auto column, which
- * no other row fills -- and keeps the Scheduled column's side rules unbroken.
+ * The header band repeated mid-table, so both section labels read alike. Spans
+ * exactly the grid's real columns -- never the trailing auto column, which no
+ * other row fills -- and keeps the Scheduled column's side rules unbroken.
  */
 function SectionDividerRow({ label, dateCount, scheduling }: Readonly<{ label: string; dateCount: number; scheduling: boolean }>) {
   return (
     <tr>
-      <th scope="rowgroup" style={sectionDividerTd}>{label}</th>
-      {dateCount > 0 && <td colSpan={dateCount} style={sectionDividerRestTd} />}
+      <th scope="rowgroup" style={th}>{label}</th>
+      {dateCount > 0 && <td colSpan={dateCount} style={th} />}
       {scheduling && (
         <>
-          <td style={gapCell} />
-          <td style={{ ...scheduledTd, ...sectionDividerRestTd, cursor: 'default' }} />
+          <td style={gapTh} />
+          <td style={scheduledTh} />
         </>
       )}
     </tr>
@@ -392,6 +380,7 @@ function IndexDefRow({
   scheduling?: IndexScheduling;
   usedBy?: Relation;
 }>) {
+  const profile = { sex: loadEnvelopeMeta().sex };
   return (
     <tr key={def.key} data-selected={selected || undefined} style={{ background: selected ? COLOR.accentSoft : undefined }}>
       <td
@@ -424,12 +413,16 @@ function IndexDefRow({
             </td>
           );
         }
-        const z = zone(value, def.cut[0], def.cut[1], def.hi);
+        const z = indexZone(def, value, profile);
         return (
           <td key={date} {...pressable(handleClick)} style={td}>
-            <StatusValue tone={z} bg={selected ? SELECTED_ZONE_BG[z] : ZONE_BG[z]}>
-              {fmtNum(value)}
-            </StatusValue>
+            {z ? (
+              <StatusValue tone={z} bg={selected ? SELECTED_ZONE_BG[z] : ZONE_BG[z]}>
+                {fmtNum(value)}
+              </StatusValue>
+            ) : (
+              fmtNum(value)
+            )}
           </td>
         );
       })}
@@ -506,32 +499,18 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
   const builtIndexRows = indices.map((test) => ({ test, ...buildRowCells(test, visibleDates, allResults, unitSystem) }));
 
   const hasScheduling = Boolean(scheduling || indexScheduling);
-  const visibleRowLoincs = [
-    ...rows.map(testLoincs),
-    ...indices.map(testLoincs),
-  ];
-  const visibleKeys = defs.map((def) => def.key);
-
-  const observationFlags = scheduling
-    ? visibleRowLoincs.map((loincs) => isRowScheduled(scheduling.scheduled, loincs))
-    : [];
-  const indexFlags = (indexScheduling && defs.length > 0)
-    ? visibleKeys.map((key) => isIndexScheduled(indexScheduling.scheduled, key))
-    : [];
-  const allFlags = [...observationFlags, ...indexFlags];
+  // Select-all answers for the observation section only; indices follow their inputs.
+  const observationLoincs = scheduling ? rows.map(testLoincs) : [];
+  const observationFlags = scheduling ? observationLoincs.map((loincs) => isRowScheduled(scheduling.scheduled, loincs)) : [];
 
   const schedule = hasScheduling && {
     label: tableLabel,
     month: (scheduling ?? indexScheduling)?.scheduled.month,
     onSetMonth: (scheduling ?? indexScheduling)?.onSetMonth ?? (() => {}),
-    state: selectionState(allFlags),
+    state: selectionState(observationFlags),
+    disabled: observationLoincs.length === 0,
     onToggleAll: (on: boolean) => {
-      if (scheduling && visibleRowLoincs.length > 0) {
-        scheduling.onToggleAll(visibleRowLoincs, on);
-      }
-      if (indexScheduling && visibleKeys.length > 0) {
-        indexScheduling.onToggleAll(visibleKeys, on);
-      }
+      if (scheduling && observationLoincs.length > 0) scheduling.onToggleAll(observationLoincs, on);
     },
   };
 

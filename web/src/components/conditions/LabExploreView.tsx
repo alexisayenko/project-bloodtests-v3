@@ -4,6 +4,7 @@ import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
 import { buildExploreModel, type Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
+import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 
 // lab-explore.ts (vendored from project-bloodtests-v2) exports the class but
 // doesn't register it itself -- guard against double-registration on hot
@@ -37,8 +38,9 @@ export function LabExploreView({
   resultsByDate?: Record<string, Record<string, Result>>;
 }>) {
   const ref = useRef<HTMLElement | null>(null);
+  const sex = loadEnvelopeMeta().sex;
   const model = useMemo(() => {
-    const built = buildExploreModel(conditions, allResults, unitSystem, currentPanel, resultsByDate);
+    const built = buildExploreModel(conditions, allResults, unitSystem, currentPanel, resultsByDate, { sex });
     // v3 DEVIATION from the v2 source: v2 mounted exactly one <lab-explore>
     // instance (the homepage's Explore section), so the component's default
     // localStorage keys ("exploreSel" etc.) were safe to share -- there was
@@ -62,7 +64,7 @@ export function LabExploreView({
         evPrefix: `exploreEv:${viewId}:`,
       },
     };
-  }, [conditions, allResults, unitSystem, currentPanel, resultsByDate]);
+  }, [conditions, allResults, unitSystem, currentPanel, resultsByDate, sex]);
 
   useEffect(() => {
     let cancelled = false;

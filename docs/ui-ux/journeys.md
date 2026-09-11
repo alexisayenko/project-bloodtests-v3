@@ -29,8 +29,8 @@ Entry point → panel detail, with a historical values table.
   tab), opened from a card's header or, outside Compact view, its "View
   panel →" link
 - **Branches:** on the grid, the status filter toggles (In range,
-  Borderline, Out of range, Not tested, each with its count, plus "All"
-  and "Abnormal only") hide the chips of any status switched off, and a
+  Borderline, Out of range, Not tested, each with its count) hide the
+  chips of any status switched off, and a
   card's count becomes "N of M markers"; the filters are not
   remembered. "Compact view" switches the chips to short names and drops
   the section labels and "View panel →" link to fit more cards, and is
@@ -47,7 +47,8 @@ Entry point → panel detail, with a historical values table.
   scheduling an index also schedules its inputs, and an index reads
   scheduled once all its inputs are. Its header picks the month the
   schedule is for (a label on the one set, not a filter over it) and
-  selects or clears every row the table is showing at once
+  selects or clears every observation row the table is showing at once,
+  the indices then following their inputs
 - **Branches:** "Trends" tab is a placeholder for now
   ([task-0014](../tasks/task-0014.md))
 - **Branches:** "What's in range" tab shows a normalized-overlay chart

@@ -381,7 +381,7 @@ describe('refBandFor', () => {
     expect(tchdl.cut).toEqual([3.5, 5]); // good=3.5, warn=5
     expect(tchdl.hi).toBeFalsy();
 
-    const { refMin, refMax } = refBandFor(tchdl);
+    const { refMin, refMax } = refBandFor(tchdl)!;
     expect(refMin).toBe(0);
     expect(refMax).toBe(3.5);
 
@@ -395,7 +395,7 @@ describe('refBandFor', () => {
     expect(tlh.cut).toEqual([100, 50]); // good=100, warn=50
     expect(tlh.hi).toBe(true);
 
-    const { refMin, refMax } = refBandFor(tlh);
+    const { refMin, refMax } = refBandFor(tlh)!;
     expect(refMin).toBe(50);
     expect(refMax).toBe(100);
 
@@ -404,6 +404,27 @@ describe('refBandFor', () => {
     expect(pct(100)).toBe(100); // AT the ok threshold itself: at 100%, not still climbing toward it
     expect(pct(60)).toBeLessThan(100); // a low T/LH reads within-band-but-low, not off-scale
     expect(pct(60)).toBeGreaterThan(0);
+  });
+
+  it('a sex-dependent index (biot) has no band until sex is set, then that sex\'s', () => {
+    const biot = INDEX_DEFS.find((d) => d.key === 'biot')!;
+    expect(refBandFor(biot)).toBeNull();
+    const male = refBandFor(biot, { sex: 'male' })!;
+    expect(male.refMin).toBeCloseTo(1.3868, 4); // 40 ng/dL
+    expect(male.refMax).toBeCloseTo(2.8776, 4); // 83 ng/dL
+    expect(refBandFor(biot, { sex: 'female' })).toEqual({ refMin: 0, refMax: expect.closeTo(0.13868, 5) }); // 4.0 ng/dL
+  });
+
+  it('names a computed biot series "sex not set" instead of plotting it against a band', () => {
+    const resultsByDate: Record<string, Record<string, Result>> = {
+      '2024-01-01': { '14913-8': result(15, { unit: 'nmol/L' }), '13967-5': result(40, { unit: 'nmol/L' }) },
+    };
+    const key = `${INDEX_MARKER_KEY_PREFIX}biot`;
+    const unset = buildExploreModel([], [], 'si', 'Hypogonadism', resultsByDate);
+    expect(unset.markers[key]).toBeUndefined();
+    expect(unset.notTaken).toContainEqual({ key, label: 'Bio-T', panel: 'Hypogonadism', reason: 'sex not set' });
+    const male = buildExploreModel([], [], 'si', 'Hypogonadism', resultsByDate, { sex: 'male' });
+    expect(male.markers[key]?.data).toEqual([['2024-01-01', expect.closeTo(6.41, 2)]]);
   });
 });
 

@@ -22,16 +22,35 @@ const KA_ALBUMIN = 3.6e4; // L/mol, testosterone-albumin association constant
 const KS_SHBG = 1e9; // L/mol, testosterone-SHBG association constant
 const DEFAULT_ALBUMIN_GDL = 4.3;
 
-function calculatedFreeTestosterone(totalT_ngdl: number, shbg_nmoll: number, albumin_gdl?: number): number {
-  const T = totalT_ngdl * T_NGDL_TO_NMOLL * 1e-9; // ng/dL -> nmol/L -> mol/L
-  const S = shbg_nmoll * 1e-9; // nmol/L -> mol/L
-  const A = ((albumin_gdl ?? DEFAULT_ALBUMIN_GDL) * 10) / ALBUMIN_MW; // g/dL -> g/L -> mol/L
+const albuminMolL = (albumin_gdl?: number) => ((albumin_gdl ?? DEFAULT_ALBUMIN_GDL) * 10) / ALBUMIN_MW; // g/dL -> g/L -> mol/L
+
+/** Vermeulen's quadratic: free T in mol/L from total T, SHBG and albumin, all in mol/L. */
+function vermeulenFreeT(T: number, S: number, A: number): number {
   const N = KA_ALBUMIN * A + 1;
   const a = N * KS_SHBG;
   const b = N + KS_SHBG * (S - T);
   const c = -T;
-  const FT = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a); // mol/L
+  return (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+}
+
+function calculatedFreeTestosterone(totalT_ngdl: number, shbg_nmoll: number, albumin_gdl?: number): number {
+  const T = totalT_ngdl * T_NGDL_TO_NMOLL * 1e-9; // ng/dL -> nmol/L -> mol/L
+  const FT = vermeulenFreeT(T, shbg_nmoll * 1e-9, albuminMolL(albumin_gdl));
   return (FT / 1e-9 / T_NGDL_TO_NMOLL) * 10; // mol/L -> nmol/L -> ng/dL -> pg/mL
+}
+
+// Mayo Clinic Laboratories' bioavailable testosterone reference limits (test
+// TTBS), ng/dL: the men's lower limits for ages 20-29 and 60-69, the women's
+// (20-50, non-oophorectomized) upper limits on and off oral estrogen.
+const BIOT_NGDL = { male20s: 83, male60s: 40, femaleOralEstrogen: 4, female: 10 } as const;
+const biotNmol = (ngdl: number) => ngdl * T_NGDL_TO_NMOLL;
+const biotShown = (ngdl: number) => Number(biotNmol(ngdl).toPrecision(3));
+
+/** Free plus albumin-bound testosterone, nmol/L: free T × (1 + Ka·albumin). */
+function bioavailableTestosterone(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl?: number): number {
+  const A = albuminMolL(albumin_gdl);
+  const FT = vermeulenFreeT(totalT_nmoll * 1e-9, shbg_nmoll * 1e-9, A);
+  return (FT * (1 + KA_ALBUMIN * A)) / 1e-9;
 }
 
 export const INDEX_DEFS: IndexDef[] = [
@@ -226,8 +245,8 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'cft', friendlyName: 'Free testosterone (calculated)', shortName: 'cFT', panels: ['Hypogonadism'],
     formula: 'free T = (−b + √(b²−4ac)) / 2a\na = N·Ks\nb = N + Ks(SHBG−T)\nc = −T\nN = 1 + Ka·albumin\n(Vermeulen equation, all in mol/L)',
-    cut: [100, 65], unit: 'pg/mL', hi: true, inputKeys: ['T', 'SHBG'],
-    inputUnits: { T: 'ng/dL', SHBG: 'nmol/L' }, level: 'consensus', loinc: '103227-5',
+    cut: [100, 65], unit: 'pg/mL', hi: true, inputKeys: ['T', 'SHBG'], optionalInputKeys: ['ALB'],
+    inputUnits: { T: 'ng/dL', SHBG: 'nmol/L', ALB: 'g/dL' }, level: 'consensus', loinc: '103227-5',
     meaning: 'Bioavailable testosterone estimated from total T, SHBG and albumin (Vermeulen equation), in pg/mL. Assay-independent — compare it with the measured Free Testosterone row, whose direct immunoassay is unreliable and uses incompatible reference ranges across labs. Higher is better; guide: >100 good · 65–100 low-normal · <65 low (~6.5 ng/dL floor). Albumin defaults to 4.3 g/dL when not measured. The equation solves the binding equilibrium of testosterone to SHBG (high affinity, Ks≈1×10⁹ L/mol) and albumin (low affinity, Ka≈3.6×10⁴ L/mol) as a quadratic: free T = [−b+√(b²−4ac)]/2a, with a=N·Ks, b=N+Ks(SHBG−T), c=−T and N=1+Ka·albumin (all in mol/L).',
     consensus: 'Calculated free T (Vermeulen) is the method recommended by the Endocrine Society when free T is needed; direct analog free-T immunoassays are discouraged — they systematically under-read and are lab-specific (which is why the measured row can differ several-fold and only agrees on some assays). Sanity check: free T should be ~2% of total. A measured 23.6 pg/mL against a total T of 888 ng/dL is 0.27% — physiologically impossible; the calculated ~2.4% is the right order. So when the two rows disagree, trust the calculated one.',
     evidenceLevel: 'guideline',
@@ -236,6 +255,28 @@ export const INDEX_DEFS: IndexDef[] = [
       { organization: "Endocrine Society (Bhasin S et al.)", document: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline, JCEM", year: 2018, url: "https://pubmed.ncbi.nlm.nih.gov/29562364/", doi: "10.1210/jc.2018-00229", quote: "When free testosterone is needed, measurement by equilibrium dialysis or estimation by accurate calculation is recommended; direct analog free-T immunoassays are not recommended." },
     ],
     fn: (m) => (m['T'] != null && m['SHBG'] != null ? calculatedFreeTestosterone(m['T']!, m['SHBG']!, m['ALB']) : null),
+  },
+  {
+    key: 'biot', friendlyName: 'Bioavailable testosterone', shortName: 'Bio-T', panels: ['Hypogonadism'],
+    formula: 'bio-T = free T × (1 + Ka·albumin)\nfree T = Vermeulen quadratic (as cFT)\nKa = 3.6×10⁴ L/mol, Ks = 1.0×10⁹ L/mol\n(all in mol/L, result in nmol/L)',
+    unit: 'nmol/L', inputKeys: ['T', 'SHBG'], optionalInputKeys: ['ALB'],
+    bandsBySex: {
+      male: { cut: [biotNmol(BIOT_NGDL.male20s), biotNmol(BIOT_NGDL.male60s)], hi: true },
+      female: { cut: [biotNmol(BIOT_NGDL.femaleOralEstrogen), biotNmol(BIOT_NGDL.female)] },
+    },
+    inputUnits: { T: 'nmol/L', SHBG: 'nmol/L', ALB: 'g/dL' }, level: 'consensus',
+    meaning: 'Testosterone that is not locked up by SHBG: the free fraction plus the fraction weakly bound to albumin, which lets go easily enough to reach tissues. Computed from total T, SHBG and albumin with the same Vermeulen equation as cFT — free T first, then free T × (1 + Ka·albumin), Ka = 3.6×10⁴ L/mol — in nmol/L. If no albumin reading from the same draw can be placed in g/dL (g/L is converted), albumin is taken as 4.3 g/dL (43 g/L), the value the ISSAM calculator pre-fills; the result is then an estimate for a normal albumin and is unreliable when albumin is far from it. Albumin is turned into mol/L with the calculator\'s 69,000 g/mol convention. ' +
+      `Its bands depend on sex, so the value carries no status until Sex is set in Database details. Men: >${biotShown(BIOT_NGDL.male20s)} within range at every age · ${biotShown(BIOT_NGDL.male60s)}–${biotShown(BIOT_NGDL.male20s)} borderline · <${biotShown(BIOT_NGDL.male60s)} low. Women: <${biotShown(BIOT_NGDL.femaleOralEstrogen)} within range · ${biotShown(BIOT_NGDL.femaleOralEstrogen)}–${biotShown(BIOT_NGDL.female)} borderline · >${biotShown(BIOT_NGDL.female)} high. ` +
+      `Both come from Mayo Clinic Laboratories' reference intervals, converted from ng/dL with testosterone's molar mass. Mayo gives men a lower limit per decade from 20 to 69, falling from ${BIOT_NGDL.male20s} ng/dL in the twenties to ${BIOT_NGDL.male60s} ng/dL in the sixties; this app uses no age, so the men's borderline band is exactly the span that is low for a younger man and normal for an older one. Women's intervals (ages 20–50, ovaries intact) end at ${BIOT_NGDL.femaleOralEstrogen} ng/dL on oral estrogen and ${BIOT_NGDL.female} ng/dL off it; the app does not know which applies, so the women's borderline band is the span that is normal only off oral estrogen. Not flagged: men's upper and women's lower limits, and nothing marks the ages Mayo leaves unestablished (men under 20 or 70 and over, women under 20 or over 50), where the bands are extrapolated.`,
+    consensus: 'Calculated, not measured: the defining paper validated it against the ammonium-sulfate precipitation method for non-SHBG-bound T and found the two almost identical, and labs report it by exactly this calculation. Like cFT it is unreliable when steroids crowd SHBG\'s binding sites (pregnancy, high DHT on treatment) and with greatly abnormal albumin. It carries the same information as cFT scaled by the albumin term, so the two move together; no guideline prefers bioavailable over free T. Nor does any set a cut-off for it: the Endocrine Society\'s hypogonadism guideline notes that no study relates bioavailable T to the manifestations of deficiency, and the EAU guideline sets its diagnostic threshold on total T. The bands are therefore a major reference laboratory\'s reference intervals, not diagnostic thresholds — and Mayo measures its figure (differential precipitation, then LC-MS/MS) rather than calculating it, which the defining paper found almost identical to this calculation.',
+    evidenceLevel: 'consensus',
+    references: [
+      { organization: "Journal of Clinical Endocrinology & Metabolism (Vermeulen A, Verdonck L, Kaufman JM)", document: "A critical evaluation of simple methods for the estimation of free testosterone in serum", year: 1999, url: "https://pubmed.ncbi.nlm.nih.gov/10523012/", doi: "10.1210/jcem.84.10.6079", retrieved: '2026-09-11', quote: "nonspecifically bound T, calculated from FT, … almost identical to … non-SHBG-T obtained by ammonium sulfate precipitation" },
+      { organization: "ISSAM (Hormonology department, University Hospital of Ghent)", document: "Free & Bioavailable Testosterone calculator", url: "https://www.issam.ch/freetesto.htm", doi: null, retrieved: '2026-09-11', quote: "bioavailable testosterone includes free plus weakly bound to albumin." },
+      { organization: "Mayo Clinic Laboratories", document: "Test catalog, TTBS: Testosterone, Total and Bioavailable, Serum — Reference Values", url: "https://www.mayocliniclabs.com/test-catalog/overview/80065", doi: null, retrieved: '2026-09-11', quote: "TESTOSTERONE, BIOAVAILABLE: Males < or =19 years: Not established 20-29 years: 83-257 ng/dL 30-39 years: 72-235 ng/dL 40-49 years: 61-213 ng/dL 50-59 years: 50-190 ng/dL 60-69 years: 40-168 ng/dL > or =70 years: Not established Females (non-oophorectomized) < or =19 years: not established 20-50 years (on oral estrogen): 0.80-4.0 ng/dL 20-50 years (not on oral estrogen): 0.80-10 ng/dL >50 years: Not established" },
+      { organization: "Endocrine Society (Bhasin S et al.)", document: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline, JCEM", year: 2018, url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", doi: "10.1210/jc.2018-00229", retrieved: '2026-09-11', quote: "there are no detailed studies (similar to those described previously that relate FT concentrations to manifestations of T deficiency) that use bioavailable T concentrations" },
+    ],
+    fn: (m) => (has(m, 'T', 'SHBG') ? bioavailableTestosterone(m['T']!, m['SHBG']!, m['ALB']) : null),
   },
   {
     key: 'fai', friendlyName: 'Free androgen index', shortName: 'FAI', panels: ['Hypogonadism'],

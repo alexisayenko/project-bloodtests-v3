@@ -174,7 +174,7 @@ folds a printed spelling to Latin before matching, so `ммоль/л` converts l
 `mmol/L` (it used to match no rule, leaving the printed number under a
 converted label). Monitoring Panels grid cards (under a toolbar of status
 filter toggles — `StatusFilterBar.tsx`: a `StatusToggle` per status with the
-count of chips in it, plus "All" and "Abnormal only" presets, `useState` in the
+count of chips in it, `useState` in the
 view and never stored, logic in `statusFilter.ts` — a "Compact view" switch and
 a search box matching
 panel names and, through `observationMatchesQuery` / `indexMatchesQuery`, their
@@ -267,8 +267,9 @@ toggling an observation re-derives every index (scheduled iff all its
 inputs are) — the same cascade in both views. The column header is controls
 only, named through `aria-label`: a
 small month select (`.mc-field-sm`; this month and the next 23, plus a stored month that has since
-fallen outside that window) beside a select-all box over the observation and
-index rows alike, tri-state through native `indeterminate` (`ScheduleHeader.tsx`). The
+fallen outside that window) beside a select-all box over the observation rows
+only — index rows follow their inputs — tri-state through native `indeterminate`
+and disabled when no observation row is shown (`ScheduleHeader.tsx`). The
 month is an ISO `YYYY-MM` label *for* the one global schedule, not a partition
 of it — switching months leaves every checked row checked — and select-all
 scopes to the rows the table is actually rendering, so All Observations' panel

@@ -223,7 +223,7 @@ band), `FIELD_INPUT` (an inline text or select field), `OVERLINE`,
   hiding it.
 - **Monitoring Panels toolbar:** status filter toggles (one
   `StatusToggle` per status, all on by default, with its chip count)
-  and the "All" / "Abnormal only" presets on the left; the "Compact
+  on the left; the "Compact
   view" switch and the search box on the right. A status switched off
   hides its chips in every card and the card count reads "N of M
   markers"; a card left empty stays, saying "No markers match". The
@@ -238,7 +238,7 @@ band), `FIELD_INPUT` (an inline text or select field), `OVERLINE`,
   place is the same row. Its header is a control, not a label: a small
   month select beside a tri-state select-all box, both named through
   `aria-label` rather than a visible word. The month names what the schedule is *for* and never
-  filters it; select-all covers only the rows currently on screen, so a
+  filters it; select-all covers only the observation rows currently on screen, so a
   filtered table never schedules something the reader cannot see.
 - **Unit labels:** the unit sits once in the row's name column when
   every reading in the row is on one scale. Two spellings of the same

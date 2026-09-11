@@ -45,6 +45,14 @@ describe('greenRangeOf', () => {
     const cft = INDEX_DEFS.find((d) => d.key === 'cft')!;
     expect(greenRangeOf(cft)).toBe('> 100 pg/mL');
   });
+
+  it('a sex-dependent index names both bands without a profile, and only the subject\'s with one', () => {
+    const biot = INDEX_DEFS.find((d) => d.key === 'biot')!;
+    expect(greenRangeOf(biot)).toBe('men > 2.88 nmol/L · women < 0.139 nmol/L');
+    expect(greenRangeOf(biot, { sex: 'male' })).toBe('> 2.88 nmol/L');
+    expect(greenRangeOf(biot, { sex: 'female' })).toBe('< 0.139 nmol/L');
+    expect(greenRangeOf(biot, {})).toBe('depends on sex, not set');
+  });
 });
 
 describe('cellBg', () => {

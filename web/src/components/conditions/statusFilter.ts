@@ -4,7 +4,6 @@ import type { StatusTone } from '../primitives/tones';
 export const FILTER_TONES: readonly StatusTone[] = ['ok', 'warn', 'bad', 'none'];
 
 export const ALL_TONES: ReadonlySet<StatusTone> = new Set(FILTER_TONES);
-export const ABNORMAL_TONES: ReadonlySet<StatusTone> = new Set<StatusTone>(['warn', 'bad']);
 
 export type ToneCounts = Record<StatusTone, number>;
 
@@ -22,10 +21,6 @@ export function toggleTone(active: ReadonlySet<StatusTone>, tone: StatusTone): S
   if (next.has(tone)) next.delete(tone);
   else next.add(tone);
   return next;
-}
-
-export function sameTones(a: ReadonlySet<StatusTone>, b: ReadonlySet<StatusTone>): boolean {
-  return a.size === b.size && [...a].every((tone) => b.has(tone));
 }
 
 /** True when at least one status is switched off, so some chip may be hidden. */

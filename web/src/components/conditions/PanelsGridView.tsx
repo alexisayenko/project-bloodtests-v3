@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BarChart2, Calculator, Link2, Search } from 'lucide-react';
-import { computeIndex, zone, type IndexDef, type Zone } from '../../data/computedIndices';
+import { computeIndex, indexZone, type IndexDef, type SubjectProfile } from '../../data/computedIndices';
+import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
 import { INDEX_LOINCS, testLoincs, observationMatchesQuery, indexMatchesQuery, type Observation } from './markers';
@@ -27,13 +28,21 @@ const SECTION_LABEL = { fontSize: 13, fontWeight: 600, color: COLOR.text, lineHe
 const CHIP_ROW = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 10 } as const;
 const CHIP_ROW_COMPACT = { ...CHIP_ROW, gap: 6, marginTop: 0 } as const;
 
-/** Newest-first scan for the first draw with a computable value. */
-function latestZone(def: IndexDef, datesDesc: string[], resultsByDate: Record<string, Record<string, Result>>): Zone | null {
+/**
+ * Newest-first scan for the first draw with a computable value. A value with no
+ * band for this subject stays neutral: borderline would still read as a concern.
+ */
+function latestTone(
+  def: IndexDef,
+  datesDesc: string[],
+  resultsByDate: Record<string, Record<string, Result>>,
+  profile: SubjectProfile,
+): StatusTone {
   for (const date of datesDesc) {
     const value = computeIndex(def, resultsByDate[date]!);
-    if (value != null) return zone(value, def.cut[0], def.cut[1], def.hi);
+    if (value != null) return indexZone(def, value, profile) ?? 'none';
   }
-  return null;
+  return 'none';
 }
 
 export function PanelsGridView({
@@ -56,6 +65,7 @@ export function PanelsGridView({
   onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
 }>) {
   const [search, setSearch] = useState('');
+  const sex = loadEnvelopeMeta().sex;
   const datesDesc = useMemo(() => Object.keys(resultsByDate).sort((a, b) => b.localeCompare(a)), [resultsByDate]);
 
   const filtered = useMemo(() => {
@@ -77,10 +87,10 @@ export function PanelsGridView({
           .filter((t) => !INDEX_LOINCS.has(t.loinc))
           .map((test): Toned<Observation> => ({ item: test, tone: STATUS_TONE[getStatus(latestByLoinc, testLoincs(test))] })),
         indices: INDEX_DEFS.filter((d) => d.panels.includes(condition.name)).map(
-          (def): Toned<IndexDef> => ({ item: def, tone: latestZone(def, datesDesc, resultsByDate) ?? 'none' }),
+          (def): Toned<IndexDef> => ({ item: def, tone: latestTone(def, datesDesc, resultsByDate, { sex }) }),
         ),
       })),
-    [filtered, latestByLoinc, datesDesc, resultsByDate],
+    [filtered, latestByLoinc, datesDesc, resultsByDate, sex],
   );
 
   const [activeTones, setActiveTones] = useState<ReadonlySet<StatusTone>>(ALL_TONES);

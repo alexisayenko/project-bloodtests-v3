@@ -12,15 +12,18 @@ export type ScheduleHeaderProps = {
   month: string | undefined;
   onSetMonth: (month: string | undefined) => void;
   state: SelectionState;
+  /** Set when the table shows no observation rows, leaving select-all nothing to act on. */
+  disabled?: boolean;
   onToggleAll: (on: boolean) => void;
 };
 
 /**
  * The Scheduled column's header: the schedule's target month plus a tri-state
- * select-all over the rows the table is currently showing. The select and the
- * box carry no visible text, so they name themselves through aria-label.
+ * select-all over the observation rows the table is currently showing -- index
+ * rows are left to follow their inputs. The select and the box carry no visible
+ * text, so they name themselves through aria-label.
  */
-export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll }: Readonly<ScheduleHeaderProps>) {
+export function ScheduleHeader({ label, month, onSetMonth, state, disabled, onToggleAll }: Readonly<ScheduleHeaderProps>) {
   const box = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (box.current) box.current.indeterminate = state === 'some';
@@ -45,9 +48,10 @@ export function ScheduleHeader({ label, month, onSetMonth, state, onToggleAll }:
         ref={box}
         type="checkbox"
         checked={state === 'all'}
+        disabled={disabled}
         onChange={(e) => onToggleAll(e.currentTarget.checked)}
-        aria-label={`Schedule every row shown in ${label}`}
-        style={{ width: 15, height: 15, margin: 0, accentColor: COLOR.primary, cursor: 'pointer' }}
+        aria-label={`Schedule every observation shown in ${label}`}
+        style={{ width: 15, height: 15, margin: 0, accentColor: COLOR.primary, cursor: disabled ? 'not-allowed' : 'pointer' }}
       />
     </div>
   );

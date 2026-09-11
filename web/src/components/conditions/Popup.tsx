@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { fmtNum, formatResultReference, isOutOfRange } from '../../utils/format';
-import { computeIndex, zone, type IndexDef } from '../../data/computedIndices';
+import { computeIndex, indexZone, type IndexDef, type SubjectProfile } from '../../data/computedIndices';
+import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import type { Result } from '../../types';
 import { isEchoRedundant, testLoincs, type Observation } from './markers';
 import { ZONE_BG, formatMonthYear, greenRangeOf, pressable, cellBg } from './ui';
@@ -91,7 +92,8 @@ function IndexResultPopupBody({
   value,
   resultsByDate,
 }: Readonly<{ def: IndexDef; date: string; value: number; resultsByDate: Record<string, Record<string, Result>> }>) {
-  const z = zone(value, def.cut[0], def.cut[1], def.hi);
+  const profile: SubjectProfile = { sex: loadEnvelopeMeta().sex };
+  const z = indexZone(def, value, profile);
   // Same date as the calculated value -- more precise than IndexPopupBody's
   // "latest lab-reported" fallback, since here we already know which draw.
   const reported = def.loinc ? resultsByDate[date]?.[def.loinc] : undefined;
@@ -104,9 +106,9 @@ function IndexResultPopupBody({
       <div style={{ fontSize: 13, color: COLOR.textSecondary }}>
         {formatMonthYear(date)} · Calculated
       </div>
-      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: ZONE_BG[z], fontSize: 13, color: COLOR.textSecondary }}>
+      <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: z ? ZONE_BG[z] : COLOR.surfaceMuted, fontSize: 13, color: COLOR.textSecondary }}>
         {fmtNum(value)} {def.unit ?? ''}
-        <span style={{ color: COLOR.textMuted }}> (Ref: {greenRangeOf(def)})</span>
+        <span style={{ color: COLOR.textMuted }}> (Ref: {greenRangeOf(def, profile)})</span>
       </div>
       {reported && (
         <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8 }}>
@@ -141,6 +143,8 @@ function IndexPopupBody({
     }
   }
   const reported = def.loinc ? latestByLoinc[def.loinc] : undefined;
+  const profile: SubjectProfile = { sex: loadEnvelopeMeta().sex };
+  const latestZone = latest && indexZone(def, latest.value, profile);
   return (
     <>
       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
@@ -157,11 +161,11 @@ function IndexPopupBody({
                 marginTop: 4,
                 padding: '4px 8px',
                 borderRadius: 6,
-                background: ZONE_BG[zone(latest.value, def.cut[0], def.cut[1], def.hi)],
+                background: latestZone ? ZONE_BG[latestZone] : COLOR.surfaceMuted,
               }}
             >
               {fmtNum(latest.value)} {def.unit ?? ''}
-              <span style={{ color: COLOR.textMuted }}> (Ref: {greenRangeOf(def)})</span>
+              <span style={{ color: COLOR.textMuted }}> (Ref: {greenRangeOf(def, profile)})</span>
             </div>
           </>
         ) : (

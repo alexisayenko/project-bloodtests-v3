@@ -10,7 +10,6 @@ import {
   monthChoices,
   saveScheduled,
   selectionState,
-  setIndicesScheduled,
   setRowsScheduled,
   setScheduleMonth,
   toggleIndex,
@@ -172,8 +171,7 @@ describe('the target month', () => {
     expect(toggleRow(base, ['2093-3']).month).toBe('2027-03');
     expect(toggleIndex(base, 'ka').month).toBe('2027-03');
     expect(setRowsScheduled(base, [['2093-3']], true).month).toBe('2027-03');
-    expect(setIndicesScheduled(base, ['ka'], true).month).toBe('2027-03');
-    expect(setIndicesScheduled(toggleIndex(base, 'ka'), ['ka'], false).month).toBe('2027-03');
+    expect(setRowsScheduled(toggleRow(base, ['2093-3']), [['2093-3']], false).month).toBe('2027-03');
   });
 
   it('offers the coming months plus a stored one that has since fallen behind', () => {
@@ -225,12 +223,11 @@ describe('the chosen laboratory', () => {
     expect(toggleRow(base, ['2093-3']).lab).toBe('esculab');
     expect(toggleIndex(base, 'ka').lab).toBe('esculab');
     expect(setRowsScheduled(base, [['2093-3']], true).lab).toBe('esculab');
-    expect(setIndicesScheduled(base, ['ka'], true).lab).toBe('esculab');
     expect(setScheduleMonth(base, '2027-03').lab).toBe('esculab');
   });
 });
 
-describe('select-all over the rows on screen', () => {
+describe('select-all over the observation rows on screen', () => {
   it('schedules and unschedules exactly the rows it is given', () => {
     const visible = [['2093-3'], ['2085-9']];
     const on = setRowsScheduled(toggleRow(EMPTY_SCHEDULED, ['2571-8']), visible, true);
@@ -252,18 +249,11 @@ describe('select-all over the rows on screen', () => {
     expect(isRowScheduled(setRowsScheduled(EMPTY_SCHEDULED, [[alt!]], true), [primary!])).toBe(true);
   });
 
-  it('cascades over indices exactly as toggleIndex does', () => {
-    const on = setIndicesScheduled(EMPTY_SCHEDULED, ['ka', 'tchdl'], true);
-    expect(on.indices).toEqual(['ka', 'tchdl']);
-    for (const loinc of indexInputLoincs('ka')) expect(isRowScheduled(on, [loinc])).toBe(true);
-    const off = setIndicesScheduled(on, ['ka', 'tchdl'], false);
-    expect(off.indices).toEqual([]);
-    expect(off.loincs).toEqual(on.loincs);
-  });
-
-  it('does not duplicate an index already scheduled', () => {
-    const twice = setIndicesScheduled(toggleIndex(EMPTY_SCHEDULED, 'ka'), ['ka'], true);
-    expect(twice.indices).toEqual(['ka']);
+  it('schedules no index whose inputs it did not all cover', () => {
+    const [first] = indexInputLoincs('ka');
+    const on = setRowsScheduled(EMPTY_SCHEDULED, [[first!]], true);
+    expect(isRowScheduled(on, [first!])).toBe(true);
+    expect(on.indices).toEqual([]);
   });
 });
 

@@ -1,5 +1,5 @@
 import { fmtNum } from '../../utils/format';
-import { SI_US_UNIT, convertUnit, type IndexDef } from '../../data/computedIndices';
+import { SI_US_UNIT, convertUnit, indexBands, type IndexBands, type IndexDef, type SubjectProfile } from '../../data/computedIndices';
 import { DEFAULT_UNITS } from '../../data/analyteCatalog';
 import { toLatinUnit, sameUnitScale } from '../../data/unitNormalization';
 import { UNKNOWN_LAB } from '../../data/parseUpload';
@@ -59,10 +59,18 @@ export function formatFullDate(dateStr: string): string {
 
 // The optimal (green-zone) range implied by an index's cut-points, formatted
 // like a lab reference range -- same orientation `zone()` uses to color a cell.
-export function greenRangeOf(def: IndexDef): string {
-  const cmp = def.hi ? '>' : '<';
+// Without a profile it describes every band an index has, sex-dependent ones
+// labeled, as a profile-independent page (the Reference Book) needs.
+export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
   const unit = def.unit ? ` ${def.unit}` : '';
-  return `${cmp} ${fmtNum(def.cut[0])}${unit}`;
+  const format = (b: IndexBands) => `${b.hi ? '>' : '<'} ${fmtNum(b.cut[0])}${unit}`;
+  if (profile === undefined && def.bandsBySex) {
+    const { male, female } = def.bandsBySex;
+    return [male && `men ${format(male)}`, female && `women ${format(female)}`].filter(Boolean).join(' · ');
+  }
+  const bands = indexBands(def, profile);
+  if (bands) return format(bands);
+  return def.bandsBySex && !profile?.sex ? 'depends on sex, not set' : 'none';
 }
 
 // The table controls (unit system, samplings shown) are one shared setting

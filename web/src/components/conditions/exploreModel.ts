@@ -1,5 +1,5 @@
 import type { ExploreMarker, ExploreNotTaken, LabExploreModel } from '../../vendor/lab-explore/explore-types';
-import { computeIndex, convertUnit, type IndexDef, type IndexReference } from '../../data/computedIndices';
+import { computeIndex, convertUnit, indexBands, type IndexDef, type IndexReference, type SubjectProfile } from '../../data/computedIndices';
 import { convertValue, toLatinUnit, toUcum } from '../../data/unitNormalization';
 import { displayedResult } from './ui';
 import { INDEX_DEFS } from '../../data/indexDefs';
@@ -41,9 +41,11 @@ export const INDEX_MARKER_KEY_PREFIX = 'idx:';
  *    fine: that direction is this index doing even better, not a second
  *    kind of out-of-range to guard against.
  */
-export function refBandFor(def: IndexDef): { refMin: number; refMax: number } {
-  const [good, warn] = def.cut;
-  return def.hi ? { refMin: warn, refMax: good } : { refMin: 0, refMax: good };
+export function refBandFor(def: IndexDef, profile: SubjectProfile = {}): { refMin: number; refMax: number } | null {
+  const bands = indexBands(def, profile);
+  if (!bands) return null;
+  const [good, warn] = bands.cut;
+  return bands.hi ? { refMin: warn, refMax: good } : { refMin: 0, refMax: good };
 }
 
 /**
@@ -321,7 +323,8 @@ function omittedReason(omitted: string[]): string {
  */
 function buildIndexMarkers(
   resultsByDate: Record<string, Record<string, Result>>,
-  currentPanel: string | undefined
+  currentPanel: string | undefined,
+  profile: SubjectProfile
 ): { markers: Record<string, ExploreMarker>; notTaken: ExploreNotTaken[] } {
   const dates = Object.keys(resultsByDate).sort((a, b) => a.localeCompare(b));
   const defs = currentPanel ? INDEX_DEFS.filter((d) => d.panels.includes(currentPanel)) : INDEX_DEFS;
@@ -344,10 +347,17 @@ function buildIndexMarkers(
       notTaken.push({ key, label: def.shortName, panel });
       continue;
     }
+    const band = refBandFor(def, profile);
+    if (!band) {
+      // Computed, but with no band for this subject (a sex-dependent index
+      // with sex unset) there is no range to take a percentage of.
+      notTaken.push({ key, label: def.shortName, panel, reason: profile.sex ? 'no range' : 'sex not set' });
+      continue;
+    }
     markers[key] = {
       label: def.shortName,
       unit: def.unit,
-      ...refBandFor(def),
+      ...band,
       panel,
       data,
       warn: false,
@@ -375,7 +385,8 @@ export function buildExploreModel(
   allResults: ResultEntry[],
   unitSystem: 'si' | 'us',
   currentPanel?: string,
-  resultsByDate?: Record<string, Record<string, Result>>
+  resultsByDate?: Record<string, Record<string, Result>>,
+  profile: SubjectProfile = {}
 ): LabExploreModel {
   const seen = collectSeenTests(conditions);
   const markers: Record<string, ExploreMarker> = {};
@@ -433,7 +444,7 @@ export function buildExploreModel(
   }
 
   if (resultsByDate) {
-    const indexMarkers = buildIndexMarkers(resultsByDate, currentPanel);
+    const indexMarkers = buildIndexMarkers(resultsByDate, currentPanel, profile);
     Object.assign(markers, indexMarkers.markers);
     notTaken.push(...indexMarkers.notTaken);
   }

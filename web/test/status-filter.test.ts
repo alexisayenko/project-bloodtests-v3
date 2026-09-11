@@ -1,13 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
-  ABNORMAL_TONES,
-  ALL_TONES,
   FILTER_TONES,
   countTones,
   filterByTone,
   isToneFilterActive,
   markerCountLabel,
-  sameTones,
   toggleTone,
   type Toned,
 } from '../src/components/conditions/statusFilter';
@@ -44,18 +41,6 @@ describe('toggleTone', () => {
   });
 });
 
-describe('presets', () => {
-  it('All holds the four statuses and Abnormal only holds borderline and out of range', () => {
-    expect(sameTones(ALL_TONES, new Set(FILTER_TONES))).toBe(true);
-    expect(sameTones(ABNORMAL_TONES, new Set<StatusTone>(['bad', 'warn']))).toBe(true);
-    expect(sameTones(ABNORMAL_TONES, ALL_TONES)).toBe(false);
-  });
-
-  it('toggling off in range and not tested lands on Abnormal only', () => {
-    expect(sameTones(toggleTone(toggleTone(ALL_TONES, 'ok'), 'none'), ABNORMAL_TONES)).toBe(true);
-  });
-});
-
 describe('isToneFilterActive', () => {
   it('is false only when every status is on', () => {
     for (const subset of subsets()) {
@@ -72,8 +57,8 @@ describe('filterByTone', () => {
     }
   });
 
-  it('Abnormal only keeps borderline and out-of-range chips', () => {
-    expect(filterByTone(chips, ABNORMAL_TONES).map((c) => c.item)).toEqual(['AST', 'GGT']);
+  it('borderline and out of range alone keep only those chips', () => {
+    expect(filterByTone(chips, new Set<StatusTone>(['warn', 'bad'])).map((c) => c.item)).toEqual(['AST', 'GGT']);
   });
 
   it('visible chips across the enabled statuses sum to their counts', () => {

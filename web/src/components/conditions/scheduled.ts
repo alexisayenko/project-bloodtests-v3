@@ -26,14 +26,13 @@ export type SelectionState = 'none' | 'some' | 'all';
 export type RowScheduling = {
   scheduled: Scheduled;
   onToggle: (loincs: string[]) => void;
-  /** Select-all over exactly the rows the table is showing. */
+  /** Select-all over exactly the observation rows the table is showing. */
   onToggleAll: (rows: string[][], on: boolean) => void;
   onSetMonth: (month: string | undefined) => void;
 };
 export type IndexScheduling = {
   scheduled: Scheduled;
   onToggle: (key: string) => void;
-  onToggleAll: (keys: string[], on: boolean) => void;
   onSetMonth: (month: string | undefined) => void;
 };
 
@@ -159,16 +158,6 @@ export function setRowsScheduled(scheduled: Scheduled, rows: string[][], on: boo
   return { ...scheduled, loincs: next, indices: deriveIndices(next) };
 }
 
-/** Select-all over the index rows on screen, following toggleIndex: on schedules their inputs too, off leaves the inputs. */
-export function setIndicesScheduled(scheduled: Scheduled, keys: string[], on: boolean): Scheduled {
-  if (!on) return { ...scheduled, indices: scheduled.indices.filter((k) => !keys.includes(k)) };
-  return {
-    ...scheduled,
-    loincs: union(scheduled.loincs, keys.flatMap(indexInputLoincs)),
-    indices: union(scheduled.indices, keys),
-  };
-}
-
 export function setScheduleMonth(scheduled: Scheduled, month: string | undefined): Scheduled {
   return { ...scheduled, month: isScheduleMonth(month) ? month : undefined };
 }
@@ -207,12 +196,8 @@ export function useScheduled() {
     (rows: string[][], on: boolean) => setScheduled((s) => setRowsScheduled(s, rows, on)),
     []
   );
-  const onToggleAllIndices = useCallback(
-    (keys: string[], on: boolean) => setScheduled((s) => setIndicesScheduled(s, keys, on)),
-    []
-  );
   const onSetMonth = useCallback((month: string | undefined) => setScheduled((s) => setScheduleMonth(s, month)), []);
   const onReload = useCallback(() => setScheduled(loadScheduled()), []);
 
-  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onReload };
+  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onReload };
 }

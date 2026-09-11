@@ -47,7 +47,7 @@ export function MedicalConditionsPage() {
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
-  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onReload: reloadScheduled } = useScheduled();
+  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onReload: reloadScheduled } = useScheduled();
 
   useEffect(() => {
     saveViewSettings({ unitSystem, sampleLimit, compactPanels });
@@ -179,7 +179,7 @@ export function MedicalConditionsPage() {
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit };
   const rowScheduling = { scheduled, onToggle: onToggleRow, onToggleAll: onToggleAllRows, onSetMonth };
-  const indexScheduling = { scheduled, onToggle: onToggleIndex, onToggleAll: onToggleAllIndices, onSetMonth };
+  const indexScheduling = { scheduled, onToggle: onToggleIndex, onSetMonth };
 
   const panelsGrid = (
     <PanelsGridView
@@ -268,7 +268,9 @@ export function MedicalConditionsPage() {
       case 'plan':
         return <PlanVisitView scheduled={scheduled} onOpenPopup={openPopup} />;
       case 'reference':
-        return <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} />;
+        return (
+          <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} onOpenPopup={openPopup} />
+        );
       case 'panel':
         return (
           <PanelDetailView

@@ -138,6 +138,8 @@ const UNIT_CONVERSIONS: UnitConv[] = [
   // Apolipoproteins: mass-only analytes labs print either as mg/dL or as g/L.
   ...rescaleBoth('ApoB', 'g/L', 'mg/dL'),
   ...rescaleBoth('ApoA1', 'g/L', 'mg/dL'),
+  // Albumin: printed g/dL (the catalog's unit) or g/L; the Vermeulen indices read g/dL.
+  ...rescaleBoth('ALB', 'g/L', 'g/dL'),
   ...Object.entries(MGDL_TO_MMOLL).flatMap(([marker, f]): UnitConv[] => [
     { marker, from: 'mg/dL', to: 'mmol/L', conv: f },
     { marker, from: 'mmol/L', to: 'mg/dL', conv: (x) => x / f(1) },
@@ -205,6 +207,27 @@ export function zone(value: number, good: number, warn: number, hi = false): Zon
   return 'bad';
 }
 
+/** Who the readings belong to, as far as choosing an index's band needs to know. */
+export type SubjectProfile = { sex?: 'female' | 'male' };
+
+export type IndexBands = { cut: [number, number]; hi?: boolean };
+
+/**
+ * The band an index is judged against for this subject, or null when none
+ * applies: an index with `bandsBySex` has no band until the subject's sex is
+ * known and one is sourced for it, rather than falling back to the other sex's.
+ */
+export function indexBands(def: IndexDef, profile: SubjectProfile = {}): IndexBands | null {
+  if (def.bandsBySex) return profile.sex ? (def.bandsBySex[profile.sex] ?? null) : null;
+  return def.cut ? { cut: def.cut, hi: def.hi } : null;
+}
+
+/** `zone()` over `indexBands()`; null = no band, so the value carries no status. */
+export function indexZone(def: IndexDef, value: number, profile: SubjectProfile = {}): Zone | null {
+  const bands = indexBands(def, profile);
+  return bands ? zone(value, bands.cut[0], bands.cut[1], bands.hi) : null;
+}
+
 export interface IndexReference {
   organization: string;
   document: string;
@@ -212,6 +235,8 @@ export interface IndexReference {
   url?: string;
   doi?: string | null;
   quote: string;
+  /** ISO date the quoted text was retrieved from `url`. */
+  retrieved?: string;
 }
 
 export interface IndexDef {
@@ -222,12 +247,20 @@ export interface IndexDef {
   panels: string[];
   formula: string;
   /** [good, warn] cut-points. */
-  cut: [number, number];
+  cut?: [number, number];
   /** true = higher-is-better. */
   hi?: boolean;
+  /** Bands that differ by sex; when set, `cut` and `hi` are ignored (see `indexBands`). */
+  bandsBySex?: Partial<Record<'female' | 'male', IndexBands>>;
   unit?: string;
   /** Input keys (v2 marker ids) -- keys into MARKER_LOINC. */
   inputKeys: string[];
+  /**
+   * Inputs the formula uses when present and replaces with a stated default
+   * when absent (albumin in the Vermeulen equation), so they never gate the
+   * index and are not among its scheduled inputs.
+   */
+  optionalInputKeys?: string[];
   inputUnits?: Partial<Record<string, string>>;
   level: 'consensus' | 'heuristic';
   meaning: string;
@@ -317,13 +350,9 @@ function markerValue(
 /** One draw's observations, converted to the units each index's fn expects. */
 export function markersForIndex(def: IndexDef, resultsByLoinc: Record<string, Result>): Markers {
   const m: Markers = {};
-  for (const inputKey of def.inputKeys) {
+  for (const inputKey of [...def.inputKeys, ...(def.optionalInputKeys ?? [])]) {
     const value = markerValue(inputKey, resultsByLoinc, def.inputUnits?.[inputKey]);
     if (value !== undefined) m[inputKey] = value;
-  }
-  if (def.key === 'cft') {
-    const alb = markerValue('ALB', resultsByLoinc, undefined);
-    if (alb !== undefined) m['ALB'] = alb;
   }
   return m;
 }

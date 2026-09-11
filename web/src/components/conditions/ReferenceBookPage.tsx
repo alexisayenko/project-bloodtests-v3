@@ -57,6 +57,7 @@ import type { Analysis } from '../../types';
 import { BookOpen, Calculator, ShieldCheck } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { TABLE, TABLE_TD, TABLE_TH } from '../primitives/styles';
+import { TestosteronePage } from './reference/TestosteronePage';
 
 // Reference Book — one page per computed index, carrying the full clinical
 // prose (meaning + evidence standing) and its cited sources with verbatim
@@ -118,6 +119,9 @@ function ReferenceItem({ source }: Readonly<{ source: IndexReference }>) {
               {source.doi}
             </a>
           </span>
+        )}
+        {source.retrieved && (
+          <span style={{ color: COLOR.textMuted, fontSize: 13 }}> · retrieved {source.retrieved}</span>
         )}
       </div>
       <blockquote
@@ -1202,8 +1206,15 @@ export function ReferenceBookPage({
   indexKey,
   navigate,
   allResults,
-}: Readonly<{ indexKey?: string; navigate: (r: Route) => void; allResults?: readonly ResultEntry[] }>) {
+  onOpenPopup,
+}: Readonly<{
+  indexKey?: string;
+  navigate: (r: Route) => void;
+  allResults?: readonly ResultEntry[];
+  onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
+}>) {
   if (indexKey === 'hp-axis') return <HpAxisPage />;
+  if (indexKey === 'testosterone') return <TestosteronePage onOpenPopup={onOpenPopup} />;
   if (indexKey === 'molar-masses') return <MolarMassesPage />;
   if (indexKey === 'units') return <UnitsPage navigate={navigate} />;
   if (indexKey === 'loinc-database') return <LoincDatabasePage allResults={allResults} navigate={navigate} />;
@@ -1236,10 +1247,19 @@ export function ReferenceBookPage({
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Organism-wide aspects</h2>
       <div
         {...pressable(() => navigate({ view: 'reference', key: 'hp-axis' }))}
-        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer' }}
       >
         <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>HP Axis</span>
         <span style={{ fontSize: 14, color: COLOR.textSecondary }}>Hypothalamic–pituitary feedback loops (HPT · HPG · HPA)</span>
+      </div>
+      <div
+        {...pressable(() => navigate({ view: 'reference', key: 'testosterone' }))}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>Testosterone</span>
+        <span style={{ fontSize: 14, color: COLOR.textSecondary }}>
+          Secretion, plasma binding, conversion to DHT/E2, feedback and clomiphene
+        </span>
       </div>
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Formulas and math</h2>
       <div

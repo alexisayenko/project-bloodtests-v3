@@ -60,7 +60,7 @@ describe('generateTestData', () => {
   });
 
   it('computes indices from inputs carried on the same draw', () => {
-    for (const key of ['homair', 'tyg', 'tchdl', 'ldlhdl', 'ldlf', 'apobapoa', 'ft3ft4', 'cft', 'cortdhea', 'deritis', 'tsat']) {
+    for (const key of ['homair', 'tyg', 'tchdl', 'ldlhdl', 'ldlf', 'apobapoa', 'ft3ft4', 'cft', 'biot', 'cortdhea', 'deritis', 'tsat']) {
       expect([key, reports.some((report) => computes(key, report))]).toEqual([key, true]);
     }
     expect(reports.some((report) => ['homair', 'tyg', 'tchdl'].every((key) => computes(key, report)))).toBe(true);
