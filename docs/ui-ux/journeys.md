@@ -13,11 +13,12 @@ For the journey concept and how it relates to screens, see
 
 Every journey starts from the section nav: from 768px up a left sidebar
 under a top bar, on a phone the wrapping top nav. Both list the same
-eight sections in the same order — Get Started, Diagnostic Reports, All
-Observations, Monitoring Panels, Scheduled Visits, Medications,
-Reference Book, Account (the sidebar pins Account to its foot) — and
-both grey out Monitoring Panels and All Observations while a diagnostic
-report has errors.
+nine sections in the same order — Get Started, Diagnostic Reports, All
+Observations, Monitoring Panels, Hormonal Pathways, Scheduled Visits,
+Medications, Reference Book, Account (the sidebar pins Account to its
+foot) — and both grey out Monitoring Panels, Hormonal Pathways and All
+Observations while a diagnostic report has errors. Hormonal Pathways is
+a "Coming soon." placeholder for now, so no journey runs through it yet.
 
 ## Browse a monitoring panel
 

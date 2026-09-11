@@ -318,16 +318,25 @@ that uses it; the gutter is reserved on every row so names never shift
 From 768px up the nav is an app shell (`AppShell.tsx`): a white top bar
 (`TopBar.tsx` — mark and wordmark linking to Monitoring Panels, a lock and
 "Your data stays in this browser") over a left sidebar (`SideNav.tsx`) listing
-all eight `NAV_ITEMS` with a `lucide-react` line icon each — Account pinned to
-its foot above a three-line tagline — the active one a
+all nine `NAV_ITEMS` with a line icon each — `lucide-react`'s, except the two
+drawn in `customIcons.tsx` to the same stroke and size, `PillIcon` (a split
+capsule, also the Medications header's pillar and the Pancreatic Function card's
+icon, `PageHeader` pillars accepting either kind) for Medications and
+`PathwaysIcon` (three linked hollow circles) for Hormonal Pathways — Account
+pinned to its foot above a three-line tagline, hidden below a 760px viewport
+height — the active one a
 soft teal pill, active and blocked state coming from `routing.ts`'s
-`isNavItemActive` / `isNavItemBlocked`; phones keep the old wrapping `NavBar`
-(brand mark plus the same eight labels), until task-0020 designs their shell, and every
+`isNavItemActive` / `isNavItemBlocked`. The sidebar is `position: fixed` under
+the top bar, never scrolls, and `.mc-page` and the footer (`.mc-footer`) are
+offset by its width (`--mc-sidebar-w`, 232px, 200px below 1024px) — fixed
+rather than sticky, since the footer sits outside the shell and pushed a sticky
+sidebar up under the top bar at the page's end. Phones keep the old wrapping `NavBar`
+(brand mark plus the same nine labels), until task-0020 designs their shell, and every
 slot stays in place across the breakpoint so rotating a phone remounts nothing.
 Every section's landing page opens with the same `PageHeader.tsx` banner —
 overline, two-tone title, description lines and up to three icon pillars —
 while Panel Detail, report detail and the Reference Book's sub-pages keep a
-plain `<h1>`. The eight sections, in nav order — Get Started (`#profile`: app description,
+plain `<h1>`. The nine sections, in nav order — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
@@ -418,7 +427,11 @@ the indices, scoped the way Panel Detail scopes them — the selected panel's
 indices, or the union over the panels on offer, so a share link's allowlist,
 which limits the panel options but never the observation rows, does narrow
 the indices), Monitoring Panels
-(the default/entry route), Scheduled Visits (`#plan`, reachable despite validation
+(the default/entry route), Hormonal Pathways (`#pathways`, blocked while
+validation errors exist, like Monitoring Panels: for now only a placeholder,
+`HormonalPathwaysView.tsx` — a `PageHeader` with overline "Endocrinology",
+title "Hormonal Pathways" and "Biochemical pathways of hormones", over "Coming
+soon."; what it becomes is task-0024), Scheduled Visits (`#plan`, reachable despite validation
 errors: under a "Planned for <month>" pill, in a table card, every scheduled observation, folded
 to its primary code, as one "Observation" cell — `friendlyName`, with the short
 name in parentheses where it differs, opening the analyte popup — beside one
@@ -499,10 +512,11 @@ unit, current code and the sibling to move to when `massMolarSiblings.ts`
 knows one, the value never converted, ADR-0003, and the code's accepted
 units otherwise), and, lower-severity, a unit that resolves
 to neither a Latin spelling nor a UCUM code (the rows whose curated
-tables need extending) are warnings; while errors exist, Monitoring Panels and All
+tables need extending) are warnings; while errors exist, Monitoring Panels,
+Hormonal Pathways and All
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable) — one rule,
-`routing.ts`'s `isRouteBlocked` (panels, panel, all), which `isNavItemBlocked`
+`routing.ts`'s `isRouteBlocked` (panels, panel, pathways, all), which `isNavItemBlocked`
 also asks; the shell swaps the route during render, so the blocked view never
 paints, and replaces the URL with `history.replaceState` in an effect, so a
 redirect adds no history entry and Back cannot loop into it again. Upload
@@ -630,7 +644,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (807 tests across 36 files — 806 passing, 1 skipped — as run on 2026-09-11: index
+Vitest suites in `web/test/` (808 tests across 36 files — 807 passing, 1 skipped — as run on 2026-09-11: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC

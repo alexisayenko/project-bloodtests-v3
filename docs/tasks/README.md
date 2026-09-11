@@ -41,7 +41,7 @@ the index.
 | [task-0021](task-0021.md) | Rework monitoring panels — industry standard sets, condition mapping, custom panels, and export | to do |
 | [task-0022](task-0022.md) | Add panel detail results table, analyte trends chart with lab history, report-specific ranges, and raw mapping audit | in progress |
 | [task-0023](task-0023.md) | Monitoring panels controls & customization — Compact view, status filters, and edit panels mode (hide/show, custom panels, drag-and-drop reorder) | in progress |
-| [task-0024](task-0024.md) | Add a Hormonal Pathways section, starting with the gonadal axis | to do |
+| [task-0024](task-0024.md) | Add a Hormonal Pathways section, starting with the gonadal axis | in progress |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because

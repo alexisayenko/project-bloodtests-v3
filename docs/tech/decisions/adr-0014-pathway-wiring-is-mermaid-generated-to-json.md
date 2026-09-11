@@ -2,12 +2,20 @@
 
 Status: accepted · 2026-09-11
 
+> **Revised 2026-09-11: the drawn ontology was simplified** (task-0024, BX1).
+> The decision — Mermaid as the source, generated JSON, a sidecar, hand-laid
+> SVG — is unchanged; what the subset draws is not. Region and cell
+> subgraphs and receptor nodes are gone: a band is one flat subgraph, a cell
+> survives only as a label on its arrow, and where an arrow acts (organ →
+> region/tissue → cell → receptor) moved into the sidecar as data shown on
+> hover. The subset below is the revised one.
+
 ## Context
 
 The planned Hormonal Pathways section ([pathway](../../product/concepts/pathway.md)
 concept, [task-0024](../../tasks/task-0024.md)) draws an axis as its
-wiring: sites, signals, carriers and enzymes, joined by association lines
-and pathway arrows, with the user's values placed on them.
+wiring: organ bands, signals, carriers and enzymes, joined by association
+lines and pathway arrows, with the user's values placed on them.
 
 - **The wiring has to be reviewable without redrawing a mockup.** Whether
   E2 feeds back at the arcuate nucleus or the pituitary is a biology
@@ -30,28 +38,38 @@ and pathway arrows, with the user's values placed on them.
 the source of truth for that axis's wiring.** GitHub renders it in review,
 so the graph is read as a graph and changed as text.
 
-- **Restricted subset, encoding the ontology.** Structure gives the kind, so
-  no `classDef` or `style` is needed:
-  - **Subgraph nesting gives the site level** — a top-level subgraph is a
-    band (an organ, or the Blood compartment), one inside it a region, one
-    inside that a cell; nothing nests deeper. Two reserved top-level
-    subgraphs, Measures and Ratios, hold the badges.
-  - **Node shape gives the kind** — a rectangle is a signal (or, in a badge
-    group, a badge), a stadium a carrier, a triple circle a docked signal; a
-    circle inside a cell is a receptor and a hexagon inside a cell an enzyme.
-  - **Arrow form gives the line kind** — `-->` from a cell is secretion and
-    onto a receptor signaling; `-.->` onto a receptor is feedback or
-    crosstalk; `S --> E --> P` through an enzyme is a conversion, the only
-    chain allowed; `<-->` is exchange; `-.-` is an association, whose kind
-    (part of, ratio link, docking) follows from its endpoints.
-  - **Labels carry effects only** — quoted, one or more `·`-separated ↑B /
-    ↓B with an optional parenthetical qualifier, on signaling, feedback and
-    conversion edges and nowhere else. The site an arrow acts at is never
-    written: it is the target receptor's place in the subgraph tree.
+- **Restricted subset, encoding the drawn ontology.** Structure gives the
+  kind, so no `classDef` or `style` is needed:
+  - **One flat subgraph per band** — a top-level subgraph is an organ band
+    (or the Blood transport compartment), band order top to bottom; a
+    subgraph nested in any subgraph fails. Two reserved top-level subgraphs,
+    `MEASURES` and `RATIOS`, hold the badges.
+  - **Node shape gives the kind** — in a band a rectangle is a signal, a
+    stadium a carrier, a triple circle a docked signal, a hexagon an enzyme
+    and an asymmetric `>"…"]` a cell label; in a badge group a rectangle is a
+    badge. There are no receptor, region or cell nodes.
+  - **Arrow form gives the line kind** — `-->` is signaling (signal →
+    signal); `-.->` is feedback, or crosstalk where the sidecar flags it;
+    `S --> E -->|"↑P"| P` through an enzyme is a conversion; `<-->` is
+    exchange between a signal and its docked form; `-.-` is an association,
+    whose kind follows from its endpoints — measure badge → signal or docked
+    signal is part of, ratio badge → enzyme or cell label a ratio link,
+    carrier → docked signal docking.
+  - **A cell is a label on an arrow's path, not a node that is drawn.**
+    `LH --> LEY -->|"↑T"| FT` folds into one arrow LH → T carrying the text
+    "Leydig cells"; it is written as a node only because Mermaid cannot draw a
+    line to an edge, and the T/LH ratio link needs something to end at. A
+    chain passes through exactly one enzyme or cell label, and a cell label
+    sits on exactly one arrow.
+  - **Labels carry effects only** — quoted, exactly one ↑B or ↓B where B
+    names the arrow's target signal (a conversion's product), on signaling,
+    feedback and conversion edges and nowhere else. Where an arrow acts is
+    never written in the Mermaid.
 
-  The generator rejects anything else — another arrow form, an unquoted
-  label, a shape outside its allowed place, an edge whose endpoints are not
-  the kinds its form takes — rather than guessing.
+  The generator rejects anything else — another arrow form, an unquoted or
+  multi-effect label, a nested subgraph, a shape outside its allowed place,
+  an edge whose endpoints are not the kinds its form takes — rather than
+  guessing.
 - **Generated JSON.** `npm run pathways:build` parses the fences and writes
   `web/public/data/pathways.json`, described by
   `web/public/schema/pathways-1.schema.json` (draft 2020-12, closed
@@ -60,14 +78,21 @@ so the graph is read as a graph and changed as text.
 - **Sidecar for what Mermaid should not carry.** A hand-edited sidecar,
   joined by node, subgraph and edge id, holds hover descriptions, each
   signal's or carrier's binding to a LOINC code or an `INDEX_DEFS` key (or
-  what it is, for the never-measured), chemical classes and enzyme
-  locations, a citation on every pathway arrow and docking line, and the
-  flag telling crosstalk from feedback. Badges backed by an index carry its
-  key and no prose — their text and citations stay in `INDEX_DEFS` — so only
-  a badge with no index has its explanation written here. A **completeness
-  test** fails when an id is unmapped, an arrow or docking line lacks a
-  citation, an index badge carries prose, or a sidecar key names something
-  the Markdown lacks.
+  what it is, for the never-measured), chemical classes, each signal's
+  source cells, cell labels' hover text and enzyme locations, a citation on
+  every pathway arrow and docking line, and the flag telling crosstalk from
+  feedback. **The site hierarchy lives here, not in the drawing**: every
+  signaling, feedback and crosstalk arrow carries a `site` — organ,
+  region/tissue, cell and receptor, each with its full name — composed into
+  its hover text ("T acts on Kp neurons in the arcuate nucleus via the
+  androgen receptor"); a conversion's site is its enzyme's location. Badges
+  backed by an index carry its key and no prose — their text and citations
+  stay in `INDEX_DEFS` — so only a badge with no index has its explanation
+  written here. A **completeness test** fails when an id is unmapped, an
+  arrow or docking line lacks a citation, a signaling, feedback or crosstalk
+  arrow lacks a full four-level `site`, an arrow through a cell label names a
+  different cell in its `site`, an index badge carries prose, or a sidecar
+  key names something the Markdown lacks.
 - **The app never bundles or renders Mermaid.** It draws hand-laid SVG
   from `pathways.json`: positions and styling belong to the view, topology
   and biology to the data.
@@ -97,6 +122,9 @@ so the graph is read as a graph and changed as text.
 - Every pathway arrow and docking line carries a citation, so the pathway
   view can offer a source for each arrow as the Reference Book does for its
   prose; part-of lines and ratio links cite through their badge.
+- Where an arrow acts is reviewed in the sidecar, not in the rendered graph:
+  the Mermaid shows what acts on what, and a receptor or region error is a
+  JSON diff rather than a misplaced node.
 - `hpAxisContent.ts`'s cascade block is replaced by a render of the JSON,
   so the page and the pathway view state one wiring.
 - Mermaid's syntax is a moving target; the restricted subset and the
