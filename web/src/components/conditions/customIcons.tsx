@@ -120,3 +120,58 @@ export const ThyroidIcon: IconComponent = ({ size = 26, color = 'currentColor', 
     />
   </svg>
 );
+
+const lineIconProps = (size: number, color: string, strokeWidth: number) => ({
+  xmlns: 'http://www.w3.org/2000/svg',
+  width: size,
+  height: size,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: color,
+  strokeWidth,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+});
+
+/** Brain in profile with the pituitary hanging below it on its stalk. */
+export const BrainPituitaryIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 1.75, ...rest }) => (
+  <svg {...lineIconProps(size, color, strokeWidth)} {...rest}>
+    <path d="M12 4.5C10.8 3.2 8.4 3 7 4.2 5 4.1 3.5 5.8 3.8 7.8c-1.3 1-1.5 3.2-.2 4.5 0 2 1.8 3.3 3.7 2.9 1.3 1.1 3.5 1.1 4.7 0 1.2 1.1 3.4 1.1 4.7 0 1.9.4 3.7-.9 3.7-2.9 1.3-1.3 1.1-3.5-.2-4.5.3-2-1.2-3.7-3.2-3.6C15.6 3 13.2 3.2 12 4.5Z" />
+    <path d="M12 4.5V8M7 4.2c0 1.5 1 2.3 2 2.5M17 4.2c0 1.5-1 2.3-2 2.5M3.6 12.3c1.2 0 2.2-.6 2.6-1.6M20.4 12.3c-1.2 0-2.2-.6-2.6-1.6" />
+    <path d="M12 15.2v2.6" />
+    <circle cx="12" cy="19.6" r="1.8" />
+  </svg>
+);
+
+/** Heart outline crossed by a pulse trace. */
+export const HeartPulseIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 1.75, ...rest }) => (
+  <svg {...lineIconProps(size, color, strokeWidth)} {...rest}>
+    <path d="M12 20.5S3 15 3 8.8C3 6.1 5.1 4 7.7 4c1.8 0 3.3 1 4.3 2.6C13 5 14.5 4 16.3 4 18.9 4 21 6.1 21 8.8c0 6.2-9 11.7-9 11.7Z" />
+    <path d="M6.5 11.5h2.8l1.4-2.8 2.6 5.3 1.4-2.5h2.8" />
+  </svg>
+);
+
+/** Two ovals, each hanging from a short cord. */
+export const TestesIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 1.75, ...rest }) => (
+  <svg {...lineIconProps(size, color, strokeWidth)} {...rest}>
+    <path d="M10 2.5c0 2.5-2.5 4-2.5 6.5M14 2.5c0 2.5 2.5 4 2.5 6.5" />
+    <ellipse cx="7.5" cy="14.5" rx="3.3" ry="5.5" />
+    <ellipse cx="16.5" cy="14.5" rx="3.3" ry="5.5" />
+  </svg>
+);
+
+/** A round patch of tissue holding three cells, each with its nucleus. */
+export const TargetTissueIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 1.75, ...rest }) => (
+  <svg {...lineIconProps(size, color, strokeWidth)} {...rest}>
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="7.2" r="2.8" />
+    <circle cx="7.7" cy="14.8" r="2.8" />
+    <circle cx="16.3" cy="14.8" r="2.8" />
+    <g fill={color} stroke="none">
+      <circle cx="12" cy="7.2" r="0.9" />
+      <circle cx="7.7" cy="14.8" r="0.9" />
+      <circle cx="16.3" cy="14.8" r="0.9" />
+    </g>
+  </svg>
+);
