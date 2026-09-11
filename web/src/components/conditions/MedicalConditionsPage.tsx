@@ -271,7 +271,14 @@ export function MedicalConditionsPage() {
           />
         );
       case 'pathways':
-        return <HormonalPathwaysView />;
+        return (
+          <HormonalPathwaysView
+            allResults={allResults}
+            resultsByDate={resultsByDate}
+            panelTests={conditions.find((c) => c.name === 'Hypogonadism')?.tests ?? []}
+            unitSystem={unitSystem}
+          />
+        );
       case 'medications':
         return <MedicationsView />;
       case 'account':

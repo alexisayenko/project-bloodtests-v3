@@ -1,0 +1,139 @@
+{
+  "markers": [
+    {
+      "id": "lh",
+      "name": "Luteinizing hormone",
+      "loincs": ["10501-5"],
+      "ranges": [
+        { "population": "Adult men", "low": 1.7, "high": 8.6, "unit": "IU/L", "sources": ["lhsc-lh"] }
+      ]
+    },
+    {
+      "id": "fsh",
+      "name": "Follicle-stimulating hormone",
+      "loincs": ["15067-2"],
+      "ranges": [
+        { "population": "Adult men", "low": 1.5, "high": 12.4, "unit": "IU/L", "sources": ["lhsc-fsh"] }
+      ]
+    },
+    {
+      "id": "testosterone",
+      "name": "Testosterone, total",
+      "loincs": ["14913-8", "2986-8"],
+      "molarMass": "testosterone",
+      "ranges": [
+        {
+          "population": "Healthy non-obese men, 19–39 years (harmonized 2.5th–97.5th percentile)",
+          "low": 264,
+          "high": 916,
+          "unit": "ng/dL",
+          "sources": ["travison-2017", "endocrine-society-2017"]
+        }
+      ]
+    },
+    {
+      "id": "shbg",
+      "name": "Sex hormone-binding globulin",
+      "loincs": ["2942-1", "13967-5"],
+      "ranges": [
+        { "population": "Men over 20 to 50 years", "low": 18.3, "high": 54.1, "unit": "nmol/L", "sources": ["lhsc-shbg"] },
+        { "population": "Men over 50 years", "low": 20.6, "high": 76.7, "unit": "nmol/L", "sources": ["lhsc-shbg"] }
+      ]
+    },
+    {
+      "id": "albumin",
+      "name": "Albumin",
+      "loincs": ["1751-7"],
+      "ranges": [
+        { "population": "Adults over 18 years", "low": 35, "high": 52, "unit": "g/L", "sources": ["lhsc-albumin"] }
+      ]
+    },
+    {
+      "id": "estradiol",
+      "name": "Estradiol",
+      "loincs": ["2243-4"],
+      "molarMass": "estradiol",
+      "ranges": [
+        { "population": "Men over 18 years", "high": 159, "unit": "pmol/L", "sources": ["lhsc-estradiol"] }
+      ]
+    },
+    {
+      "id": "dht",
+      "name": "Dihydrotestosterone",
+      "loincs": ["1848-1", "15057-3"],
+      "ranges": [
+        { "population": "Healthy adult men, 18–59 years (LC-MS/MS)", "low": 14, "high": 77, "unit": "ng/dL", "sources": ["swerdloff-2017"] },
+        { "population": "Healthy adult men, 18–59 years (LC-MS/MS)", "low": 0.47, "high": 2.65, "unit": "nmol/L", "sources": ["swerdloff-2017"] }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "lhsc-lh",
+      "organization": "London Health Sciences Centre, Pathology and Laboratory Medicine",
+      "title": "Luteinizing Hormone, Plasma/Serum (LH) — Laboratory Test Information Guide",
+      "url": "https://www.lhsc.on.ca/lab-test-info-guide/luteinizing-hormone-plasma/serum-lh",
+      "retrieved": "2026-09-11",
+      "quote": "Male … Adult: 1.70 - 8.60 IU/L"
+    },
+    {
+      "id": "lhsc-fsh",
+      "organization": "London Health Sciences Centre, Pathology and Laboratory Medicine",
+      "title": "Follicle Stimulating Hormone, Plasma/Serum (FSH) — Laboratory Test Information Guide",
+      "url": "https://www.lhsc.on.ca/lab-test-info-guide/follicle-stimulating-hormone-plasma/serum-fsh",
+      "retrieved": "2026-09-11",
+      "quote": "Male … Adult: 1.5 - 12.4 IU/L"
+    },
+    {
+      "id": "lhsc-shbg",
+      "organization": "London Health Sciences Centre, Pathology and Laboratory Medicine",
+      "title": "Sex Hormone Binding Globulin — Laboratory Test Information Guide",
+      "url": "https://www.lhsc.on.ca/lab-test-info-guide/sex-hormone-binding-globulin",
+      "retrieved": "2026-09-11",
+      "quote": "Male … >20 – 50 years 18.3 – 54.1 nmol/L; >50 years 20.6 – 76.7 nmol/L"
+    },
+    {
+      "id": "lhsc-albumin",
+      "organization": "London Health Sciences Centre, Pathology and Laboratory Medicine",
+      "title": "Albumin — Laboratory Test Information Guide",
+      "url": "https://www.lhsc.on.ca/lab-test-info-guide/albumin",
+      "retrieved": "2026-09-11",
+      "quote": ">18 years 35 – 52 g/L"
+    },
+    {
+      "id": "lhsc-estradiol",
+      "organization": "London Health Sciences Centre, Pathology and Laboratory Medicine",
+      "title": "Estradiol — Laboratory Test Information Guide",
+      "url": "https://www.lhsc.on.ca/lab-test-info-guide/estradiol",
+      "retrieved": "2026-09-11",
+      "quote": "Male … Reference Interval (pmol/L) … >18 years ≤159"
+    },
+    {
+      "id": "travison-2017",
+      "organization": "Journal of Clinical Endocrinology & Metabolism (Travison TG et al.)",
+      "title": "Harmonized Reference Ranges for Circulating Testosterone Levels in Men of Four Cohort Studies in the United States and Europe",
+      "year": 2017,
+      "url": "https://research.manchester.ac.uk/en/publications/harmonized-reference-ranges-for-circulating-testosterone-levels-i/",
+      "retrieved": "2026-09-11",
+      "quote": "In healthy nonobese men, 19 to 39 years, harmonized 2.5th, 5th, 50th, 95th, and 97.5th percentile values were 264, 303, 531, 852, and 916 ng/dL, respectively."
+    },
+    {
+      "id": "endocrine-society-2017",
+      "organization": "Endocrine Society",
+      "title": "Landmark study defines normal ranges for testosterone levels",
+      "year": 2017,
+      "url": "https://www.endocrine.org/news-and-advocacy/news-room/2017/landmark-study-defines-normal-ranges-for-testosterone-levels",
+      "retrieved": "2026-09-11",
+      "quote": "The harmonized normal range for testosterone in a non-obese population of European and American Men, 19-39 years, is 264-916 ng/dL."
+    },
+    {
+      "id": "swerdloff-2017",
+      "organization": "Endocrine Reviews (Swerdloff RS, Dudley RE, Page ST, Wang C, Salameh WA)",
+      "title": "Dihydrotestosterone: Biochemistry, Physiology, and Clinical Implications of Elevated Blood Levels",
+      "year": 2017,
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6459338/",
+      "retrieved": "2026-09-11",
+      "quote": "A DHT reference range of 14 to 77 ng/dL (0.47 to 2.65 nmol/L) for healthy adult men (18 to 59 years; n = 113) has been reported by Shiraishi et al."
+    }
+  ]
+}

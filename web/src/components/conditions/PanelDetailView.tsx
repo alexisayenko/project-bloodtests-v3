@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import type { Result } from '../../types';
-import { MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
+import type { IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import {
   COMPUTED_LOINCS,
@@ -9,6 +9,7 @@ import {
   buildRawNames,
   indexMatchesQuery,
   observationMatchesQuery,
+  panelDates,
   rawNamesOf,
   testLoincs,
   type Observation,
@@ -100,20 +101,7 @@ export function PanelDetailView({
   const selectedObservation = observations.find((t) => t.loinc === selectedLoinc);
   const usedBy = selectedObservation && { name: selectedObservation.shortName, loincs: testLoincs(selectedObservation) };
 
-  const dates = useMemo(() => {
-    const computedInputLoincs = new Set(
-      computedForPanel.flatMap((d) => d.inputKeys.flatMap((inputKey) => MARKER_LOINC[inputKey] ?? []))
-    );
-    return Array.from(
-      new Set(
-        allResults
-          .filter((r) => tests.some((t) => testLoincs(t).includes(r.loinc)) || computedInputLoincs.has(r.loinc))
-          .map((r) => r.date)
-      )
-    ).sort((a, b) => b.localeCompare(a));
-    // computedForPanel derives from `name`, already a dependency via tests
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allResults, tests]);
+  const dates = useMemo(() => panelDates(name, tests, allResults), [name, tests, allResults]);
 
   const visibleDates = visibleDatesOf(dates, controls.sampleLimit);
 

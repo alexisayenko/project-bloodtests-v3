@@ -358,6 +358,22 @@
           "retrieved": "2026-09-08"
         }
       ]
+    },
+    {
+      "id": "estradiol",
+      "name": "Estradiol",
+      "formula": "C18H24O2",
+      "molarMassGPerMol": 272.388,
+      "basis": "compound",
+      "sources": [
+        {
+          "authority": "PubChem",
+          "identifier": "CID 5757",
+          "url": "https://pubchem.ncbi.nlm.nih.gov/compound/5757",
+          "reportedMolarMassGPerMol": 272.4,
+          "retrieved": "2026-09-11"
+        }
+      ]
     }
   ]
 }

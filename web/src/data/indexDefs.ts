@@ -20,7 +20,7 @@ const DHEAS_UGDL_TO_NMOLL = molarPerMass('dheas');
 const ALBUMIN_MW = 69000; // g/mol, Vermeulen/ISSAM calculator convention (not albumin's true MW)
 const KA_ALBUMIN = 3.6e4; // L/mol, testosterone-albumin association constant
 const KS_SHBG = 1e9; // L/mol, testosterone-SHBG association constant
-const DEFAULT_ALBUMIN_GDL = 4.3;
+export const DEFAULT_ALBUMIN_GDL = 4.3;
 
 const albuminMolL = (albumin_gdl?: number) => ((albumin_gdl ?? DEFAULT_ALBUMIN_GDL) * 10) / ALBUMIN_MW; // g/dL -> g/L -> mol/L
 
@@ -51,6 +51,14 @@ function bioavailableTestosterone(totalT_nmoll: number, shbg_nmoll: number, albu
   const A = albuminMolL(albumin_gdl);
   const FT = vermeulenFreeT(totalT_nmoll * 1e-9, shbg_nmoll * 1e-9, A);
   return (FT * (1 + KA_ALBUMIN * A)) / 1e-9;
+}
+
+/** Testosterone's three pools, nmol/L: free, albumin-bound (free × Ka·albumin) and SHBG-bound (the rest). */
+export function testosteronePools(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl: number) {
+  const A = albuminMolL(albumin_gdl);
+  const free = vermeulenFreeT(totalT_nmoll * 1e-9, shbg_nmoll * 1e-9, A) / 1e-9;
+  const albuminBound = free * KA_ALBUMIN * A;
+  return { free, albuminBound, shbgBound: totalT_nmoll - free - albuminBound };
 }
 
 export const INDEX_DEFS: IndexDef[] = [

@@ -87,6 +87,23 @@ export function indexMatchesQuery(def: IndexDef, query: string): boolean {
   return [def.friendlyName, def.shortName, def.key].some((s) => s.toLowerCase().includes(q));
 }
 
+/**
+ * A panel's results-table date columns, newest first: every date carrying one
+ * of the panel's observations or an input of one of its computed indices.
+ */
+export function panelDates(name: string, tests: readonly Observation[], allResults: readonly { loinc: string; date: string }[]): string[] {
+  const computedInputLoincs = new Set(
+    INDEX_DEFS.filter((d) => d.panels.includes(name)).flatMap((d) => d.inputKeys.flatMap((inputKey) => MARKER_LOINC[inputKey] ?? []))
+  );
+  return Array.from(
+    new Set(
+      allResults
+        .filter((r) => tests.some((t) => testLoincs(t).includes(r.loinc)) || computedInputLoincs.has(r.loinc))
+        .map((r) => r.date)
+    )
+  ).sort((a, b) => b.localeCompare(a));
+}
+
 /** All LOINCs an observation's row/badge answers for: its own plus its also-refs. */
 export function testLoincs(test: Observation): string[] {
   return [test.loinc, ...(test.also?.map((ref) => ref.loinc) ?? [])];
