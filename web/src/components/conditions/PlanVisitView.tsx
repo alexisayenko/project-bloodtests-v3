@@ -22,7 +22,7 @@ const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}
 const labTh = { ...th, textAlign: 'right', width: LAB_COL_WIDTH } as const;
 const labTd = { ...td, textAlign: 'right' } as const;
 const gapCell = { padding: 0, border: 'none', width: GAP_COL_WIDTH } as const;
-const totalTd = { ...labTd, borderTop: th.borderBottom, borderBottom: 'none', fontWeight: 600 } as const;
+const totalTd = { ...labTd, borderTop: `1px solid ${COLOR.textSecondary}`, borderBottom: 'none', fontWeight: 600 } as const;
 const muted = { color: COLOR.textMuted, fontSize: 12, fontWeight: 400 } as const;
 
 function PriceCell({ cell, lab }: Readonly<{ cell: PlanCell; lab: Laboratory }>) {
@@ -101,13 +101,13 @@ export function PlanVisitView({
             <tbody>
               {rows.map((code, i) => {
                 const a = ANALYTE_BY_LOINC[code];
-                const displayName = a?.displayName ?? code;
+                const friendlyName = a?.friendlyName ?? code;
                 const short = SHORT_LABELS[code]?.short;
-                const label = short && short !== displayName ? `${displayName} (${short})` : displayName;
+                const label = short && short !== friendlyName ? `${friendlyName} (${short})` : friendlyName;
 
                 const observation: Observation = {
-                  short: short ?? displayName,
-                  full: displayName,
+                  short: short ?? friendlyName,
+                  full: friendlyName,
                   longCommonName: a?.longCommonName ?? '',
                   loinc: code,
                   unit: a?.unit,
