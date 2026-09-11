@@ -112,16 +112,28 @@ its own sibling view component (`PanelsGridView` / `PanelDetailView` /
 `AllObservationsView` / `DiagnosticReportsView` /
 `DiagnosticReportDetailView` / `ProfileView` / `PlanVisitView` /
 `MedicationsView` / `ReferenceBookPage` / `AccountView`, plus shared
-`NavBar` / `ControlsBar` / `ResultTables` / `Popup` / `PageHeader` and `TabBar` — the in-page
-tab strip Panel Detail and All Observations both render; `NavBar` deliberately
+`NavBar` / `ControlsBar` / `ResultTables` / `Popup` / `PageHeader` / `StatusFilterBar` and `TabBar` — the in-page
+tab strip Panel Detail and All Observations both render, its look in
+`index.css`'s `.mc-tabs` / `.mc-tab`; `NavBar` deliberately
 does not use it, since it differs in container, three-state colors, its
-blocked/`not-allowed` state and its route-derived active tab, and shares only
-`tabStyle`), with pure helpers
-in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` /
+blocked/`not-allowed` state and its route-derived active tab, and keeps
+`ui.ts`'s inline `tabStyle` to itself, so the two share no styling), with pure helpers
+in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` / `statusFilter.ts` /
 `reportDetailHelpers.ts` (the report-detail row helpers) and
 `data/generateTestData.ts`; the report detail view's cross-check state lives in
 the `useLoincCrossCheck` hook, which is what it passes around instead of eight
-separate props. On a narrow screen both of a results table's headers are
+separate props. Every design value is written once, as a custom property in
+`web/src/styles/index.css`'s `:root` — colour roles, the softer green / amber /
+red status set with its `-text` and `-bg` companions, the panel tints, type
+scale, radii, shadows and spacing — and `web/src/styles/tokens.ts` (`COLOR`,
+`TINT`, `FONT`, `RADIUS`, `SHADOW`, `SPACE`) hands them to inline styles as
+`var()` references. The views build on shared primitives in
+`web/src/components/primitives/`: `Button` / `FileButton`, `Card` and
+`CardParts.tsx`'s `CardHeader` / `CardTitle` / `CardDescription` / `IconBadge` /
+`Overline` / `DangerCard`, `SectionTitle` / `EmptyState`, `StatusDot` /
+`StatusChip` / `StatusToggle`, `SwitchToggle`, `SegmentedControl`, plus
+`styles.ts`'s table, card-table and field styles and `tones.ts`'s `TONE_DOT` /
+`TONE_LABEL` — catalogued in `docs/ui-ux/style-guide.md`. On a narrow screen both of a results table's headers are
 retrievable rather than resident: `TableScroller.tsx` wraps every results
 table (`ResultTables.tsx`'s one `ResultsTable`) and, on mobile only — `useIsMobile`
 (`web/src/hooks/useIsMobile.ts`) reading the stylesheet's own `max-width: 767px`
@@ -160,15 +172,27 @@ against `mmol/L` still splits onto the cells. The identities it folds unconditio
 `convertUnit`, which
 folds a printed spelling to Latin before matching, so `ммоль/л` converts like
 `mmol/L` (it used to match no rule, leaving the printed number under a
-converted label). Monitoring Panels grid cards (under a search box matching
+converted label). Monitoring Panels grid cards (under a toolbar of status
+filter toggles — `StatusFilterBar.tsx`: a `StatusToggle` per status with the
+count of chips in it, plus "All" and "Abnormal only" presets, `useState` in the
+view and never stored, logic in `statusFilter.ts` — a "Compact view" switch and
+a search box matching
 panel names and, through `observationMatchesQuery` / `indexMatchesQuery`, their
-markers and indices; icon and tint from `panelMeta.ts`, a marker count, and a
+markers and indices; icon disc and tint from `panelMeta.ts`, a marker count in
+the top-right corner, "N of M markers" while a status is off, and a
 "View panel →" link) list each
 panel's observations and, below a divider, its computed indices
 (`INDEX_DEFS`, in `data/indexDefs.ts` — the clinical definitions, prose and
 citations, split from the engine in `computedIndices.ts` and importing its types
-one-directionally, with no re-export back so no cycle forms), both as chips
-dot-colored by status. Cardiovascular Risk carries both calculated LDL-C estimates —
+one-directionally, with no re-export back so no cycle forms), both as white chips
+dot-colored by status. A status switched off hides its chips in every card; an
+Indices section left empty is dropped, and a card left with nothing stays in
+place with "No markers match". Compact view is the grid's one stored
+preference — `compactPanels` in `bloodtests_view_settings_v1`, beside
+`unitSystem` and `sampleLimit`, owned by the shell and carried through Clear
+all data and the backup's `settings.json` — and shows each chip's `shortName`
+instead of its `friendlyName`, drops the Observations / Indices labels and the
+panel link, and narrows the columns (`.mc-panels-grid--compact`). Cardiovascular Risk carries both calculated LDL-C estimates —
 `ldlf` (Friedewald, LOINC `13457-7`) and `ldls` (Sampson/NIH equation 2, no
 LOINC exists for the method) — each returning null outside its own validity
 range (TG ≥ 400 and > 800 mg/dL) so it renders as `–` rather than a
@@ -177,8 +201,8 @@ reads its inputs through `MARKER_CANDIDATE_LOINCS`, which expands
 `MARKER_LOINC` through the catalog's derived alias maps and places each value
 in the formula's unit or declines it, so a molar-coded history computes the
 same indices a mass-coded one does — before that it computed none at all.
-Panel Detail has a back
-chevron (‹) before its title, back to the grid. Panel Detail and All
+Panel Detail's header is a round back-chevron button (to the grid), the
+panel's icon disc in its tint, and its title over the panel description. Panel Detail and All
 Observations each carry a "What's in range" tab (in All Observations the tab
 is part of the route — `#all/in-range`, `#all/trends`, bare `#all` for
 Results, an unknown segment falling back to it — and switching tabs pushes
@@ -230,20 +254,21 @@ instead of on first paint (All Observations shares the lab-explore
 chunk). Both views also carry a "Trends" tab, second in the strip, which is
 deliberately empty for now — a placeholder while what belongs in it is
 undecided (task-0014). Panel Detail's Results
-tab (the default) and All Observations' each render one `ResultsTable` —
-observations, then an "Indices" divider row and the indices — carrying a
+tab (the default) and All Observations' each render one `ResultsTable` in a
+`Card` with a muted uppercase header band —
+observations, then an "Indices" divider row (an overline label and a hairline
+spanning only the table's own columns) and the indices, each dated reading's
+status a soft tint behind the number rather than across the cell — carrying a
 "Scheduled"
 column, set apart at the right of the table — a single-click toggle
-per row (a visually hidden native checkbox, ✓ in the accent teal); scheduling an index also
+per row (a visually hidden native checkbox, ✓ in the primary teal); scheduling an index also
 schedules its input observations, unscheduling it leaves them, and
 toggling an observation re-derives every index (scheduled iff all its
 inputs are) — the same cascade in both views. The column header is controls
 only, named through `aria-label`: a
-month pill (this month and the next 23, plus a stored month that has since
+small month select (`.mc-field-sm`; this month and the next 23, plus a stored month that has since
 fallen outside that window) beside a select-all box over the observation and
-index rows alike, tri-state through native `indeterminate` (`ScheduleHeader.tsx`, which
-keeps its own copy of the filter pill's style rather than importing
-`AllObservationsView`'s, since that module already imports the tables). The
+index rows alike, tri-state through native `indeterminate` (`ScheduleHeader.tsx`). The
 month is an ISO `YYYY-MM` label *for* the one global schedule, not a partition
 of it — switching months leaves every checked row checked — and select-all
 scopes to the rows the table is actually rendering, so All Observations' panel
@@ -284,13 +309,15 @@ data-management hub — a collapsible "Database details" card editing
 export-envelope metadata (read-only `generatedAt` stamped on each
 export, plus subject / sex / birth year / notes; persisted under
 localStorage key `bloodtests_envelope_meta_v1`, written into the export
-envelope with empty fields omitted), the reports table with
-error/warning dots, an "Add a report" card (1. copy the expandable
-chatbot prompt — `data/chatbotPrompt.ts`, user-facing prose that follows the
+envelope with empty fields omitted), the reports table in a card with a
+report count and one status dot per row (red errors, amber warnings, green no
+issues), an "Add a report" card of three step tiles (1. "Copy" the
+chatbot prompt, a "View prompt" toggle expanding it — `data/chatbotPrompt.ts`, user-facing prose that follows the
 interchange schema rather than the UI — 2. paste into a chatbot, 3. "Add" the chatbot-built
 JSON — merges by session id, with "Adding…" progress and "✓ Added N
-reports" feedback), and a "Back up your database" card (Export JSON /
-Import JSON (replaces) / Clear behind a divider);
+reports" feedback), and side by side a "Back up your database" card (Export
+JSON / Import JSON (replaces)) and a "Clear local DB" danger card (`DangerCard`,
+its Clear behind a confirm);
 `#reports/<file>` detail allows inline editing of each observation's
 LOINC / value / unit, saved to localStorage via `updateGroup`, and
 carries a "Cross-check LOINCs" button (`loincCheck.ts`): an offline
@@ -339,7 +366,8 @@ own module, `data/fuzzyMatch.ts`, with no tie to the analyte catalog), All
 Observations (every uploaded result in one table, with a "Show
 observations from" select narrowing it to one Monitoring Panel and a
 "Find a marker" box narrowing it by text — both now sit in
-`ControlsBar` beside the unit system and sample limit, one row of four
+`ControlsBar` beside the unit system (an SI / US `SegmentedControl`) and sample
+limit (5 / 10 / 15 / All, another), one row of four labelled groups
 that wraps rather than a second row of its own; Panel Detail renders the
 same four and *disables* the panel select rather than hiding it, since
 it is already one panel and a control that vanishes between views makes
@@ -368,14 +396,17 @@ indices, or the union over the panels on offer, so a share link's allowlist,
 which limits the panel options but never the observation rows, does narrow
 the indices), Monitoring Panels
 (the default/entry route), Scheduled Visits (`#plan`, reachable despite validation
-errors: under a "Planned for <month>" line, every scheduled observation, folded
+errors: under a "Planned for <month>" pill, in a table card, every scheduled observation, folded
 to its primary code, as one "Observation" cell — `friendlyName`, with the short
 name in parentheses where it differs, opening the analyte popup — beside one
 price column per laboratory, a bundle
 priced on its first covered row and marked "in <label>" on the rest by
-`data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own), Medications (`#medications`, reachable despite
-validation errors: a free-text medication / dosage table with a Jan–Dec month
-grid per shown year, edited behind an Edit / Done toggle and kept by
+`data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own, where the
+lowest total is tinted green and marked "Cheapest" — every laboratory sharing
+it, and none when the totals are in different currencies or the lowest is zero), Medications (`#medications`, reachable despite
+validation errors: a free-text medication / dosage table in a card with a Jan–Dec month
+grid per shown year, each taken month a soft bar that joins its neighbours within
+a year, edited behind an Edit / Done toggle and kept by
 `data/medications.ts`'s `useMedications` under its own localStorage key
 `bloodtests_medications_v1`, outside the envelope, export, import and share
 links — task-0018), Reference Book (Indices and derived
@@ -401,11 +432,12 @@ WHO TRS 932 Annex 2, Clinical Chemistry's instructions to authors and the
 LOINC Users' Guide, each with what it settles and a retrieval date; Analytes: a
 "LOINC database" page at `#reference/loinc-database` listing every analyte the
 app knows — LOINC code over its LOINC name, then friendly name over the short name
-where it differs, specimen, units and panels, sortable by code, friendly name and
-the other value columns) — each
+where it differs, specimen, units, last tested and panels, sortable by every
+column but panels) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
-while validation errors exist) has an "Export all data" button that downloads
+while validation errors exist) lays out three action cards — "Export all data",
+"Import all data" and a "Clear all data" danger card. "Export all data" downloads
 `blood-tests-backup-<yyyymmdd>.zip` — `lab-reports.json` (the Export JSON
 envelope), `medications.json`, `scheduled-visits.json`,
 `laboratory-prices.json`, `settings.json` (view settings and per-panel chart
@@ -565,7 +597,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (789 tests across 35 files, 1 skipped: index
+Vitest suites in `web/test/` (789 tests across 35 files — 788 passing, 1 skipped — as run on 2026-09-11: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
@@ -586,7 +618,8 @@ share-link and shared-meta,
 explore-model, markers, routing,
 scheduling, ui helpers, build stamp, format utils, lab pricing and the visit
 plan, medications, the backup archive and its restore, the showcase generator,
-import-results, old-shape stored sessions and the results context, analyte sort; the mobile reveal —
+import-results, old-shape stored sessions and the results context, analyte sort,
+the Monitoring Panels status filter; the mobile reveal —
 `TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile` — has none
 yet). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build in a

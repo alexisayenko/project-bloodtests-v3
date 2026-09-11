@@ -44,6 +44,8 @@ Every value lives once, as a custom property in `web/src/styles/index.css`'s
 | Link | `--link` | `#137a7f` |
 | Accent (active, selection, text-safe teal) | `--accent` | `#14757e` |
 
+Status is a deliberately soft set, independent of the brand palette:
+
 | Status | Dot | Text | Background |
 |---|---|---|---|
 | In range | `--status-ok` `#4caf7a` | `--status-ok-text` `#1f6b45` | `--status-ok-bg` `#e3f4ea` |
@@ -66,14 +68,19 @@ Every value lives once, as a custom property in `web/src/styles/index.css`'s
   in-range, red = out-of-range. A [computed
   index](../product/concepts/computed-index.md) is 3-state against
   its own cut-points instead: green = ok, amber = warn, red = bad.
-  A selected table row blends its cell color with the accent-tinted
-  row selection rather than replacing it, so status stays visible
-  while selected. The Monitoring Panels grid's chip dots add two
-  states for the latest reading: amber = reported without a reference
-  range, grey = never measured.
-- **Accent.** Teal (`--accent`, `#14757e`) carries the active section,
-  the active tab underline, selection, relation marks and the
-  Scheduled ✓.
+  In the Results table a reading's status is a soft `-bg` tint behind
+  the number, the digits in the `-text` colour, not a flood across the
+  cell. A selected row blends that tint with the accent-tinted row
+  selection (`--status-*-bg-selected`) rather than replacing it, so
+  status stays visible while selected. The Monitoring Panels grid's
+  chip dots add two states for the latest reading: amber = reported
+  without a reference range, grey = never measured.
+- **Accent.** Teal (`--accent`, `#14757e`) carries selection, relation
+  marks, the phone nav's active tab and focus rings. The desktop
+  sidebar's active section is a soft teal pill; the in-page tab strip
+  underlines its active tab in `--brand-teal-deep` under navy text; the
+  Scheduled ✓ and the primary button fill are `--primary`
+  (`#0e5a66`).
 
 ### Numbers
 
@@ -115,6 +122,35 @@ Shape and space tokens sit beside it: radii `--radius-pill` 999px,
 (hairline ring + faint navy lift) and `--shadow-pop` (stronger, for
 popups); spacing `--space-1`…`--space-6` = 4 / 8 / 12 / 16 / 24 / 32px.
 
+### Components
+
+Shared primitives live in `web/src/components/primitives/` (exported from
+its `index.ts`); a view reaches for one of these before writing its own.
+Where a state needs a selector an inline style cannot express (hover,
+`aria-pressed`, `:disabled`, focus), the look lives in `index.css` under an
+`mc-` class instead.
+
+| Primitive | What it is |
+|---|---|
+| `Button` | Pill button; `variant` `primary` (`--primary` fill), `secondary` (teal outline, the default) or `danger` (red outline, `-text` label); `size` `xs` / `sm` / `md`; disabled greys out with a `not-allowed` cursor. |
+| `FileButton` | The same pill as a label over a hidden file input, cleared after each pick so the same file can be picked twice. |
+| `Card` | White surface, `--border-subtle` hairline, `--radius-card`, `--shadow-card`, 16×20px padding. |
+| `CardParts` | `CardHeader` (optional icon, `CardTitle`, `CardDescription`, an aside on the right), `IconBadge` (a round tinted disc holding a line icon, 40px by default), `Overline` (11px uppercase muted label) and `DangerCard` (a `Card` with a rose hairline and wash, for actions that cannot be undone). |
+| `SectionTitle` / `EmptyState` | A 14px semibold group heading; a muted 14px "nothing here yet" line. |
+| `StatusDot` | An 8px dot in a status tone's colour (`TONE_DOT`), or any colour given. |
+| `StatusChip` | A white pill with a status dot and label (`.mc-chip`), a `<button>` when clickable; the grid's marker and index chips. |
+| `StatusToggle` | A status filter pill: dot, label (`TONE_LABEL`: In range / Borderline / Out of range / Not tested) and a count badge, `aria-pressed`; off, it goes transparent with a faded dot. |
+| `SwitchToggle` | A labelled on/off switch as one button, `aria-pressed`, the track teal when on; the grid's "Compact view". |
+| `SegmentedControl` | A pill group of mutually exclusive options (`.mc-segmented` / `.mc-segment`), the chosen one a raised white segment; the controls bar's unit system and sample limit. |
+
+`styles.ts` holds the non-component styles: `TABLE` / `TABLE_TH` / `TABLE_TD`
+(a plain table under a 1.5px accent rule), `CARD_TABLE_TH` / `CARD_TABLE_TD` /
+`TABLE_CARD` (a table flush inside a `Card`, under a muted uppercase header
+band), `FIELD_INPUT` (an inline text or select field), `OVERLINE`,
+`DANGER_CARD` and `buttonStyle`. Form controls outside a table use the
+`.mc-field` / `.mc-field-select` / `.mc-field-search` classes, with
+`.mc-field-sm` for the Scheduled column's month select.
+
 ### Motion
 
 - [TODO: standard durations — e.g. fast 150ms, default 250ms,
@@ -143,9 +179,11 @@ popups); spacing `--space-1`…`--space-6` = 4 / 8 / 12 / 16 / 24 / 32px.
   breadcrumb trail anywhere. Nested position within a section (e.g.
   panel detail under Monitoring Panels) still gets its own URL hash so
   browser back/forward works, and keeps its parent section active. The
-  two detail views are the exception: Panel Detail and Diagnostic
-  Report detail put a back chevron (‹) before their `<h1>`, a single
-  link back to the grid or the reports list — not a breadcrumb path.
+  two detail views are the exception: each puts a single link back
+  before its `<h1>` — not a breadcrumb path. Panel Detail's is a round
+  chevron button, followed by the panel's icon disc in its tint and the
+  title over the panel description; Diagnostic Report detail's is a
+  plain ‹ back to the reports list.
 - **Page header banner.** Every top-level section opens with the same
   `PageHeader`: an uppercase teal overline, a two-tone title (second
   half in teal), two description lines and three icon "pillars" on the
@@ -173,20 +211,33 @@ popups); spacing `--space-1`…`--space-6` = 4 / 8 / 12 / 16 / 24 / 32px.
   reserved on every row (All Observations too, though it shows no
   marks) so a mark never shifts the text beside it.
 - **Results table:** observations and computed indices share one
-  table, the indices below an "Indices" divider row, on both Panel
-  Detail and All Observations.
-- **Controls bar:** unit system, sample limit, panel select and marker
-  search sit inside the Results tab, between the tab strip and the
-  table, and are not rendered on the other tabs. Panel Detail shows the
-  panel select disabled rather than hiding it.
+  table in a `Card`, under a muted uppercase header band, the indices
+  below an "Indices" divider row — an overline label over a hairline
+  that spans only the table's own columns — on both Panel Detail and
+  All Observations.
+- **Controls bar:** unit system and sample limit (each a
+  `SegmentedControl`: SI / US, and 5 / 10 / 15 / All), panel select and
+  marker search, each under a small label, sit inside the Results tab,
+  between the tab strip and the table, and are not rendered on the
+  other tabs. Panel Detail shows the panel select disabled rather than
+  hiding it.
+- **Monitoring Panels toolbar:** status filter toggles (one
+  `StatusToggle` per status, all on by default, with its chip count)
+  and the "All" / "Abnormal only" presets on the left; the "Compact
+  view" switch and the search box on the right. A status switched off
+  hides its chips in every card and the card count reads "N of M
+  markers"; a card left empty stays, saying "No markers match". The
+  filters are session state; Compact view is remembered. Compact view
+  shows short names, drops the Observations / Indices labels and the
+  "View panel →" link, and fits more, narrower columns.
 - **Scheduled column:** a per-row single-click toggle (a native
   checkbox, visually hidden, ✓ in teal), set apart at the right of the
   table by a spacer column so it reads as a separate concern from the
   dated value cells. On Panel Detail's Results table and on All
   Observations, over one shared set — the same row toggled in either
-  place is the same row. Its header is a control, not a label: a month
-  pill above a tri-state select-all box that carries the word
-  "Scheduled". The month names what the schedule is *for* and never
+  place is the same row. Its header is a control, not a label: a small
+  month select beside a tri-state select-all box, both named through
+  `aria-label` rather than a visible word. The month names what the schedule is *for* and never
   filters it; select-all covers only the rows currently on screen, so a
   filtered table never schedules something the reader cannot see.
 - **Unit labels:** the unit sits once in the row's name column when
@@ -202,11 +253,13 @@ popups); spacing `--space-1`…`--space-6` = 4 / 8 / 12 / 16 / 24 / 32px.
 - **Tab placement:** top (web) — the in-page
   Results/Trends/What's-in-range/Charts tabs use a top,
   underlined-active style, and so does the phone's section nav. Only
-  the in-page strip is a shared component (`TabBar`); the phone nav
-  keeps its own markup, because it also carries a blocked state, its
-  own spacing and font size, and an active tab derived from the route —
-  it shares the look (`tabStyle`), not the component. The desktop
-  sidebar shares neither.
+  the in-page strip is a shared component (`TabBar`, styled by
+  `.mc-tabs` / `.mc-tab`: muted labels, the active one navy with a
+  `--brand-teal-deep` underline, over a hairline); the phone nav keeps
+  its own markup and inline `tabStyle` (teal label and underline),
+  because it also carries a blocked state, its own spacing and font
+  size, and an active tab derived from the route — the two share the
+  idea, not the code. The desktop sidebar shares neither.
 - [TODO: gesture conventions — long-press, swipe-to-delete.]
 
 ### Voice & copy

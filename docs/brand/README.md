@@ -84,6 +84,18 @@ the positioning this repo's `CLAUDE.md` still has as a TODO — *"Your
 bloodwork history, woven into one timeline"*, and the three promises
 *No accounts. No server. No medical advice.*
 
+## Desktop design reference
+
+[`designs/`](designs/) holds six generated mockups of the Monitoring
+Panels grid (ChatGPT, 2026-09-11, PNG, file names as exported). They are
+the visual reference for the desktop restyle: tinted panel cards with a
+round icon disc, white marker chips, and the soft status colours now in
+`web/src/styles/index.css`'s `:root` (see
+[`../ui-ux/style-guide.md`](../ui-ux/style-guide.md#color)). They are a
+reference, not a spec — the app keeps its own shell, the `AppShell`
+sidebar and top bar, and its `PageHeader` banner rather than redrawing
+them to match, and the mockups' light/dark toggle is not built.
+
 ## Where applications live
 
 Cross-folder assets (mark sources, font licenses) live here.

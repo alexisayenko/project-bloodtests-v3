@@ -26,7 +26,15 @@ Entry point → panel detail, with a historical values table.
 - **Entry:** Monitoring Panels (panel grid; a "Search markers or
   panels…" box narrows the cards)
 - **Screens (in order):** Monitoring Panels → panel detail (Results
-  tab), opened from a card's header or its "View panel →" link
+  tab), opened from a card's header or, outside Compact view, its "View
+  panel →" link
+- **Branches:** on the grid, the status filter toggles (In range,
+  Borderline, Out of range, Not tested, each with its count, plus "All"
+  and "Abnormal only") hide the chips of any status switched off, and a
+  card's count becomes "N of M markers"; the filters are not
+  remembered. "Compact view" switches the chips to short names and drops
+  the section labels and "View panel →" link to fit more cards, and is
+  remembered
 - **Branches:** the Results tab shows one table — observations, then
   the panel's computed indices under an "Indices" divider row — with
   the controls bar (unit system, sample limit, a disabled panel select,
@@ -65,8 +73,8 @@ Get lab results into the app — real or synthetic.
   Observations; or Get Started → Diagnostic Reports ("Add a report":
   copy the chatbot prompt, build a JSON with a chatbot, Add — merges)
 - **Branches:** invalid JSON shows an inline parse error; Clear (with
-  confirm, on Diagnostic Reports' "Back up your database" card) wipes
-  all sessions
+  confirm, on Diagnostic Reports' "Clear local DB" danger card, beside
+  "Back up your database") wipes all sessions
 - **Exit / success:** panels and tables populate; uploads and
   generated data coexist (merged by session id)
 
@@ -85,7 +93,8 @@ Turn ticked rows into a costed order.
 - **Exit / success:** one row per scheduled observation with a price
   column per laboratory — a bundle priced on its first row and marked
   "in <label>" on the rest, "—" where a laboratory does not sell it —
-  over a Total row per laboratory that counts what it could not price
+  over a Total row per laboratory that counts what it could not price,
+  the cheapest total tinted green and marked "Cheapest"
 
 ## Record medications
 
@@ -102,11 +111,11 @@ Note what was taken, at what dosage, month by month.
 Move all of a browser's data out, back in, or away.
 
 - **Entry:** Account
-- **Screens (in order):** Account — "Export all data" downloads one zip
-  (lab reports, medications, scheduled visits, laboratory prices,
-  settings, manifest); "Import all data" reads such a zip back after a
-  confirm; "Clear all data", after a confirm, removes everything this
-  app stores in the browser
+- **Screens (in order):** Account, three cards — "Export all data"
+  downloads one zip (lab reports, medications, scheduled visits,
+  laboratory prices, settings, manifest); "Import all data" reads such a
+  zip back after a confirm; the "Clear all data" danger card, after a
+  confirm, removes everything this app stores in the browser
 - **Branches:** a zip that fails validation changes nothing; parts
   missing from the zip are left empty, and laboratory prices are never
   restored
