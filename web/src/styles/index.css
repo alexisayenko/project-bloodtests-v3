@@ -417,8 +417,21 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 }
 .mc-pathway-diagram { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .mc-pathway-row {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  align-items: center; justify-items: center; flex: 1;
+  display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 0 24px 36px;
 }
+.mc-pathway-bands { position: relative; }
+.mc-pathway-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; color: var(--navy); z-index: 1; }
+.mc-pathway-group { display: flex; align-items: center; gap: 12px; margin: 0 auto; }
+.mc-pathway-row-start { justify-content: flex-start; }
+.mc-pathway-slot { width: 96px; justify-content: center; }
+.mc-pathway-exchange { flex: none; width: 56px; height: 14px; color: var(--navy); }
 .mc-pathway-node { color: var(--navy); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mc-pathway-docked { display: flex; align-items: center; }
+.mc-pathway-docked .mc-pathway-bond { margin-left: -6px; width: 48px; }
+.mc-pathway-docked-left .mc-pathway-bond { margin-left: 0; margin-right: -6px; }
+.mc-pathway-anchor { position: relative; display: flex; }
+.mc-pathway-caption { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; display: flex; flex-direction: column; align-items: center; white-space: nowrap; }
+.mc-pathway-node-value { font-size: var(--font-small); color: var(--navy); opacity: 0.8; }
+.mc-pathway-bond { width: 14px; border-top: 1.5px solid var(--navy); }
+.mc-pathway-bubble { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1.5px solid var(--navy); border-radius: 50%; background: #fff; }
 .mc-pathway-node-label { font-size: var(--font-small); font-weight: 600; color: var(--navy); line-height: 1.2; }

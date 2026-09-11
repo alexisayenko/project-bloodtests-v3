@@ -172,6 +172,22 @@ export const HormoneIcon: IconComponent = ({ size = 24, color = 'currentColor', 
   </svg>
 );
 
+const CELLS: ReadonlyArray<readonly [number, number, number]> = [
+  [16, 11, 7], [31, 9, 6.5], [9, 26, 6.5], [24, 24, 7.5], [38, 23, 6.5], [18, 39, 6.5], [33, 38, 6.5],
+];
+
+/** Cells: a loose group of rounded cells, each with a nucleus. */
+export const CellsIcon: IconComponent = ({ size = 48, strokeWidth = 1.75, ...rest }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 48 48" fill="none" strokeWidth={strokeWidth} {...rest}>
+    {CELLS.map(([cx, cy, r]) => (
+      <g key={`${cx}-${cy}`}>
+        <circle cx={cx} cy={cy} r={r} fill="#E6F2FB" stroke="#3B8FD4" />
+        <circle cx={cx} cy={cy} r={r * 0.42} stroke="#3B8FD4" />
+      </g>
+    ))}
+  </svg>
+);
+
 const CARRIER_BEADS: ReadonlyArray<readonly [number, number, number]> = [
   [24, 9, 6.5], [32.5, 12.3, 6.2], [38.5, 19.3, 6.6], [37.9, 28.5, 6.3], [32.8, 36.1, 6.6],
   [24, 38.8, 6.3], [15.1, 36.3, 6.5], [10.2, 28.5, 6.2], [9.6, 19.3, 6.6], [15.4, 12.1, 6.3],
