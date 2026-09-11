@@ -58,10 +58,12 @@ decimals.
 
 ## The analytes
 
-Seventeen entries. An entry exists because something in the app needs
-it: a [mass/molar LOINC sibling pair](README.md#unit-normalization), or
-a computed index whose formula wants an input in the other unit
-system. The `id` is not a LOINC — several codes share one mass, since
+Eighteen entries. An entry exists because something in the app needs
+it: a [mass/molar LOINC sibling pair](README.md#unit-normalization), a
+computed index whose formula wants an input in the other unit
+system, or a curated Hormonal Pathways reference range printed in the
+other one (estradiol, added 2026-09-11 for
+`pathway-reference-ranges.json`'s pmol/L range). The `id` is not a LOINC — several codes share one mass, since
 total, HDL and LDL cholesterol are all cholesterol.
 
 | id | Formula | g/mol | Basis | Source |
@@ -83,6 +85,7 @@ total, HDL and LDL cholesterol are all cholesterol.
 | `thyroxine` | C15H11I4NO4 | 776.87388 | compound | [PubChem CID 5819](https://pubchem.ncbi.nlm.nih.gov/compound/5819) |
 | `triiodothyronine` | C15H12I3NO4 | 650.97741 | compound | [PubChem CID 5920](https://pubchem.ncbi.nlm.nih.gov/compound/5920) |
 | `dheas` | C19H28O5S | 368.488 | compound | [PubChem CID 12594](https://pubchem.ncbi.nlm.nih.gov/compound/12594) |
+| `estradiol` | C18H24O2 | 272.388 | compound | [PubChem CID 5757](https://pubchem.ncbi.nlm.nih.gov/compound/5757) |
 
 Each row's full citation — including the mass the source itself
 prints, and the date it was retrieved — is in the data file. Formula

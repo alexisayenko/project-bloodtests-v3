@@ -5,11 +5,19 @@
 > [ADR-0014](../../tech/decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
 > `HormonalPathwaysView.tsx` draws four captioned zones on one canvas —
 > Hypothalamus + Pituitary (empty so far), Blood Transport, Testes, Target
-> tissues — with hand-coded sample values, pathway arrows measured from the
-> DOM, and six clickable badges; no user data, `pathways.json`, month stepper
-> or feedback arrows yet. Where the build departs from what follows (zones,
-> not bands; badges in one column; association lines hidden at rest; cells
-> and receptors drawn), task-0024's status note records it.
+> tissues — with pathway arrows measured from the DOM and six clickable badges,
+> now on the user's own readings: a ‹ date › stepper over the Hypogonadism
+> panel's results-table dates (latest by default), values in the SI/US unit
+> system, indices from `INDEX_DEFS`, the bound pools from `testosteronePools`,
+> and an albumin default of 4.3 g/dL behind a checkbox. Node captions are
+> chips with status dots; a chip or badge expands in place to a reference
+> range — the lab's own when printed, else the cited, adult-male ranges of
+> `pathway-reference-ranges.json`, `INDEX_DEFS`' zones for indices, none for
+> the calculated pools. No `pathways.json` or feedback arrows yet. Where the
+> build departs from what follows (zones, not bands; badges in one column;
+> association lines hidden at rest; cells and receptors drawn; a date stepper
+> rather than a month stepper; a default albumin), task-0024's status note
+> records it.
 
 One hormonal axis drawn as its wiring — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
 

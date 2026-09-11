@@ -44,7 +44,7 @@ them mirrored in TypeScript
   `excludeLoincs` and `extraLoincs`). See the
   [monitoring panel](../product/concepts/monitoring-panel.md) concept.
 - **`molar-masses.json`** — the single source of truth for mass↔molar
-  arithmetic: 17 analytes' molar masses (never factors), each computed
+  arithmetic: 18 analytes' molar masses (never factors), each computed
   from a molecular formula and the CIAAW 2021 atomic weights the file
   also tabulates, with retrieved citations and a `basis` saying whether
   the number is exact or conventional. `web/src/data/molarMasses.ts`

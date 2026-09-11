@@ -42,7 +42,7 @@ its `aliasOf`. All three files are described by
 objects) and validated with ajv by `web/test/reference-data.test.ts`. The same
 pattern carries mass↔molar arithmetic: `web/public/data/molar-masses.json` is
 the single source of truth for it and stores molar masses, never conversion
-factors — 17 analytes, each with the molecular formula its
+factors — 18 analytes, each with the molecular formula its
 `molarMassGPerMol` is computed from, the CIAAW 2021 standard atomic weights the
 file also tabulates, a `basis` of `compound` / `element` / `conventional`, and
 retrieved citations (PubChem CID, or CIAAW for an element) carrying the source's
@@ -434,15 +434,40 @@ indices, or the union over the panels on offer, so a share link's allowlist,
 which limits the panel options but never the observation rows, does narrow
 the indices), Monitoring Panels
 (the default/entry route), Hormonal Pathways (`#pathways`, blocked while
-validation errors exist, like Monitoring Panels: a first static version of
-task-0024 in `HormonalPathwaysView.tsx`, under a `PageHeader` with overline
+validation errors exist, like Monitoring Panels: task-0024's first version in
+`HormonalPathwaysView.tsx`, under a `PageHeader` with overline
 "Endocrinology", title "Hormonal Pathways" and "Biochemical pathways of
 hormones" — one canvas of four zones, each captioned by small uppercase text at
 its top left with its description on hover: Hypothalamus + Pituitary (empty so
 far); Blood Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
 with albumin-bound T docked, E2); Testes (Sertoli and Leydig cells); Target
 tissues (5α-reductase → DHT, aromatase → E2, androgen and estrogen receptors).
-Every value is hand-coded sample data — nothing reads the user's results yet.
+Values are the user's: the shell passes the loaded reports, the Hypogonadism
+panel's observations and the unit system, and a ‹ date › stepper lists exactly
+that panel's results-table dates — `markers.ts`'s `panelDates`, shared with
+`PanelDetailView` — defaulting to the latest, the readings shown in SI/US;
+Free T, Bio-T, T/LH, DHT/T and T/E2 come from `computeIndex` over
+`INDEX_DEFS`, and the SHBG-bound and albumin-bound pools from `indexDefs.ts`'s
+`testosteronePools`. A "Use albumin 43 g/L (4.3 g/dL) when not measured"
+checkbox, on by default, feeds the exported `DEFAULT_ALBUMIN_GDL` to Free T,
+Bio-T and the pools; unchecked, they need a measured albumin. Node captions are
+compact chips with a status dot and a short face (SHBG-T, Albumin-T) whose
+floating card gives the full title (SHBG-bound Testosterone); chips and badges
+expand in place, one open at a time, closed by Escape or an outside click, and
+nodes carry no analyte-popup wiring. Each shows a reference range judged as
+adult male: the lab-printed one, tagged "From the lab report", when the reading
+has one; otherwise the curated ranges of
+`web/public/data/pathway-reference-ranges.json` (closed-object schema
+`pathway-reference-ranges-1.schema.json`, loader `data/pathwayReferenceRanges.ts`
+with `rangesInUnit` / `rangeStatus` / `convertConcentration`, validated in
+`reference-data.test.ts`), every figure as its source printed it and converted
+for display only through the unit helpers and `molar-masses.json`, with numbered
+[n] sources — London Health Sciences Centre's lab test guide for LH, FSH, SHBG
+by age band, albumin and estradiol, Travison 2017 (JCEM) for total T and
+Swerdloff 2017 (Endocrine Reviews) for DHT, a single hospital lab standing in
+for the major reference labs that could not be retrieved (open in task-0024);
+Free T, Bio-T and the ratios show `INDEX_DEFS`' male zones and citations, and
+the pools "No reference range (calculated pool)" with a bioavailability note.
 The pathway arrows are an SVG overlay measured from the DOM and re-measured by
 a `ResizeObserver` — FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
 enzymes and down to the androgen receptors, enzymes → products,
@@ -455,7 +480,8 @@ T/E2 — each expands on click to Meaning / Low / High / Caveats, static text in
 the component for now (`INDEX_DEFS` the intended source), and while one is
 hovered, focused or open draws its association lines, hidden at rest: one
 purple bus from the badge to a lane above its targets, stubs down to dashed
-rings around each target), Scheduled Visits (`#plan`, reachable despite validation
+rings around each target; only an opened badge also veils the rest of the
+diagram, hover drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
 errors: under a "Planned for <month>" pill, in a table card, every scheduled observation, folded
 to its primary code, as one "Observation" cell — `friendlyName`, with the short
 name in parentheses where it differs, opening the analyte popup — beside one
@@ -483,7 +509,7 @@ Book); Formulas and math: a "Mass ↔ molar
 conversion" page at `#reference/molar-masses` rendered entirely from
 `molarMasses.ts` — why one analyte reports on two scales, the
 atomic-weights → formula → g/mol → factor chain worked through
-cholesterol, the 17-analyte table with `basis` pills and PubChem/CIAAW
+cholesterol, the 18-analyte table with `basis` pills and PubChem/CIAAW
 links, and the conventional cases quoting the JSON's own notes; like
 `HpAxisPage` it lives inside `ReferenceBookPage.tsx`, and `#reference/<key>`
 already routed generically — and beside it a "Units and how they are read"
@@ -669,7 +695,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (808 tests across 36 files — 807 passing, 1 skipped — as run on 2026-09-11: index
+Vitest suites in `web/test/` (816 tests across 36 files — 815 passing, 1 skipped — as run on 2026-09-11: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
@@ -686,7 +712,10 @@ LOINC, every `aliasOf` resolving, every `shortName` carrying a unit;
 molar-masses against `molar-masses-1.schema.json`, plus every mass
 recomputed from its formula, agreeing with a cited source within
 0.05%, and every sibling pair naming a tabulated entry; laboratories against
-`laboratories-1.schema.json`),
+`laboratories-1.schema.json`; pathway reference ranges against
+`pathway-reference-ranges-1.schema.json`, plus every source cited and every
+citation resolving, codes catalogued, molar masses tabulated, and each
+population placing on a catalog unit),
 share-link and shared-meta,
 explore-model, markers, routing,
 scheduling, month keys, ui helpers, build stamp, format utils, lab pricing and the visit
