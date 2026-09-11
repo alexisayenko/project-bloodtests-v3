@@ -5,12 +5,27 @@ import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
 import { INDEX_LOINCS, testLoincs, observationMatchesQuery, indexMatchesQuery, type Observation } from './markers';
 import { pressable } from './ui';
-import { getStatus, type LatestByLoinc } from './resultsLookup';
+import { getStatus, type LatestByLoinc, type Status } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 import { getPanelMeta } from './panelMeta';
 import { PageHeader } from './PageHeader';
 
 export type Condition = { name: string; tests: Observation[] };
+
+const NEUTRAL_DOT = '#94a3b8';
+
+const STATUS_DOT: Record<Status, string> = {
+  'in-range': '#16a34a',
+  'out-of-range': '#dc2626',
+  unknown: '#f59e0b',
+  never: NEUTRAL_DOT,
+};
+
+const ZONE_DOT: Record<Zone, string> = {
+  ok: '#16a34a',
+  warn: '#f59e0b',
+  bad: '#dc2626',
+};
 
 /** Newest-first scan for the first draw with a computable value. */
 function latestZone(def: IndexDef, datesDesc: string[], resultsByDate: Record<string, Record<string, Result>>): Zone | null {
@@ -229,14 +244,7 @@ export function PanelsGridView({
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                   {observations.map((test) => {
                     const status = getStatus(latestByLoinc, testLoincs(test));
-                    const dotColor =
-                      status === 'in-range'
-                        ? '#16a34a'
-                        : status === 'out-of-range'
-                        ? '#dc2626'
-                        : status === 'unknown'
-                        ? '#f59e0b'
-                        : '#94a3b8';
+                    const dotColor = STATUS_DOT[status];
 
                     return (
                       <DotChip
@@ -259,8 +267,7 @@ export function PanelsGridView({
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                     {computedForPanel.map((def) => {
                       const z = latestZone(def, datesDesc, resultsByDate);
-                      const dotColor =
-                        z === 'ok' ? '#16a34a' : z === 'warn' ? '#f59e0b' : z === 'bad' ? '#dc2626' : '#94a3b8';
+                      const dotColor = z ? ZONE_DOT[z] : NEUTRAL_DOT;
 
                       return (
                         <DotChip

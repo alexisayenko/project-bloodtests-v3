@@ -55,6 +55,20 @@ function monthTh(monthIndex: number) {
   return { ...th, textAlign: 'center', padding: '6px 0', fontSize: 11, fontWeight: 500, color: COLOR.textMuted, borderLeft: monthEdge(monthIndex) } as const;
 }
 
+const monthCheckbox = {
+  appearance: 'none',
+  display: 'block',
+  boxSizing: 'border-box',
+  width: '100%',
+  height: '100%',
+  minHeight: 34,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: 'transparent',
+  cursor: 'pointer',
+} as const;
+
 function monthTd(monthIndex: number, marked: boolean) {
   return {
     padding: 0,
@@ -208,19 +222,18 @@ export function MedicationsView() {
                       const toggle = () => onToggleMonth(row.id, key);
                       return (
                         <td key={key} style={monthTd(i, marked)}>
-                          <div
-                            role="checkbox"
-                            aria-checked={marked}
+                          <input
+                            type="checkbox"
+                            checked={marked}
                             aria-label={monthLabel(row, year, i)}
-                            tabIndex={0}
-                            onClick={toggle}
+                            onChange={toggle}
                             onKeyDown={(e) => {
-                              if (e.key === ' ' || e.key === 'Enter') {
+                              if (e.key === 'Enter') {
                                 e.preventDefault();
                                 toggle();
                               }
                             }}
-                            style={{ height: '100%', minHeight: 34, cursor: 'pointer' }}
+                            style={monthCheckbox}
                           />
                         </td>
                       );
