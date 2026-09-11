@@ -1,8 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
+import type { IconComponent } from './customIcons';
 import { COLOR } from '../../styles/tokens';
 
 export type HeaderPillar = {
-  icon: LucideIcon;
+  icon: LucideIcon | IconComponent;
   line1: string;
   line2: string;
 };

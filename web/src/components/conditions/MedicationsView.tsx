@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMedications, type MedicationRow } from '../../data/medications';
 import { MONTH_LABELS, monthKey } from '../../data/months';
-import { Pill, Clock, TrendingUp } from 'lucide-react';
+import { Clock, TrendingUp } from 'lucide-react';
+import { PillIcon } from './customIcons';
 import { PageHeader } from './PageHeader';
 import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
@@ -122,7 +123,7 @@ export function MedicationsView() {
           'Correlate medication changes with biomarker movements across your timeline.',
         ]}
         pillars={[
-          { icon: Pill, line1: 'Dosage & intake', line2: 'monthly log' },
+          { icon: PillIcon, line1: 'Dosage & intake', line2: 'monthly log' },
           { icon: Clock, line1: 'Chronological', line2: 'regimen history' },
           { icon: TrendingUp, line1: 'Biomarker shift', line2: 'correlation' },
         ]}

@@ -5,11 +5,10 @@ import {
   Activity,
   Droplets,
   Bone,
-  Pill,
   Microscope,
   type LucideIcon,
 } from 'lucide-react';
-import { LiverIcon, KidneyIcon, ThyroidIcon, type IconComponent } from './customIcons';
+import { LiverIcon, KidneyIcon, ThyroidIcon, PillIcon, type IconComponent } from './customIcons';
 import { TINT } from '../../styles/tokens';
 
 /** Per-panel visual identity: accent color, card background tint, icon circle background, border color, icon, and short description. */
@@ -95,7 +94,7 @@ const META: Record<string, PanelMeta> = {
   },
   'Pancreatic Function': {
     ...colors(TINT.orange),
-    icon: Pill,
+    icon: PillIcon,
     description: 'Monitor exocrine and endocrine pancreatic markers.',
   },
   'FBC': {

@@ -49,6 +49,33 @@ export const KidneyIcon: IconComponent = ({ size = 26, color = 'currentColor', s
 );
 
 /**
+ * Capsule tilted lower-left to upper-right, split across its middle, with a
+ * highlight arc under its upper cap — a line icon in lucide's 24-unit grid,
+ * drawn upright and rotated so the cap, divider and arc stay concentric.
+ */
+export const PillIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    <g transform="rotate(45 12 12)">
+      <rect x="7" y="0" width="10" height="24" rx="5" />
+      <path d="M7 12h10" />
+      <path d="M9.84 4.75A2.5 2.5 0 0 1 12 3.5" />
+    </g>
+  </svg>
+);
+
+/**
  * Thyroid gland butterfly outline — exact vector extracted from design mockup.
  */
 export const ThyroidIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
