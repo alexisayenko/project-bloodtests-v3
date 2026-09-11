@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   fmtNum,
-  formatDate,
   formatFrequencyText,
   formatResultReference,
   formatResultValue,
@@ -36,12 +35,6 @@ describe('fmtNum — adaptive precision by magnitude (v2 parity)', () => {
   it('renders null/undefined as empty (callers supply their own dash)', () => {
     expect(fmtNum(null)).toBe('');
     expect(fmtNum(undefined)).toBe('');
-  });
-});
-
-describe('formatDate', () => {
-  it('renders "YYYY Mon" in English', () => {
-    expect(formatDate('2026-08-25')).toBe('2026 Aug');
   });
 });
 

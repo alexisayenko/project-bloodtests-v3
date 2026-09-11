@@ -4,7 +4,8 @@ import { computeIndex, indexZone, type IndexDef, type SubjectProfile } from '../
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import type { Result } from '../../types';
 import { isEchoRedundant, testLoincs, type Observation } from './markers';
-import { ZONE_BG, formatMonthYear, greenRangeOf, pressable, cellBg } from './ui';
+import { ZONE_BG, greenRangeOf, pressable, cellBg } from './ui';
+import { formatMonthYear } from '../../data/months';
 import { getLatest, hasReference, type LatestByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 

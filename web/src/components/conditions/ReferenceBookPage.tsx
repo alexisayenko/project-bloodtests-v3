@@ -29,6 +29,7 @@ import {
 import { MASS_MOLAR_SIBLINGS } from '../../data/massMolarSiblings';
 import { HP_AXIS_HTML } from './hpAxisContent';
 import { greenRangeOf, namedLab, pressable } from './ui';
+import { formatMonthYear } from '../../data/months';
 import {
   buildConditions,
   buildPanelsByLoinc,
@@ -1027,8 +1028,6 @@ function PanelsCell({
   );
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 const labLine = {
   maxWidth: 180,
   fontSize: 11,
@@ -1042,11 +1041,10 @@ const labLine = {
 /** "2026-08-19" at "MS LAB Diagnostics" → "Aug 26" over a muted "MS LAB Diagnostics". */
 function LastTestedCell({ entry }: Readonly<{ entry?: ResultEntry }>) {
   if (!entry) return <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>;
-  const [year, month] = entry.date.split('-');
   const lab = namedLab(entry.place);
   return (
     <>
-      {`${MONTHS[Number(month) - 1] ?? month} ${year.slice(2)}`}
+      {formatMonthYear(entry.date)}
       {lab && (
         <div style={labLine} title={lab}>
           {lab}

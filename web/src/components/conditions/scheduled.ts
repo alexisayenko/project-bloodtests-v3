@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MARKER_LOINC } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
-import { LABORATORY_BY_ID } from '../../data/labPricing';
+import { isMonthKey, monthKeyOf } from '../../data/months';
 import { LOINC_TO_MARKER } from './markers';
 
 // Which observations (by LOINC) and computed indices (by key) are marked for
@@ -13,10 +13,9 @@ export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
 // leaves every checked row checked. Stored as YYYY-MM because it is a calendar
 // month, not an instant: it sorts lexicographically, needs no timezone, and is
 // what an <input type="month"> would have produced anyway.
-// `lab` is a laboratories.json id the schedule was once costed at. Nothing sets
-// it any more; it is still read and written so stored schedules and backups
-// carrying it keep loading. An absent key means none chosen.
-export type Scheduled = { loincs: string[]; indices: string[]; month?: string; lab?: string };
+// Stored schedules and backups may still carry a `lab` key from when the
+// schedule was costed at one laboratory; it is ignored like any unknown field.
+export type Scheduled = { loincs: string[]; indices: string[]; month?: string };
 export const EMPTY_SCHEDULED: Scheduled = { loincs: [], indices: [] };
 
 /** How many of a table's rows are scheduled, for the header's tri-state box. */
@@ -35,17 +34,6 @@ export type IndexScheduling = {
   onToggle: (key: string) => void;
   onSetMonth: (month: string | undefined) => void;
 };
-
-const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
-
-export function isScheduleMonth(value: unknown): value is string {
-  return typeof value === 'string' && MONTH_RE.test(value);
-}
-
-/** A laboratory id the registry still carries; anything else reads as no laboratory. */
-export function isScheduleLab(value: unknown): value is string {
-  return typeof value === 'string' && Object.keys(LABORATORY_BY_ID).includes(value);
-}
 
 export function loadScheduled(): Scheduled {
   try {
@@ -70,8 +58,7 @@ export function parseScheduled(raw: string | null): Scheduled {
       return {
         loincs: Array.isArray(parsed.loincs) ? parsed.loincs.filter((x): x is string => typeof x === 'string') : [],
         indices: Array.isArray(parsed.indices) ? parsed.indices.filter((x): x is string => typeof x === 'string') : [],
-        month: isScheduleMonth(parsed.month) ? parsed.month : undefined,
-        lab: isScheduleLab(parsed.lab) ? parsed.lab : undefined,
+        month: isMonthKey(parsed.month) ? parsed.month : undefined,
       };
     }
   } catch {
@@ -159,7 +146,7 @@ export function setRowsScheduled(scheduled: Scheduled, rows: string[][], on: boo
 }
 
 export function setScheduleMonth(scheduled: Scheduled, month: string | undefined): Scheduled {
-  return { ...scheduled, month: isScheduleMonth(month) ? month : undefined };
+  return { ...scheduled, month: isMonthKey(month) ? month : undefined };
 }
 
 export function selectionState(flags: readonly boolean[]): SelectionState {
@@ -171,16 +158,10 @@ export function selectionState(flags: readonly boolean[]): SelectionState {
 export function monthChoices(today: Date, count: number, selected?: string): string[] {
   const months: string[] = [];
   for (let i = 0; i <= count; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    months.push(monthKeyOf(new Date(today.getFullYear(), today.getMonth() + i, 1)));
   }
-  if (isScheduleMonth(selected) && !months.includes(selected)) months.push(selected);
+  if (isMonthKey(selected) && !months.includes(selected)) months.push(selected);
   return months.sort((a, b) => a.localeCompare(b));
-}
-
-export function formatScheduleMonth(month: string): string {
-  const [year, m] = month.split('-');
-  return new Date(Number(year), Number(m) - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
 export function useScheduled() {

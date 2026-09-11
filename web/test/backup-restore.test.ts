@@ -16,7 +16,9 @@ const NOW = new Date('2026-09-10T08:30:00Z');
 const APP = { commit: 'abc1234', builtAt: '2026-09-10T08:00:00Z' };
 
 const MEDICATIONS = { years: [2025, 2026], rows: [{ id: 'm1', name: 'Vitamin D', dosage: '2000 IU', months: ['2026-01'] }] };
-const SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10', lab: 'esculab' };
+const SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
+// Stored while the schedule still carried a laboratory: it must restore all the same, without it.
+const STORED_SCHEDULED = { ...SCHEDULED, lab: 'esculab' };
 const SETTINGS = {
   [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all', compactPanels: true }),
   'exploreSel:Lipids': JSON.stringify(['ldl', 'hdl']),
@@ -45,7 +47,7 @@ function seed() {
   store.set(RESULTS_STORAGE_KEY, JSON.stringify([session]));
   store.set(ENVELOPE_META_KEY, JSON.stringify({ subject: 'Alex' }));
   store.set(MEDICATIONS_KEY, JSON.stringify(MEDICATIONS));
-  store.set(SCHEDULED_KEY, JSON.stringify(SCHEDULED));
+  store.set(SCHEDULED_KEY, JSON.stringify(STORED_SCHEDULED));
   store.set(SHARED_META_KEY, JSON.stringify({ showPanels: ['Lipids'] }));
   store.set(IMPORTED_LINKS_KEY, JSON.stringify(['guid-1']));
   store.set('bloodtests_lang', 'en');
@@ -149,6 +151,16 @@ describe('restoreBackup', () => {
 
     expect(store.has(RESULTS_STORAGE_KEY)).toBe(false);
     expect(lines).toContain('Lab reports: 0 reports restored.');
+  });
+
+  it('restores an older backup whose schedule still carries a laboratory, and stores it without one', async () => {
+    seed();
+    const files = { ...(await exportZip()), 'scheduled-visits.json': JSON.stringify(STORED_SCHEDULED) };
+
+    await importFiles(files);
+
+    expect(loadScheduled()).toEqual(SCHEDULED);
+    expect(JSON.parse(store.get(SCHEDULED_KEY)!)).toEqual(SCHEDULED);
   });
 });
 

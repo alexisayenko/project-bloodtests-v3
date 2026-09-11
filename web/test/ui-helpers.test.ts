@@ -2,9 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   buildRowCells,
   cellBg,
-  controlsForTab,
   formatFullDate,
-  formatMonthYear,
   greenRangeOf,
   isCellArmed,
   loadViewSettings,
@@ -27,9 +25,7 @@ import type { Result } from '../src/types';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 
 describe('date labels', () => {
-  it('renders the column "Mon YY" and the full "Mon D, YYYY"', () => {
-    expect(formatMonthYear('2026-08-25')).toBe('Aug 26');
-    expect(formatMonthYear('2024-12-01')).toBe('Dec 24');
+  it('renders the full "Mon D, YYYY"', () => {
     expect(formatFullDate('2026-08-25')).toBe('Aug 25, 2026');
     expect(formatFullDate('2024-12-01')).toBe('Dec 1, 2024');
   });
@@ -298,18 +294,6 @@ describe('displayedResult', () => {
   it('keeps the printed unit when the SI/US target is unreachable', () => {
     // No TC rule for g/L: relabelling to mg/dL here would be the same mislabel.
     expect(displayedResult('TC', reading('2093-3', 2, 'g/L'), 'us')).toMatchObject({ value: 2, unit: 'g/L', converted: false });
-  });
-});
-
-describe('controlsForTab', () => {
-  it('enables every control on the Results tab, the only one that renders the bar', () => {
-    expect(controlsForTab('analysis')).toEqual({ unitSystem: true, sampleLimit: true, filters: true });
-  });
-
-  it('hands out a fresh object each call', () => {
-    const first = controlsForTab('analysis');
-    first.filters = false;
-    expect(controlsForTab('analysis').filters).toBe(true);
   });
 });
 

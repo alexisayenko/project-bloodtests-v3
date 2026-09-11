@@ -23,17 +23,27 @@ export function getLatest(latestByLoinc: LatestByLoinc, loincs: string[]): { res
   return current;
 }
 
+export type LatestEntryOptions = {
+  /**
+   * Only a numeric `value` counts as a reading. Off, a text-only result
+   * ("negative", printed in `rawValue`) also counts.
+   */
+  numericOnly: boolean;
+};
+
 /**
  * The newest entry recorded under each LOINC exactly as the lab printed it —
- * deliberately not folded through the alias maps, unlike `getLatest`, because
- * the one caller (the Reference Book's LOINC database) is answering "which of
- * these codes has my lab actually used". A draw that lists a marker without a
- * reading is not a test, so it never wins the slot.
+ * deliberately not folded through the alias maps; `getLatest` folds a badge's
+ * codes at read time instead. A draw that lists a marker without a reading is
+ * not a test, so it never wins the slot. On a date tie the first entry stays.
  */
-export function latestEntryByLoinc(entries: readonly ResultEntry[]): Record<string, ResultEntry> {
+export function latestEntryByLoinc(
+  entries: readonly ResultEntry[],
+  { numericOnly }: LatestEntryOptions = { numericOnly: false },
+): Record<string, ResultEntry> {
   const map: Record<string, ResultEntry> = {};
   for (const entry of entries) {
-    if (entry.result.value == null && !entry.result.rawValue) continue;
+    if (entry.result.value == null && (numericOnly || !entry.result.rawValue)) continue;
     const existing = map[entry.loinc];
     if (!existing || entry.date > existing.date) map[entry.loinc] = entry;
   }

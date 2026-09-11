@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getLatest, getStatus, hasReference, type LatestByLoinc } from '../src/components/conditions/resultsLookup';
+import { getLatest, getStatus, hasReference, latestEntryByLoinc, type LatestByLoinc, type ResultEntry } from '../src/components/conditions/resultsLookup';
 import { buildConditions } from '../src/components/conditions/markers';
 import { MONITORING_PANELS } from './dataFiles';
 import { HP_AXIS_HTML } from '../src/components/conditions/hpAxisContent';
@@ -43,6 +43,43 @@ describe('resultsLookup', () => {
     expect(hasReference(result({ value: 1, refMin: 0 }))).toBe(true);
     expect(hasReference(result({ value: 1 }))).toBe(false);
     expect(hasReference(result({ refMin: 0 }))).toBe(false);
+  });
+});
+
+describe('latestEntryByLoinc', () => {
+  const entry = (loinc: string, date: string, partial: Partial<Result>): ResultEntry => ({
+    loinc,
+    date,
+    place: 'lab',
+    result: result({ loinc, ...partial }),
+  });
+  const entries: ResultEntry[] = [
+    entry('5778-6', '2026-01-01', { value: 1 }),
+    entry('5778-6', '2026-03-01', { rawValue: 'negative' }),
+    entry('5778-6', '2026-05-01', {}),
+    entry('718-7', '2026-02-01', { value: 140 }),
+    entry('718-7', '2026-02-01', { value: 150 }),
+    entry('718-7', '2025-01-01', { value: 130 }),
+    entry('2345-7', '2026-04-01', { rawValue: 'hemolyzed' }),
+  ];
+
+  it('numericOnly off: a text-only result counts, a blank draw never does', () => {
+    const map = latestEntryByLoinc(entries, { numericOnly: false });
+    expect(map['5778-6']!.date).toBe('2026-03-01');
+    expect(map['2345-7']!.result.rawValue).toBe('hemolyzed');
+    expect(latestEntryByLoinc(entries)).toEqual(map);
+  });
+
+  it('numericOnly on: only a numeric value counts', () => {
+    const map = latestEntryByLoinc(entries, { numericOnly: true });
+    expect(map['5778-6']!.date).toBe('2026-01-01');
+    expect(map['2345-7']).toBeUndefined();
+  });
+
+  it('keeps the first entry on a date tie and ignores older ones, in both modes', () => {
+    for (const numericOnly of [true, false]) {
+      expect(latestEntryByLoinc(entries, { numericOnly })['718-7']!.result.value).toBe(140);
+    }
   });
 });
 

@@ -1,21 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { newRowId } from './ids';
+import { isMonthKey } from './months';
 
 export const MEDICATIONS_KEY = 'bloodtests_medications_v1';
 
 export type MedicationRow = { id: string; name: string; dosage: string; months: string[] };
 export type Medications = { years: number[]; rows: MedicationRow[] };
 
-export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
-
-const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
-
 function isYear(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1000 && value <= 9999;
-}
-
-export function monthKey(year: number, monthIndex: number): string {
-  return `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
 }
 
 // A year is shown if it was added, is the current one, or carries a mark -- so
@@ -42,7 +35,7 @@ export function removeRow(meds: Medications, id: string): Medications {
 }
 
 export function toggleMonth(meds: Medications, id: string, month: string): Medications {
-  if (!MONTH_RE.test(month)) return meds;
+  if (!isMonthKey(month)) return meds;
   return {
     ...meds,
     rows: meds.rows.map((row) => {
@@ -68,7 +61,7 @@ function parseRow(value: unknown): MedicationRow | undefined {
   const row = value as Record<string, unknown>;
   if (typeof row.id !== 'string' || row.id === '' || typeof row.name !== 'string') return undefined;
   const months = Array.isArray(row.months)
-    ? row.months.filter((m): m is string => typeof m === 'string' && MONTH_RE.test(m))
+    ? row.months.filter(isMonthKey)
     : [];
   return {
     id: row.id,

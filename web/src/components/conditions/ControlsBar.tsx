@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { ControlsEnabled, ViewSettings } from './ui';
+import type { ViewSettings } from './ui';
 import { SegmentedControl } from '../primitives';
 
 export type ControlsProps = ViewSettings & {
@@ -27,14 +27,10 @@ export type ControlsBarProps = ControlsProps & {
    */
   panelFilter?: PanelFilterControl;
   markerQuery: TextFilterControl;
-  enabled: ControlsEnabled;
 };
 
 const NOT_IN_PANEL_DETAIL = 'You are already viewing one panel — filtering by panel applies in All Observations.';
 const NO_PANELS = 'No monitoring panels to filter by.';
-const UNIT_SYSTEM_OFF = 'The unit system applies to the Results and “What’s in range” tabs.';
-const SAMPLE_LIMIT_OFF = 'The number of samplings shown applies to the Results tab.';
-const FILTERS_OFF = 'The row filters apply to the Results tab.';
 
 const SAMPLE_LIMITS: readonly (number | 'all')[] = [5, 10, 15, 'all'];
 
@@ -42,10 +38,10 @@ const SAMPLE_LIMITS: readonly (number | 'all')[] = [5, 10, 15, 'all'];
 // no mouse events, so a title on it would never show.
 function ControlGroup({
   label,
-  disabled,
+  disabled = false,
   reason,
   children,
-}: Readonly<{ label: string; disabled: boolean; reason: string | undefined; children: ReactNode }>) {
+}: Readonly<{ label: string; disabled?: boolean; reason?: string; children: ReactNode }>) {
   return (
     <div className="mc-control-group" title={disabled ? reason : undefined}>
       <div className="mc-control-label" data-disabled={disabled || undefined}>
@@ -69,36 +65,30 @@ export function ControlsBar({
   setSampleLimit,
   panelFilter,
   markerQuery,
-  enabled,
 }: Readonly<ControlsBarProps>) {
   const panelOptions = panelFilter?.options ?? [];
-  const panelDisabled = !enabled.filters || !panelFilter || panelOptions.length === 0;
-  // Where the view and the tab both disable the picker, the view's reason wins:
-  // it is the one that stays true after switching back to Results.
+  const panelDisabled = !panelFilter || panelOptions.length === 0;
   let panelReason: string | undefined;
   if (!panelFilter) panelReason = NOT_IN_PANEL_DETAIL;
   else if (panelOptions.length === 0) panelReason = NO_PANELS;
-  else if (!enabled.filters) panelReason = FILTERS_OFF;
 
   return (
     <div className="mc-controls">
-      <ControlGroup label="Unit system" disabled={!enabled.unitSystem} reason={UNIT_SYSTEM_OFF}>
+      <ControlGroup label="Unit system">
         <SegmentedControl
           label="Unit system"
           options={['si', 'us'] as const}
           value={unitSystem}
           onChange={setUnitSystem}
-          disabled={!enabled.unitSystem}
           format={(sys) => sys.toUpperCase()}
         />
       </ControlGroup>
-      <ControlGroup label="Last N samplings" disabled={!enabled.sampleLimit} reason={SAMPLE_LIMIT_OFF}>
+      <ControlGroup label="Last N samplings">
         <SegmentedControl<number | 'all'>
           label="Last N samplings"
           options={SAMPLE_LIMITS}
           value={sampleLimit}
           onChange={setSampleLimit}
-          disabled={!enabled.sampleLimit}
           format={(n) => (n === 'all' ? 'All' : String(n))}
         />
       </ControlGroup>
@@ -116,14 +106,13 @@ export function ControlsBar({
           ))}
         </select>
       </ControlGroup>
-      <ControlGroup label="Find a marker" disabled={!enabled.filters} reason={FILTERS_OFF}>
-        <label className="mc-field mc-field-search" data-disabled={!enabled.filters || undefined}>
+      <ControlGroup label="Find a marker">
+        <label className="mc-field mc-field-search">
           <Search size={15} strokeWidth={2} aria-hidden="true" />
           <input
             type="search"
             aria-label="Filter observations by name"
             placeholder="HGB, Hemoglobin, 718-7…"
-            disabled={!enabled.filters}
             value={markerQuery.value}
             onChange={(e) => markerQuery.onChange(e.currentTarget.value)}
           />

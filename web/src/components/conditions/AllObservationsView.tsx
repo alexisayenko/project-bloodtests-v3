@@ -16,7 +16,7 @@ import {
 import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
-import { controlsForTab, visibleDatesOf, type SelectedCell } from './ui';
+import { visibleDatesOf, type SelectedCell } from './ui';
 import { ResultsTable } from './ResultTables';
 import type { Condition } from './exploreModel';
 import type { IndexScheduling, RowScheduling } from './scheduled';
@@ -166,7 +166,6 @@ export function AllObservationsView({
           {...controls}
           panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: setPanelFilter }}
           markerQuery={{ value: query, onChange: setQuery }}
-          enabled={controlsForTab('analysis')}
         />
         <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 16 }}>
           {filtered ? `${visibleRows.length} of ${rows.length}` : rows.length} observations across{' '}

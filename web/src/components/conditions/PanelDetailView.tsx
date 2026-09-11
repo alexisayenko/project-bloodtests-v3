@@ -13,7 +13,7 @@ import {
   testLoincs,
   type Observation,
 } from './markers';
-import { controlsForTab, pressable, visibleDatesOf, type SelectedCell } from './ui';
+import { pressable, visibleDatesOf, type SelectedCell } from './ui';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
@@ -152,7 +152,6 @@ export function PanelDetailView({
           <ControlsBar
             {...controls}
             markerQuery={{ value: query, onChange: setQuery }}
-            enabled={controlsForTab('analysis')}
           />
           {dates.length === 0 ? (
             <EmptyState>No results recorded for this panel yet.</EmptyState>

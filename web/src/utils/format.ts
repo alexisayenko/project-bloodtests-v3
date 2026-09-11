@@ -1,21 +1,5 @@
 import type { Result } from '../types';
 
-const LOCALE_MAP: Record<string, string> = {
-  'en': 'en-US',
-  'ru-RU': 'ru-RU',
-  'uk-UA': 'uk-UA',
-};
-
-export function formatDate(dateStr: string, lang: string = 'en'): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  const year = d.getFullYear();
-  const locale = LOCALE_MAP[lang] || 'en-US';
-  const month = d.toLocaleDateString(locale, { month: 'short' });
-  // Capitalize first letter (some locales return lowercase)
-  const monthCap = month.charAt(0).toUpperCase() + month.slice(1);
-  return `${year} ${monthCap}`;
-}
-
 // Adaptive precision by magnitude — fewer decimals as the value grows.
 // Only used when there's no rawValue to show as-printed; see
 // docs/ui-ux/style-guide.md#numbers. Ported from project-bloodtests-v2's

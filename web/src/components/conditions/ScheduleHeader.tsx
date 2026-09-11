@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { formatScheduleMonth, monthChoices, type SelectionState } from './scheduled';
+import { monthChoices, type SelectionState } from './scheduled';
+import { formatMonthFullYear } from '../../data/months';
 import { COLOR } from '../../styles/tokens';
 
 const NO_MONTH = '';
@@ -40,7 +41,7 @@ export function ScheduleHeader({ label, month, onSetMonth, state, disabled, onTo
         <option value={NO_MONTH}>No month</option>
         {monthChoices(new Date(), MONTHS_AHEAD, month).map((m) => (
           <option key={m} value={m}>
-            {formatScheduleMonth(m)}
+            {formatMonthFullYear(m)}
           </option>
         ))}
       </select>

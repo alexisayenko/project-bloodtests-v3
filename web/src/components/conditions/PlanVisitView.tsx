@@ -1,4 +1,5 @@
-import { formatScheduleMonth, type Scheduled } from './scheduled';
+import type { Scheduled } from './scheduled';
+import { formatMonthFullYear } from '../../data/months';
 import { LABORATORIES, formatPrice, quoteSchedule, type LabQuote, type Laboratory } from '../../data/labPricing';
 import { planCells, planRows, type PlanCell } from '../../data/visitPlan';
 import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
@@ -111,7 +112,7 @@ export function PlanVisitView({
           <CalendarCheck size={14} color={COLOR.accent} strokeWidth={2} aria-hidden="true" />
           <span>Planned for</span>{' '}
           <strong style={{ color: COLOR.navy, fontWeight: 600 }}>
-            {scheduled.month ? formatScheduleMonth(scheduled.month) : 'No month selected'}
+            {scheduled.month ? formatMonthFullYear(scheduled.month) : 'No month selected'}
           </strong>
         </span>
       </div>

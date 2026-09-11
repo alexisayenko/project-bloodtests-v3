@@ -120,7 +120,17 @@ blocked/`not-allowed` state and its route-derived active tab, and keeps
 `ui.ts`'s inline `tabStyle` to itself, so the two share no styling), with pure helpers
 in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` / `statusFilter.ts` /
 `reportDetailHelpers.ts` (the report-detail row helpers) and
-`data/generateTestData.ts`; the report detail view's cross-check state lives in
+`data/generateTestData.ts`. `resultsLookup.ts`'s `latestEntryByLoinc(entries,
+{ numericOnly })` is the one "newest reading per LOINC" fold, unaliased: the
+shell passes `numericOnly: true` for the grid's status dots, the observation
+popup's latest value and the index popup's reported value, while the Reference
+Book's LOINC database "last tested" keeps the default `false`, so a text-only
+result counts there. `data/months.ts` (`MONTH_LABELS`, `isMonthKey`,
+`monthKey`, `monthKeyOf`, `formatMonthYear` "Aug 26", `formatMonthFullYear`
+"Mar 2027") is the one home of the ISO `YYYY-MM` month key and its labels,
+read off the string rather than through a `Date`, and is what scheduling,
+medications, the results table's date headers, the popups and the Reference
+Book use. The report detail view's cross-check state lives in
 the `useLoincCrossCheck` hook, which is what it passes around instead of eight
 separate props. Every design value is written once, as a custom property in
 `web/src/styles/index.css`'s `:root` — colour roles, the softer green / amber /
@@ -261,9 +271,8 @@ room's x half-extent is fitted per draw so the projected room spans
 (`web/src/components/analytics/chart3d-stacked-core.ts`,
 `chart3d-camera.ts`) is ported from project-moodtracker's
 `chart3d-stacked.js`/`chart3d-camera.js`, generalized from 8 fixed
-slots to N series; it still exposes the ported `setWindowKind` /
-`panByWindowWidth` / `panByDay` window controls, which the year selects
-replaced and no caller uses. `StackedBiomarkerChart3D.tsx` mounts it and
+slots to N series, its time window either all or the explicit `setRange`
+interval. `StackedBiomarkerChart3D.tsx` mounts it and
 `StackedBiomarkerSection.tsx` owns selection and the picker. Panel
 Detail's "What's in range" and "Charts" tabs are both `React.lazy`
 call-site imports behind a `<Suspense>`, so uPlot plus the vendored
@@ -293,13 +302,12 @@ of it — switching months leaves every checked row checked — and select-all
 scopes to the rows the table is actually rendering, so All Observations' panel
 and text filters narrow it. Global state in localStorage
 `bloodtests_scheduled_v1`
-(`{loincs, indices, month?, lab?}` — backward compatible in both directions: an
+(`{loincs, indices, month?}` — backward compatible in both directions: an
 unset month is `undefined`, so `JSON.stringify` drops the key and an
 unscheduled payload keeps the old shape, and a missing or malformed one loads
-as undefined with the checked sets intact; `lab` is a `laboratories.json` id
-read the same way, which nothing sets any more — the header's laboratory picker
-and total were removed — and which is still parsed and saved only so stored
-schedules and backups carrying it keep loading), logic in `scheduled.ts`, whose
+as undefined with the checked sets intact; a `lab` key left by the removed
+laboratory picker is ignored on load like any unknown field and no longer
+written, backups included), logic in `scheduled.ts`, whose
 `useScheduled` hook the
 shell owns and hands down as `RowScheduling` / `IndexScheduling`, rather than
 Panel Detail, which remounts per panel. Selecting an index
@@ -395,11 +403,7 @@ the bar jump, while its marker box does filter that panel's own tables.
 and passes it down, deliberately not lifting it to the shell, which owns
 the *persisted* settings — a filter living there invites persisting it.
 The bar renders inside the Results tab in both views, under the page's
-heading and the `TabBar`, and no other tab shows it; each control still asks
-`controlsForTab` (`ui.ts`) whether it is enabled, though only `'analysis'` is
-passed today, so the per-tab disabling it encodes ("What's in range" reads
-the unit system and nothing else, Trends and Charts read none of it) is
-unused.
+heading and the `TabBar`, and no other tab shows it.
 Both filters are session
 state, never stored, so a filter cannot go on hiding rows the way a
 stored `showPanels` once did; both the panel's codes and the rows fold
@@ -497,7 +501,11 @@ units otherwise), and, lower-severity, a unit that resolves
 to neither a Latin spelling nor a UCUM code (the rows whose curated
 tables need extending) are warnings; while errors exist, Monitoring Panels and All
 Observations are disabled in the nav and their routes redirect to
-`#reports` (Get Started and Reference Book stay reachable). Upload
+`#reports` (Get Started and Reference Book stay reachable) — one rule,
+`routing.ts`'s `isRouteBlocked` (panels, panel, all), which `isNavItemBlocked`
+also asks; the shell swaps the route during render, so the blocked view never
+paints, and replaces the URL with `history.replaceState` in an effect, so a
+redirect adds no history entry and Back cannot loop into it again. Upload
 accepts the v3 interchange envelope and nothing else
 (`{ schema: "3.1", diagnosticReports }` — `SCHEMA_VERSION` in
 `data/envelopeSchema.ts`, a `"major.minor"` STRING, since a JSON number
@@ -622,7 +630,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (802 tests across 35 files — 801 passing, 1 skipped — as run on 2026-09-11: index
+Vitest suites in `web/test/` (807 tests across 36 files — 806 passing, 1 skipped — as run on 2026-09-11: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
@@ -642,7 +650,7 @@ recomputed from its formula, agreeing with a cited source within
 `laboratories-1.schema.json`),
 share-link and shared-meta,
 explore-model, markers, routing,
-scheduling, ui helpers, build stamp, format utils, lab pricing and the visit
+scheduling, month keys, ui helpers, build stamp, format utils, lab pricing and the visit
 plan, medications, the backup archive and its restore, the showcase generator,
 import-results, old-shape stored sessions and the results context, analyte sort,
 the Monitoring Panels status filter; the mobile reveal —

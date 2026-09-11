@@ -8,7 +8,6 @@ import {
   SELECTED_ZONE_BG,
   LABEL_COL_WIDTH,
   buildRowCells,
-  formatMonthYear,
   pressable,
   cellBg,
   isCellArmed,
@@ -16,6 +15,7 @@ import {
   type SelectedCell,
 } from './ui';
 import { TableScroller } from './TableScroller';
+import { formatMonthYear } from '../../data/months';
 import { hasReference, type ResultEntry } from './resultsLookup';
 import {
   indexInputLoincs,

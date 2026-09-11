@@ -5,7 +5,7 @@ import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnos
 import type { IndexDef } from '../../data/computedIndices';
 import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
-import { routeToHash, hashToRoute, allObservationsRoute, DEFAULT_OBSERVATIONS_TAB, type Route } from './routing';
+import { routeToHash, hashToRoute, allObservationsRoute, isRouteBlocked, DEFAULT_OBSERVATIONS_TAB, type Route } from './routing';
 import { ReferenceBookPage } from './ReferenceBookPage';
 import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadViewSettings, saveViewSettings, hasStoredViewSettings, seedViewSettings, popupPosition, type SelectedCell } from './ui';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
@@ -22,13 +22,15 @@ import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
 import { useScheduled } from './scheduled';
 import { clearAllData, restoreBackup, type BackupContents } from '../../data/backupRestore';
-import type { ResultEntry } from './resultsLookup';
+import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 
 /** A popup's own content, before the opener anchors it to the clicked element. */
 type PopupPayload = {
   [K in PopupState['kind']]: Omit<Extract<PopupState, { kind: K }>, keyof PopupPosition>;
 }[PopupState['kind']];
+
+const REPORTS_ROUTE: Route = { view: 'reports' };
 
 // The app shell: owns the route, the flattened results, the shared table
 // settings and the popup, and renders one view component per section.
@@ -75,6 +77,20 @@ export function MedicalConditionsPage() {
   const validationIssues = useMemo(() => validateDiagnosticReports(sessions), [sessions]);
   const hasValidationErrors = hasErrors(validationIssues);
 
+  // A section blocked by validation errors falls back to the reports list,
+  // adjusted during render so the blocked view never paints. The URL follows
+  // in an effect that replaces the history entry rather than pushing one, so
+  // Back never lands on the blocked hash only to be redirected again.
+  const [redirectCount, setRedirectCount] = useState(0);
+  if (isRouteBlocked(route, hasValidationErrors)) {
+    setRoute(REPORTS_ROUTE);
+    setPopup(null);
+    setRedirectCount((n) => n + 1);
+  }
+  useEffect(() => {
+    if (redirectCount > 0) window.history.replaceState(null, '', routeToHash(REPORTS_ROUTE));
+  }, [redirectCount]);
+
   useEffect(() => {
     // The single source of truth for the current route is always the URL, so
     // back/forward -- browser buttons or in-app links -- stay in sync by
@@ -114,15 +130,7 @@ export function MedicalConditionsPage() {
     };
   }, [sessions, loadGroupItems]);
 
-  const latestByLoinc = useMemo(() => {
-    const map: Record<string, { result: Result; date: string }> = {};
-    for (const { loinc, date, result } of allResults) {
-      if (result.value == null) continue; // e.g. "not tested this draw" -- don't let a blank beat a real reading
-      const existing = map[loinc];
-      if (!existing || date > existing.date) map[loinc] = { result, date };
-    }
-    return map;
-  }, [allResults]);
+  const latestByLoinc = useMemo(() => latestEntryByLoinc(allResults, { numericOnly: true }), [allResults]);
 
   // Per-date lookup for computed indices: { date: { loinc: Result } }.
   const resultsByDate = useMemo(() => {
@@ -297,11 +305,6 @@ export function MedicalConditionsPage() {
         return panelsGrid;
     }
   })();
-
-  const blockedRoutes = hasValidationErrors && (route.view === 'panels' || route.view === 'panel' || route.view === 'all');
-  if (blockedRoutes) {
-    navigate({ view: 'reports' });
-  }
 
   return (
     <AppShell route={route} navigate={navigate} hasValidationErrors={hasValidationErrors}>

@@ -3,7 +3,8 @@ import type { InterchangeEnvelope, InterchangeObservation, InterchangeReport } f
 import { SCHEMA_VERSION } from './envelopeSchema';
 import { parseUploadedResults } from './parseUpload';
 import { newRowId } from './ids';
-import { loadMedications, monthKey, saveMedications, type Medications } from './medications';
+import { loadMedications, saveMedications, type Medications } from './medications';
+import { monthKey, monthKeyOf } from './months';
 import {
   loadScheduled,
   saveScheduled,
@@ -390,7 +391,7 @@ export function withTestSchedule(scheduled: Scheduled, today: Date): Scheduled {
   const seeded = setRowsScheduled(scheduled, TEST_SCHEDULE_LOINCS.map((loinc) => [loinc]), true);
   if (scheduled.month) return seeded;
   const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  return setScheduleMonth(seeded, monthKey(next.getFullYear(), next.getMonth()));
+  return setScheduleMonth(seeded, monthKeyOf(next));
 }
 
 /** What Generate Test Data does: merges the reports, then seeds medications and a schedule without overwriting either. */

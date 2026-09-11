@@ -21,10 +21,6 @@ export const ZONE_BG = { ok: COLOR.statusOkBg, warn: COLOR.statusWarnBg, bad: CO
 export const SELECTED_ZONE_BG = { ok: COLOR.statusOkBgSelected, warn: COLOR.statusWarnBgSelected, bad: COLOR.statusBadBgSelected } as const;
 // Saturated dot colors for the same zones live in primitives/tones.ts's TONE_DOT.
 
-export const PANEL_PADDING = 20;
-export const PANEL_GAP = 24;
-export const PANEL_WIDTH = 316;
-
 export const POPUP_WIDTH = 260;
 export const INDEX_POPUP_WIDTH = 380;
 /** Breathing room kept between a popup and each edge of the viewport. */
@@ -44,13 +40,6 @@ export const RESULT_TABLE = {
   tableLayout: 'fixed',
   width: '100%',
 } as const;
-
-export function formatMonthYear(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  const month = d.toLocaleDateString('en-US', { month: 'short' });
-  const year = String(d.getFullYear()).slice(-2);
-  return `${month} ${year}`;
-}
 
 export function formatFullDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
@@ -81,18 +70,6 @@ export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
 export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
 export type StoredViewSettings = ViewSettings & { compactPanels: boolean };
 export const DEFAULT_VIEW_SETTINGS: StoredViewSettings = { unitSystem: 'si', sampleLimit: 5, compactPanels: false };
-
-/** Only the Results tab renders ControlsBar, and it reads every control. */
-export type ControlsTab = 'analysis';
-export type ControlsEnabled = { unitSystem: boolean; sampleLimit: boolean; filters: boolean };
-
-const TAB_CONTROLS: Readonly<Record<ControlsTab, ControlsEnabled>> = {
-  analysis: { unitSystem: true, sampleLimit: true, filters: true },
-};
-
-export function controlsForTab(tab: ControlsTab): ControlsEnabled {
-  return { ...TAB_CONTROLS[tab] };
-}
 
 export function loadViewSettings(): StoredViewSettings {
   try {

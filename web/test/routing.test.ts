@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hashToRoute, routeToHash, isNavItemActive, isNavItemBlocked, NAV_ITEMS, type Route } from '../src/components/conditions/routing';
+import { hashToRoute, routeToHash, isNavItemActive, isNavItemBlocked, isRouteBlocked, NAV_ITEMS, type Route } from '../src/components/conditions/routing';
 
 describe('nav item state', () => {
   const activeViews = (route: Route) => NAV_ITEMS.filter((item) => isNavItemActive(route, item.view)).map((item) => item.view);
@@ -14,6 +14,33 @@ describe('nav item state', () => {
   it('blocks Monitoring Panels and All Observations only while reports have errors', () => {
     expect(NAV_ITEMS.filter((item) => isNavItemBlocked(item.view, true)).map((item) => item.view)).toEqual(['all', 'panels']);
     expect(NAV_ITEMS.some((item) => isNavItemBlocked(item.view, false))).toBe(false);
+  });
+
+  it('blocks the panels grid, Panel Detail and every All Observations tab while reports have errors', () => {
+    const blocked: Route[] = [
+      { view: 'panels' },
+      { view: 'panel', name: 'Thyroid' },
+      { view: 'all' },
+      { view: 'all', tab: 'in-range' },
+    ];
+    const open: Route[] = [
+      { view: 'reports' },
+      { view: 'report', file: 'dev__2024-06-15' },
+      { view: 'profile' },
+      { view: 'reference', key: 'homair' },
+      { view: 'plan' },
+      { view: 'medications' },
+      { view: 'account' },
+    ];
+    for (const route of blocked) expect(isRouteBlocked(route, true)).toBe(true);
+    for (const route of open) expect(isRouteBlocked(route, true)).toBe(false);
+    for (const route of [...blocked, ...open]) expect(isRouteBlocked(route, false)).toBe(false);
+  });
+
+  it('agrees with the nav for every nav section', () => {
+    for (const item of NAV_ITEMS) {
+      expect(isNavItemBlocked(item.view, true)).toBe(isRouteBlocked({ view: item.view }, true));
+    }
   });
 });
 

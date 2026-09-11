@@ -6,7 +6,6 @@ import {
   dropUnnamed,
   emptyMedications,
   loadMedications,
-  monthKey,
   removeRow,
   saveMedications,
   toggleMonth,
@@ -52,11 +51,6 @@ describe('toggleMonth', () => {
   it('ignores a malformed month', () => {
     const meds = addRow(base, 'a');
     expect(toggleMonth(meds, 'a', '2026-13')).toBe(meds);
-  });
-
-  it('builds ISO month keys', () => {
-    expect(monthKey(2026, 0)).toBe('2026-01');
-    expect(monthKey(2026, 11)).toBe('2026-12');
   });
 });
 

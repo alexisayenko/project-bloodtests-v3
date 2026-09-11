@@ -92,6 +92,4 @@ export interface DiagnosticReport {
   itemCount: number;
 }
 
-export type ViewName = 'panels' | 'panel-detail' | 'results' | 'analytics';
-export type PanelViewMode = 'minimal' | 'compact' | 'detailed';
 export type Lang = 'en' | 'ru-RU' | 'uk-UA';

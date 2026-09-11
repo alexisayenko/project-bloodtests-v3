@@ -34,8 +34,13 @@ export function isNavItemActive(route: Route, view: NavView): boolean {
   return route.view === view || (view === 'panels' && route.view === 'panel') || (view === 'reports' && route.view === 'report');
 }
 
+// Panel Detail nests under Monitoring Panels, so it is blocked with it.
+export function isRouteBlocked(route: Route, hasValidationErrors: boolean): boolean {
+  return hasValidationErrors && (route.view === 'panels' || route.view === 'panel' || route.view === 'all');
+}
+
 export function isNavItemBlocked(view: NavView, hasValidationErrors: boolean): boolean {
-  return hasValidationErrors && (view === 'panels' || view === 'all');
+  return isRouteBlocked({ view }, hasValidationErrors);
 }
 
 // The default tab and an unknown segment both collapse to bare #all, so one

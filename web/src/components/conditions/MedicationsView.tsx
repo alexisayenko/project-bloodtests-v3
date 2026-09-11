@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { MONTH_LABELS, monthKey, useMedications, type MedicationRow } from '../../data/medications';
+import { useMedications, type MedicationRow } from '../../data/medications';
+import { MONTH_LABELS, monthKey } from '../../data/months';
 import { Pill, Clock, TrendingUp } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, TABLE, TABLE_CARD } from '../primitives';
