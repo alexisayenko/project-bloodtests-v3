@@ -111,20 +111,55 @@ export function loincsFoldingUAndIu(reason: UIuFoldReason): string[] {
  * field, so this is the only place it can come from; a name that carries no such
  * clause ("Prothrombin time (PT)") yields undefined rather than a guess. The
  * property bracket is excluded so a match can never run through "[Entitic mass]".
- * Group 1 is the specimen, group 2 the method that trails it — captured rather
- * than swallowed so `trimmedLongName` can put the method back.
+ * The clause runs to the end of the name: `start` is where it begins, `specimen`
+ * the system, `method` the "by …" tail — kept rather than swallowed so
+ * `trimmedLongName` can put it back.
+ *
+ * A scanner rather than one regex, so no lazy group backtracks against an
+ * optional tail. It reproduces `/\s(?:in|of)\s([^[\]]+?)(\s+by\s.*)?$/` exactly:
+ * the leftmost opener whose clause parses wins, and the specimen stops at the
+ * first " by " after at least one character.
  */
-const SPECIMEN_CLAUSE = /\s(?:in|of)\s([^[\]]+?)(\s+by\s.*)?$/;
+interface SpecimenClause {
+  start: number;
+  specimen: string;
+  method: string;
+}
+
+const CLAUSE_OPENER = /\s(?:in|of)\s/g;
+const METHOD_TAIL = /^\s+by\s.*$/;
+
+function clauseAt(name: string, start: number, bodyStart: number): SpecimenClause | undefined {
+  for (let end = bodyStart + 1; end <= name.length; end++) {
+    const last = name[end - 1];
+    if (last === '[' || last === ']') return undefined;
+    if (end === name.length) return { start, specimen: name.slice(bodyStart), method: '' };
+    const rest = name.slice(end);
+    if (METHOD_TAIL.test(rest)) return { start, specimen: name.slice(bodyStart, end), method: rest };
+  }
+  return undefined;
+}
+
+function findSpecimenClause(name: string): SpecimenClause | undefined {
+  const opener = new RegExp(CLAUSE_OPENER);
+  for (let m = opener.exec(name); m; m = opener.exec(name)) {
+    const clause = clauseAt(name, m.index, m.index + m[0].length);
+    if (clause) return clause;
+    opener.lastIndex = m.index + 1;
+  }
+  return undefined;
+}
 
 export function specimenOf(longCommonName: string | undefined): string | undefined {
-  return longCommonName?.match(SPECIMEN_CLAUSE)?.[1];
+  if (!longCommonName) return undefined;
+  return findSpecimenClause(longCommonName)?.specimen;
 }
 
 /**
  * A LOINC property bracket — "[Mass/volume]", "[#/volume]", "[Presence]". Every
  * bracketed token in the catalog is one of these; no long name brackets anything else.
  */
-const PROPERTY_BRACKET = /\s*\[[^[\]]*\]/g;
+const PROPERTY_BRACKET = /\[[^[\]]*\]/g;
 
 /**
  * The long common name with the two parts a table can show in columns of their own
@@ -136,8 +171,9 @@ const PROPERTY_BRACKET = /\s*\[[^[\]]*\]/g;
  * Never empties a name: trimming everything away yields the original.
  */
 export function trimmedLongName(longCommonName: string): string {
-  const trimmed = longCommonName
-    .replace(SPECIMEN_CLAUSE, '$2')
+  const clause = findSpecimenClause(longCommonName);
+  const withoutSpecimen = clause ? longCommonName.slice(0, clause.start) + clause.method : longCommonName;
+  const trimmed = withoutSpecimen
     .replace(PROPERTY_BRACKET, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();

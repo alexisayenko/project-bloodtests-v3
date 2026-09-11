@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import { buildExportEnvelope } from '../src/utils/exportData';
-import { SCHEMA_VERSION } from '../src/data/envelopeSchema';
+import { SCHEMA_VERSION, isAcceptedSchemaVersion } from '../src/data/envelopeSchema';
 import type { Result, DiagnosticReport } from '../src/types';
 
 const schema = JSON.parse(
@@ -328,6 +328,20 @@ describe('published JSON Schema — the schema version field', () => {
     'rejects %o',
     (version) => {
       expect(errorsFor(withVersion(version))).not.toEqual([]);
+    }
+  );
+});
+
+describe('isAcceptedSchemaVersion', () => {
+  it.each([3, '3.0', '3.1', '3.9', '3.10', '3.42', SCHEMA_VERSION])('accepts %o', (version) => {
+    expect(isAcceptedSchemaVersion(version)).toBe(true);
+  });
+
+  // '3x1' and '3-1' pin the escaped dot; '13.1', ' 3.1' and '3.1\n' the anchors.
+  it.each([1, 4, 3.1, '3', '3.', '3.01', '3x1', '3-1', '13.1', '3.1.0', ' 3.1', '3.1\n', '4.0', '', null, undefined, {}])(
+    'rejects %o',
+    (version) => {
+      expect(isAcceptedSchemaVersion(version)).toBe(false);
     }
   );
 });

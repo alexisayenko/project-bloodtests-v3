@@ -76,10 +76,10 @@ export const MOLAR_MASS_BY_ID: Record<string, MolarMassEntry> = Object.fromEntri
  */
 export function molarMassFromFormula(formula: string): number | undefined {
   const tokens = formula.match(/[A-Z][a-z]?\d*/g);
-  if (!tokens || tokens.join('') !== formula) return undefined;
+  if (tokens?.join('') !== formula) return undefined;
   let total = 0;
   for (const token of tokens) {
-    const symbol = token.match(/^[A-Z][a-z]?/)![0];
+    const symbol = /^[A-Z][a-z]?/.exec(token)![0];
     const weight = ATOMIC_WEIGHTS[symbol];
     if (!weight) return undefined;
     const count = token.slice(symbol.length);
@@ -108,6 +108,12 @@ const SI_PREFIX: Record<string, number> = {
 
 const VOLUME: Record<string, number> = { L: 1, dL: 1e-1, mL: 1e-3, uL: 1e-6, µL: 1e-6 };
 
+function baseAmountOf(amount: string): 'mol' | 'g' | undefined {
+  if (amount.endsWith('mol')) return 'mol';
+  if (amount.endsWith('g')) return 'g';
+  return undefined;
+}
+
 /**
  * A concentration unit's multiplier onto its dimension's base scale (g/L for a
  * mass concentration, mol/L for a molar one), plus which of the two it is.
@@ -120,7 +126,7 @@ function concentrationScale(unit: string): { kind: 'mass' | 'substance'; scale: 
   const perLitre = VOLUME[volume];
   if (perLitre === undefined) return undefined;
 
-  const base = amount.endsWith('mol') ? 'mol' : amount.endsWith('g') ? 'g' : undefined;
+  const base = baseAmountOf(amount);
   if (!base) return undefined;
   const prefix = amount.slice(0, amount.length - base.length);
   const multiplier = prefix === '' ? 1 : SI_PREFIX[prefix];
@@ -131,7 +137,7 @@ function concentrationScale(unit: string): { kind: 'mass' | 'substance'; scale: 
 
 function scaleOf(unit: string, kind: 'mass' | 'substance'): number {
   const parsed = concentrationScale(unit);
-  if (!parsed || parsed.kind !== kind) {
+  if (parsed?.kind !== kind) {
     throw new Error(`"${unit}" is not a ${kind === 'mass' ? 'mass' : 'molar'} concentration unit`);
   }
   return parsed.scale;
@@ -149,7 +155,7 @@ function scaleOf(unit: string, kind: 'mass' | 'substance'): number {
 export function concentrationRatio(fromUnit: string, toUnit: string): number | undefined {
   const from = concentrationScale(fromUnit);
   const to = concentrationScale(toUnit);
-  if (!from || !to || from.kind !== to.kind) return undefined;
+  if (!to || from?.kind !== to.kind) return undefined;
   return from.scale / to.scale;
 }
 

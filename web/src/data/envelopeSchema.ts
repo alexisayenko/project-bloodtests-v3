@@ -25,7 +25,7 @@ export const SCHEMA_VERSION = `${SCHEMA_MAJOR}.1`;
 /** The one legacy spelling: the bare number 3, read as `3.0`. */
 const LEGACY_NUMERIC_VERSION = SCHEMA_MAJOR;
 
-const ACCEPTED_VERSION = new RegExp(`^${SCHEMA_MAJOR}\\.(0|[1-9][0-9]*)$`);
+const ACCEPTED_VERSION = new RegExp(String.raw`^${SCHEMA_MAJOR}\.(0|[1-9][0-9]*)$`);
 
 export function isAcceptedSchemaVersion(value: unknown): boolean {
   if (value === LEGACY_NUMERIC_VERSION) return true;

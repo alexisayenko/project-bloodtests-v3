@@ -353,6 +353,16 @@ describe('convertUnit', () => {
     expect(convertUnit(2, 'TC', '', 'mg/dL')).toBeUndefined();
     expect(convertUnit(40, 'SHBG', 'ug/mL', 'nmol/L')).toBeUndefined();
   });
+
+  it('rescales a same-dimension pair in both directions, the reverse not a copy of the forward', () => {
+    expect(convertUnit(5, 'T', 'ng/mL', 'ng/dL')).toBeCloseTo(500, 10);
+    expect(convertUnit(500, 'T', 'ng/dL', 'ng/mL')).toBeCloseTo(5, 10);
+    expect(convertUnit(0.9, 'ApoB', 'g/L', 'mg/dL')).toBeCloseTo(90, 10);
+    expect(convertUnit(90, 'ApoB', 'mg/dL', 'g/L')).toBeCloseTo(0.9, 10);
+    expect(convertUnit(130, 'ApoA1', 'mg/dL', 'g/L')).toBeCloseTo(1.3, 10);
+    expect(convertUnit(5, 'T', 'ng/mL', 'nmol/L')).toBeCloseTo(17.33517, 5);
+    expect(convertUnit(17.33517, 'T', 'nmol/L', 'ng/mL')).toBeCloseTo(5, 5);
+  });
 });
 
 describe('markersForIndex — inputs that cannot reach the formula\'s unit', () => {

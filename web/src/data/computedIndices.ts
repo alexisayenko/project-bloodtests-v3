@@ -105,9 +105,9 @@ const FT4_NGDL_TO_PMOLL = molarPerMass('thyroxine');
 const CORTISOL_UGDL_TO_NMOLL = molarPerMass('cortisol');
 
 /** A same-dimension rescale, derived rather than typed: g/L -> mg/dL is 100. */
-const rescale = (from: string, to: string): number => {
-  const ratio = concentrationRatio(from, to);
-  if (ratio === undefined) throw new Error(`no same-dimension rescale from "${from}" to "${to}"`);
+const rescale = (fromUnit: string, toUnit: string): number => {
+  const ratio = concentrationRatio(fromUnit, toUnit);
+  if (ratio === undefined) throw new Error(`no same-dimension rescale from "${fromUnit}" to "${toUnit}"`);
   return ratio;
 };
 
