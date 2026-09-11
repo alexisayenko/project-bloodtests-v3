@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://blood.isayenko.net/schema/analytes-1.schema.json",
   "title": "AnalyteCatalog",
-  "description": "The app's reference data, schema 1: the analyte catalog in web/public/data/analyses.json, plus the two panel layers it is composed into — the laboratory groups in panels.json (referenced as #/$defs/labPanel) and the product's Monitoring Panels in monitoring-panels.json (#/$defs/monitoringPanel). The catalog is the single source of truth for everything the app knows about a LOINC code, so every fact about a code — its names, its badge label, its expected unit, the further units accepted for it, and whether it is a variant of another code — lives on one entry here and nowhere in TypeScript. Unlike the interchange envelope, this is app-internal data with no outside authors and no forward-compatibility promise: the objects are therefore CLOSED, so a mistyped key fails the conformance suite instead of being silently ignored at runtime.",
+  "description": "The app's reference data, schema 1: the analyte catalog in web/public/data/analyses.json, plus the two panel layers it is composed into — the laboratory groups in panels.json (referenced as #/$defs/labPanel) and the product's Monitoring Panels in monitoring-panels.json (#/$defs/monitoringPanel). The catalog is the single source of truth for everything the app knows about a LOINC code, so every fact about a code — its names (including its short name), its expected unit, the further units accepted for it, and whether it is a variant of another code — lives on one entry here and nowhere in TypeScript. Unlike the interchange envelope, this is app-internal data with no outside authors and no forward-compatibility promise: the objects are therefore CLOSED, so a mistyped key fails the conformance suite instead of being silently ignored at runtime.",
   "type": "array",
   "minItems": 1,
   "items": { "$ref": "#/$defs/analyte" },
@@ -26,7 +26,7 @@
       "required": ["loinc", "longCommonName", "friendlyName", "lang"],
       "additionalProperties": false,
       "dependentRequired": {
-        "short": ["unit"],
+        "shortName": ["unit"],
         "allowedUnits": ["unit"],
         "aliasOf": ["aliasLabel", "unit"],
         "aliasLabel": ["aliasOf"]
@@ -36,18 +36,18 @@
         "longCommonName": {
           "type": "string",
           "minLength": 1,
-          "description": "Required. LOINC's own long common name, verbatim — the authority on what the code means, and what the cross-check shows in grey under a printed name."
+          "description": "Required. LOINC's own long common name, verbatim — the authority on what the code means, shown in the UI as the \"LOINC name\". The cross-check's grey line under a printed name shows friendlyName, not this."
         },
         "friendlyName": {
           "type": "string",
           "minLength": 1,
-          "description": "Required. The human name the app prints. Short enough for a table cell, unlike longCommonName."
+          "description": "Required. The friendly name: the clinical name the app prints. Short enough for a table cell, unlike longCommonName."
         },
-        "short": {
+        "shortName": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional. The badge label in Monitoring Panels and All Observations (\"HbA1c\", \"TSH\"). Absent means the app falls back to friendlyName, so a code carries one only where an abbreviation is genuinely what a reader looks for. Requires `unit`: a badge without a reference unit could not be range-checked.",
-          "$comment": "Was SHORT_LABELS in markers.ts."
+          "description": "Optional. The app's own short name, shown on badges in Monitoring Panels and All Observations (\"HbA1c\", \"TSH\"). Ours, NOT LOINC's own SHORTNAME field. Absent means the app falls back to friendlyName, so a code carries one only where an abbreviation is genuinely what a reader looks for. Requires `unit`: a short name without a reference unit could not be range-checked.",
+          "$comment": "Was SHORT_LABELS in markers.ts; read as SHORT_NAMES in analyteCatalog.ts."
         },
         "unit": {
           "type": "string",
@@ -65,7 +65,7 @@
         },
         "aliasOf": {
           "$ref": "#/$defs/loinc",
-          "description": "Optional. The primary code this entry is a unit or method variant of. The primary owns the row, the badge and the chart series; a result uploaded under this code folds into it. Must name an entry that is not itself an alias.",
+          "description": "Optional. The primary code this entry is a unit or method variant of. The primary owns the row, the short name and the chart series; a result uploaded under this code folds into it. Must name an entry that is not itself an alias.",
           "$comment": "Was ALSO_REFS/ALIAS_TO_PRIMARY in markers.ts."
         },
         "aliasLabel": {

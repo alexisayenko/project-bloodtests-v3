@@ -51,8 +51,8 @@ function ObservationPopupBody({ test, latestByLoinc }: Readonly<{ test: Observat
   return (
     <>
       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
-        {test.full}
-        {!isEchoRedundant(test.full, test.short) && ` (${test.short})`}
+        {test.friendlyName}
+        {!isEchoRedundant(test.friendlyName, test.shortName) && ` (${test.shortName})`}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', fontSize: 13, color: COLOR.textSecondary }}>
         <LoincChip loinc={test.loinc} unit={test.unit} />
@@ -71,8 +71,8 @@ function ResultPopupBody({ test, entry }: Readonly<{ test: Observation; entry: R
   return (
     <>
       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
-        {test.full}
-        {!isEchoRedundant(test.full, test.short) && ` (${test.short})`}
+        {test.friendlyName}
+        {!isEchoRedundant(test.friendlyName, test.shortName) && ` (${test.shortName})`}
       </div>
       <div style={{ fontSize: 13, color: COLOR.textSecondary }}>
         {formatMonthYear(entry.date)} · {entry.place}
@@ -98,8 +98,8 @@ function IndexResultPopupBody({
   return (
     <>
       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
-        {def.name}
-        {!isEchoRedundant(def.name, def.nameCompact) && ` (${def.nameCompact})`}
+        {def.friendlyName}
+        {!isEchoRedundant(def.friendlyName, def.shortName) && ` (${def.shortName})`}
       </div>
       <div style={{ fontSize: 13, color: COLOR.textSecondary }}>
         {formatMonthYear(date)} · Calculated
@@ -144,8 +144,8 @@ function IndexPopupBody({
   return (
     <>
       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
-        {def.name}
-        {!isEchoRedundant(def.name, def.nameCompact) && ` (${def.nameCompact})`}
+        {def.friendlyName}
+        {!isEchoRedundant(def.friendlyName, def.shortName) && ` (${def.shortName})`}
       </div>
       <div style={{ fontSize: 12, color: COLOR.textMuted, fontFamily: 'monospace', whiteSpace: 'pre-line', marginBottom: 10 }}>{def.formula}</div>
       <div style={{ fontSize: 13, color: COLOR.textSecondary, paddingTop: 8, borderTop: `1px solid ${COLOR.borderSubtle}` }}>

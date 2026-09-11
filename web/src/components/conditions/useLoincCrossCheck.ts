@@ -68,7 +68,7 @@ export function useLoincCrossCheck(
     const codes = unresolvedRows.filter(({ r }) => r.status === 'unknown-code').map(({ i }) => items[i]!.loinc);
     const names = unresolvedRows
       .filter(({ r }) => r.status === 'no-code')
-      .map(({ i }) => latinPart(items[i]!.analysis))
+      .map(({ i }) => latinPart(items[i]!.rawName))
       .filter((n) => n !== '');
     const result = await fetchNlmLoinc([...new Set(codes)], [...new Set(names)]);
     setNlmByCode(result.byCode);

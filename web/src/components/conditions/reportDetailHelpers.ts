@@ -75,20 +75,21 @@ export function buildNlmSuggestionsByRow(
   const perRow: Record<number, NlmEntry[]> = {};
   for (const { r, i } of unresolvedRows) {
     if (r.status !== 'no-code') continue;
-    const found = byName[latinPart(items[i]!.analysis)];
+    const found = byName[latinPart(items[i]!.rawName)];
     if (found?.length) perRow[i] = selectByUnit(found, items[i]!.unit).slice(0, 3);
   }
   return perRow;
 }
 
-// Resolved official name for a row, from the local catalog or the NLM lookup.
+// A row's resolved name: the printed code's friendly name from the local catalog
+// (its LOINC name if it has none), or NLM's name for a code the catalog lacks.
 export function resolvedNameOf(
   item: Result,
   check: CrossCheckResult | undefined,
   nlmByCode: Record<string, string | null>
 ): string | undefined {
   if (!check) return undefined;
-  if (check.loincName) return check.loincName;
+  if (check.resolvedName) return check.resolvedName;
   if (check.status === 'unknown-code') return nlmByCode[item.loinc] ?? undefined;
   return undefined;
 }
@@ -114,9 +115,9 @@ export function getMismatchMessage(
   nameMismatch: boolean
 ): string | null {
   if (!nameMismatch || !check) return null;
-  if (!check.derived) return 'Printed name differs from the LOINC name';
-  const loincNameSuffix = check.loincName ? ` is ${check.loincName}` : '';
-  return `printed code ${item.loinc.trim()}${loincNameSuffix} — name+unit resolve to ${check.derived.loinc} ${check.derived.name}`;
+  if (!check.derived) return 'Printed name matches none of the names this code carries (friendly, short, LOINC or translated)';
+  const resolvedNameSuffix = check.resolvedName ? ` is ${check.resolvedName}` : '';
+  return `printed code ${item.loinc.trim()}${resolvedNameSuffix} — name+unit resolve to ${check.derived.loinc} ${check.derived.name}`;
 }
 
 export function getDotColor(itemHasError: boolean, itemHasWarning: boolean, nameMismatch: boolean): string {

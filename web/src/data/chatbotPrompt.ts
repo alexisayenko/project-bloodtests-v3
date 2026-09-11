@@ -58,7 +58,7 @@ Field rules — apply silently, do not ask me about any of these:
    - "identifiers": only add this object, with only the keys "visit" / "order" / "accession", when the report prints its own report-level reference number. Never put a patient ID, medical record number, or national ID here or anywhere else in the file.
    - "observations": one entry per test result on the report — include every result, whether or not you know its LOINC.
    - "loinc": the code exactly as the report prints it when it prints one (see step 4), otherwise an empty string "" — always include the key, never omit it, and never fill it from your own knowledge.
-   - "rawName": the test name exactly as printed (required). The key is "rawName", not "name" — the app derives the canonical name from the LOINC code itself, so this field only ever holds what the paper said.
+   - "rawName": the test name exactly as printed (required). The key is "rawName", not "name" — the app derives the friendly name from the LOINC code itself, so this field only ever holds what the paper said.
    - "value": the numeric result as a JSON number (required for all numeric results — always include when the report prints a number). Normalize decimal commas to dots ("2,149" → 2.149) and drop thousands separators — JSON numbers only. Omit this key only if the result is purely qualitative text like "Negative" or "Not Detected".
    - "comparator": one of "<", "<=", ">=", ">" — only when the report prints a value with that qualifier (e.g. "<0.5"); pair it with "value" holding the bare number (0.5).
    - "rawValue": the result exactly as printed, whenever it's non-numeric (e.g. "Negative", "Not Detected") or worth keeping verbatim alongside a comparator.

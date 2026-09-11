@@ -28,9 +28,8 @@ import type { ValidationIssue } from '../src/data/validateDiagnosticReports';
 
 const createResult = (overrides?: Partial<Result>): Result => ({
   loinc: '2345-7',
-  analysis: 'Glucose',
-  symbol: 'GLU',
-  section: '',
+  rawName: 'Glucose',
+    section: '',
   value: 90,
   rawValue: '90',
   valueQualifier: '',
@@ -156,8 +155,8 @@ describe('isRowUnresolved', () => {
 
 describe('buildNlmSuggestionsByRow', () => {
   const items = [
-    createResult({ loinc: '', analysis: 'Προλακτίνη Prolactin', unit: 'ng/mL' }),
-    createResult({ loinc: '99999-9', analysis: 'Prolactin' }),
+    createResult({ loinc: '', rawName: 'Προλακτίνη Prolactin', unit: 'ng/mL' }),
+    createResult({ loinc: '99999-9', rawName: 'Prolactin' }),
   ];
   const byName: Record<string, NlmEntry[]> = {
     Prolactin: [
@@ -190,7 +189,7 @@ describe('resolvedNameOf', () => {
   const item = createResult({ loinc: '99999-9' });
 
   it('prefers the catalog name, falling back to the NLM one for an unknown code', () => {
-    expect(resolvedNameOf(item, { status: 'match', loincName: 'Glucose' }, {})).toBe('Glucose');
+    expect(resolvedNameOf(item, { status: 'match', resolvedName: 'Glucose' }, {})).toBe('Glucose');
     expect(resolvedNameOf(item, { status: 'unknown-code' }, { '99999-9': 'Odd test' })).toBe('Odd test');
   });
 
@@ -206,11 +205,11 @@ describe('buildExpandedCatalog', () => {
   const canonical: Analysis = {
     loinc: primary,
     friendlyName: 'Primary',
-    longCommonName: 'Primary long name',
+    longCommonName: 'Primary LOINC name',
     lang: {},
   };
 
-  it('adds an entry per alias, carrying the alias long name', () => {
+  it('adds an entry per alias, carrying the alias LOINC name', () => {
     const out = buildExpandedCatalog({ [primary]: canonical });
     expect(out).toHaveLength(1 + refs.length);
     const added = out.find((a) => a.loinc === refs[0]!.loinc)!;
@@ -240,7 +239,7 @@ describe('getMismatchMessage', () => {
   it('names both codes when a derivation contradicts the printed one', () => {
     const msg = getMismatchMessage(
       item,
-      { status: 'mismatch', loincName: 'Glucose', derived: { loinc: '2093-3', name: 'Cholesterol' } },
+      { status: 'mismatch', resolvedName: 'Glucose', derived: { loinc: '2093-3', name: 'Cholesterol' } },
       true
     );
     expect(msg).toBe('printed code 2345-7 is Glucose — name+unit resolve to 2093-3 Cholesterol');
@@ -248,7 +247,7 @@ describe('getMismatchMessage', () => {
 
   it('falls back to the plain name-differs wording', () => {
     expect(getMismatchMessage(item, { status: 'mismatch' }, true)).toBe(
-      'Printed name differs from the LOINC name'
+      'Printed name matches none of the names this code carries (friendly, short, LOINC or translated)'
     );
   });
 });
@@ -277,7 +276,7 @@ describe('unitRepairFor', () => {
     name: 'Cholesterol [Moles/volume] in Serum or Plasma',
     unit: 'mmol/L',
   };
-  const molarUnderMass = createResult({ loinc: '2093-3', analysis: 'Cholesterol', unit: 'mmol/L', value: 5.2 });
+  const molarUnderMass = createResult({ loinc: '2093-3', rawName: 'Cholesterol', unit: 'mmol/L', value: 5.2 });
 
   it('names the molar sibling of a mass code printed in molar units', () => {
     expect(unitRepairFor(molarUnderMass)).toEqual(cholesterolMolar);
@@ -300,7 +299,7 @@ describe('unitRepairFor', () => {
     // sibling pair is known; no code at all; no unit at all.
     expect(unitRepairFor(createResult({ loinc: '2093-3', unit: 'mg/dL' }))).toBeUndefined();
     expect(unitRepairFor(createResult({ loinc: '2093-3', unit: 'сомнительно' }))).toBeUndefined();
-    expect(unitRepairFor(createResult({ loinc: '3016-3', analysis: 'TSH', unit: 'mmol/L' }))).toBeUndefined();
+    expect(unitRepairFor(createResult({ loinc: '3016-3', rawName: 'TSH', unit: 'mmol/L' }))).toBeUndefined();
     expect(unitRepairFor(createResult({ loinc: '', unit: 'mmol/L' }))).toBeUndefined();
     expect(unitRepairFor(createResult({ loinc: '2093-3', unit: '' }))).toBeUndefined();
   });
@@ -359,8 +358,8 @@ describe('a Cyrillic polyclinic report after "Cross-check LOINCs"', () => {
   it('leaves correctly coded hemoglobin and total cholesterol rows without a note or a chip', () => {
     expect(
       rowsOf([
-        createResult({ loinc: '718-7', analysis: 'Гемоглобин', unit: 'г/л', value: 142 }),
-        createResult({ loinc: '14647-2', analysis: 'Холестерин общий', unit: 'mmol/L', value: 5.1 }),
+        createResult({ loinc: '718-7', rawName: 'Гемоглобин', unit: 'г/л', value: 142 }),
+        createResult({ loinc: '14647-2', rawName: 'Холестерин общий', unit: 'mmol/L', value: 5.1 }),
       ])
     ).toEqual([
       { note: null, chips: [] },
@@ -369,8 +368,8 @@ describe('a Cyrillic polyclinic report after "Cross-check LOINCs"', () => {
   });
 
   it('keeps the printed-name note for a name that is not the code at all', () => {
-    const [row] = rowsOf([createResult({ loinc: '718-7', analysis: 'Лактатдегидрогеназа', unit: 'г/л' })]);
-    expect(row?.note).toBe('Printed name differs from the LOINC name');
+    const [row] = rowsOf([createResult({ loinc: '718-7', rawName: 'Лактатдегидрогеназа', unit: 'г/л' })]);
+    expect(row?.note).toBe('Printed name matches none of the names this code carries (friendly, short, LOINC or translated)');
   });
 });
 

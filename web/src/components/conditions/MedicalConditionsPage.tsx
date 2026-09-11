@@ -43,14 +43,15 @@ export function MedicalConditionsPage() {
   const [hadStoredSettings] = useState(hasStoredViewSettings);
   const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(initialSettings.unitSystem);
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
+  const [compactPanels, setCompactPanels] = useState(initialSettings.compactPanels);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
   const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onToggleAllIndices, onSetMonth, onReload: reloadScheduled } = useScheduled();
 
   useEffect(() => {
-    saveViewSettings({ unitSystem, sampleLimit });
-  }, [unitSystem, sampleLimit]);
+    saveViewSettings({ unitSystem, sampleLimit, compactPanels });
+  }, [unitSystem, sampleLimit, compactPanels]);
 
   // A share link's settings seed the controls only for a visitor who has none
   // of their own stored yet; once they pick anything, that choice is theirs.
@@ -159,6 +160,7 @@ export function MedicalConditionsPage() {
     const stored = loadViewSettings();
     setUnitSystem(stored.unitSystem);
     setSampleLimit(stored.sampleLimit);
+    setCompactPanels(stored.compactPanels);
   };
 
   const onClearAll = () => {
@@ -184,6 +186,8 @@ export function MedicalConditionsPage() {
       conditions={shownConditions}
       latestByLoinc={latestByLoinc}
       resultsByDate={resultsByDate}
+      compact={compactPanels}
+      onCompactChange={setCompactPanels}
       onOpenDetail={(name) => navigate({ view: 'panel', name })}
       onOpenPopup={openPopup}
       onOpenIndexPopup={openIndexPopup}

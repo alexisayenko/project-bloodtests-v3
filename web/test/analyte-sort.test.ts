@@ -7,7 +7,7 @@ import {
 } from '../src/components/conditions/analyteSort';
 
 function row(values: Partial<AnalyteSortValues> & { loinc: string }): AnalyteSortValues {
-  return { name: undefined, specimen: undefined, unit: undefined, lastTested: undefined, ...values };
+  return { friendlyName: undefined, specimen: undefined, unit: undefined, lastTested: undefined, ...values };
 }
 
 const order = (rows: AnalyteSortValues[], key: Parameters<typeof compareAnalytes>[2], direction: 'asc' | 'desc') =>
@@ -60,14 +60,14 @@ describe('empty cells', () => {
 
 describe('text columns', () => {
   const rows = [
-    row({ loinc: '10-1', name: 'Ferritin [Mass/volume] in Serum or Plasma', specimen: 'Serum or Plasma' }),
-    row({ loinc: '2-1', name: 'Albumin [Mass/volume] in Serum or Plasma', specimen: 'Serum or Plasma' }),
-    row({ loinc: '30-1', name: 'Hemoglobin [Mass/volume] in Blood', specimen: 'Blood' }),
+    row({ loinc: '10-1', friendlyName: 'Ferritin', specimen: 'Serum or Plasma' }),
+    row({ loinc: '2-1', friendlyName: 'Albumin', specimen: 'Serum or Plasma' }),
+    row({ loinc: '30-1', friendlyName: 'Hemoglobin', specimen: 'Blood' }),
   ];
 
   it('sorts alphabetically both ways', () => {
-    expect(order(rows, 'name', 'asc')).toEqual(['2-1', '10-1', '30-1']);
-    expect(order(rows, 'name', 'desc')).toEqual(['30-1', '10-1', '2-1']);
+    expect(order(rows, 'friendlyName', 'asc')).toEqual(['2-1', '10-1', '30-1']);
+    expect(order(rows, 'friendlyName', 'desc')).toEqual(['30-1', '10-1', '2-1']);
   });
 
   it('breaks ties by LOINC regardless of direction', () => {
@@ -77,7 +77,7 @@ describe('text columns', () => {
 
   it('leaves the input array untouched', () => {
     const input = [...rows];
-    sortAnalytes(input, (r) => r, 'name', 'desc');
+    sortAnalytes(input, (r) => r, 'friendlyName', 'desc');
     expect(input.map((r) => r.loinc)).toEqual(['10-1', '2-1', '30-1']);
   });
 });

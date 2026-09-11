@@ -8,7 +8,7 @@ import {
   readSharedDataGuid,
   stripDataParam,
 } from './sharedLink';
-import { RESULTS_STORAGE_KEY as STORAGE_KEY } from './resultsStorage';
+import { RESULTS_STORAGE_KEY as STORAGE_KEY, parseStoredSessions } from './resultsStorage';
 import { importResults } from './importResults';
 import { applySharedMeta, clearSharedMeta, loadStoredSharedMeta, type SharedMeta } from './sharedMeta';
 
@@ -31,12 +31,11 @@ const ResultsContext = createContext<ResultsContextType>(null!);
 export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [sessions, setSessions] = useState<DiagnosticReport[]>(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      return parseStoredSessions(localStorage.getItem(STORAGE_KEY));
     } catch {
-      // corrupt/incompatible local storage — ignore and start fresh
+      // storage unavailable — start fresh
+      return [];
     }
-    return [];
   });
   // localStorage loads synchronously in the useState initializer above,
   // so there is nothing to wait for.

@@ -19,7 +19,7 @@ export interface CrossCheckSuggestion {
 
 export interface CrossCheckResult {
   status: CrossCheckStatus;
-  loincName?: string;
+  resolvedName?: string;
   suggestions?: CrossCheckSuggestion[];
   // True when the name+unit derivation clearly dominates — safe to auto-apply.
   confident?: boolean;
@@ -333,7 +333,7 @@ function stageLatin(
   weights: Map<string, number>,
   unitByLoinc: Record<string, string>
 ): CrossCheckSuggestion[] {
-  const name = latinPart(item.analysis);
+  const name = latinPart(item.rawName);
   if (!name) return [];
   const rowUnit = canonicalUnit(item.unit);
   const queryTokens = tokensOf(name);
@@ -412,7 +412,7 @@ function translationScore(queryTokens: string[], name: string): number {
 // "Мочевая кислота" still meets its own translation while "Фолиевая кислота"
 // meets "фолат".
 function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string, string>): CrossCheckSuggestion[] {
-  const printed = unicodeTokens(item.analysis);
+  const printed = unicodeTokens(item.rawName);
   if (printed.length === 0) return [];
   const readings = [printed, foldAcidToAnion(printed)];
   const rowUnit = canonicalUnit(item.unit);
@@ -495,7 +495,7 @@ function unicodeOverlap(printed: string, official: string): number {
 function printedNameAgrees(printed: string, entry: Analysis): boolean {
   const translations = Object.values(entry.lang ?? {});
   const key = nameKey(printed);
-  if ([entry.friendlyName, entry.short, ...translations].some((name) => name && nameKey(name) === key)) return true;
+  if ([entry.friendlyName, entry.shortName, ...translations].some((name) => name && nameKey(name) === key)) return true;
   const latin = latinPart(printed);
   const official = catalogNameText(entry);
   if (Math.max(tokenOverlap(latin, official), tokenOverlap(official, latin)) >= MISMATCH_THRESHOLD) return true;
@@ -523,7 +523,7 @@ export function crossCheckLocal(
       return { status: 'malformed' as const, suggestions: candidates, confident };
     }
     const entry = byCode.get(code);
-    const loincName = entry ? entry.friendlyName || entry.longCommonName : undefined;
+    const resolvedName = entry ? entry.friendlyName || entry.longCommonName : undefined;
     const top = candidates[0];
     // A printed alias of the derived code (or vice versa) is the same analyte —
     // panels fold it via ALIAS_TO_PRIMARY — so it's a match.
@@ -533,12 +533,12 @@ export function crossCheckLocal(
     // the best derivation is the printed code, the row agrees even without
     // confidence, and there is nothing to offer in its place.
     if (agreesWithTop) {
-      return { status: 'match' as const, loincName: loincName ?? top.name, ...(confident ? { confident } : {}) };
+      return { status: 'match' as const, resolvedName: resolvedName ?? top.name, ...(confident ? { confident } : {}) };
     }
     if (confident && top) {
       return {
         status: 'mismatch' as const,
-        loincName,
+        resolvedName,
         derived: { loinc: top.loinc, name: top.name },
         suggestions: candidates,
         confident: true,
@@ -548,14 +548,14 @@ export function crossCheckLocal(
     if (!entry) {
       return { status: 'unknown-code' as const };
     }
-    if (!printedNameAgrees(item.analysis, entry)) {
+    if (!printedNameAgrees(item.rawName, entry)) {
       return {
         status: 'mismatch' as const,
-        loincName,
+        resolvedName,
         suggestions: candidates.length > 0 ? candidates : undefined,
         confident: false,
       };
     }
-    return { status: 'match' as const, loincName };
+    return { status: 'match' as const, resolvedName };
   });
 }

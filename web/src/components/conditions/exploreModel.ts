@@ -59,8 +59,8 @@ export function refBandFor(def: IndexDef): { refMin: number; refMax: number } {
  * different index).
  *
  * Keyed by LOINC -- matching every other lookup this file and markers.ts
- * already key that way (`seen`, `markers`, `notTaken`, SHORT_LABELS,
- * ALSO_REFS, INDEX_LOINCS), not by short display name.
+ * already key that way (`seen`, `markers`, `notTaken`, SHORT_NAMES,
+ * ALSO_REFS, INDEX_LOINCS), not by short name.
  *
  * HDL-C (LOINC 2085-9): every dated reading on file only ever prints
  * "> 35"/"> 40 mg/dL" -- a lower bound only, since higher HDL is protective
@@ -280,7 +280,7 @@ function buildTestMarker(
   data.sort((a, b) => a[0].localeCompare(b[0]));
 
   const marker: ExploreMarker = {
-    label: test.short,
+    label: test.shortName,
     unit,
     refMin: refMinRaw != null ? convert(refMinRaw, refFromUnit) : 0,
     refMax: convert(refMaxRaw, refFromUnit),
@@ -341,11 +341,11 @@ function buildIndexMarkers(
       // never drawn) -- same "not taken" treatment as an observation that was
       // never drawn: named, disabled, not plotted (0 % would misread as a real
       // reading sitting right at the bad boundary).
-      notTaken.push({ key, label: def.nameCompact, panel });
+      notTaken.push({ key, label: def.shortName, panel });
       continue;
     }
     markers[key] = {
-      label: def.nameCompact,
+      label: def.shortName,
       unit: def.unit,
       ...refBandFor(def),
       panel,
@@ -388,7 +388,7 @@ export function buildExploreModel(
 
     // NEVER TAKEN -- no reading at all, so nothing to plot or normalize.
     if (byDate.size === 0) {
-      notTaken.push({ key: loinc, label: test.short, panel });
+      notTaken.push({ key: loinc, label: test.shortName, panel });
       continue;
     }
 
@@ -400,7 +400,7 @@ export function buildExploreModel(
       // lower-bound-only range can't be plotted, so it's surfaced as a
       // notTaken chip with a reason (ExploreNotTaken.reason in
       // explore-types.ts) rather than silently dropped.
-      notTaken.push({ key: loinc, label: test.short, panel, reason: 'no upper bound' });
+      notTaken.push({ key: loinc, label: test.shortName, panel, reason: 'no upper bound' });
       continue;
     }
 
@@ -409,14 +409,14 @@ export function buildExploreModel(
       // Every reading was on a scale this series' band cannot be compared
       // against -- real data on file, none of it plottable here, which is the
       // second ExploreNotTaken.reason case, not a never-drawn marker.
-      notTaken.push({ key: loinc, label: test.short, panel, reason: omittedReason(omitted) });
+      notTaken.push({ key: loinc, label: test.shortName, panel, reason: omittedReason(omitted) });
       continue;
     }
     markers[loinc] = marker;
     // Partly plottable: the line is real but shorter than the history, so the
     // gap is named next to it rather than left to look like a missing draw.
     if (omitted.length > 0)
-      notTaken.push({ key: `${loinc}:omitted`, label: test.short, panel, reason: omittedReason(omitted) });
+      notTaken.push({ key: `${loinc}:omitted`, label: test.shortName, panel, reason: omittedReason(omitted) });
 
     // Default selection: the current panel's own two-sided-range markers
     // with more than one reading -- mirrors v2's defaultPanel option. When

@@ -5,12 +5,12 @@ import { INDEX_DEFS } from '../../data/indexDefs';
 import {
   ALIAS_TO_PRIMARY,
   ALSO_REFS,
-  SHORT_LABELS,
-  buildPrintedNames,
+  SHORT_NAMES,
+  buildRawNames,
   indexMatchesQuery,
   observationMatchesQuery,
   panelRowLoincs,
-  printedNamesOf,
+  rawNamesOf,
   type Observation,
 } from './markers';
 import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
@@ -50,17 +50,17 @@ function buildRows(allResults: ResultEntry[], analysesCatalog: Record<string, An
     const loinc = ALIAS_TO_PRIMARY[rawLoinc] ?? rawLoinc;
     if (seen.has(loinc)) continue;
     const analysis = analysesCatalog[loinc];
-    const labelInfo = SHORT_LABELS[loinc];
+    const labelInfo = SHORT_NAMES[loinc];
     seen.set(loinc, {
-      short: labelInfo?.short ?? analysis?.friendlyName ?? loinc,
-      full: analysis?.friendlyName ?? loinc,
+      shortName: labelInfo?.shortName ?? analysis?.friendlyName ?? loinc,
+      friendlyName: analysis?.friendlyName ?? loinc,
       longCommonName: analysis?.longCommonName ?? '',
       loinc,
       unit: labelInfo?.unit,
       also: ALSO_REFS[loinc],
     });
   }
-  return Array.from(seen.values()).sort((a, b) => a.short.localeCompare(b.short));
+  return Array.from(seen.values()).sort((a, b) => a.shortName.localeCompare(b.shortName));
 }
 
 function emptyMessage(panelName: string | undefined, query: string): string {
@@ -133,15 +133,15 @@ export function AllObservationsView({
   const [query, setQuery] = useState('');
 
   const rows = useMemo(() => buildRows(allResults, analysesCatalog), [allResults, analysesCatalog]);
-  const printedNames = useMemo(() => buildPrintedNames(allResults), [allResults]);
+  const rawNames = useMemo(() => buildRawNames(allResults), [allResults]);
   const activePanel = panelOptions.find((c) => c.name === panelFilter) ?? null;
   const visibleRows = useMemo(() => {
     const covered = activePanel ? panelRowLoincs(activePanel.tests) : null;
     return rows.filter(
       (row) =>
-        (!covered || covered.has(row.loinc)) && observationMatchesQuery(row, query, printedNamesOf(printedNames, row))
+        (!covered || covered.has(row.loinc)) && observationMatchesQuery(row, query, rawNamesOf(rawNames, row))
     );
-  }, [rows, activePanel, query, printedNames]);
+  }, [rows, activePanel, query, rawNames]);
   // The panel's own indices when one is picked, exactly as Panel Detail scopes
   // them; otherwise every index the panels on offer declare, which the share
   // link's allowlist has already narrowed.

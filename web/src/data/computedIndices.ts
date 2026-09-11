@@ -16,7 +16,7 @@ import { toLatinUnit } from './unitNormalization';
 export type Markers = Record<string, number | undefined>;
 
 /**
- * v2 marker short name -> candidate v3 LOINC codes, for every marker any ported
+ * Input key (v2 marker id) -> candidate v3 LOINC codes, for every marker any ported
  * index needs. Some analytes are reported under different LOINCs across labs/eras
  * (same list as MedicalConditionsPage's ALSO_REFS) -- listed primary-first, tried
  * in order, first one with data on the draw's date wins.
@@ -216,8 +216,8 @@ export interface IndexReference {
 
 export interface IndexDef {
   key: string;
-  name: string;
-  nameCompact: string;
+  friendlyName: string;
+  shortName: string;
   /** Monitoring Panel names (MedicalConditionsPage's PANEL_DEFS) this index appears under. */
   panels: string[];
   formula: string;
@@ -226,8 +226,8 @@ export interface IndexDef {
   /** true = higher-is-better. */
   hi?: boolean;
   unit?: string;
-  /** v2 marker short names -- keys into MARKER_LOINC. */
-  needs: string[];
+  /** Input keys (v2 marker ids) -- keys into MARKER_LOINC. */
+  inputKeys: string[];
   inputUnits?: Partial<Record<string, string>>;
   level: 'consensus' | 'heuristic';
   meaning: string;
@@ -297,17 +297,17 @@ const MARKER_REFERENCE_UNIT: Record<string, string | undefined> = Object.fromEnt
  * another scale, so it is placed on the reference one or declined.
  */
 function markerValue(
-  short: string,
+  inputKey: string,
   resultsByLoinc: Record<string, Result>,
   target: string | undefined
 ): number | undefined {
-  const primary = (MARKER_LOINC[short] ?? [])[0];
-  const to = target ?? MARKER_REFERENCE_UNIT[short];
-  for (const loinc of MARKER_CANDIDATE_LOINCS[short] ?? []) {
+  const primary = (MARKER_LOINC[inputKey] ?? [])[0];
+  const to = target ?? MARKER_REFERENCE_UNIT[inputKey];
+  for (const loinc of MARKER_CANDIDATE_LOINCS[inputKey] ?? []) {
     const r = resultsByLoinc[loinc];
     if (r?.value == null) continue;
     if (!to) return r.value;
-    const converted = convertUnit(r.value, short, r.unit, to);
+    const converted = convertUnit(r.value, inputKey, r.unit, to);
     if (converted !== undefined) return converted;
     if (!target && loinc === primary) return r.value;
   }
@@ -317,9 +317,9 @@ function markerValue(
 /** One draw's observations, converted to the units each index's fn expects. */
 export function markersForIndex(def: IndexDef, resultsByLoinc: Record<string, Result>): Markers {
   const m: Markers = {};
-  for (const short of def.needs) {
-    const value = markerValue(short, resultsByLoinc, def.inputUnits?.[short]);
-    if (value !== undefined) m[short] = value;
+  for (const inputKey of def.inputKeys) {
+    const value = markerValue(inputKey, resultsByLoinc, def.inputUnits?.[inputKey]);
+    if (value !== undefined) m[inputKey] = value;
   }
   if (def.key === 'cft') {
     const alb = markerValue('ALB', resultsByLoinc, undefined);

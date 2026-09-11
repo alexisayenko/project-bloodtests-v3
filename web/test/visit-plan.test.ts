@@ -46,7 +46,7 @@ describe('planCells', () => {
 });
 
 describe('planRows', () => {
-  it('orders rows by full name', () => {
+  it('orders rows by LOINC name', () => {
     expect(planRows(['2093-3', '2085-9'])).toEqual(['2093-3', '2085-9']);
     expect(planRows(['2085-9', '2093-3'])).toEqual(['2093-3', '2085-9']);
   });

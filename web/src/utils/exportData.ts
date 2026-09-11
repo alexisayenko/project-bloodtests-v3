@@ -15,7 +15,7 @@ type StampedEnvelope = InterchangeEnvelope & { generatedAt: string };
 function resultToObservation(result: Result): InterchangeObservation {
   const obs: InterchangeObservation = {
     loinc: result.loinc,
-    rawName: result.analysis || 'Unknown Test',
+    rawName: result.rawName || 'Unknown Test',
   };
 
   if (result.value !== null) {

@@ -21,9 +21,10 @@ import {
   type EditableField,
 } from './reportDetailHelpers';
 import { useLoincCrossCheck, type LoincCrossCheck } from './useLoincCrossCheck';
-import { Button, EmptyState, FIELD_INPUT, StatusDot, TABLE, TABLE_TD, TABLE_TH as th } from '../primitives';
+import { Button, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, StatusDot, TABLE, TABLE_CARD, TABLE_TD } from '../primitives';
 import { COLOR } from '../../styles/tokens';
 
+const th = { ...CARD_TABLE_TH, padding: '10px 12px' } as const;
 const td = { ...TABLE_TD, whiteSpace: 'normal' } as const;
 const cellInput = { ...FIELD_INPUT, padding: '2px 4px' } as const;
 
@@ -70,12 +71,13 @@ function ReportResultsSection({
           </span>
         )}
       </div>
-      <div style={{ overflowX: 'auto', marginBottom: 16 }}>
+      <Card style={{ ...TABLE_CARD, width: 'fit-content', maxWidth: '100%', marginBottom: 16 }}>
+        <div style={{ overflowX: 'auto' }}>
         <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}></th>
-              <th style={th}>Test name</th>
+              <th style={th}>Printed name</th>
               <th style={th}>LOINC</th>
               <th style={th}>Value</th>
               <th style={th}>Unit</th>
@@ -103,7 +105,7 @@ function ReportResultsSection({
                     <td style={td}>
                       <StatusDot color={dotColor} title={dotTitle} />
                     </td>
-                    <td style={td}>{item.analysis}</td>
+                    <td style={td}>{item.rawName}</td>
                     <td style={td}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <input
@@ -191,7 +193,8 @@ function ReportResultsSection({
             })}
           </tbody>
         </table>
-      </div>
+        </div>
+      </Card>
       {checkResults && unresolvedRows.length > 0 && nlmState !== 'loading' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 16, fontSize: 13 }}>
           <span style={{ color: COLOR.textSecondary }}>

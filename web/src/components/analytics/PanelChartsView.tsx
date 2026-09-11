@@ -10,7 +10,7 @@ interface Props {
   allResults: ResultEntry[];
 }
 
-type NameKey = 'full' | 'short';
+type NameKey = 'friendlyName' | 'shortName';
 
 const named = (test: Observation, primary: NameKey, fallback: NameKey) =>
   [test[primary], test[fallback]].find(v => v && v !== test.loinc);
@@ -19,8 +19,8 @@ export function PanelChartsView({ tests, allResults }: Readonly<Props>) {
   const names = useMemo<BiomarkerNames>(() => {
     const testByLoinc = new Map(tests.flatMap(t => testLoincs(t).map(l => [l, t] as const)));
     return {
-      full: l => { const t = testByLoinc.get(l); return t && named(t, 'full', 'short'); },
-      short: l => { const t = testByLoinc.get(l); return t && named(t, 'short', 'full'); },
+      friendlyName: l => { const t = testByLoinc.get(l); return t && named(t, 'friendlyName', 'shortName'); },
+      shortName: l => { const t = testByLoinc.get(l); return t && named(t, 'shortName', 'friendlyName'); },
     };
   }, [tests]);
 

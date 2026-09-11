@@ -103,7 +103,7 @@ describe('toggleIndex', () => {
 describe('All Observations rows fold aliases like Panel Detail', () => {
   const row = (loinc: string) => {
     const primary = ALIAS_TO_PRIMARY[loinc] ?? loinc;
-    return testLoincs({ short: '', full: '', longCommonName: '', loinc: primary, also: ALSO_REFS[primary] });
+    return testLoincs({ shortName: '', friendlyName: '', longCommonName: '', loinc: primary, also: ALSO_REFS[primary] });
   };
 
   it('every alias-bearing analyte yields the same LOINC set from either code', () => {

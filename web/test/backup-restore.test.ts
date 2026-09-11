@@ -18,7 +18,7 @@ const APP = { commit: 'abc1234', builtAt: '2026-09-10T08:00:00Z' };
 const MEDICATIONS = { years: [2025, 2026], rows: [{ id: 'm1', name: 'Vitamin D', dosage: '2000 IU', months: ['2026-01'] }] };
 const SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10', lab: 'esculab' };
 const SETTINGS = {
-  [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all' }),
+  [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all', compactPanels: true }),
   'exploreSel:Lipids': JSON.stringify(['ldl', 'hdl']),
   'hpgAutoscale:all': '1',
   'exploreEv:all:meds': '0',
@@ -26,9 +26,8 @@ const SETTINGS = {
 
 const result: Result = {
   loinc: '2093-3',
-  analysis: 'Total Cholesterol',
-  symbol: '',
-  section: '',
+  rawName: 'Total Cholesterol',
+    section: '',
   value: 186,
   rawValue: '186',
   valueQualifier: '',

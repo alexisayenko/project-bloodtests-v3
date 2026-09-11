@@ -24,11 +24,11 @@ results are parsed client-side and kept in `localStorage`. That
 reference data is the single source of truth and is never mirrored in
 TypeScript (ADR-0010): `analyses.json` is the analyte catalog, one
 entry per LOINC carrying its names (`friendlyName`, the clinical name the UI
-shows, and `longCommonName`), translations and popup prose plus
-`short` (badge label), `unit` (expected unit), `allowedUnits`, and
+shows, and `longCommonName`, the "LOINC name"), translations and popup prose plus
+`shortName` (our badge abbreviation, not LOINC's SHORTNAME), `unit` (expected unit), `allowedUnits`, and
 `aliasOf`/`aliasLabel` on a unit or method variant of another code;
 `web/src/data/analyteCatalog.ts` imports it and derives every lookup
-map from it at load (`SHORT_LABELS`, `DEFAULT_UNITS`, `ALLOWED_UNITS`,
+map from it at load (`SHORT_NAMES`, `DEFAULT_UNITS`, `ALLOWED_UNITS`,
 and the reverse alias map `ALSO_REFS` / `ALIAS_TO_PRIMARY`), so none
 can drift. Panels have two layers: `panels.json` holds the laboratory
 groups (how a lab orders and prints a set), `monitoring-panels.json`
@@ -72,7 +72,7 @@ A read-only
 share link, `/?data=<guid>`, fetches `/d/<guid>.data.json` and imports it
 through the same parse path as an upload, then strips the param; in
 parallel it fetches an optional `/d/<guid>.meta.json` per-link
-presentation config (`showPanels` — an allowlist of panel display names
+presentation config (`showPanels` — an allowlist of panel names
 limiting the Monitoring Panels grid, and with it All Observations' panel
 options and the indices they scope, though its observation rows always show
 everything — plus `settings`, which seeds the shared table controls
@@ -321,11 +321,12 @@ automatically — review and Save", re-running the check over the
 updated rows, and leaves unit-labeled suggestion chips on the rows it
 could not settle, each filling that row's LOINC on click — Save/Cancel
 still gate persistence) / ✗ unknown with no derivation (without a
-confident derivation, "Printed name differs from the LOINC name" shows
-only when the printed name is none of the code's `friendlyName`, badge or
+confident derivation, "Printed name matches none of the names this code carries" shows
+only when the printed name is none of the code's `friendlyName`, `shortName` or
 ru-RU/uk-UA names, case and punctuation ignored, and shares too few
-words with its English or translated ones) — shows the official LOINC name
-in grey under the printed name (printed name kept as provenance;
+words with its friendly, LOINC or translated ones) — shows the code's resolved
+name (`resolvedName`: its `friendlyName`, or NLM's name for a code the catalog
+lacks) in grey under the printed name (printed name kept as provenance;
 resolved names are session-only, never stored); a second-stage "Check
 online (NLM)" button,
 offered only for rows the offline pass couldn't resolve, sends test
@@ -359,7 +360,7 @@ through `ALIAS_TO_PRIMARY` (`panelRowLoincs`, `markers.ts`) so a reading
 matches its panel whichever of its codes the lab used, while
 `buildConditions` still maps one-to-one; the text pass
 (`observationMatchesQuery` / `indexMatchesQuery`, `markers.ts`) matches the
-badge label, the displayed and long common names, every LOINC the row
+short name, the friendly and LOINC names, every LOINC the row
 answers for and every `rawName` a lab printed for it, so a Cyrillic printed
 name finds its row; below the observations, in the same `ResultsTable`, sit
 the indices, scoped the way Panel Detail scopes them — the selected panel's
@@ -368,8 +369,8 @@ which limits the panel options but never the observation rows, does narrow
 the indices), Monitoring Panels
 (the default/entry route), Scheduled Visits (`#plan`, reachable despite validation
 errors: under a "Planned for <month>" line, every scheduled observation, folded
-to its primary code, as one "Observation" cell — `friendlyName`, with the badge
-label in parentheses where it differs, opening the analyte popup — beside one
+to its primary code, as one "Observation" cell — `friendlyName`, with the short
+name in parentheses where it differs, opening the analyte popup — beside one
 price column per laboratory, a bundle
 priced on its first covered row and marked "in <label>" on the rest by
 `data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own), Medications (`#medications`, reachable despite
@@ -399,7 +400,9 @@ converted (ADR-0003), and a Sources block citing the UCUM spec, its licence,
 WHO TRS 932 Annex 2, Clinical Chemistry's instructions to authors and the
 LOINC Users' Guide, each with what it settles and a retrieval date; Analytes: a
 "LOINC database" page at `#reference/loinc-database` listing every analyte the
-app knows — code, name, specimen, units and panels, sortable by column) — each
+app knows — LOINC code over its LOINC name, then friendly name over the short name
+where it differs, specimen, units and panels, sortable by code, friendly name and
+the other value columns) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
 while validation errors exist) has an "Export all data" button that downloads
@@ -453,9 +456,13 @@ ADR-0009, and old files go through `npm run convert:v3`
 (`scripts/convert-to-v3.mjs`), which keeps every legacy branch;
 other envelope fields ignored for now, though a report's `identifiers`
 (visit/order/accession) feeds the session id so two same-day same-lab
-draws don't collide on merge). Each observation's printed test name
-lives in `rawName`, never `name` — the canonical name is derived from
-the LOINC code at display time and deliberately never stored.
+draws don't collide on merge). Each observation's printed name
+lives in `rawName`, never `name` — the friendly name is derived from
+the LOINC code at display time and deliberately never stored. A session
+stored in `bloodtests_upload_v1` before the in-memory `Result` took that name
+still carries it as `analysis`; `resultsStorage.ts`'s `parseStoredSessions` reads
+it into `rawName` on load. Every name the app uses is defined once, in the
+"Names" glossary of `docs/product/concepts/observation.md`.
 `parseUpload.ts` is also the single place unit normalization runs
 (`unitNormalization.ts`, over every observation of every import route):
 the printed value and unit are kept exactly as read, and where the unit
@@ -532,7 +539,7 @@ to carry them; the same pass corrected eight `mcg/…` unit spellings and one
 `molarMasses.ts`'s `concentrationScale` cannot parse a prefix out of)
 and carry `aliasOf`
 against their mass primary, so a molar code folds into the same panel row,
-badge and chart series as the mass one with no changes to panels, tables or
+short name and chart series as the mass one with no changes to panels, tables or
 charts. Two Ajv-validated offline
 Node scripts sit beside the app: `npm run convert:v3`
 (`scripts/convert-to-v3.mjs`, above) and `node scripts/recode-molar.mjs <file>`
@@ -558,7 +565,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (682 tests across 30 files, 1 skipped: index
+Vitest suites in `web/test/` (789 tests across 35 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
@@ -570,7 +577,7 @@ json-schema-to-typescript, devDependencies only —
 nothing schema-related is bundled), reference-data conformance
 (analyses / panels / monitoring-panels against
 `analytes-1.schema.json`, plus catalog consistency: no duplicate
-LOINC, every `aliasOf` resolving, every `short` carrying a unit;
+LOINC, every `aliasOf` resolving, every `shortName` carrying a unit;
 molar-masses against `molar-masses-1.schema.json`, plus every mass
 recomputed from its formula, agreeing with a cited source within
 0.05%, and every sibling pair naming a tabulated entry; laboratories against
@@ -579,7 +586,7 @@ share-link and shared-meta,
 explore-model, markers, routing,
 scheduling, ui helpers, build stamp, format utils, lab pricing and the visit
 plan, medications, the backup archive and its restore, the showcase generator,
-import-results and the results context, analyte sort; the mobile reveal —
+import-results, old-shape stored sessions and the results context, analyte sort; the mobile reveal —
 `TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile` — has none
 yet). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build in a

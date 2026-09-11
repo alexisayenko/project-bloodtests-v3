@@ -64,7 +64,7 @@ observation's printed test name is stored under `rawName`.**
   fallback would keep the old key alive in files forever.
 
 The rename is not symmetrical with `rawValue`/`value`, and that
-asymmetry is the reason for the name. The canonical test name is
+asymmetry is the reason for the name. The friendly name is
 derived from the LOINC code **at display time and never stored**, so
 there is no `name` sibling by design. `rawName` says the file holds
 only what was printed; `name` would imply a canonical string the
@@ -117,3 +117,12 @@ format does not carry.
   than a tidiness one.
 - Real data landing in files this repo does not generate, which is
   the condition that made this rename cheap disappearing.
+
+## Notes
+
+- 2026-09-11: the app's in-memory `Result` now names the printed name
+  `rawName` as well (formerly `analysis`), matching the envelope; the
+  envelope itself is unchanged. Unlike the file rename above, sessions
+  already stored in a browser are read with `analysis` as a fallback
+  (`parseStoredSessions` in `resultsStorage.ts`), since browser storage
+  has no converter to go through.

@@ -6,8 +6,8 @@ export interface LoincEntry {
   results: { date: string; result: Result }[];
 }
 
-/** Host-supplied display names for a LOINC, so chart components stay catalog-agnostic. */
+/** Host-supplied names for a LOINC, so chart components stay catalog-agnostic. */
 export interface BiomarkerNames {
-  full: (loinc: string) => string | undefined;
-  short: (loinc: string) => string | undefined;
+  friendlyName: (loinc: string) => string | undefined;
+  shortName: (loinc: string) => string | undefined;
 }

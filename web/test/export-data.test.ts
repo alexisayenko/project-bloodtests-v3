@@ -6,9 +6,8 @@ import type { Result, DiagnosticReport } from '../src/types';
 
 const result = (partial: Partial<Result>): Result => ({
   loinc: '2093-3',
-  analysis: 'Total Cholesterol',
-  symbol: '',
-  section: '',
+  rawName: 'Total Cholesterol',
+    section: '',
   value: 186,
   rawValue: '186',
   valueQualifier: '',
@@ -128,8 +127,8 @@ describe('buildExportEnvelope', () => {
         date: '2026-08-26',
         place: 'Lab A',
         items: [
-          result({ loinc: '2093-3', analysis: 'Cholesterol', value: 180 }),
-          result({ loinc: '2571-8', analysis: 'Triglycerides', value: 150 }),
+          result({ loinc: '2093-3', rawName: 'Cholesterol', value: 180 }),
+          result({ loinc: '2571-8', rawName: 'Triglycerides', value: 150 }),
         ],
         itemCount: 2,
       }),
@@ -199,7 +198,7 @@ describe('buildExportEnvelope', () => {
         items: [
           result({
             loinc: '2093-3',
-            analysis: 'Total Cholesterol',
+            rawName: 'Total Cholesterol',
             value: 186.65,
             rawValue: '186.65',
             unit: 'mg/dL',

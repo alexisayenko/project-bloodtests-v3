@@ -13,9 +13,8 @@ import type { Analysis, Result } from '../src/types';
 
 const createResult = (overrides?: Partial<Result>): Result => ({
   loinc: '2345-7',
-  analysis: 'Glucose',
-  symbol: 'GLU',
-  section: '',
+  rawName: 'Glucose',
+    section: '',
   value: 90,
   rawValue: '90',
   valueQualifier: '',
@@ -209,7 +208,7 @@ describe('resolveLoinc', () => {
 
   it('hard-selects the mIU/L variant for a mIU/L row', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Prolactin', unit: 'mIU/L' }),
+      createResult({ loinc: '', rawName: 'Prolactin', unit: 'mIU/L' }),
       prolactinCatalog,
       prolactinUnits
     );
@@ -221,7 +220,7 @@ describe('resolveLoinc', () => {
 
   it('hard-selects the ng/mL variant for a ng/mL row', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Prolactin', unit: 'ng/mL' }),
+      createResult({ loinc: '', rawName: 'Prolactin', unit: 'ng/mL' }),
       prolactinCatalog,
       prolactinUnits
     );
@@ -237,7 +236,7 @@ describe('resolveLoinc', () => {
       { loinc: '5763-8', longCommonName: 'Zinc [Mass/volume] in Serum or Plasma', friendlyName: 'Zinc (Zn)', lang: {} },
     ];
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Zinc (Zn)', unit: 'μg/dL' }),
+      createResult({ loinc: '', rawName: 'Zinc (Zn)', unit: 'μg/dL' }),
       zincCatalog,
       { '5763-8': 'mcg/dL' }
     );
@@ -247,7 +246,7 @@ describe('resolveLoinc', () => {
 
   it('is not confident between variants when the row has no unit', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Prolactin', unit: '' }),
+      createResult({ loinc: '', rawName: 'Prolactin', unit: '' }),
       prolactinCatalog,
       prolactinUnits
     );
@@ -257,7 +256,7 @@ describe('resolveLoinc', () => {
 
   it('matches unit despite μ/case/spacing differences', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Prolactin', unit: 'μIU/mL' }),
+      createResult({ loinc: '', rawName: 'Prolactin', unit: 'μIU/mL' }),
       prolactinCatalog,
       { '15081-3': 'uIU/mL', '2842-3': 'ng/mL' }
     );
@@ -266,18 +265,18 @@ describe('resolveLoinc', () => {
   });
 
   it('resolves a purely Greek printed name via lang translations', () => {
-    const res = resolveLoinc(createResult({ loinc: '', analysis: 'Γλυκόζη' }), catalog, {});
+    const res = resolveLoinc(createResult({ loinc: '', rawName: 'Γλυκόζη' }), catalog, {});
     expect(res.candidates[0]?.loinc).toBe('2345-7');
     expect(res.confident).toBe(true);
   });
 
   it('resolves a purely Russian printed name via lang translations', () => {
-    const res = resolveLoinc(createResult({ loinc: '', analysis: 'Глюкоза' }), catalog, {});
+    const res = resolveLoinc(createResult({ loinc: '', rawName: 'Глюкоза' }), catalog, {});
     expect(res.candidates[0]?.loinc).toBe('2345-7');
   });
 
   it('returns nothing for an unrecognized name', () => {
-    const res = resolveLoinc(createResult({ loinc: '', analysis: 'Xyzzy' }), catalog, {});
+    const res = resolveLoinc(createResult({ loinc: '', rawName: 'Xyzzy' }), catalog, {});
     expect(res.candidates).toEqual([]);
     expect(res.confident).toBe(false);
   });
@@ -326,7 +325,7 @@ describe('resolveLoinc on real lab-report names', () => {
 
   it('resolves "TSH 3rd" μIU/ml confidently despite the noise token and /mL spelling', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'TSH 3rd', unit: 'μIU/ml' }),
+      createResult({ loinc: '', rawName: 'TSH 3rd', unit: 'μIU/ml' }),
       labCatalog,
       labUnits
     );
@@ -336,7 +335,7 @@ describe('resolveLoinc on real lab-report names', () => {
 
   it('resolves the British "Haemoglobin (Hb)" to Hemoglobin', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Haemoglobin (Hb)', unit: 'g/dL' }),
+      createResult({ loinc: '', rawName: 'Haemoglobin (Hb)', unit: 'g/dL' }),
       labCatalog,
       labUnits
     );
@@ -346,7 +345,7 @@ describe('resolveLoinc on real lab-report names', () => {
 
   it('resolves the misspelled "CORTIZOL" to Cortisol', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'CORTIZOL', unit: 'µg/dl' }),
+      createResult({ loinc: '', rawName: 'CORTIZOL', unit: 'µg/dl' }),
       labCatalog,
       labUnits
     );
@@ -356,7 +355,7 @@ describe('resolveLoinc on real lab-report names', () => {
 
   it('resolves "FT4 (Thyroxin free)" to Free Thyroxine', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'FT4 (Thyroxin free)', unit: 'ng/dL' }),
+      createResult({ loinc: '', rawName: 'FT4 (Thyroxin free)', unit: 'ng/dL' }),
       labCatalog,
       labUnits
     );
@@ -366,7 +365,7 @@ describe('resolveLoinc on real lab-report names', () => {
 
   it('resolves the British "Oestradiol" to Estradiol, pg/mL agreeing with curated pg/mL', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Oestradiol', unit: 'pg/ml' }),
+      createResult({ loinc: '', rawName: 'Oestradiol', unit: 'pg/ml' }),
       labCatalog,
       labUnits
     );
@@ -378,7 +377,7 @@ describe('resolveLoinc on real lab-report names', () => {
   // the candidate — the strong name hit still surfaces as a suggestion.
   it('keeps FT4 as a suggestion when ng/L contradicts curated ng/dL, without confidence', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'FT4 (Thyroxin free)', unit: 'ng/L' }),
+      createResult({ loinc: '', rawName: 'FT4 (Thyroxin free)', unit: 'ng/L' }),
       labCatalog,
       labUnits
     );
@@ -422,7 +421,7 @@ describe('resolveLoinc on real lab-report names', () => {
       },
     ];
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Risk Factor Index', unit: '' }),
+      createResult({ loinc: '', rawName: 'Risk Factor Index', unit: '' }),
       noiseCatalog,
       {}
     );
@@ -440,7 +439,7 @@ describe('resolveLoinc on real lab-report names', () => {
       },
     ];
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'RDW-SD', unit: 'fl' }),
+      createResult({ loinc: '', rawName: 'RDW-SD', unit: 'fl' }),
       rdwCatalog,
       { '21000-5': 'fL?' }
     );
@@ -453,18 +452,18 @@ describe('crossCheckLocal', () => {
   it('matches a known code with an agreeing printed name', () => {
     const [res] = crossCheckLocal([createResult()], catalog);
     expect(res?.status).toBe('match');
-    expect(res?.loincName).toBe('Glucose');
+    expect(res?.resolvedName).toBe('Glucose');
   });
 
   it('matches despite a non-Latin prefix in the printed name', () => {
-    const [res] = crossCheckLocal([createResult({ analysis: 'Γλυκόζη Glucose Serum' })], catalog);
+    const [res] = crossCheckLocal([createResult({ rawName: 'Γλυκόζη Glucose Serum' })], catalog);
     expect(res?.status).toBe('match');
   });
 
   it('flags mismatch when the printed name shares nothing with the catalog name', () => {
-    const [res] = crossCheckLocal([createResult({ analysis: 'Ferritin' })], catalog);
+    const [res] = crossCheckLocal([createResult({ rawName: 'Ferritin' })], catalog);
     expect(res?.status).toBe('mismatch');
-    expect(res?.loincName).toBe('Glucose');
+    expect(res?.resolvedName).toBe('Glucose');
     expect(res?.derived).toBeUndefined();
   });
 
@@ -484,14 +483,14 @@ describe('crossCheckLocal', () => {
       },
     ];
     const [res] = crossCheckLocal(
-      [createResult({ loinc: '3016-3', analysis: 'Free T3', unit: 'pg/mL' })],
+      [createResult({ loinc: '3016-3', rawName: 'Free T3', unit: 'pg/mL' })],
       thyroidCatalog,
       { '3016-3': 'mIU/L', '3051-0': 'pg/mL' }
     );
     expect(res?.status).toBe('mismatch');
     expect(res?.confident).toBe(true);
     expect(res?.derived).toEqual({ loinc: '3051-0', name: 'Free T3' });
-    expect(res?.loincName).toBe('Thyrotropin');
+    expect(res?.resolvedName).toBe('Thyrotropin');
     expect(res?.suggestions?.[0]?.loinc).toBe('3051-0');
   });
 
@@ -513,7 +512,7 @@ describe('crossCheckLocal', () => {
       },
     ];
     const [res] = crossCheckLocal(
-      [createResult({ loinc: '2484-4', analysis: 'Insulin total', unit: 'µU/mL' })],
+      [createResult({ loinc: '2484-4', rawName: 'Insulin total', unit: 'µU/mL' })],
       igfCatalog,
       { '2484-4': 'ng/mL', '20448-7': 'µIU/mL' }
     );
@@ -534,12 +533,12 @@ describe('crossCheckLocal', () => {
       },
     ];
     const [res] = crossCheckLocal(
-      [createResult({ loinc: '718-7', analysis: 'Haemoglobin (Hb)', unit: 'g/dL' })],
+      [createResult({ loinc: '718-7', rawName: 'Haemoglobin (Hb)', unit: 'g/dL' })],
       hgbCatalog,
       { '718-7': 'g/dL' }
     );
     expect(res?.status).toBe('match');
-    expect(res?.loincName).toBe('Hemoglobin (HGB)');
+    expect(res?.resolvedName).toBe('Hemoglobin (HGB)');
   });
 
   it('flags mismatch with derivation even when the printed code is not in the catalog', () => {
@@ -549,9 +548,9 @@ describe('crossCheckLocal', () => {
   });
 
   it('flags unknown-code when a code missing from the catalog cannot be derived', () => {
-    const [res] = crossCheckLocal([createResult({ loinc: '9999999-9', analysis: 'Xyzzy' })], catalog);
+    const [res] = crossCheckLocal([createResult({ loinc: '9999999-9', rawName: 'Xyzzy' })], catalog);
     expect(res?.status).toBe('unknown-code');
-    expect(res?.loincName).toBeUndefined();
+    expect(res?.resolvedName).toBeUndefined();
   });
 
   it('flags malformed for a non-LOINC code', () => {
@@ -561,7 +560,7 @@ describe('crossCheckLocal', () => {
 
   it('suggests catalog entries for a codeless row, best match first', () => {
     const [res] = crossCheckLocal(
-      [createResult({ loinc: '', analysis: 'Cholesterol', unit: 'mg/dL' })],
+      [createResult({ loinc: '', rawName: 'Cholesterol', unit: 'mg/dL' })],
       catalog
     );
     expect(res?.status).toBe('no-code');
@@ -570,7 +569,7 @@ describe('crossCheckLocal', () => {
   });
 
   it('returns no suggestions for a codeless row with an unrecognized name', () => {
-    const [res] = crossCheckLocal([createResult({ loinc: '', analysis: 'Xyzzy' })], catalog);
+    const [res] = crossCheckLocal([createResult({ loinc: '', rawName: 'Xyzzy' })], catalog);
     expect(res?.status).toBe('no-code');
     expect(res?.suggestions).toEqual([]);
   });
@@ -583,8 +582,8 @@ describe('crossCheckLocal', () => {
 });
 
 describe('cross-check against the real catalog', () => {
-  const codes = (analysis: string, unit: string) =>
-    resolveLoinc(createResult({ loinc: '', analysis, unit }), ANALYTES).candidates.map((c) => c.loinc);
+  const codes = (rawName: string, unit: string) =>
+    resolveLoinc(createResult({ loinc: '', rawName, unit }), ANALYTES).candidates.map((c) => c.loinc);
 
   it('rules out HbA1c, whose % is another quantity, for a hemoglobin row in g/L', () => {
     expect(codes('Гемоглобин', 'г/л')).toEqual(['718-7']);
@@ -608,8 +607,8 @@ describe('cross-check against the real catalog', () => {
   it('fills an uncoded "Холестерин общий" automatically, and resolves a bare "Холестерин" as before', () => {
     const [total, bare] = crossCheckLocal(
       [
-        createResult({ loinc: '', analysis: 'Холестерин общий', unit: 'ммоль/л' }),
-        createResult({ loinc: '', analysis: 'Холестерин', unit: 'ммоль/л' }),
+        createResult({ loinc: '', rawName: 'Холестерин общий', unit: 'ммоль/л' }),
+        createResult({ loinc: '', rawName: 'Холестерин', unit: 'ммоль/л' }),
       ],
       ANALYTES
     );
@@ -627,7 +626,7 @@ describe('cross-check against the real catalog', () => {
 
   it('reads "Folic Acid" as folate, never as uric acid, while uric acid stays urate', () => {
     for (const printed of ['Folic Acid', 'Folate']) {
-      const res = resolveLoinc(createResult({ loinc: '', analysis: printed, unit: 'ng/mL' }), ANALYTES);
+      const res = resolveLoinc(createResult({ loinc: '', rawName: printed, unit: 'ng/mL' }), ANALYTES);
       expect(res.candidates.map((c) => c.loinc)).toEqual(['2284-8']);
       expect(res.confident).toBe(true);
     }
@@ -639,7 +638,7 @@ describe('cross-check against the real catalog', () => {
 
   it('reads a Cyrillic folic acid as folate, while uric acid stays urate and other acids gain nothing', () => {
     for (const printed of ['Фолиевая кислота', 'Фолієва кислота', 'Витамин B9 (фолиевая кислота)']) {
-      const res = resolveLoinc(createResult({ loinc: '', analysis: printed, unit: 'нг/мл' }), ANALYTES);
+      const res = resolveLoinc(createResult({ loinc: '', rawName: printed, unit: 'нг/мл' }), ANALYTES);
       expect(res.candidates.map((c) => c.loinc)).toEqual(['2284-8']);
       expect(res.confident).toBe(true);
     }
@@ -660,14 +659,14 @@ describe('cross-check against the real catalog', () => {
   it('agrees, offering nothing, when the printed code is already the best derivation', () => {
     const [cholesterol, hemoglobin] = crossCheckLocal(
       [
-        createResult({ loinc: '14647-2', analysis: 'Холестерин общий', unit: 'ммоль/л' }),
-        createResult({ loinc: '718-7', analysis: 'Гемоглобин', unit: 'г/л' }),
+        createResult({ loinc: '14647-2', rawName: 'Холестерин общий', unit: 'ммоль/л' }),
+        createResult({ loinc: '718-7', rawName: 'Гемоглобин', unit: 'г/л' }),
       ],
       ANALYTES
     );
-    expect(cholesterol).toMatchObject({ status: 'match', loincName: 'Total Cholesterol' });
+    expect(cholesterol).toMatchObject({ status: 'match', resolvedName: 'Total Cholesterol' });
     expect(cholesterol?.suggestions).toBeUndefined();
-    expect(hemoglobin).toMatchObject({ status: 'match', loincName: 'Hemoglobin' });
+    expect(hemoglobin).toMatchObject({ status: 'match', resolvedName: 'Hemoglobin' });
     expect(hemoglobin?.suggestions).toBeUndefined();
   });
 
@@ -675,9 +674,9 @@ describe('cross-check against the real catalog', () => {
   it('matches a code by its translated or badge name, and still flags a name that is neither', () => {
     const [translated, badge, unrelated] = crossCheckLocal(
       [
-        createResult({ loinc: '718-7', analysis: 'ГЕМОГЛОБИН:', unit: 'ммоль/л' }),
-        createResult({ loinc: '718-7', analysis: 'Hb', unit: '' }),
-        createResult({ loinc: '718-7', analysis: 'Лактатдегидрогеназа', unit: 'г/л' }),
+        createResult({ loinc: '718-7', rawName: 'ГЕМОГЛОБИН:', unit: 'ммоль/л' }),
+        createResult({ loinc: '718-7', rawName: 'Hb', unit: '' }),
+        createResult({ loinc: '718-7', rawName: 'Лактатдегидрогеназа', unit: 'г/л' }),
       ],
       ANALYTES
     );
@@ -701,7 +700,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
 
   it('treats a pg/mL DHT row as unit agreement for 1848-1', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Dihydrotestosterone (DHT)', unit: 'pg/mL' }),
+      createResult({ loinc: '', rawName: 'Dihydrotestosterone (DHT)', unit: 'pg/mL' }),
       dhtCatalog
     );
     expect(res.candidates[0]?.loinc).toBe('1848-1');
@@ -710,7 +709,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
 
   it('treats a ng/dL DHT row as unit agreement for 1848-1', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Dihydrotestosterone (DHT)', unit: 'ng/dL' }),
+      createResult({ loinc: '', rawName: 'Dihydrotestosterone (DHT)', unit: 'ng/dL' }),
       dhtCatalog
     );
     expect(res.candidates[0]?.loinc).toBe('1848-1');
@@ -734,7 +733,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
 
   it('collapses a primary and its same-scale alias into one confident primary candidate', () => {
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Glucose, Fasting', unit: 'mg/dL' }),
+      createResult({ loinc: '', rawName: 'Glucose, Fasting', unit: 'mg/dL' }),
       glucoseCatalog
     );
     expect(res.candidates.map((c) => c.loinc)).toEqual(['2345-7']);
@@ -743,7 +742,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
 
   it('counts a row printing the alias code of the derived analyte as a match', () => {
     const [res] = crossCheckLocal(
-      [createResult({ loinc: '2339-0', analysis: 'Glucose, Fasting', unit: 'mg/dL' })],
+      [createResult({ loinc: '2339-0', rawName: 'Glucose, Fasting', unit: 'mg/dL' })],
       glucoseCatalog
     );
     expect(res?.status).toBe('match');
@@ -766,7 +765,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
         lang: {},
       },
     ];
-    const res = resolveLoinc(createResult({ loinc: '', analysis: 'SHBG', unit: 'nmol/L' }), shbgCatalog);
+    const res = resolveLoinc(createResult({ loinc: '', rawName: 'SHBG', unit: 'nmol/L' }), shbgCatalog);
     expect(res.candidates.map((c) => c.loinc)).toEqual(['13967-5']);
     expect(res.confident).toBe(true);
   });
@@ -789,7 +788,7 @@ describe('per-code allowed unit sets and alias collapsing', () => {
       },
     ];
     const res = resolveLoinc(
-      createResult({ loinc: '', analysis: 'Insulin, Fasting', unit: 'µIU/mL' }),
+      createResult({ loinc: '', rawName: 'Insulin, Fasting', unit: 'µIU/mL' }),
       insulinCatalog
     );
     expect(res.candidates.map((c) => c.loinc)).toEqual(['20448-7']);

@@ -1,12 +1,12 @@
 import { MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
-import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
 import type { Analysis, LoincRef, MonitoringPanelDef, Panel } from '../../types';
 
-export { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_LABELS } from '../../data/analyteCatalog';
+export { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
 export type { LoincRef, MonitoringPanelDef } from '../../types';
 
-export type Observation = { short: string; full: string; longCommonName: string; loinc: string; unit?: string; also?: LoincRef[] };
+export type Observation = { shortName: string; friendlyName: string; longCommonName: string; loinc: string; unit?: string; also?: LoincRef[] };
 
 // Computed/derived values (ratios, estimates) rather than direct measurements. TC/HDL
 // ratio and % Iron Saturation are also independently reportable by a lab (LOINCs
@@ -49,24 +49,24 @@ export function panelRowLoincs(tests: Observation[]): Set<string> {
 }
 
 /**
- * All Observations' free-text filter. Matched against the badge label, the
- * displayed name, the official long name, every LOINC the row answers for and
- * every name a lab actually printed for it -- the printed names are what make
+ * All Observations' free-text filter. Matched against the short name, the
+ * friendly name, the LOINC name (longCommonName), every LOINC the row answers for
+ * and every raw name a lab actually printed for it -- the raw names are what make
  * "Гемоглобин" and "HGB" find the same row on Cyrillic reports.
  */
-export function observationMatchesQuery(test: Observation, query: string, printedNames: readonly string[] = []): boolean {
+export function observationMatchesQuery(test: Observation, query: string, rawNames: readonly string[] = []): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return [test.short, test.full, test.longCommonName, ...testLoincs(test), ...printedNames].some((s) =>
+  return [test.shortName, test.friendlyName, test.longCommonName, ...testLoincs(test), ...rawNames].some((s) =>
     s.toLowerCase().includes(q)
   );
 }
 
 /** Every name a lab printed, indexed by the row key those names belong to. */
-export function buildPrintedNames(allResults: readonly { loinc: string; result: { analysis?: string } }[]): Record<string, string[]> {
+export function buildRawNames(allResults: readonly { loinc: string; result: { rawName?: string } }[]): Record<string, string[]> {
   const byLoinc: Record<string, string[]> = {};
   for (const { loinc, result } of allResults) {
-    const name = result.analysis;
+    const name = result.rawName;
     if (!name) continue;
     const key = primaryLoinc(loinc);
     const names = (byLoinc[key] ??= []);
@@ -75,8 +75,8 @@ export function buildPrintedNames(allResults: readonly { loinc: string; result: 
   return byLoinc;
 }
 
-/** The printed names of every code a row answers for, ready for observationMatchesQuery. */
-export function printedNamesOf(index: Record<string, string[]>, test: Observation): string[] {
+/** The raw names of every code a row answers for, ready for observationMatchesQuery. */
+export function rawNamesOf(index: Record<string, string[]>, test: Observation): string[] {
   return testLoincs(test).flatMap((loinc) => index[primaryLoinc(loinc)] ?? []);
 }
 
@@ -84,7 +84,7 @@ export function printedNamesOf(index: Record<string, string[]>, test: Observatio
 export function indexMatchesQuery(def: IndexDef, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return [def.name, def.nameCompact, def.key].some((s) => s.toLowerCase().includes(q));
+  return [def.friendlyName, def.shortName, def.key].some((s) => s.toLowerCase().includes(q));
 }
 
 /** All LOINCs an observation's row/badge answers for: its own plus its also-refs. */
@@ -92,15 +92,15 @@ export function testLoincs(test: Observation): string[] {
   return [test.loinc, ...(test.also?.map((ref) => ref.loinc) ?? [])];
 }
 
-// True when echoing `short` beside `full` would add nothing: the full name
-// already contains it (ignoring case and punctuation, so "25OH" matches
-// "(25-OH)"), or each word of the short label abbreviates a word of the full
-// name in order ("Vit D" ⊂ "Vitamin D (25-OH)").
-export function isEchoRedundant(full: string, short: string): boolean {
+// True when echoing `shortName` beside `friendlyName` would add nothing: the
+// friendly name already contains it (ignoring case and punctuation, so "25OH"
+// matches "(25-OH)"), or each word of the short name abbreviates a word of the
+// friendly name in order ("Vit D" ⊂ "Vitamin D (25-OH)").
+export function isEchoRedundant(friendlyName: string, shortName: string): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
-  if (norm(full).includes(norm(short))) return true;
-  const fullWords = full.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-  const shortWords = short.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (norm(friendlyName).includes(norm(shortName))) return true;
+  const fullWords = friendlyName.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const shortWords = shortName.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
   let i = 0;
   for (const w of shortWords) {
     while (i < fullWords.length && !fullWords[i]!.startsWith(w)) i++;
@@ -169,10 +169,10 @@ export function buildConditions(
     loincs = [...loincs, ...(def.extraLoincs ?? [])];
     const tests: Observation[] = loincs.map((loinc) => {
       const analysis = analysesCatalog[loinc];
-      const labelInfo = SHORT_LABELS[loinc];
+      const labelInfo = SHORT_NAMES[loinc];
       return {
-        short: labelInfo?.short ?? analysis?.friendlyName ?? loinc,
-        full: analysis?.friendlyName ?? loinc,
+        shortName: labelInfo?.shortName ?? analysis?.friendlyName ?? loinc,
+        friendlyName: analysis?.friendlyName ?? loinc,
         longCommonName: analysis?.longCommonName ?? '',
         loinc,
         unit: labelInfo?.unit,

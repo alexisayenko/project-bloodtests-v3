@@ -1,14 +1,15 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import type { Result } from '../../types';
 import { MARKER_LOINC, type IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import {
   COMPUTED_LOINCS,
   INDEX_LOINCS,
-  buildPrintedNames,
+  buildRawNames,
   indexMatchesQuery,
   observationMatchesQuery,
-  printedNamesOf,
+  rawNamesOf,
   testLoincs,
   type Observation,
 } from './markers';
@@ -20,8 +21,8 @@ import { ResultsTable } from './ResultTables';
 import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
 import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
-import { COLOR } from '../../styles/tokens';
 import { EmptyState } from '../primitives';
+import { getPanelMeta } from './panelMeta';
 
 // Neither chart tab is the default one, so both are split out of the initial
 // bundle: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit,
@@ -77,6 +78,8 @@ export function PanelDetailView({
   onBack: () => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
+  const meta = getPanelMeta(name);
+  const PanelIcon = meta.icon;
   // Session-only, like All Observations' copy: a stored filter would go on
   // hiding rows in a later session with nothing on screen to explain the gap.
   const [query, setQuery] = useState('');
@@ -85,21 +88,21 @@ export function PanelDetailView({
   const indices = tests.filter((t) => INDEX_LOINCS.has(t.loinc) && !COMPUTED_LOINCS.has(t.loinc));
   const computedForPanel = INDEX_DEFS.filter((d) => d.panels.includes(name));
 
-  const printedNames = useMemo(() => buildPrintedNames(allResults), [allResults]);
-  const matchesQuery = (t: Observation) => observationMatchesQuery(t, query, printedNamesOf(printedNames, t));
+  const rawNames = useMemo(() => buildRawNames(allResults), [allResults]);
+  const matchesQuery = (t: Observation) => observationMatchesQuery(t, query, rawNamesOf(rawNames, t));
   const visibleObservations = observations.filter(matchesQuery);
   const visibleIndices = indices.filter(matchesQuery);
   const visibleComputed = computedForPanel.filter((d) => indexMatchesQuery(d, query));
   const nothingMatches =
     visibleObservations.length === 0 && visibleIndices.length === 0 && visibleComputed.length === 0;
   const selectedIndex = computedForPanel.find((d) => d.key === selectedLoinc);
-  const inputsOf = selectedIndex && { name: selectedIndex.name, loincs: indexInputLoincs(selectedIndex.key) };
+  const inputsOf = selectedIndex && { name: selectedIndex.friendlyName, loincs: indexInputLoincs(selectedIndex.key) };
   const selectedObservation = observations.find((t) => t.loinc === selectedLoinc);
-  const usedBy = selectedObservation && { name: selectedObservation.short, loincs: testLoincs(selectedObservation) };
+  const usedBy = selectedObservation && { name: selectedObservation.shortName, loincs: testLoincs(selectedObservation) };
 
   const dates = useMemo(() => {
     const computedInputLoincs = new Set(
-      computedForPanel.flatMap((d) => d.needs.flatMap((short) => MARKER_LOINC[short] ?? []))
+      computedForPanel.flatMap((d) => d.inputKeys.flatMap((inputKey) => MARKER_LOINC[inputKey] ?? []))
     );
     return Array.from(
       new Set(
@@ -129,12 +132,18 @@ export function PanelDetailView({
 
   return (
     <>
-      <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
-        <span {...pressable(onBack)} style={{ color: COLOR.accent, cursor: 'pointer' }}>
-          ‹
+      <header className="mc-detail-head">
+        <span {...pressable(onBack)} className="mc-detail-back" aria-label="Back to Monitoring Panels" title="Back to Monitoring Panels">
+          <ChevronLeft size={20} strokeWidth={2.2} aria-hidden="true" />
         </span>
-        {name}
-      </h1>
+        <span className="mc-detail-icon" style={{ background: meta.iconBg, color: meta.color }}>
+          <PanelIcon size={26} color="currentColor" strokeWidth={2} aria-hidden="true" />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <h1 className="mc-detail-title">{name}</h1>
+          {meta.description && <p className="mc-detail-desc">{meta.description}</p>}
+        </div>
+      </header>
       <TabBar tabs={DETAIL_TABS} active={detailTab} onChange={setDetailTab} />
 
       {detailTab === 'analysis' && (

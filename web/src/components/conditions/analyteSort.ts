@@ -7,7 +7,7 @@
 
 // 'lastTested' ranks on the ISO date behind the cell, never the "Aug 26" and
 // lab name it shows -- an ISO date sorts chronologically as plain text.
-export type AnalyteSortKey = 'loinc' | 'name' | 'specimen' | 'unit' | 'lastTested';
+export type AnalyteSortKey = 'loinc' | 'friendlyName' | 'specimen' | 'unit' | 'lastTested';
 
 export type SortDirection = 'asc' | 'desc';
 

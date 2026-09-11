@@ -255,7 +255,7 @@ Where no LOINC exists for a test at all — post-Soviet measures such as the pro
 
 **Required.** The test name exactly as the lab printed it, a plain string. It is human-readable provenance — what the row said on paper — and it is never used for matching; see [`loinc`](#loinc).
 
-It is called `rawName`, not `name`, because there is no `name` to sit beside it: the canonical name is **derived from the LOINC code at display time and deliberately never stored**, so nothing in the file ever holds an authored or normalized name. That makes the pairing different from [`rawValue`](#rawvalue) beside [`value`](#value), where both halves are stored — here the raw half is the only half, and the field name says so rather than letting `name` imply a canonical string the format does not carry.
+It is called `rawName`, not `name`, because there is no `name` to sit beside it: the friendly name is **derived from the LOINC code at display time and deliberately never stored**, so nothing in the file ever holds an authored or normalized name. That makes the pairing different from [`rawValue`](#rawvalue) beside [`value`](#value), where both halves are stored — here the raw half is the only half, and the field name says so rather than letting `name` imply a canonical string the format does not carry.
 
 Renamed from `name` in [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md), while the format was still fed by one producer.
 
@@ -305,7 +305,7 @@ The unit exactly as the lab printed it: `мкМЕ/мл`, `mmol/l`, `×10⁹/л`.
 
 Upload reads it in preference to `unit`, because the app displays, edits and validates the printed string; a file that carries only `unit` (chatbot output, a hand-written file) is read from there instead. The canonical form is UCUM — decided in [ADR-0007](decisions/adr-0007-ucum-as-the-unit-vocabulary.md), with the product-level reasoning on the [unit](../product/concepts/unit.md) concept page and the work tracked as [task-0011](../tasks/task-0011.md).
 
-The pairing is the format's existing one, twice over: [`rawValue`](#rawvalue) preserves a printed `< 0.01` that [`value`](#value) plus [`comparator`](#comparator) parse lossily, and [`rawName`](#rawname) preserves each observation's printed test name against the official LOINC name the app resolves at display time. In each pair the parsed field is what code computes on, and the raw one is the record of what was read.
+The pairing is the format's existing one, twice over: [`rawValue`](#rawvalue) preserves a printed `< 0.01` that [`value`](#value) plus [`comparator`](#comparator) parse lossily, and [`rawName`](#rawname) preserves each observation's printed name against the friendly name the app derives from the LOINC code at display time. In each pair the parsed field is what code computes on, and the raw one is the record of what was read.
 
 It was specified ahead of use, and that is why the normalization could be turned on without a format change: the field it needed was already there, so nothing had to be renumbered and no reader had to be taught that `unit` had quietly changed meaning.
 

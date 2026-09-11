@@ -99,6 +99,71 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-segment:disabled { color: var(--text-disabled); cursor: not-allowed; }
 .mc-segment:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+/* Fields: the select and search language beside a segmented control, at its 32px height.
+   A native select draws its arrow with squared-off metrics, so it is a background image. */
+.mc-field {
+  display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px;
+  border: 1px solid var(--border-muted); border-radius: var(--radius-control); background: var(--surface);
+  font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text);
+}
+.mc-field:hover:not(:disabled):not([data-disabled]) { border-color: var(--border); }
+.mc-field:focus-visible, .mc-field:focus-within { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.mc-field-select {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none; max-width: 100%;
+  padding-right: 32px; cursor: pointer;
+  background-image: var(--chevron-accent); background-repeat: no-repeat; background-position: right 12px center;
+}
+.mc-field-select:disabled, .mc-field[data-disabled] {
+  background-color: var(--surface-muted); border-color: var(--border-subtle); color: var(--text-disabled); cursor: not-allowed;
+}
+.mc-field-select:disabled { background-image: var(--chevron-disabled); }
+.mc-field-sm { height: 26px; padding: 0 22px 0 8px; border-radius: 8px; font-size: 12px; font-weight: 600; background-position: right 8px center; }
+.mc-field-search { width: 240px; max-width: 100%; color: var(--text-muted); cursor: text; }
+.mc-field-search input {
+  flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent;
+  font-family: inherit; font-size: 13px; color: var(--text);
+}
+.mc-field-search input::placeholder { color: var(--text-muted); }
+.mc-field-search input:disabled { color: var(--text-disabled); cursor: not-allowed; }
+
+/* Results controls: one row of labelled groups under the tab strip. */
+.mc-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 24px; margin-bottom: 20px; }
+.mc-control-group { display: flex; flex-direction: column; gap: 6px; }
+.mc-control-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+}
+.mc-control-label[data-disabled] { color: var(--text-disabled); }
+
+/* In-page tab strip. The bold of the active tab is a text-shadow: a real weight change is wider. */
+.mc-tabs { display: flex; gap: 28px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); }
+.mc-tab {
+  margin-bottom: -1px; padding: 10px 0 11px; border-bottom: 2px solid transparent;
+  font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+}
+.mc-tab:hover { color: var(--navy); }
+.mc-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.mc-tab[data-active] { color: var(--navy); border-bottom-color: var(--brand-teal-deep); text-shadow: 0.35px 0 currentColor, -0.35px 0 currentColor; }
+
+/* Results table surface: the card's own border closes the last row. */
+.mc-results-card tbody tr:last-child > * { border-bottom-color: transparent !important; }
+
+/* Panel Detail header: back chevron, the panel's icon disc, title and description. */
+.mc-detail-head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.mc-detail-back {
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px;
+  border-radius: 50%; color: var(--link); cursor: pointer;
+}
+.mc-detail-back:hover { background: var(--accent-soft); color: var(--accent-hover); }
+.mc-detail-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mc-detail-icon {
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 52px; height: 52px; border-radius: 50%;
+}
+.mc-detail-title { font-size: var(--font-detail-h1); font-weight: 600; line-height: 1.2; color: var(--navy); }
+.mc-detail-desc {
+  margin-top: 2px; font-size: 14px; line-height: 1.45; color: var(--text-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
 /* Stacked biomarker 3D chart */
 .stacked-chart-3d {
   background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
@@ -161,6 +226,13 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   padding: 22px 24px; box-shadow: 0 1px 2px rgba(6, 42, 79, 0.03);
 }
 .mc-panel-head { display: flex; align-items: center; gap: 16px; cursor: pointer; }
+/* The marker count sits in the card's top-right corner, above the title line,
+   so it never takes width from a long panel name. */
+.mc-panel-card { position: relative; }
+.mc-panel-count {
+  position: absolute; top: 5px; right: 14px;
+  font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; color: var(--text-muted);
+}
 .mc-panel-head:focus-visible, .mc-panel-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .mc-panel-icon {
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -178,6 +250,19 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 }
 .mc-panel-link:hover { color: var(--accent-hover); }
 .mc-panel-dots { display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); column-gap: 8px; row-gap: 4px; }
+/* Compact view: short chip labels make cards shorter, so columns narrow to keep
+   roughly the normal card's width/height ratio. */
+.mc-panels-grid--compact {
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.mc-panels-grid--compact .mc-chip { gap: 6px; padding: 4px 10px; font-size: 12px; }
+.mc-panels-grid--compact .mc-panel-card { gap: 14px; padding: 22px 16px 16px; }
+.mc-panels-grid--compact .mc-panel-count { right: 12px; }
+.mc-panels-grid--compact .mc-panel-head { align-items: flex-start; gap: 10px; }
+.mc-panels-grid--compact .mc-panel-icon { width: 36px; height: 36px; }
+.mc-panels-grid--compact .mc-panel-icon svg { width: 20px; height: 20px; }
+.mc-panels-grid--compact .mc-panel-title { font-size: var(--font-card-title); overflow-wrap: anywhere; }
 
 /* Desktop and tablet shell: a top bar over a sidebar. Phones keep .mc-nav
    (task-0020), so nothing here may reach below the mobile breakpoint. */

@@ -1,9 +1,8 @@
-import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { IconComponent } from '../conditions/customIcons';
 import { pressable } from '../conditions/ui';
-import { COLOR } from '../../styles/tokens';
-import { TONE_DOT, TONE_LABEL, type StatusTone } from './tones';
+import { TONE_DOT, type StatusTone } from './tones';
 
 export function StatusDot({
   tone = 'none',
@@ -54,23 +53,5 @@ export function StatusChip({
     <button type="button" className="mc-chip" title={title} {...pressable(onClick)}>
       {content}
     </button>
-  );
-}
-
-const LEGEND_TONES: readonly StatusTone[] = ['ok', 'warn', 'bad', 'none'];
-
-export function StatusLegend({ style }: Readonly<{ style?: CSSProperties }>) {
-  return (
-    <ul
-      aria-label="Status legend"
-      style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', listStyle: 'none', fontSize: 12, color: COLOR.textSecondary, ...style }}
-    >
-      {LEGEND_TONES.map((tone) => (
-        <li key={tone} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <StatusDot tone={tone} aria-hidden="true" />
-          {TONE_LABEL[tone]}
-        </li>
-      ))}
-    </ul>
   );
 }

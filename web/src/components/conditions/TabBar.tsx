@@ -1,22 +1,17 @@
-import { pressable, tabStyle } from './ui';
-import { COLOR } from '../../styles/tokens';
+import { pressable } from './ui';
 
-// An in-page tab strip, sitting under a view's <h1>. The top nav is NOT one of
-// these: it has its own spacing (.mc-nav), font size and blocked state, and
-// only shares the active-tab look, via `tabStyle`.
+// An in-page tab strip, sitting under a view's heading. The top nav is NOT one
+// of these: it has its own spacing (.mc-nav), font size and blocked state. The
+// look lives in `.mc-tab`, since hover and focus need selectors.
 export function TabBar<T extends string>({
   tabs,
   active,
   onChange,
 }: Readonly<{ tabs: readonly { id: T; label: string }[]; active: T; onChange: (id: T) => void }>) {
   return (
-    <div style={{ display: 'flex', gap: 8, borderBottom: `1.5px solid ${COLOR.borderSubtle}`, marginBottom: 24 }}>
+    <div className="mc-tabs">
       {tabs.map((tab) => (
-        <div
-          key={tab.id}
-          {...pressable(() => onChange(tab.id))}
-          style={{ padding: '10px 4px', marginBottom: -2, ...tabStyle(active === tab.id), cursor: 'pointer' }}
-        >
+        <div key={tab.id} {...pressable(() => onChange(tab.id))} className="mc-tab" data-active={active === tab.id || undefined}>
           {tab.label}
         </div>
       ))}

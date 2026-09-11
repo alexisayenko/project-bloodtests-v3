@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020';
 import { ANALYSES, LABORATORY_FILE, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS } from './dataFiles';
 import { LABORATORIES, LABORATORY_BY_ID } from '../src/data/labPricing';
-import { ALIAS_TO_PRIMARY, ANALYTE_BY_LOINC, DEFAULT_UNITS, SHORT_LABELS, SPECIMENS, specimenOf, trimmedLongName } from '../src/data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ANALYTE_BY_LOINC, DEFAULT_UNITS, SHORT_NAMES, SPECIMENS, specimenOf, trimmedLongName } from '../src/data/analyteCatalog';
 import {
   MOLAR_MASSES,
   MOLAR_MASS_BY_ID,
@@ -53,12 +53,12 @@ describe('reference data conforms to analytes-1.schema.json', () => {
     expect(MONITORING_PANELS.flatMap((p) => errorsIn(validate, p).map((e) => `${p.name}: ${e}`))).toEqual([]);
   });
 
-  it('rejects an entry with an unknown key or a badge label lacking a unit', () => {
+  it('rejects an entry with an unknown key or a short name lacking a unit', () => {
     const validate = validator('#/$defs/analyte');
     const base = { loinc: '1-8', longCommonName: 'x', friendlyName: 'x', lang: { 'ru-RU': 'x' } };
     expect(validate(base)).toBe(true);
     expect(validate({ ...base, shortt: 'T' })).toBe(false);
-    expect(validate({ ...base, short: 'T' })).toBe(false);
+    expect(validate({ ...base, shortName: 'T' })).toBe(false);
     expect(validate({ ...base, loinc: '900101' })).toBe(false);
     expect(validate({ ...base, aliasOf: '2-6' })).toBe(false);
   });
@@ -77,9 +77,9 @@ describe('reference data is internally consistent', () => {
     }
   });
 
-  it('every badge label comes with the unit its range checks use', () => {
-    for (const loinc of Object.keys(SHORT_LABELS)) {
-      expect(DEFAULT_UNITS[loinc], `${loinc} has a short label but no unit`).toBeTruthy();
+  it('every short name comes with the unit its range checks use', () => {
+    for (const loinc of Object.keys(SHORT_NAMES)) {
+      expect(DEFAULT_UNITS[loinc], `${loinc} has a short name but no unit`).toBeTruthy();
     }
   });
 

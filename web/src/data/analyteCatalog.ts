@@ -3,7 +3,7 @@ import catalog from '../../public/data/analyses.json';
 
 /**
  * The analyte catalog is the single source of truth for everything the app
- * knows about a LOINC code: its names and translations, its badge label, the
+ * knows about a LOINC code: its names and translations, its short name, the
  * unit it is expected in, any further units accepted for it, and which codes
  * are unit or method variants of which. The lookup maps below are derived from
  * it at load — none of them is hand-maintained.
@@ -14,9 +14,9 @@ export const ANALYTE_BY_LOINC: Record<string, Analysis> = Object.fromEntries(
   ANALYTES.map((a) => [a.loinc, a])
 );
 
-/** Badge label plus reference unit, for the analytes that carry one. */
-export const SHORT_LABELS: Record<string, { short: string; unit: string }> = Object.fromEntries(
-  ANALYTES.filter((a) => a.short).map((a) => [a.loinc, { short: a.short!, unit: a.unit ?? '' }])
+/** Short name plus reference unit, for the analytes that carry one. */
+export const SHORT_NAMES: Record<string, { shortName: string; unit: string }> = Object.fromEntries(
+  ANALYTES.filter((a) => a.shortName).map((a) => [a.loinc, { shortName: a.shortName!, unit: a.unit ?? '' }])
 );
 
 /** Primary LOINC → its variant codes, in catalog order. */
@@ -25,7 +25,7 @@ export const ALSO_REFS: Record<string, LoincRef[]> = ANALYTES.reduce<Record<stri
     if (!a.aliasOf) return acc;
     acc[a.aliasOf] ??= [];
     acc[a.aliasOf].push({
-      label: a.aliasLabel ?? '',
+      aliasLabel: a.aliasLabel ?? '',
       loinc: a.loinc,
       longCommonName: a.longCommonName,
       unit: a.unit ?? '',

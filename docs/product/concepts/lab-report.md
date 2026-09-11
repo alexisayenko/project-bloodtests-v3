@@ -27,7 +27,7 @@ A diagnostic report is structured as:
 
 Each observation is one line in the report:
 
-- **LOINC** — which test was measured. All matching is by LOINC; the report also carries the lab-printed test name, but only as provenance (see [observation](observation.md) and the interchange format's [`rawName`](../../tech/interchange-format.md#rawname)).
+- **LOINC** — which test was measured. All matching is by LOINC; the report also carries the printed name (`rawName`), but only as provenance (see [observation](observation.md) and the interchange format's [`rawName`](../../tech/interchange-format.md#rawname)).
 - **Value** — the numeric or non-numeric result produced by the lab's assay.
 - **Unit** — the unit it was reported in (units vary by assay, so they travel with the observation, not globally).
 - **Reference range** — the lab's own range for that assay, not a fixed universal range.

@@ -69,8 +69,7 @@ function v3ToResult(obs: InterchangeObservation): Result {
   const refMin = obs.referenceRanges?.find((r) => r.high != null || r.low != null);
   return withCanonicalUnit({
     loinc: obs.loinc || '',
-    analysis: obs.rawName || '',
-    symbol: '',
+    rawName: obs.rawName || '',
     section: '',
     value: obs.value ?? null,
     rawValue: obs.rawValue || '',

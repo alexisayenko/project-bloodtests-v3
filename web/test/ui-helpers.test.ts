@@ -8,6 +8,8 @@ import {
   greenRangeOf,
   isCellArmed,
   loadViewSettings,
+  saveViewSettings,
+  VIEW_SETTINGS_KEY,
   mostCommon,
   namedLab,
   DEFAULT_VIEW_SETTINGS,
@@ -18,7 +20,7 @@ import {
   visibleDatesOf,
 } from '../src/components/conditions/ui';
 import { COLOR } from '../src/styles/tokens';
-import { ALSO_REFS, SHORT_LABELS } from '../src/data/analyteCatalog';
+import { ALSO_REFS, SHORT_NAMES } from '../src/data/analyteCatalog';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import type { Result } from '../src/types';
@@ -169,7 +171,32 @@ describe('popupPosition', () => {
 describe('loadViewSettings', () => {
   it('falls back to defaults when storage is unavailable', () => {
     // node environment: localStorage is undefined → the try/catch default path
-    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5 });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: false });
+  });
+
+  it('defaults compactPanels to false when missing or not a boolean true', () => {
+    for (const raw of ['{"unitSystem":"us"}', '{"compactPanels":"yes"}', '{"compactPanels":1}', '{"compactPanels":false}']) {
+      vi.stubGlobal('localStorage', { getItem: () => raw, setItem: () => {} });
+      expect(loadViewSettings().compactPanels).toBe(false);
+    }
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps a stored compactPanels choice', () => {
+    vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"si","sampleLimit":5,"compactPanels":true}', setItem: () => {} });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: true });
+    vi.unstubAllGlobals();
+  });
+
+  it('saves compactPanels through saveViewSettings, coercing a non-boolean to false', () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) });
+    saveViewSettings({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
+    expect(JSON.parse(store.get(VIEW_SETTINGS_KEY)!)).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
+    expect(loadViewSettings().compactPanels).toBe(true);
+    saveViewSettings({ unitSystem: 'us', sampleLimit: 10, compactPanels: 'on' as unknown as boolean });
+    expect(loadViewSettings().compactPanels).toBe(false);
+    vi.unstubAllGlobals();
   });
 
   it('gives a first-time visitor every default, sampleLimit included', () => {
@@ -187,7 +214,7 @@ describe('loadViewSettings', () => {
 
   it('ignores the retired dateOrder field a pre-existing payload still carries', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"us","sampleLimit":10,"dateOrder":"desc"}', setItem: () => {} });
-    expect(loadViewSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10 });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: false });
     vi.unstubAllGlobals();
   });
 
@@ -208,11 +235,11 @@ describe('loadViewSettings', () => {
  */
 function obs(loinc: string): Observation {
   return {
-    short: SHORT_LABELS[loinc]?.short ?? loinc,
-    full: loinc,
+    shortName: SHORT_NAMES[loinc]?.shortName ?? loinc,
+    friendlyName: loinc,
     longCommonName: '',
     loinc,
-    unit: SHORT_LABELS[loinc]?.unit,
+    unit: SHORT_NAMES[loinc]?.unit,
     also: ALSO_REFS[loinc],
   };
 }
@@ -227,7 +254,7 @@ function entry(loinc: string, date: string, value: number, unit: string): Result
     date,
     place: 'Lab',
     result: {
-      loinc, analysis: '', symbol: '', section: '', value, rawValue: String(value), valueQualifier: '',
+      loinc, rawName: '', section: '', value, rawValue: String(value), valueQualifier: '',
       unit, refText: '', refMin: null, refMax: null, method: '',
     },
   };

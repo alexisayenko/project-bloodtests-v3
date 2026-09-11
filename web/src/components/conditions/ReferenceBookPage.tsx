@@ -49,7 +49,7 @@ import {
   ANALYTE_BY_LOINC,
   DEFAULT_UNITS,
   loincsFoldingUAndIu,
-  SHORT_LABELS,
+  SHORT_NAMES,
   SPECIMENS,
   trimmedLongName,
 } from '../../data/analyteCatalog';
@@ -142,8 +142,8 @@ function IndexDetail({ def }: Readonly<{ def: IndexDef }>) {
   return (
     <div style={{ maxWidth: 720 }}>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>
-        {def.name}
-        {!isEchoRedundant(def.name, def.nameCompact) && ` (${def.nameCompact})`}
+        {def.friendlyName}
+        {!isEchoRedundant(def.friendlyName, def.shortName) && ` (${def.shortName})`}
       </h1>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
         <EvidenceBadge level={def.evidenceLevel} />
@@ -155,7 +155,7 @@ function IndexDetail({ def }: Readonly<{ def: IndexDef }>) {
       </div>
       <div style={{ fontSize: 13, color: COLOR.textSecondary, marginBottom: 20 }}>
         Optimal (green) zone: <b>{greenRangeOf(def)}</b>
-        {' · '}inputs: {def.needs.join(', ')}
+        {' · '}inputs: {def.inputKeys.join(', ')}
         {def.loinc && (
           <>
             {' · '}LOINC{' '}
@@ -755,8 +755,8 @@ function UnitsPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
           <thead>
             <tr>
               <th style={th}>Two spellings</th>
-              <th style={th}>Enzyme ({SHORT_LABELS[ALT_LOINC]?.short ?? 'ALT'})</th>
-              <th style={th}>Hormone ({SHORT_LABELS[INSULIN_LOINC]?.short ?? 'INS'})</th>
+              <th style={th}>Enzyme ({SHORT_NAMES[ALT_LOINC]?.shortName ?? 'ALT'})</th>
+              <th style={th}>Hormone ({SHORT_NAMES[INSULIN_LOINC]?.shortName ?? 'INS'})</th>
               <th style={th}>Analyte unknown</th>
             </tr>
           </thead>
@@ -925,6 +925,11 @@ const longNameTd = {
   overflowWrap: 'anywhere',
 } as const;
 
+// The LOINC name under a code: muted and a size down, so the code stays the line you scan.
+const loincNameLine = { color: COLOR.textMuted, fontSize: 12, lineHeight: '16px', marginTop: 2 } as const;
+
+const nameTd = { ...wrapTd, minWidth: 160 } as const;
+
 const sortableTh = { ...th, padding: 0 } as const;
 
 // The whole header cell is the target -- the span carries the padding so a
@@ -1065,7 +1070,7 @@ function LoincDatabasePage({
 }: Readonly<{ allResults?: readonly ResultEntry[]; navigate: (r: Route) => void }>) {
   const { panels, monitoringPanels } = useData();
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<{ key: AnalyteSortKey; direction: SortDirection }>({ key: 'name', direction: 'asc' });
+  const [sort, setSort] = useState<{ key: AnalyteSortKey; direction: SortDirection }>({ key: 'friendlyName', direction: 'asc' });
 
   // Exact code, no alias folding: the column answers "which code did my lab print".
   const lastTested = useMemo(() => latestEntryByLoinc(allResults ?? []), [allResults]);
@@ -1074,24 +1079,26 @@ function LoincDatabasePage({
     const panelsByLoinc = buildPanelsByLoinc(buildConditions(panels, ANALYTE_BY_LOINC, monitoringPanels));
     return ANALYTES.map((analyte) => {
       // The property bracket and specimen clause have columns of their own, so the
-      // name column shows neither — and sorts by what it shows, not by the full string.
+      // LOINC name under each code shows neither.
       const trimmedName = trimmedLongName(analyte.longCommonName);
+      const shortName = SHORT_NAMES[analyte.loinc]?.shortName;
       const latest = lastTested[analyte.loinc];
       return {
         analyte,
         membership: panelMembershipOf(panelsByLoinc, analyte.loinc),
         trimmedName,
+        shortName,
         latest,
         sortValues: {
           loinc: analyte.loinc,
-          name: trimmedName,
+          friendlyName: analyte.friendlyName,
           specimen: SPECIMENS[analyte.loinc],
           unit: analyte.unit,
           lastTested: latest?.date,
         } satisfies AnalyteSortValues,
         observation: {
-          short: SHORT_LABELS[analyte.loinc]?.short ?? analyte.friendlyName,
-          full: analyte.friendlyName,
+          shortName: shortName ?? analyte.friendlyName,
+          friendlyName: analyte.friendlyName,
           longCommonName: analyte.longCommonName,
           loinc: analyte.loinc,
           also: ALSO_REFS[analyte.loinc],
@@ -1117,9 +1124,9 @@ function LoincDatabasePage({
     <div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>LOINC database</h1>
       <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 20, maxWidth: 720 }}>
-        Every analyte the app knows, as the catalog defines it. The specimen is read out of each official long
-        name; where a name does not state one, nothing is shown rather than a guess. The name column drops that
-        clause and the property bracket, both having columns of their own — hover a name for the official string.
+        Every analyte the app knows, as the catalog defines it. The specimen is read out of each LOINC name; where
+        a name does not state one, nothing is shown rather than a guess. The LOINC name under each code drops that
+        clause and the property bracket, both having columns of their own — hover it for the official string.
       </div>
 
       <div style={{ marginBottom: 8 }}>
@@ -1146,7 +1153,7 @@ function LoincDatabasePage({
           <thead>
             <tr>
               <SortableHeader label="LOINC" column="loinc" sort={sort} onSort={toggle} />
-              <SortableHeader label="Long name" column="name" sort={sort} onSort={toggle} />
+              <SortableHeader label="Name" column="friendlyName" sort={sort} onSort={toggle} />
               <SortableHeader label="Specimen" column="specimen" sort={sort} onSort={toggle} />
               <SortableHeader label="Units" column="unit" sort={sort} onSort={toggle} />
               <SortableHeader label="Last tested" column="lastTested" sort={sort} onSort={toggle} />
@@ -1156,14 +1163,19 @@ function LoincDatabasePage({
             </tr>
           </thead>
           <tbody>
-            {shown.map(({ analyte, membership, trimmedName, latest }) => (
+            {shown.map(({ analyte, membership, trimmedName, shortName, latest }) => (
               <tr key={analyte.loinc}>
-                <td style={td}>
+                <td style={longNameTd}>
                   <LoincLink loinc={analyte.loinc} />
+                  <div style={loincNameLine} title={analyte.longCommonName}>
+                    {trimmedName}
+                  </div>
                 </td>
-                <td style={longNameTd} title={analyte.longCommonName}>
-                  {trimmedName}
-                  <div style={{ color: COLOR.textMuted }}>{analyte.friendlyName}</div>
+                <td style={nameTd}>
+                  {analyte.friendlyName}
+                  {shortName && shortName !== analyte.friendlyName && (
+                    <div style={{ color: COLOR.textMuted }}>{shortName}</div>
+                  )}
                 </td>
                 <td style={td}>
                   {SPECIMENS[analyte.loinc] ?? <span style={{ color: COLOR.textMuted }}>{EM_DASH}</span>}
@@ -1273,8 +1285,8 @@ export function ReferenceBookPage({
               {...pressable(() => navigate({ view: 'reference', key: d.key }))}
               style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer' }}
             >
-              <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>{d.nameCompact}</span>
-              <span style={{ fontSize: 14, color: COLOR.textSecondary }}>{d.name}</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>{d.shortName}</span>
+              <span style={{ fontSize: 14, color: COLOR.textSecondary }}>{d.friendlyName}</span>
               <EvidenceBadge level={d.evidenceLevel} />
             </div>
           ))}

@@ -14,9 +14,9 @@ type Issue = Pick<ValidationIssue, 'level' | 'message'>;
 
 function checkNameAndValue(item: Result): Issue | null {
   const hasValue = item.value != null || (item.rawValue && item.rawValue.trim() !== '');
-  if (item.analysis && hasValue) return null;
+  if (item.rawName && hasValue) return null;
   const missing = [];
-  if (!item.analysis) missing.push('test name');
+  if (!item.rawName) missing.push('printed name');
   if (!hasValue) missing.push('result value');
   return { level: 'error', message: `Missing required field: ${missing.join(', ')}` };
 }

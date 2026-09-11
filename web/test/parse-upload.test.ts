@@ -27,7 +27,7 @@ describe('parseUploadedResults — v3 envelope', () => {
     expect(groups[0]!.file).toBe('2026-01-10__quest-diagnostics');
     expect(groups[0]!.items[0]).toMatchObject({
       loinc: '718-7',
-      analysis: 'Hemoglobin',
+      rawName: 'Hemoglobin',
       value: 14.2,
       unit: 'g/dL',
       refMin: 13,
@@ -46,7 +46,7 @@ describe('parseUploadedResults — v3 envelope', () => {
         },
       ],
     });
-    expect(groups[0]!.items[0]!.analysis).toBe('');
+    expect(groups[0]!.items[0]!.rawName).toBe('');
   });
 
   it('extracts date from ISO timestamp', () => {
@@ -87,7 +87,7 @@ describe('parseUploadedResults — v3 envelope', () => {
       ],
     });
     expect(groups[0]!.items[0]!.loinc).toBe('');
-    expect(groups[0]!.items[0]!.analysis).toBe('Unknown Test');
+    expect(groups[0]!.items[0]!.rawName).toBe('Unknown Test');
   });
 
   it('handles reference ranges with text', () => {

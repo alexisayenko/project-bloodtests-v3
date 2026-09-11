@@ -106,7 +106,7 @@ function withSiblings(loincs: string[]): string[] {
 /** Every LOINC a computed index reads its inputs from. */
 export function indexInputLoincs(key: string): string[] {
   const def = INDEX_DEFS.find((d) => d.key === key);
-  return Array.from(new Set(def?.needs.flatMap((short) => MARKER_LOINC[short] ?? []) ?? []));
+  return Array.from(new Set(def?.inputKeys.flatMap((inputKey) => MARKER_LOINC[inputKey] ?? []) ?? []));
 }
 
 /** Whether a row answering for any of `loincs` is scheduled. */
@@ -127,7 +127,7 @@ function union(a: string[], b: string[]): string[] {
 // index never outlives its inputs.
 function deriveIndices(loincs: string[]): string[] {
   return INDEX_DEFS.filter((def) =>
-    def.needs.every((short) => (MARKER_LOINC[short] ?? []).some((loinc) => loincs.includes(loinc)))
+    def.inputKeys.every((inputKey) => (MARKER_LOINC[inputKey] ?? []).some((loinc) => loincs.includes(loinc)))
   ).map((def) => def.key);
 }
 

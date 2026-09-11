@@ -29,9 +29,8 @@ function fakeStorage(entries: Record<string, string>): StorageReader {
 
 const result: Result = {
   loinc: '2093-3',
-  analysis: 'Total Cholesterol',
-  symbol: '',
-  section: '',
+  rawName: 'Total Cholesterol',
+    section: '',
   value: 186,
   rawValue: '186',
   valueQualifier: '',

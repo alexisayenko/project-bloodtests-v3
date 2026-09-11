@@ -2,8 +2,8 @@ export interface Analysis {
   loinc: string;
   longCommonName: string;
   friendlyName: string;
-  /** Badge label shown in Monitoring Panels and All Observations. */
-  short?: string;
+  /** Our short name (not LOINC's SHORTNAME), shown on badges in Monitoring Panels and All Observations. */
+  shortName?: string;
   /** The unit this analyte is expected in — the reference for unit checks. */
   unit?: string;
   /** Further units accepted for the same code (a LOINC fixes the quantity, not the scale). */
@@ -18,7 +18,7 @@ export interface Analysis {
 
 /** A variant code shown alongside its primary marker (see Analysis.aliasOf). */
 export interface LoincRef {
-  label: string;
+  aliasLabel: string;
   loinc: string;
   longCommonName: string;
   unit: string;
@@ -65,8 +65,8 @@ export interface MonitoringPanelDef {
 
 export interface Result {
   loinc: string;
-  analysis: string;
-  symbol: string;
+  /** The printed name: the test name exactly as the lab printed it, kept as provenance. */
+  rawName: string;
   section: string;
   value: number | null;
   rawValue: string;

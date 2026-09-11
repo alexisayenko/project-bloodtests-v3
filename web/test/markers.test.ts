@@ -11,14 +11,14 @@ import {
   testLoincs,
   type Observation,
 } from '../src/components/conditions/markers';
-import { ALIAS_TO_PRIMARY, ALSO_REFS, ANALYTE_BY_LOINC, SHORT_LABELS } from '../src/data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ALSO_REFS, ANALYTE_BY_LOINC, SHORT_NAMES } from '../src/data/analyteCatalog';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
 import { MONITORING_PANELS, PANELS } from './dataFiles';
 
-describe('isEchoRedundant (short-label echo suppression)', () => {
-  it('suppresses when the full name contains the short label', () => {
+describe('isEchoRedundant (short-name echo suppression)', () => {
+  it('suppresses when the friendly name contains the short name', () => {
     expect(isEchoRedundant('Testosterone, Free (FT)', 'FT')).toBe(true);
   });
 
@@ -30,7 +30,7 @@ describe('isEchoRedundant (short-label echo suppression)', () => {
     expect(isEchoRedundant('Vitamin D (25-OH)', 'Vit D')).toBe(true);
   });
 
-  it('keeps the echo when the short label genuinely adds information', () => {
+  it('keeps the echo when the short name genuinely adds information', () => {
     expect(isEchoRedundant('Hemoglobin A1c (NGSP)', 'HbA1c')).toBe(false);
     expect(isEchoRedundant('Sex Hormone-Binding Globulin', 'SHBG')).toBe(false);
   });
@@ -50,16 +50,16 @@ describe('marker catalog consistency', () => {
   });
 
   it('testLoincs returns the badge LOINC plus its also-refs', () => {
-    expect(testLoincs({ short: 'T', full: '', longCommonName: '', loinc: '14913-8', also: ALSO_REFS['14913-8'] })).toEqual([
+    expect(testLoincs({ shortName: 'T', friendlyName: '', longCommonName: '', loinc: '14913-8', also: ALSO_REFS['14913-8'] })).toEqual([
       '14913-8',
       '2986-8',
     ]);
   });
 
-  it('every computed-index input LOINC candidate has a primary short label or alias', () => {
+  it('every computed-index input LOINC candidate has a primary short name or alias', () => {
     for (const loincs of Object.values(MARKER_LOINC)) {
       const primary = loincs[0]!;
-      expect(SHORT_LABELS[primary], `missing short label for ${primary}`).toBeDefined();
+      expect(SHORT_NAMES[primary], `missing short name for ${primary}`).toBeDefined();
     }
   });
 
@@ -97,8 +97,8 @@ describe('mass/molar sibling aliases', () => {
   it('testLoincs on the mass primary answers for the molar code too', () => {
     for (const [mass, molar] of ALIASED_PAIRS) {
       const loincs = testLoincs({
-        short: SHORT_LABELS[mass]!.short,
-        full: '',
+        shortName: SHORT_NAMES[mass]!.shortName,
+        friendlyName: '',
         longCommonName: '',
         loinc: mass,
         also: ALSO_REFS[mass],
@@ -118,8 +118,8 @@ describe('panelRowLoincs (All Observations panel filter)', () => {
   // The view's buildRows key: every reading folds onto its primary LOINC.
   const rowKey = (rawLoinc: string) => primaryLoinc(rawLoinc);
   const test = (loinc: string): Observation => ({
-    short: loinc,
-    full: '',
+    shortName: loinc,
+    friendlyName: '',
     longCommonName: '',
     loinc,
     also: ALSO_REFS[loinc],
@@ -166,8 +166,8 @@ describe('panelRowLoincs (All Observations panel filter)', () => {
 
 describe('observationMatchesQuery (All Observations text filter)', () => {
   const hgb: Observation = {
-    short: 'HGB',
-    full: 'Hemoglobin',
+    shortName: 'HGB',
+    friendlyName: 'Hemoglobin',
     longCommonName: 'Hemoglobin [Mass/volume] in Blood',
     loinc: '718-7',
     also: ALSO_REFS['718-7'],
@@ -179,7 +179,7 @@ describe('observationMatchesQuery (All Observations text filter)', () => {
     expect(observationMatchesQuery(hgb, '  hgb  ')).toBe(true);
   });
 
-  it('matches the badge label, the displayed name, the long common name and the LOINC', () => {
+  it('matches the short name, the friendly name, the LOINC name and the LOINC code', () => {
     expect(observationMatchesQuery(hgb, 'hgb')).toBe(true);
     expect(observationMatchesQuery(hgb, 'HG')).toBe(true); // case-insensitive
     expect(observationMatchesQuery(hgb, 'hemoglob')).toBe(true);
@@ -195,8 +195,8 @@ describe('observationMatchesQuery (All Observations text filter)', () => {
 
   it('matches an alias LOINC the row answers for', () => {
     const chol: Observation = {
-      short: 'TC',
-      full: 'Cholesterol',
+      shortName: 'TC',
+      friendlyName: 'Cholesterol',
       longCommonName: '',
       loinc: '2093-3',
       also: ALSO_REFS['2093-3'],
@@ -214,7 +214,7 @@ describe('indexMatchesQuery (All Observations text filter, index rows)', () => {
     expect(indexMatchesQuery(def, ' ')).toBe(true);
   });
 
-  it('matches the compact and the full index name, case-insensitively', () => {
+  it('matches the short name and the friendly name of an index, case-insensitively', () => {
     expect(indexMatchesQuery(def, 'ac')).toBe(true);
     expect(indexMatchesQuery(def, 'atherogenic')).toBe(true);
   });

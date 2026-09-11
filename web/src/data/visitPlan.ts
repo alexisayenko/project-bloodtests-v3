@@ -10,7 +10,7 @@ export type PlanCell =
   | { kind: 'bundled'; line: PriceLine }
   | { kind: 'unpriced' };
 
-/** The scheduled codes as plan rows: folded to their primary, once each, by full name. */
+/** The scheduled codes as plan rows: folded to their primary, once each, by LOINC name. */
 export function planRows(loincs: readonly string[]): string[] {
   const name = (code: string) => ANALYTE_BY_LOINC[code]?.longCommonName ?? code;
   return [...new Set(loincs.map(primaryOf))].sort((a, b) => name(a).localeCompare(name(b)) || a.localeCompare(b));

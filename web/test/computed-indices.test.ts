@@ -28,9 +28,8 @@ function r(loinc: string, value: number, unit: string): [string, Result] {
     loinc,
     {
       loinc,
-      analysis: '',
-      symbol: '',
-      section: '',
+      rawName: '',
+            section: '',
       value,
       rawValue: String(value),
       valueQualifier: '',

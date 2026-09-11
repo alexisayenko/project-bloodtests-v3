@@ -7,16 +7,15 @@ import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import type { Result } from '../src/types';
 
-function obs(loinc: string, short: string, unit?: string): Observation {
-  return { short, full: short, longCommonName: '', loinc, unit };
+function obs(loinc: string, shortName: string, unit?: string): Observation {
+  return { shortName, friendlyName: shortName, longCommonName: '', loinc, unit };
 }
 
 function result(value: number | null, overrides: Partial<Result> = {}): Result {
   return {
     loinc: '',
-    analysis: '',
-    symbol: '',
-    section: '',
+    rawName: '',
+        section: '',
     value,
     rawValue: value == null ? '' : String(value),
     valueQualifier: '',
@@ -296,12 +295,12 @@ describe('buildExploreModel — mass/molar histories on one scale', () => {
   const MG_MOLAR = '2601-3';
   const HDL_LOINC = '2085-9';
   const magnesium: Observation = {
-    short: 'Mg',
-    full: 'Magnesium',
+    shortName: 'Mg',
+    friendlyName: 'Magnesium',
     longCommonName: '',
     loinc: MG_MASS,
     unit: 'mg/dL',
-    also: [{ label: 'Mg', loinc: MG_MOLAR, longCommonName: '', unit: 'mmol/L' }],
+    also: [{ aliasLabel: 'Mg', loinc: MG_MOLAR, longCommonName: '', unit: 'mmol/L' }],
   };
 
   it('converts a molar reading onto the mass unit its reference band is expressed in', () => {

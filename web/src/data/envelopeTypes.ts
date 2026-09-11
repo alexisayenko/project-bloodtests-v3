@@ -123,7 +123,7 @@ export interface InterchangeObservation {
    */
   loinc: string;
   /**
-   * Required. The test name exactly as the lab printed it — human-readable provenance, never used for matching; see `loinc`. Named `rawName` rather than `name` because the canonical name is derived from the LOINC code at display time and deliberately never stored, so this field has no `name` sibling by design (unlike `rawValue`, which sits beside a parsed `value`).
+   * Required. The test name exactly as the lab printed it — human-readable provenance, never used for matching; see `loinc`. Named `rawName` rather than `name` because the friendly name is derived from the LOINC code at display time and deliberately never stored, so this field has no `name` sibling by design (unlike `rawValue`, which sits beside a parsed `value`).
    */
   rawName: string;
   /**

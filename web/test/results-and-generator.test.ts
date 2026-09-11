@@ -7,9 +7,8 @@ import type { Result } from '../src/types';
 
 const result = (partial: Partial<Result>): Result => ({
   loinc: '',
-  analysis: '',
-  symbol: '',
-  section: '',
+  rawName: '',
+    section: '',
   value: null,
   rawValue: '',
   valueQualifier: '',
@@ -74,15 +73,15 @@ describe('buildConditions', () => {
     expect(buildConditions([], {}, MONITORING_PANELS).map((c) => c.name)).toEqual(MONITORING_PANELS.map((d) => d.name));
   });
 
-  it('short labels win over catalog friendly names', () => {
+  it('short names win over catalog friendly names', () => {
     const conditions = buildConditions(
       panels,
       { '14913-8': { loinc: '14913-8', friendlyName: 'Testosterone (Total)', longCommonName: 'x' } },
       MONITORING_PANELS
     );
     const t = conditions.find((c) => c.name === 'Hypogonadism')!.tests.find((x) => x.loinc === '14913-8')!;
-    expect(t.short).toBe('T');
-    expect(t.full).toBe('Testosterone (Total)');
+    expect(t.shortName).toBe('T');
+    expect(t.friendlyName).toBe('Testosterone (Total)');
   });
 });
 

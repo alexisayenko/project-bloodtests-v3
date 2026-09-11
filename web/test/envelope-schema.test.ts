@@ -33,9 +33,8 @@ function errorsFor(envelope: unknown): SchemaError[] {
 
 const result = (partial: Partial<Result>): Result => ({
   loinc: '2093-3',
-  analysis: 'Total Cholesterol',
-  symbol: '',
-  section: '',
+  rawName: 'Total Cholesterol',
+    section: '',
   value: 186.65,
   rawValue: '186.65',
   valueQualifier: '',
@@ -75,8 +74,8 @@ describe('published JSON Schema — what the app exports', () => {
       [
         session({
           items: [
-            result({ loinc: '2093-3', analysis: 'Cholesterol', value: 180 }),
-            result({ loinc: '2571-8', analysis: 'Triglycerides', value: 150, method: '' }),
+            result({ loinc: '2093-3', rawName: 'Cholesterol', value: 180 }),
+            result({ loinc: '2571-8', rawName: 'Triglycerides', value: 150, method: '' }),
           ],
           itemCount: 2,
         }),

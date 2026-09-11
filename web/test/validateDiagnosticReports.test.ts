@@ -10,9 +10,8 @@ import type { DiagnosticReport, Result } from '../src/types';
 
 const createResult = (overrides?: Partial<Result>): Result => ({
   loinc: '718-7',
-  analysis: 'Hemoglobin',
-  symbol: 'Hgb',
-  section: '',
+  rawName: 'Hemoglobin',
+    section: '',
   value: 14.2,
   rawValue: '14.2',
   valueQualifier: '',
@@ -35,7 +34,7 @@ const createGroup = (overrides?: Partial<DiagnosticReport>): DiagnosticReport =>
 
 describe('validateDiagnosticReports', () => {
   it('warns when the unit contradicts the curated unit for the code', () => {
-    const groups = [createGroup({ items: [createResult({ loinc: '15081-3', analysis: 'Prolactin', unit: 'ng/mL', refText: '1-2' })] })];
+    const groups = [createGroup({ items: [createResult({ loinc: '15081-3', rawName: 'Prolactin', unit: 'ng/mL', refText: '1-2' })] })];
     const issues = validateDiagnosticReports(groups);
     const unitIssue = issues.find((i) => i.message.includes('unexpected for 15081-3'));
     expect(unitIssue?.level).toBe('warning');
@@ -44,8 +43,8 @@ describe('validateDiagnosticReports', () => {
 
   it('accepts the curated unit for the code, across spellings', () => {
     const groups = [
-      createGroup({ items: [createResult({ loinc: '15081-3', analysis: 'Prolactin', unit: 'mIU/L', refText: '1-2' })] }),
-      createGroup({ file: 'f2', items: [createResult({ loinc: '5763-8', analysis: 'Zinc', unit: 'μg/dL', refText: '1-2' })] }),
+      createGroup({ items: [createResult({ loinc: '15081-3', rawName: 'Prolactin', unit: 'mIU/L', refText: '1-2' })] }),
+      createGroup({ file: 'f2', items: [createResult({ loinc: '5763-8', rawName: 'Zinc', unit: 'μg/dL', refText: '1-2' })] }),
     ];
     const issues = validateDiagnosticReports(groups);
     expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
@@ -53,15 +52,15 @@ describe('validateDiagnosticReports', () => {
 
   it('does not warn on a Cyrillic spelling of the code\'s own unit', () => {
     const groups = [
-      createGroup({ items: [createResult({ loinc: '2951-2', analysis: 'Sodium', unit: 'ммоль/л', refText: '1-2' })] }),
-      createGroup({ file: 'f2', items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'мкмоль/л', refText: '1-2' })] }),
+      createGroup({ items: [createResult({ loinc: '2951-2', rawName: 'Sodium', unit: 'ммоль/л', refText: '1-2' })] }),
+      createGroup({ file: 'f2', items: [createResult({ loinc: '14682-9', rawName: 'Creatinine', unit: 'мкмоль/л', refText: '1-2' })] }),
     ];
     const issues = validateDiagnosticReports(groups);
     expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
   });
 
   it('still warns on a Cyrillic unit that is wrong for the code', () => {
-    const groups = [createGroup({ items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'Ед/л', refText: '1-2' })] })];
+    const groups = [createGroup({ items: [createResult({ loinc: '14682-9', rawName: 'Creatinine', unit: 'Ед/л', refText: '1-2' })] })];
     const issue = validateDiagnosticReports(groups).find((i) => i.message.includes('unexpected for 14682-9'));
     expect(issue?.level).toBe('warning');
   });
@@ -69,8 +68,8 @@ describe('validateDiagnosticReports', () => {
   it('does not warn on another scale of the quantity the code measures (hemoglobin in g/L)', () => {
     const groups = [
       createGroup({ items: [createResult({ unit: 'g/L', value: 142 })] }),
-      createGroup({ file: 'f2', items: [createResult({ analysis: 'Гемоглобин', unit: 'г/л', value: 142 })] }),
-      createGroup({ file: 'f3', items: [createResult({ loinc: '14682-9', analysis: 'Creatinine', unit: 'ммоль/л' })] }),
+      createGroup({ file: 'f2', items: [createResult({ rawName: 'Гемоглобин', unit: 'г/л', value: 142 })] }),
+      createGroup({ file: 'f3', items: [createResult({ loinc: '14682-9', rawName: 'Creatinine', unit: 'ммоль/л' })] }),
     ];
     expect(validateDiagnosticReports(groups)).toHaveLength(0);
   });
@@ -83,15 +82,15 @@ describe('validateDiagnosticReports', () => {
 
   it('accepts every allowed unit for a code with a unit set (DHT ng/dL and pg/mL)', () => {
     const groups = [
-      createGroup({ items: [createResult({ loinc: '1848-1', analysis: 'DHT', unit: 'ng/dL', refText: '1-2' })] }),
-      createGroup({ file: 'f2', items: [createResult({ loinc: '1848-1', analysis: 'DHT', unit: 'pg/mL', refText: '1-2' })] }),
+      createGroup({ items: [createResult({ loinc: '1848-1', rawName: 'DHT', unit: 'ng/dL', refText: '1-2' })] }),
+      createGroup({ file: 'f2', items: [createResult({ loinc: '1848-1', rawName: 'DHT', unit: 'pg/mL', refText: '1-2' })] }),
     ];
     const issues = validateDiagnosticReports(groups);
     expect(issues.filter((i) => i.message.includes('unexpected'))).toHaveLength(0);
   });
 
   it('warns listing all accepted units when none match', () => {
-    const groups = [createGroup({ items: [createResult({ loinc: '1848-1', analysis: 'DHT', unit: 'nmol/L', refText: '1-2' })] })];
+    const groups = [createGroup({ items: [createResult({ loinc: '1848-1', rawName: 'DHT', unit: 'nmol/L', refText: '1-2' })] })];
     const issue = validateDiagnosticReports(groups).find((i) => i.message.includes('unexpected for 1848-1'));
     expect(issue?.level).toBe('warning');
     expect(issue?.message).toContain('expected ng/dL or pg/mL');
@@ -100,7 +99,7 @@ describe('validateDiagnosticReports', () => {
   it('names the mass/molar sibling code when the unit measures the wrong quantity', () => {
     const groups = [
       createGroup({
-        items: [createResult({ loinc: '2093-3', analysis: 'Cholesterol', value: 4.8, unit: 'mmol/L', refText: '1-2' })],
+        items: [createResult({ loinc: '2093-3', rawName: 'Cholesterol', value: 4.8, unit: 'mmol/L', refText: '1-2' })],
       }),
     ];
     const issues = validateDiagnosticReports(groups);
@@ -114,7 +113,7 @@ describe('validateDiagnosticReports', () => {
   it('reads the Cyrillic spelling of a molar unit as the same code problem', () => {
     const groups = [
       createGroup({
-        items: [createResult({ loinc: '2160-0', analysis: 'Creatinine', value: 72, unit: 'мкмоль/л', refText: '1-2' })],
+        items: [createResult({ loinc: '2160-0', rawName: 'Creatinine', value: 72, unit: 'мкмоль/л', refText: '1-2' })],
       }),
     ];
     const issue = validateDiagnosticReports(groups)[0];
@@ -136,8 +135,8 @@ describe('validateDiagnosticReports', () => {
       createGroup({
         items: [
           createResult({ loinc: '718-7', unit: 'g/dL' }),
-          createResult({ loinc: '2093-3', analysis: 'Cholesterol', value: 186, unit: 'mg/dL', refText: '1-2' }),
-          createResult({ loinc: '2160-0', analysis: 'Creatinine', value: 0.9, unit: 'mg/dL', refText: '1-2' }),
+          createResult({ loinc: '2093-3', rawName: 'Cholesterol', value: 186, unit: 'mg/dL', refText: '1-2' }),
+          createResult({ loinc: '2160-0', rawName: 'Creatinine', value: 0.9, unit: 'mg/dL', refText: '1-2' }),
         ],
       }),
     ];
@@ -174,8 +173,8 @@ describe('validateDiagnosticReports', () => {
     }
   });
 
-  it('reports error when analysis is missing', () => {
-    const groups = [createGroup({ items: [createResult({ analysis: '' })] })];
+  it('reports error when the printed name is missing', () => {
+    const groups = [createGroup({ items: [createResult({ rawName: '' })] })];
     const issues = validateDiagnosticReports(groups);
     expect(issues).toHaveLength(1);
     expect(issues[0]?.level).toBe('error');

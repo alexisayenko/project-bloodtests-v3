@@ -65,7 +65,7 @@ export function StackedBiomarkerSection({ entries, defaultSelectionCount = DEFAU
 
   return (
     <div>
-      <StackedBiomarkerChart3D entries={selectedEntries} nameFor={names?.short} />
+      <StackedBiomarkerChart3D entries={selectedEntries} nameFor={names?.shortName} />
       <div className="biomarker-picker">
         {entries.map(e => {
           const checked = activeSelection.has(e.loinc);
@@ -77,7 +77,7 @@ export function StackedBiomarkerSection({ entries, defaultSelectionCount = DEFAU
                 disabled={atCap && !checked}
                 onChange={() => toggleLoinc(e.loinc)}
               />
-              {names?.full(e.loinc) ?? getAnalysisName(e.loinc, analysesCatalog, lang)}
+              {names?.friendlyName(e.loinc) ?? getAnalysisName(e.loinc, analysesCatalog, lang)}
             </label>
           );
         })}

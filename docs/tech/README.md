@@ -33,7 +33,7 @@ them mirrored in TypeScript
 
 - **`analyses.json`** — the analyte catalog, and the single source of
   truth for everything the app knows about a LOINC code: names and
-  translations, popup prose, `short` badge label, expected `unit`,
+  translations, popup prose, `shortName` (our badge abbreviation), expected `unit`,
   `allowedUnits`, and `aliasOf` / `aliasLabel` on a unit or method
   variant of another code. See the
   [observation](../product/concepts/observation.md) concept.
@@ -62,7 +62,7 @@ them mirrored in TypeScript
   [`../content/laboratory-prices.md`](../content/laboratory-prices.md).
 
 `web/src/data/analyteCatalog.ts` imports the catalog and derives every
-lookup map the app uses from it — short labels, expected and allowed
+lookup map the app uses from it — short names, expected and allowed
 units, and the reverse alias map (primary → its variants) — so none of
 them can drift from the file. `analyses.json`, `laboratories.json` and
 `molar-masses.json` are imported statically and so ship inside the entry
@@ -87,7 +87,7 @@ The core user journey for data ingestion and local editing:
 
 2. **Upload** — File is imported into the app:
    - Parser (`web/src/data/parseUpload.ts`) validates v3 JSON structure and accepts nothing else — `schema: 1`, v2 canonical-draws and the two legacy array shapes were dropped in [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md); an older file is converted first with `npm run convert:v3`.
-   - **Validation tiers** (`web/src/data/validateDiagnosticReports.ts`): an observation missing its test name or a value (numeric `value` *or* non-empty `rawValue`), or carrying a non-empty code that isn't LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like "900101"), is an **error**; an empty LOINC (the observation won't appear in panels or All Observations), a missing unit, a missing reference range (no min+max pair and no reference text), a printed unit whose dimension contradicts the code, and a unit the tables cannot place are **warnings** (the last two are described under [Unit normalization](#unit-normalization)). While any error exists, Monitoring Panels and All Observations are disabled in the nav and their routes redirect to Diagnostic Reports; every other section — Get Started, Scheduled Visits, Medications, Reference Book and Account — stays reachable (`isNavItemBlocked` in `routing.ts`). Warnings are informational only.
+   - **Validation tiers** (`web/src/data/validateDiagnosticReports.ts`): an observation missing its printed name or a value (numeric `value` *or* non-empty `rawValue`), or carrying a non-empty code that isn't LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like "900101"), is an **error**; an empty LOINC (the observation won't appear in panels or All Observations), a missing unit, a missing reference range (no min+max pair and no reference text), a printed unit whose dimension contradicts the code, and a unit the tables cannot place are **warnings** (the last two are described under [Unit normalization](#unit-normalization)). While any error exists, Monitoring Panels and All Observations are disabled in the nav and their routes redirect to Diagnostic Reports; every other section — Get Started, Scheduled Visits, Medications, Reference Book and Account — stays reachable (`isNavItemBlocked` in `routing.ts`). Warnings are informational only.
    - Get Started's "Import JSON" button, the identical button on Diagnostic Reports' "Back up your database" card, and share-link imports replace all stored sessions (import-replace model); the "Add a report" card's step-3 **Add** button (with "Adding…" progress and "✓ Added N reports" feedback) and generated test data merge by session id instead. A v3 report's `identifiers` (visit/order/accession) feed the session id, so two same-day same-lab draws no longer collide and replace each other on merge.
    - All data stays local in `localStorage` — nothing reaches a server.
 

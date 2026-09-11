@@ -159,9 +159,9 @@ popups); spacing `--space-1`…`--space-6` = 4 / 8 / 12 / 16 / 24 / 32px.
 - **Two-step cell open:** a data cell in the Results table arms on
   first click (selects it and highlights its row) and opens on a
   second click on that same armed cell — an Observations cell opens a
-  popup for that specific result (name, short name, date, laboratory,
+  popup for that specific result (friendly name, short name, date, laboratory,
   value, lab reference range); an Indices cell opens a popup for that
-  specific computed value (name, short name, date, "Calculated", value,
+  specific computed value (friendly name, short name, date, "Calculated", value,
   ref-range, plus a same-draw lab-reported comparison when the lab
   independently reports that index) — distinct from the index
   popup its row label opens (formula, evidence level, references).

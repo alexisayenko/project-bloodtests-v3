@@ -3,7 +3,7 @@
     "loinc": "718-7",
     "longCommonName": "Hemoglobin [Mass/volume] in Blood",
     "friendlyName": "Hemoglobin",
-    "short": "Hb",
+    "shortName": "Hb",
     "unit": "g/dL",
     "lang": {
       "ru-RU": "Гемоглобин",
@@ -25,7 +25,7 @@
     "loinc": "2093-3",
     "longCommonName": "Cholesterol [Mass/volume] in Serum or Plasma",
     "friendlyName": "Total Cholesterol",
-    "short": "TC",
+    "shortName": "TC",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Холестерин общий",
@@ -60,7 +60,7 @@
     "loinc": "789-8",
     "longCommonName": "Erythrocytes [#/volume] in Blood by Automated count",
     "friendlyName": "RBC",
-    "short": "RBC",
+    "shortName": "RBC",
     "unit": "x10^6/uL",
     "lang": {
       "ru-RU": "Эритроциты",
@@ -82,7 +82,7 @@
     "loinc": "6690-2",
     "longCommonName": "Leukocytes [#/volume] in Blood by Automated count",
     "friendlyName": "WBC",
-    "short": "WBC",
+    "shortName": "WBC",
     "unit": "x10^3/uL",
     "lang": {
       "ru-RU": "Лейкоциты",
@@ -104,7 +104,7 @@
     "loinc": "2991-8",
     "longCommonName": "Testosterone Free [Mass/volume] in Serum or Plasma",
     "friendlyName": "Free Testosterone",
-    "short": "FT",
+    "shortName": "FT",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Тестостерон свободный",
@@ -121,7 +121,7 @@
     "loinc": "14913-8",
     "longCommonName": "Testosterone [Moles/volume] in Serum or Plasma",
     "friendlyName": "Total Testosterone",
-    "short": "T",
+    "shortName": "T",
     "unit": "nmol/L",
     "lang": {
       "ru-RU": "Тестостерон общий",
@@ -150,7 +150,7 @@
     "loinc": "10501-5",
     "longCommonName": "Lutropin [Units/volume] in Serum or Plasma",
     "friendlyName": "LH",
-    "short": "LH",
+    "shortName": "LH",
     "unit": "mIU/mL",
     "lang": {
       "ru-RU": "Лютеинизирующий гормон",
@@ -167,7 +167,7 @@
     "loinc": "15067-2",
     "longCommonName": "Follitropin [Units/volume] in Serum or Plasma",
     "friendlyName": "FSH",
-    "short": "FSH",
+    "shortName": "FSH",
     "unit": "mIU/mL",
     "lang": {
       "ru-RU": "Фолликулостимулирующий гормон",
@@ -184,7 +184,7 @@
     "loinc": "15081-3",
     "longCommonName": "Prolactin [Units/volume] in Serum or Plasma",
     "friendlyName": "Prolactin",
-    "short": "PRL",
+    "shortName": "PRL",
     "unit": "mIU/L",
     "lang": {
       "ru-RU": "Пролактин",
@@ -231,7 +231,7 @@
     "loinc": "2345-7",
     "longCommonName": "Glucose [Mass/volume] in Serum or Plasma",
     "friendlyName": "Glucose",
-    "short": "GLU",
+    "shortName": "GLU",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Глюкоза (сыворотка/плазма)",
@@ -306,7 +306,7 @@
     "loinc": "2085-9",
     "longCommonName": "Cholesterol in HDL [Mass/volume] in Serum or Plasma",
     "friendlyName": "HDL-C",
-    "short": "HDL-C",
+    "shortName": "HDL-C",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Холестерин ЛПВП",
@@ -341,7 +341,7 @@
     "loinc": "2571-8",
     "longCommonName": "Triglyceride [Mass/volume] in Serum or Plasma",
     "friendlyName": "Triglycerides",
-    "short": "TRIG",
+    "shortName": "TRIG",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Триглицериды",
@@ -376,7 +376,7 @@
     "loinc": "13457-7",
     "longCommonName": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation",
     "friendlyName": "LDL-C (calc)",
-    "short": "LDL-C",
+    "shortName": "LDL-C",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Холестерин ЛПНП",
@@ -411,7 +411,7 @@
     "loinc": "6768-6",
     "longCommonName": "Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "ALP",
-    "short": "ALP",
+    "shortName": "ALP",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Щелочная фосфатаза",
@@ -433,7 +433,7 @@
     "loinc": "1742-6",
     "longCommonName": "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "ALT",
-    "short": "ALT",
+    "shortName": "ALT",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Аланинаминотрансфераза (АЛТ)",
@@ -455,7 +455,7 @@
     "loinc": "2324-2",
     "longCommonName": "Gamma glutamyl transferase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "GGT",
-    "short": "GGT",
+    "shortName": "GGT",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Гамма-глутамилтрансфераза (ГГТ)",
@@ -477,7 +477,7 @@
     "loinc": "1920-8",
     "longCommonName": "Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "AST",
-    "short": "AST",
+    "shortName": "AST",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Аспартатаминотрансфераза (АСТ)",
@@ -499,7 +499,7 @@
     "loinc": "20448-7",
     "longCommonName": "Insulin [Units/volume] in Serum or Plasma",
     "friendlyName": "Insulin",
-    "short": "INS",
+    "shortName": "INS",
     "unit": "uIU/mL",
     "lang": {
       "ru-RU": "Инсулин",
@@ -530,7 +530,7 @@
     "loinc": "2951-2",
     "longCommonName": "Sodium [Moles/volume] in Serum or Plasma",
     "friendlyName": "Sodium",
-    "short": "Na",
+    "shortName": "Na",
     "unit": "mmol/L",
     "lang": {
       "ru-RU": "Натрий",
@@ -547,7 +547,7 @@
     "loinc": "2823-3",
     "longCommonName": "Potassium [Moles/volume] in Serum or Plasma",
     "friendlyName": "Potassium",
-    "short": "K",
+    "shortName": "K",
     "unit": "mmol/L",
     "lang": {
       "ru-RU": "Калий",
@@ -564,7 +564,7 @@
     "loinc": "1798-8",
     "longCommonName": "Amylase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "Amylase",
-    "short": "AMY",
+    "shortName": "AMY",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Амилаза",
@@ -595,7 +595,7 @@
     "loinc": "1968-7",
     "longCommonName": "Bilirubin.direct [Mass/volume] in Serum or Plasma",
     "friendlyName": "Direct Bilirubin",
-    "short": "DBIL",
+    "shortName": "DBIL",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Билирубин прямой",
@@ -640,7 +640,7 @@
     "loinc": "1975-2",
     "longCommonName": "Bilirubin.total [Mass/volume] in Serum or Plasma",
     "friendlyName": "Total Bilirubin",
-    "short": "TBIL",
+    "shortName": "TBIL",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Билирубин общий",
@@ -685,7 +685,7 @@
     "loinc": "3094-0",
     "longCommonName": "Urea nitrogen [Mass/volume] in Serum or Plasma",
     "friendlyName": "Urea",
-    "short": "BUN",
+    "shortName": "BUN",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Азот мочевины (BUN)",
@@ -702,7 +702,7 @@
     "loinc": "3091-6",
     "longCommonName": "Urea [Mass/volume] in Serum or Plasma",
     "friendlyName": "Urea",
-    "short": "Urea",
+    "shortName": "Urea",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Мочевина",
@@ -749,7 +749,7 @@
     "loinc": "2160-0",
     "longCommonName": "Creatinine [Mass/volume] in Serum or Plasma",
     "friendlyName": "Creatinine",
-    "short": "CREA",
+    "shortName": "CREA",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Креатинин",
@@ -784,7 +784,7 @@
     "loinc": "11580-8",
     "longCommonName": "Thyrotropin [Units/volume] in Serum or Plasma by Detection limit <= 0.005 mIU/L",
     "friendlyName": "TSH",
-    "short": "TSH",
+    "shortName": "TSH",
     "unit": "mIU/L",
     "lang": {
       "ru-RU": "Тиреотропный гормон (ТТГ)",
@@ -815,7 +815,7 @@
     "loinc": "3051-0",
     "longCommonName": "Triiodothyronine (T3) Free [Mass/volume] in Serum or Plasma",
     "friendlyName": "Free T3",
-    "short": "FT3",
+    "shortName": "FT3",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Трийодтиронин свободный (Т3 св.)",
@@ -846,7 +846,7 @@
     "loinc": "3024-7",
     "longCommonName": "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
     "friendlyName": "Free T4",
-    "short": "FT4",
+    "shortName": "FT4",
     "unit": "ng/dL",
     "lang": {
       "ru-RU": "Тироксин свободный (Т4 св.)",
@@ -909,7 +909,7 @@
     "loinc": "8099-4",
     "longCommonName": "Thyroperoxidase Ab [Units/volume] in Serum or Plasma",
     "friendlyName": "Anti-Tg",
-    "short": "TPO",
+    "shortName": "TPO",
     "unit": "IU/mL",
     "lang": {
       "ru-RU": "Антитела к тиреопероксидазе (анти-ТПО)",
@@ -940,7 +940,7 @@
     "loinc": "8098-6",
     "longCommonName": "Thyroglobulin Ab [Units/volume] in Serum or Plasma",
     "friendlyName": "Anti-TPO",
-    "short": "TG",
+    "shortName": "TG",
     "unit": "IU/mL",
     "lang": {
       "ru-RU": "Антитела к тиреоглобулину (анти-ТГ)",
@@ -971,7 +971,7 @@
     "loinc": "5385-0",
     "longCommonName": "Thyrotropin receptor Ab [Units/volume] in Serum",
     "friendlyName": "TRAb",
-    "short": "TRAb",
+    "shortName": "TRAb",
     "unit": "IU/L",
     "lang": {
       "ru-RU": "Антитела к рецепторам ТТГ",
@@ -1002,7 +1002,7 @@
     "loinc": "1992-7",
     "longCommonName": "Calcitonin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Calcitonin",
-    "short": "CT",
+    "shortName": "CT",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Кальцитонин",
@@ -1033,7 +1033,7 @@
     "loinc": "4548-4",
     "longCommonName": "Hemoglobin A1c/Hemoglobin.total in Blood",
     "friendlyName": "HbA1c",
-    "short": "HbA1c",
+    "shortName": "HbA1c",
     "unit": "%",
     "lang": {
       "ru-RU": "Гликированный гемоглобин (NGSP)",
@@ -1114,7 +1114,7 @@
     "loinc": "13979-8",
     "longCommonName": "Glycated albumin/Albumin.total in Serum or Plasma",
     "friendlyName": "Glycated Albumin",
-    "short": "GA",
+    "shortName": "GA",
     "unit": "%",
     "lang": {
       "ru-RU": "Гликированный альбумин",
@@ -1145,7 +1145,7 @@
     "loinc": "15069-8",
     "longCommonName": "Fructosamine [Moles/volume] in Serum or Plasma",
     "friendlyName": "Fructosamine",
-    "short": "FRA",
+    "shortName": "FRA",
     "unit": "umol/L",
     "lang": {
       "ru-RU": "Фруктозамин",
@@ -1176,7 +1176,7 @@
     "loinc": "1986-9",
     "longCommonName": "C peptide [Mass/volume] in Serum or Plasma",
     "friendlyName": "C-Peptide",
-    "short": "C-P",
+    "shortName": "C-P",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "C-пептид",
@@ -1207,7 +1207,7 @@
     "loinc": "3040-3",
     "longCommonName": "Lipase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "Lipase",
-    "short": "LIP",
+    "shortName": "LIP",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Липаза",
@@ -1238,7 +1238,7 @@
     "loinc": "1971-1",
     "longCommonName": "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
     "friendlyName": "Indirect Bilirubin",
-    "short": "IBIL",
+    "shortName": "IBIL",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Билирубин непрямой",
@@ -1283,7 +1283,7 @@
     "loinc": "2098-2",
     "longCommonName": "Cholinesterase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "Pseudocholinesterase",
-    "short": "PChE",
+    "shortName": "PChE",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Псевдохолинэстераза",
@@ -1305,7 +1305,7 @@
     "loinc": "5195-3",
     "longCommonName": "Hepatitis B virus surface Ag [Presence] in Serum",
     "friendlyName": "HBsAg",
-    "short": "HBsAg",
+    "shortName": "HBsAg",
     "unit": "Positive/Negative",
     "lang": {
       "ru-RU": "HBsAg (поверхностный антиген гепатита B)",
@@ -1327,7 +1327,7 @@
     "loinc": "16128-1",
     "longCommonName": "Hepatitis C virus Ab [Presence] in Serum",
     "friendlyName": "Anti-HCV",
-    "short": "HCV",
+    "shortName": "HCV",
     "unit": "Positive/Negative",
     "lang": {
       "ru-RU": "Антитела к вирусу гепатита C",
@@ -1349,7 +1349,7 @@
     "loinc": "1751-7",
     "longCommonName": "Albumin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Albumin",
-    "short": "ALB",
+    "shortName": "ALB",
     "unit": "g/dL",
     "lang": {
       "ru-RU": "Альбумин",
@@ -1371,7 +1371,7 @@
     "loinc": "10834-0",
     "longCommonName": "Globulin [Mass/volume] in Serum by calculation",
     "friendlyName": "Globulin",
-    "short": "GLOB",
+    "shortName": "GLOB",
     "unit": "g/dL",
     "lang": {
       "ru-RU": "Глобулин",
@@ -1393,7 +1393,7 @@
     "loinc": "2885-2",
     "longCommonName": "Protein [Mass/volume] in Serum or Plasma",
     "friendlyName": "Total Protein",
-    "short": "TP",
+    "shortName": "TP",
     "unit": "g/dL",
     "lang": {
       "ru-RU": "Общий белок",
@@ -1415,7 +1415,7 @@
     "loinc": "9830-1",
     "longCommonName": "Cholesterol.total/Cholesterol in HDL [Mass Ratio] in Serum or Plasma",
     "friendlyName": "Atherogenic Index",
-    "short": "TC/HDL",
+    "shortName": "TC/HDL",
     "unit": "ratio",
     "lang": {
       "ru-RU": "Индекс атерогенности",
@@ -1432,7 +1432,7 @@
     "loinc": "1884-6",
     "longCommonName": "Apolipoprotein B [Mass/volume] in Serum or Plasma",
     "friendlyName": "ApoB",
-    "short": "ApoB",
+    "shortName": "ApoB",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Аполипопротеин B",
@@ -1449,7 +1449,7 @@
     "loinc": "1869-7",
     "longCommonName": "Apolipoprotein A-I [Mass/volume] in Serum or Plasma",
     "friendlyName": "ApoA1",
-    "short": "ApoA1",
+    "shortName": "ApoA1",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Аполипопротеин A1",
@@ -1466,7 +1466,7 @@
     "loinc": "10835-7",
     "longCommonName": "Lipoprotein a [Mass/volume] in Serum or Plasma",
     "friendlyName": "Lp(a)",
-    "short": "Lp(a)",
+    "shortName": "Lp(a)",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Липопротеин (а)",
@@ -1483,7 +1483,7 @@
     "loinc": "1988-5",
     "longCommonName": "C reactive protein [Mass/volume] in Serum or Plasma",
     "friendlyName": "CRP",
-    "short": "CRP",
+    "shortName": "CRP",
     "unit": "mg/L",
     "lang": {
       "ru-RU": "С-реактивный белок",
@@ -1500,7 +1500,7 @@
     "loinc": "30522-7",
     "longCommonName": "C reactive protein [Mass/volume] in Serum or Plasma by High sensitivity method",
     "friendlyName": "hsCRP",
-    "short": "hsCRP",
+    "shortName": "hsCRP",
     "unit": "mg/L",
     "lang": {
       "ru-RU": "С-реактивный белок (высокочувствительный)",
@@ -1517,7 +1517,7 @@
     "loinc": "26881-3",
     "longCommonName": "Interleukin 6 [Mass/volume] in Serum or Plasma",
     "friendlyName": "IL-6",
-    "short": "IL6",
+    "shortName": "IL6",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Интерлейкин-6",
@@ -1534,7 +1534,7 @@
     "loinc": "3074-2",
     "longCommonName": "Tumor necrosis factor.alpha [Mass/volume] in Serum or Plasma",
     "friendlyName": "TNF-alpha",
-    "short": "TNF-α",
+    "shortName": "TNF-α",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Фактор некроза опухоли альфа (ФНО-α)",
@@ -1551,7 +1551,7 @@
     "loinc": "54238-1",
     "longCommonName": "LDL.oxidized [Units/volume] in Serum or Plasma",
     "friendlyName": "oxLDL",
-    "short": "oxLDL",
+    "shortName": "oxLDL",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Окисленный ЛПНП",
@@ -1568,7 +1568,7 @@
     "loinc": "21365-2",
     "longCommonName": "Leptin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Leptin",
-    "short": "LEP",
+    "shortName": "LEP",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "Лептин",
@@ -1585,7 +1585,7 @@
     "loinc": "56660-9",
     "longCommonName": "Adiponectin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Adiponectin",
-    "short": "ADIPO",
+    "shortName": "ADIPO",
     "unit": "ug/mL",
     "lang": {
       "ru-RU": "Адипонектин",
@@ -1602,7 +1602,7 @@
     "loinc": "13965-9",
     "longCommonName": "Homocysteine [Moles/volume] in Serum or Plasma",
     "friendlyName": "Homocysteine",
-    "short": "HCY",
+    "shortName": "HCY",
     "unit": "umol/L",
     "lang": {
       "ru-RU": "Гомоцистеин",
@@ -1619,7 +1619,7 @@
     "loinc": "3255-7",
     "longCommonName": "Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay",
     "friendlyName": "Fibrinogen",
-    "short": "FIB",
+    "shortName": "FIB",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Фибриноген",
@@ -1636,7 +1636,7 @@
     "loinc": "2942-1",
     "longCommonName": "Sex hormone binding globulin [Mass/volume] in Serum or Plasma",
     "friendlyName": "SHBG",
-    "short": "SHBG",
+    "shortName": "SHBG",
     "unit": "ug/mL",
     "lang": {
       "ru-RU": "Глобулин, связывающий половые гормоны (ГСПГ)",
@@ -1665,7 +1665,7 @@
     "loinc": "2243-4",
     "longCommonName": "Estradiol (E2) [Mass/volume] in Serum or Plasma",
     "friendlyName": "Estradiol",
-    "short": "E2",
+    "shortName": "E2",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Эстрадиол",
@@ -1682,7 +1682,7 @@
     "loinc": "1848-1",
     "longCommonName": "Androstanolone [Mass/volume] in Serum or Plasma",
     "friendlyName": "DHT",
-    "short": "DHT",
+    "shortName": "DHT",
     "unit": "ng/dL",
     "allowedUnits": [
       "pg/mL"
@@ -1714,7 +1714,7 @@
     "loinc": "2191-5",
     "longCommonName": "Dehydroepiandrosterone sulfate (DHEA-S) [Mass/volume] in Serum or Plasma",
     "friendlyName": "DHEA-S",
-    "short": "DHEA-S",
+    "shortName": "DHEA-S",
     "unit": "ug/dL",
     "lang": {
       "ru-RU": "Дегидроэпиандростерон-сульфат",
@@ -1731,7 +1731,7 @@
     "loinc": "5763-8",
     "longCommonName": "Zinc [Mass/volume] in Serum or Plasma",
     "friendlyName": "Zinc",
-    "short": "Zn",
+    "shortName": "Zn",
     "unit": "ug/dL",
     "lang": {
       "ru-RU": "Цинк",
@@ -1748,7 +1748,7 @@
     "loinc": "32554-8",
     "longCommonName": "Thiamine [Moles/volume] in Blood",
     "friendlyName": "Vitamin B1",
-    "short": "Vit B1",
+    "shortName": "Vit B1",
     "unit": "nmol/L",
     "lang": {
       "ru-RU": "Витамин B1 (тиамин)",
@@ -1765,7 +1765,7 @@
     "loinc": "62236-5",
     "longCommonName": "Pyridoxal phosphate [Moles/volume] in Serum or Plasma",
     "friendlyName": "Vitamin B6",
-    "short": "Vit B6",
+    "shortName": "Vit B6",
     "unit": "nmol/L",
     "lang": {
       "ru-RU": "Витамин B6 (пиридоксальфосфат)",
@@ -1782,7 +1782,7 @@
     "loinc": "2284-8",
     "longCommonName": "Folate [Mass/volume] in Serum or Plasma",
     "friendlyName": "Folate",
-    "short": "Vit B9",
+    "shortName": "Vit B9",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "Витамин B9 (фолат)",
@@ -1799,7 +1799,7 @@
     "loinc": "2132-9",
     "longCommonName": "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
     "friendlyName": "Vitamin B12",
-    "short": "Vit B12",
+    "shortName": "Vit B12",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Витамин B12 (кобаламин)",
@@ -1816,7 +1816,7 @@
     "loinc": "62292-8",
     "longCommonName": "25-Hydroxyvitamin D3+25-Hydroxyvitamin D2 [Mass/volume] in Serum or Plasma",
     "friendlyName": "Vitamin D",
-    "short": "Vit D",
+    "shortName": "Vit D",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "Витамин D (25-гидроксивитамин D)",
@@ -1833,7 +1833,7 @@
     "loinc": "1989-3",
     "longCommonName": "25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma",
     "friendlyName": "Vitamin D3",
-    "short": "Vit D3",
+    "shortName": "Vit D3",
     "unit": "ng/mL",
     "aliasOf": "62292-8",
     "aliasLabel": "D3 fraction only",
@@ -1850,7 +1850,7 @@
     "loinc": "17861-6",
     "longCommonName": "Calcium [Mass/volume] in Serum or Plasma",
     "friendlyName": "Calcium",
-    "short": "Ca",
+    "shortName": "Ca",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Кальций общий",
@@ -1885,7 +1885,7 @@
     "loinc": "1994-3",
     "longCommonName": "Calcium.ionized [Moles/volume] in Blood",
     "friendlyName": "Ionized Calcium",
-    "short": "iCa",
+    "shortName": "iCa",
     "unit": "mmol/L",
     "lang": {
       "ru-RU": "Кальций ионизированный",
@@ -1902,7 +1902,7 @@
     "loinc": "2075-0",
     "longCommonName": "Chloride [Moles/volume] in Serum or Plasma",
     "friendlyName": "Chloride",
-    "short": "Cl",
+    "shortName": "Cl",
     "unit": "mmol/L",
     "lang": {
       "ru-RU": "Хлор",
@@ -1919,7 +1919,7 @@
     "loinc": "2777-1",
     "longCommonName": "Phosphate [Mass/volume] in Serum or Plasma",
     "friendlyName": "Phosphorus",
-    "short": "P",
+    "shortName": "P",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Фосфор",
@@ -1966,7 +1966,7 @@
     "loinc": "19123-9",
     "longCommonName": "Magnesium [Mass/volume] in Serum or Plasma",
     "friendlyName": "Magnesium",
-    "short": "Mg",
+    "shortName": "Mg",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Магний",
@@ -2001,7 +2001,7 @@
     "loinc": "29900-7",
     "longCommonName": "Magnesium [Mass/volume] in Red Blood Cells",
     "friendlyName": "Magnesium RBC",
-    "short": "Mg RBC",
+    "shortName": "Mg RBC",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Магний (эритроцитарный)",
@@ -2018,7 +2018,7 @@
     "loinc": "2731-8",
     "longCommonName": "Parathyrin.intact [Mass/volume] in Serum or Plasma",
     "friendlyName": "PTH",
-    "short": "PTH",
+    "shortName": "PTH",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "Паратиреоидный гормон (ПТГ)",
@@ -2035,7 +2035,7 @@
     "loinc": "4544-3",
     "longCommonName": "Hematocrit [Volume Fraction] of Blood by Automated count",
     "friendlyName": "Hematocrit",
-    "short": "HCT",
+    "shortName": "HCT",
     "unit": "%",
     "lang": {
       "ru-RU": "Гематокрит",
@@ -2057,7 +2057,7 @@
     "loinc": "2498-4",
     "longCommonName": "Iron [Mass/volume] in Serum or Plasma",
     "friendlyName": "Iron",
-    "short": "Fe",
+    "shortName": "Fe",
     "unit": "ug/dL",
     "lang": {
       "ru-RU": "Железо сывороточное",
@@ -2074,7 +2074,7 @@
     "loinc": "2276-4",
     "longCommonName": "Ferritin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Ferritin",
-    "short": "Ferr",
+    "shortName": "Ferr",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "Ферритин",
@@ -2103,7 +2103,7 @@
     "loinc": "2500-7",
     "longCommonName": "Iron binding capacity [Mass/volume] in Serum or Plasma",
     "friendlyName": "TIBC",
-    "short": "TIBC",
+    "shortName": "TIBC",
     "unit": "ug/dL",
     "lang": {
       "ru-RU": "Общая железосвязывающая способность (ОЖСС)",
@@ -2120,7 +2120,7 @@
     "loinc": "2501-5",
     "longCommonName": "Iron binding capacity.unsaturated [Mass/volume] in Serum or Plasma",
     "friendlyName": "UIBC",
-    "short": "UIBC",
+    "shortName": "UIBC",
     "unit": "ug/dL",
     "lang": {
       "ru-RU": "Ненасыщенная железосвязывающая способность (НЖСС)",
@@ -2137,7 +2137,7 @@
     "loinc": "3034-6",
     "longCommonName": "Transferrin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Transferrin",
-    "short": "TRF",
+    "shortName": "TRF",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Трансферрин",
@@ -2154,7 +2154,7 @@
     "loinc": "2502-3",
     "longCommonName": "Iron saturation [Mass Fraction] in Serum or Plasma",
     "friendlyName": "% Iron Saturation",
-    "short": "TSAT",
+    "shortName": "TSAT",
     "unit": "%",
     "lang": {
       "ru-RU": "Насыщение трансферрина железом (%)",
@@ -2171,7 +2171,7 @@
     "loinc": "3084-1",
     "longCommonName": "Urate [Mass/volume] in Serum or Plasma",
     "friendlyName": "Uric Acid",
-    "short": "UA",
+    "shortName": "UA",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Мочевая кислота",
@@ -2206,7 +2206,7 @@
     "loinc": "48642-3",
     "longCommonName": "Glomerular filtration rate [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)/1.73 sq M among non black population",
     "friendlyName": "eGFR",
-    "short": "eGFR",
+    "shortName": "eGFR",
     "unit": "mL/min/1.73m2",
     "lang": {
       "ru-RU": "СКФ (скорость клубочковой фильтрации)",
@@ -2223,7 +2223,7 @@
     "loinc": "33863-2",
     "longCommonName": "Cystatin C [Mass/volume] in Serum or Plasma",
     "friendlyName": "Cystatin C",
-    "short": "CYSC",
+    "shortName": "CYSC",
     "unit": "mg/L",
     "lang": {
       "ru-RU": "Цистатин C",
@@ -2255,7 +2255,7 @@
     "loinc": "6301-6",
     "longCommonName": "INR in Platelet poor plasma by Coagulation assay",
     "friendlyName": "INR",
-    "short": "INR",
+    "shortName": "INR",
     "unit": "ratio",
     "lang": {
       "ru-RU": "МНО (международное нормализованное отношение)",
@@ -2272,7 +2272,7 @@
     "loinc": "5902-2",
     "longCommonName": "Prothrombin time (PT)",
     "friendlyName": "Prothrombin Time",
-    "short": "PT",
+    "shortName": "PT",
     "unit": "sec",
     "lang": {
       "ru-RU": "Протромбиновое время",
@@ -2389,7 +2389,7 @@
     "loinc": "2141-0",
     "longCommonName": "Corticotropin [Mass/volume] in Plasma",
     "friendlyName": "ACTH",
-    "short": "ACTH",
+    "shortName": "ACTH",
     "unit": "pg/mL",
     "lang": {
       "ru-RU": "АКТГ (адренокортикотропный гормон)",
@@ -2406,7 +2406,7 @@
     "loinc": "2143-6",
     "longCommonName": "Cortisol [Mass/volume] in Serum or Plasma",
     "friendlyName": "Cortisol",
-    "short": "CORT",
+    "shortName": "CORT",
     "unit": "ug/dL",
     "lang": {
       "ru-RU": "Кортизол",
@@ -2496,7 +2496,7 @@
     "loinc": "2157-6",
     "longCommonName": "Creatine kinase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "Creatine Kinase",
-    "short": "CK",
+    "shortName": "CK",
     "unit": "U/L",
     "lang": {
       "ru-RU": "Креатинкиназа",
@@ -2513,7 +2513,7 @@
     "loinc": "751-8",
     "longCommonName": "Neutrophils [#/volume] in Blood by Automated count",
     "friendlyName": "Neutrophils",
-    "short": "NEUT#",
+    "shortName": "NEUT#",
     "unit": "x10^3/uL",
     "lang": {
       "ru-RU": "Нейтрофилы (абс.)",
@@ -2535,7 +2535,7 @@
     "loinc": "731-0",
     "longCommonName": "Lymphocytes [#/volume] in Blood by Automated count",
     "friendlyName": "Lymphocytes",
-    "short": "LYMPH#",
+    "shortName": "LYMPH#",
     "unit": "x10^3/uL",
     "lang": {
       "ru-RU": "Лимфоциты (абс.)",
@@ -2557,7 +2557,7 @@
     "loinc": "742-7",
     "longCommonName": "Monocytes [#/volume] in Blood by Automated count",
     "friendlyName": "Monocytes",
-    "short": "MONO#",
+    "shortName": "MONO#",
     "unit": "x10^3/uL",
     "lang": {
       "ru-RU": "Моноциты (абс.)",
@@ -2579,7 +2579,7 @@
     "loinc": "711-2",
     "longCommonName": "Eosinophils [#/volume] in Blood by Automated count",
     "friendlyName": "Eosinophils",
-    "short": "EOS#",
+    "shortName": "EOS#",
     "unit": "x10^3/uL",
     "lang": {
       "ru-RU": "Эозинофилы (абс.)",
@@ -2601,7 +2601,7 @@
     "loinc": "704-7",
     "longCommonName": "Basophils [#/volume] in Blood by Automated count",
     "friendlyName": "Basophils",
-    "short": "BASO#",
+    "shortName": "BASO#",
     "unit": "x10^3/uL",
     "lang": {
       "ru-RU": "Базофилы (абс.)",
@@ -2623,7 +2623,7 @@
     "loinc": "770-8",
     "longCommonName": "Neutrophils/Leukocytes in Blood by Automated count",
     "friendlyName": "Neutrophils %",
-    "short": "NEUT%",
+    "shortName": "NEUT%",
     "unit": "%",
     "lang": {
       "ru-RU": "Нейтрофилы (%)",
@@ -2645,7 +2645,7 @@
     "loinc": "736-9",
     "longCommonName": "Lymphocytes/Leukocytes in Blood by Automated count",
     "friendlyName": "Lymphocytes %",
-    "short": "LYMPH%",
+    "shortName": "LYMPH%",
     "unit": "%",
     "lang": {
       "ru-RU": "Лимфоциты (%)",
@@ -2667,7 +2667,7 @@
     "loinc": "5905-5",
     "longCommonName": "Monocytes/Leukocytes in Blood by Automated count",
     "friendlyName": "Monocytes %",
-    "short": "MONO%",
+    "shortName": "MONO%",
     "unit": "%",
     "lang": {
       "ru-RU": "Моноциты (%)",
@@ -2689,7 +2689,7 @@
     "loinc": "713-8",
     "longCommonName": "Eosinophils/Leukocytes in Blood by Automated count",
     "friendlyName": "Eosinophils %",
-    "short": "EOS%",
+    "shortName": "EOS%",
     "unit": "%",
     "lang": {
       "ru-RU": "Эозинофилы (%)",
@@ -2711,7 +2711,7 @@
     "loinc": "706-2",
     "longCommonName": "Basophils/Leukocytes in Blood by Automated count",
     "friendlyName": "Basophils %",
-    "short": "BASO%",
+    "shortName": "BASO%",
     "unit": "%",
     "lang": {
       "ru-RU": "Базофилы (%)",
@@ -2733,7 +2733,7 @@
     "loinc": "71695-1",
     "longCommonName": "Immature granulocytes/Leukocytes in Blood by Automated count",
     "friendlyName": "Immature Granulocytes",
-    "short": "IG%",
+    "shortName": "IG%",
     "unit": "%",
     "lang": {
       "ru-RU": "Незрелые гранулоциты (%)",
@@ -2755,7 +2755,7 @@
     "loinc": "787-2",
     "longCommonName": "MCV [Entitic mean volume] in Red Blood Cells by Automated count",
     "friendlyName": "MCV",
-    "short": "MCV",
+    "shortName": "MCV",
     "unit": "fL",
     "lang": {
       "ru-RU": "Средний объем эритроцита (MCV)",
@@ -2777,7 +2777,7 @@
     "loinc": "785-6",
     "longCommonName": "MCH [Entitic mass] by Automated count",
     "friendlyName": "MCH",
-    "short": "MCH",
+    "shortName": "MCH",
     "unit": "pg",
     "lang": {
       "ru-RU": "Среднее содержание гемоглобина (MCH)",
@@ -2799,7 +2799,7 @@
     "loinc": "786-4",
     "longCommonName": "MCHC [Entitic Mass/volume] in Red Blood Cells by Automated count",
     "friendlyName": "MCHC",
-    "short": "MCHC",
+    "shortName": "MCHC",
     "unit": "g/dL",
     "lang": {
       "ru-RU": "Средняя концентрация гемоглобина (MCHC)",
@@ -2821,7 +2821,7 @@
     "loinc": "788-0",
     "longCommonName": "Erythrocyte [DistWidth] in Blood by Automated count",
     "friendlyName": "RDW-CV",
-    "short": "RDW",
+    "shortName": "RDW",
     "unit": "%",
     "lang": {
       "ru-RU": "Ширина распределения эритроцитов (RDW-CV)",
@@ -2843,7 +2843,7 @@
     "loinc": "21000-5",
     "longCommonName": "Deprecated Erythrocyte distribution width [Entitic volume] by Automated count",
     "friendlyName": "RDW-SD",
-    "short": "RDW-SD",
+    "shortName": "RDW-SD",
     "unit": "fL?",
     "lang": {
       "ru-RU": "Ширина распределения эритроцитов (RDW-SD)",
@@ -2865,7 +2865,7 @@
     "loinc": "777-3",
     "longCommonName": "Platelets [#/volume] in Blood by Automated count",
     "friendlyName": "Platelets",
-    "short": "PLT",
+    "shortName": "PLT",
     "unit": "x10^3/uL",
     "lang": {
       "ru-RU": "Тромбоциты",
@@ -2887,7 +2887,7 @@
     "loinc": "32623-1",
     "longCommonName": "Platelet [Entitic mean volume] in Blood by Automated count",
     "friendlyName": "MPV",
-    "short": "MPV",
+    "shortName": "MPV",
     "unit": "fL",
     "lang": {
       "ru-RU": "Средний объем тромбоцита (MPV)",
@@ -2909,7 +2909,7 @@
     "loinc": "32207-3",
     "longCommonName": "Platelet distribution width [Entitic volume] in Blood by Automated count",
     "friendlyName": "PDW",
-    "short": "PDW",
+    "shortName": "PDW",
     "unit": "fL?",
     "lang": {
       "ru-RU": "Ширина распределения тромбоцитов (PDW)",
@@ -2931,7 +2931,7 @@
     "loinc": "48386-7",
     "longCommonName": "Platelets Large/Platelets in Blood by Automated count",
     "friendlyName": "P-LCR",
-    "short": "P-LCR",
+    "shortName": "P-LCR",
     "unit": "%?",
     "lang": {
       "ru-RU": "Коэффициент больших тромбоцитов (P-LCR)",
@@ -2953,7 +2953,7 @@
     "loinc": "96354-6",
     "longCommonName": "Platelets Large [#/volume] in Blood by Automated count",
     "friendlyName": "P-LCC",
-    "short": "P-LCC",
+    "shortName": "P-LCC",
     "unit": "x10^3/uL?",
     "lang": {
       "ru-RU": "Большие тромбоциты (P-LCC)",
@@ -2975,7 +2975,7 @@
     "loinc": "61928-1",
     "longCommonName": "Plateletcrit [Volume Fraction] in Blood by Automated count",
     "friendlyName": "Plateletcrit",
-    "short": "PCT",
+    "shortName": "PCT",
     "unit": "%?",
     "lang": {
       "ru-RU": "Тромбокрит (PCT)",
@@ -2997,7 +2997,7 @@
     "loinc": "13458-5",
     "longCommonName": "Cholesterol in VLDL [Mass/volume] in Serum or Plasma by calculation",
     "friendlyName": "VLDL Cholesterol",
-    "short": "VLDL-C",
+    "shortName": "VLDL-C",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Холестерин ЛПОНП",
@@ -3020,7 +3020,7 @@
     "loinc": "9318-7",
     "longCommonName": "Albumin/Creatinine [Mass Ratio] in Urine",
     "friendlyName": "Albumin/Creatinine Ratio",
-    "short": "ACR",
+    "shortName": "ACR",
     "unit": "mg/g",
     "lang": {
       "ru-RU": "Соотношение альбумин/креатинин (моча)",
@@ -3031,7 +3031,7 @@
     "loinc": "2697-1",
     "longCommonName": "Osteocalcin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Osteocalcin",
-    "short": "OC",
+    "shortName": "OC",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "Остеокальцин",
@@ -3042,7 +3042,7 @@
     "loinc": "41171-0",
     "longCommonName": "Collagen crosslinked C-telopeptide [Mass/volume] in Serum or Plasma",
     "friendlyName": "Beta-CrossLaps",
-    "short": "CTX",
+    "shortName": "CTX",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "Бета-CrossLaps (CTX)",
@@ -3053,7 +3053,7 @@
     "loinc": "77370-5",
     "longCommonName": "Procollagen type I.N-terminal propeptide [Mass/volume] in Serum or Plasma by Immunoassay",
     "friendlyName": "P1NP",
-    "short": "P1NP",
+    "shortName": "P1NP",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "N-терминальный пропептид проколлагена I типа (P1NP)",
@@ -3064,7 +3064,7 @@
     "loinc": "9622-2",
     "longCommonName": "Phytonadione [Mass/volume] in Serum or Plasma",
     "friendlyName": "Vitamin K1",
-    "short": "Vit K",
+    "shortName": "Vit K",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "Витамин K1",
@@ -3075,7 +3075,7 @@
     "loinc": "17838-4",
     "longCommonName": "Alkaline phosphatase.bone [Mass/volume] in Serum or Plasma",
     "friendlyName": "Bone-Specific Alkaline Phosphatase",
-    "short": "BALP",
+    "shortName": "BALP",
     "unit": "ug/L",
     "lang": {
       "ru-RU": "Костная щелочная фосфатаза",
@@ -3086,7 +3086,7 @@
     "loinc": "25907-7",
     "longCommonName": "Elastase.pancreatic [Mass/mass] in Stool",
     "friendlyName": "Pancreatic Elastase",
-    "short": "ELA1",
+    "shortName": "ELA1",
     "unit": "ug/g",
     "lang": {
       "ru-RU": "Панкреатическая эластаза-1 (кал)",
@@ -3097,7 +3097,7 @@
     "loinc": "2465-3",
     "longCommonName": "IgG [Mass/volume] in Serum or Plasma",
     "friendlyName": "Immunoglobulin G",
-    "short": "IgG",
+    "shortName": "IgG",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Иммуноглобулин G",
@@ -3108,7 +3108,7 @@
     "loinc": "2458-8",
     "longCommonName": "IgA [Mass/volume] in Serum or Plasma",
     "friendlyName": "Immunoglobulin A",
-    "short": "IgA",
+    "shortName": "IgA",
     "unit": "mg/dL",
     "lang": {
       "ru-RU": "Иммуноглобулин A",
@@ -3119,7 +3119,7 @@
     "loinc": "4537-7",
     "longCommonName": "Erythrocyte [Sedimentation Rate] in Blood by Westergren method",
     "friendlyName": "ESR",
-    "short": "ESR",
+    "shortName": "ESR",
     "unit": "mm/hr",
     "lang": {
       "ru-RU": "СОЭ (по Вестергрену)",
@@ -3130,7 +3130,7 @@
     "loinc": "48066-5",
     "longCommonName": "Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma",
     "friendlyName": "D-Dimer (DDU)",
-    "short": "D-Dim DDU",
+    "shortName": "D-Dim DDU",
     "unit": "ng/mL",
     "lang": {
       "ru-RU": "D-димер (DDU)",
@@ -3141,7 +3141,7 @@
     "loinc": "62418-9",
     "longCommonName": "Glucose/Insulin [Ratio] in Serum or Plasma",
     "friendlyName": "Glucose/Insulin Ratio",
-    "short": "Glu/Ins",
+    "shortName": "Glu/Ins",
     "unit": "ratio",
     "lang": {
       "ru-RU": "Соотношение глюкоза/инсулин",

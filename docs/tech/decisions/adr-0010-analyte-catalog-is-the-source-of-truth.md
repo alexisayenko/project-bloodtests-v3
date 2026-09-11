@@ -151,3 +151,8 @@ data.**
 
 - 2026-09-11: the entry field this record calls the display name is
   now `friendlyName` (formerly `displayName`); nothing else changed.
+- 2026-09-11: the entry field this record calls `short` (the badge label)
+  is now `shortName`, derived into `SHORT_NAMES` (formerly `SHORT_LABELS`)
+  — our own short name, not LOINC's SHORTNAME. Every name field is
+  defined once, in the "Names" glossary of
+  [observation](../../product/concepts/observation.md#names).

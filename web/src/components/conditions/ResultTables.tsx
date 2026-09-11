@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { fmtNum, isOutOfRange } from '../../utils/format';
 import { computeIndex, zone, type IndexDef } from '../../data/computedIndices';
 import { testLoincs, type Observation } from './markers';
@@ -26,7 +27,8 @@ import {
 import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
 import type { Result } from '../../types';
 import { COLOR, FONT } from '../../styles/tokens';
-import { TABLE_TD, TABLE_TH } from '../primitives/styles';
+import { CARD_TABLE_TD, CARD_TABLE_TH, TABLE_CARD } from '../primitives/styles';
+import { Card } from '../primitives/Card';
 
 const DATE_COL_WIDTH = 96;
 // The Scheduled column sits after an empty spacer column so it reads as a
@@ -38,27 +40,66 @@ const GAP_COL_WIDTH = 16;
 // single glyph.
 const SCHEDULED_COL_WIDTH = 132;
 
-const th = { ...TABLE_TH, verticalAlign: 'top' } as const;
-const td = { ...TABLE_TD, cursor: 'pointer' } as const;
-const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere' } as const;
+const HAIRLINE = `1px solid ${COLOR.borderSubtle}`;
+
+// A muted band of small uppercase labels, the table's quiet counterpart to the grid's overlines.
+const th = { ...CARD_TABLE_TH, padding: '10px 12px', verticalAlign: 'middle' } as const;
+const td = { ...CARD_TABLE_TD, padding: '8px 12px', cursor: 'pointer' } as const;
+const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere', color: COLOR.navy } as const;
+const emptyTd = { ...td, color: COLOR.textDisabled } as const;
 const gapCell = { padding: 0, border: 'none' } as const;
+const gapTh = { ...gapCell, background: COLOR.surfaceMuted, borderBottom: HAIRLINE } as const;
 const scheduledTh = {
   ...th,
   textAlign: 'center',
   padding: '6px 8px',
-  verticalAlign: 'middle',
-  borderLeft: `1px solid ${COLOR.borderMuted}`,
-  borderRight: `1px solid ${COLOR.borderMuted}`,
+  borderLeft: HAIRLINE,
+  borderRight: HAIRLINE,
 } as const;
 const scheduledTd = {
   ...td,
   textAlign: 'center',
-  borderLeft: `1px solid ${COLOR.borderMuted}`,
-  borderRight: `1px solid ${COLOR.borderMuted}`,
-  color: COLOR.accent,
+  borderLeft: HAIRLINE,
+  borderRight: HAIRLINE,
+  color: COLOR.primary,
   fontWeight: 600,
   userSelect: 'none',
 } as const;
+
+const STATUS_TEXT = { ok: COLOR.statusOkText, warn: COLOR.statusWarnText, bad: COLOR.statusBadText } as const;
+
+/**
+ * A reading's status as a soft inset tint behind the number rather than a
+ * flood across the cell. The negative margin cancels the tint's own padding,
+ * so the digits stay on the header's left edge whether a cell is tinted or not.
+ */
+function StatusValue({ tone, bg, children }: Readonly<{ tone: keyof typeof STATUS_TEXT; bg: string; children: ReactNode }>) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        margin: '-1px 0 -1px -7px',
+        padding: '1px 7px',
+        borderRadius: 6,
+        background: bg,
+        color: STATUS_TEXT[tone],
+        fontWeight: 600,
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
+ * The grid's own px width. The card hugs it (plus its 1px borders), so the
+ * trailing auto column comes out empty and the header band and hairlines end
+ * where the columns do; past the available width the card caps and scrolls.
+ */
+function gridWidth(dateCount: number, scheduling: boolean): number {
+  return LABEL_COL_WIDTH + dateCount * DATE_COL_WIDTH + (scheduling ? GAP_COL_WIDTH + SCHEDULED_COL_WIDTH : 0);
+}
 
 function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling: boolean }>) {
   return (
@@ -93,7 +134,7 @@ function TableHead({
         ))}
         {schedule && (
           <>
-            <th style={gapCell} />
+            <th style={gapTh} />
             {/* The header holds only controls, so aria-label supplies the column
                 name that the removed caption used to give it. */}
             <th style={scheduledTh} aria-label="Scheduled">
@@ -196,20 +237,31 @@ function ObservationCells({
         });
         if (!match || !display) {
           return (
-            <td key={date} {...pressable(handleClick)} style={td}>
+            <td key={date} {...pressable(handleClick)} style={emptyTd}>
               –
             </td>
           );
         }
-        const bg = cellBg(hasReference(match.result), isOutOfRange(match.result), selected);
+        const hasRef = hasReference(match.result);
+        const outOfRange = isOutOfRange(match.result);
         // Coloring always uses the as-reported value/range (self-consistent);
         // only the displayed number is converted for the toggle, and then it is
         // shown under the unit it was converted TO (see displayedResult).
         const text = !display.converted && preferRaw ? display.rawValue || fmtNum(display.value) : fmtNum(display.value);
+        const unit = showCellUnits && display.unit && <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {display.unit}</span>;
         return (
-          <td key={date} {...pressable(handleClick)} style={{ ...td, background: bg }}>
-            {text}
-            {showCellUnits && display.unit && <span style={{ color: COLOR.textMuted }}> {display.unit}</span>}
+          <td key={date} {...pressable(handleClick)} style={td}>
+            {hasRef ? (
+              <StatusValue tone={outOfRange ? 'bad' : 'ok'} bg={cellBg(hasRef, outOfRange, selected)}>
+                {text}
+                {unit}
+              </StatusValue>
+            ) : (
+              <>
+                {text}
+                {unit}
+              </>
+            )}
           </td>
         );
       })}
@@ -290,8 +342,8 @@ function ObservationRow({
         style={labelTd}
       >
         <RelationMark label={inputsOf && overlaps(rowLoincs, inputsOf.loincs) ? `input of ${inputsOf.name}` : undefined} />
-        <span style={{ fontWeight: 600 }}>{test.short}</span>
-        {rowUnit && `, ${rowUnit}`}
+        <span style={{ fontWeight: 600 }}>{test.shortName}</span>
+        {rowUnit && <span style={{ color: COLOR.textMuted }}>, {rowUnit}</span>}
       </td>
       <ObservationCells
         test={test}
@@ -307,7 +359,7 @@ function ObservationRow({
       {scheduling && (
         <ScheduledCell
           checked={isRowScheduled(scheduling.scheduled, rowLoincs)}
-          label={test.short}
+          label={test.shortName}
           onToggle={() => scheduling.onToggle(rowLoincs)}
         />
       )}
@@ -352,8 +404,8 @@ function IndexDefRow({
         style={labelTd}
       >
         <RelationMark label={usedBy && overlaps(indexInputLoincs(def.key), usedBy.loincs) ? `uses ${usedBy.name}` : undefined} />
-        <span style={{ fontWeight: 600 }}>{def.nameCompact}</span>
-        {def.unit && `, ${def.unit}`}
+        <span style={{ fontWeight: 600 }}>{def.shortName}</span>
+        {def.unit && <span style={{ color: COLOR.textMuted }}>, {def.unit}</span>}
       </td>
       {visibleDates.map((date) => {
         const value = resultsByDate ? computeIndex(def, resultsByDate[date] ?? {}) : null;
@@ -367,22 +419,24 @@ function IndexDefRow({
         });
         if (value == null) {
           return (
-            <td key={date} {...pressable(handleClick)} style={td}>
+            <td key={date} {...pressable(handleClick)} style={emptyTd}>
               –
             </td>
           );
         }
         const z = zone(value, def.cut[0], def.cut[1], def.hi);
         return (
-          <td key={date} {...pressable(handleClick)} style={{ ...td, background: selected ? SELECTED_ZONE_BG[z] : ZONE_BG[z] }}>
-            {fmtNum(value)}
+          <td key={date} {...pressable(handleClick)} style={td}>
+            <StatusValue tone={z} bg={selected ? SELECTED_ZONE_BG[z] : ZONE_BG[z]}>
+              {fmtNum(value)}
+            </StatusValue>
           </td>
         );
       })}
       {scheduling && (
         <ScheduledCell
           checked={isIndexScheduled(scheduling.scheduled, def.key)}
-          label={def.nameCompact}
+          label={def.shortName}
           onToggle={() => scheduling.onToggle(def.key)}
         />
       )}
@@ -481,7 +535,7 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
     },
   };
 
-  return (
+  const table = (
     <TableScroller
       colgroup={<ColGroup dates={visibleDates} scheduling={hasScheduling} />}
       head={<TableHead label={tableLabel} dates={visibleDates} schedule={schedule || undefined} />}
@@ -544,6 +598,12 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
         ))}
       </tbody>
     </TableScroller>
+  );
+
+  return (
+    <Card className="mc-results-card" style={{ ...TABLE_CARD, width: `min(100%, ${gridWidth(visibleDates.length, hasScheduling) + 2}px)` }}>
+      {table}
+    </Card>
   );
 }
 

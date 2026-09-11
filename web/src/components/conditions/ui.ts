@@ -67,10 +67,12 @@ export function greenRangeOf(def: IndexDef): string {
 
 // The table controls (unit system, samplings shown) are one shared setting
 // across every panel and All Observations (component-level state, not
-// per-panel) -- persisted here so they also survive a page refresh.
+// per-panel) -- persisted here so they also survive a page refresh. The
+// Monitoring Panels grid's Compact view rides along as a view preference.
 export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
 export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
-export const DEFAULT_VIEW_SETTINGS: ViewSettings = { unitSystem: 'si', sampleLimit: 5 };
+export type StoredViewSettings = ViewSettings & { compactPanels: boolean };
+export const DEFAULT_VIEW_SETTINGS: StoredViewSettings = { unitSystem: 'si', sampleLimit: 5, compactPanels: false };
 
 /** Only the Results tab renders ControlsBar, and it reads every control. */
 export type ControlsTab = 'analysis';
@@ -84,14 +86,15 @@ export function controlsForTab(tab: ControlsTab): ControlsEnabled {
   return { ...TAB_CONTROLS[tab] };
 }
 
-export function loadViewSettings(): ViewSettings {
+export function loadViewSettings(): StoredViewSettings {
   try {
     const raw = localStorage.getItem(VIEW_SETTINGS_KEY);
     if (raw) {
-      const stored = JSON.parse(raw) as Partial<ViewSettings>;
+      const stored = JSON.parse(raw) as Partial<StoredViewSettings>;
       return {
         unitSystem: stored.unitSystem ?? DEFAULT_VIEW_SETTINGS.unitSystem,
         sampleLimit: stored.sampleLimit ?? DEFAULT_VIEW_SETTINGS.sampleLimit,
+        compactPanels: stored.compactPanels === true,
       };
     }
   } catch {
@@ -100,14 +103,15 @@ export function loadViewSettings(): ViewSettings {
   return { ...DEFAULT_VIEW_SETTINGS };
 }
 
-/** Persist the shared table controls, dropping any value outside the accepted set. */
-export function saveViewSettings(settings: ViewSettings): void {
-  const { unitSystem, sampleLimit } = settings;
+/** Persist the shared table controls and Compact view, dropping any value outside the accepted set. */
+export function saveViewSettings(settings: ViewSettings & { compactPanels?: boolean }): void {
+  const { unitSystem, sampleLimit, compactPanels } = settings;
   const validLimit =
     sampleLimit === 'all' || (typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0);
-  const safe: ViewSettings = {
+  const safe: StoredViewSettings = {
     unitSystem: unitSystem === 'us' ? 'us' : 'si',
     sampleLimit: validLimit ? sampleLimit : DEFAULT_VIEW_SETTINGS.sampleLimit,
+    compactPanels: compactPanels === true,
   };
   try {
     localStorage.setItem(VIEW_SETTINGS_KEY, JSON.stringify(safe));
@@ -126,7 +130,7 @@ export function hasStoredViewSettings(): boolean {
 }
 
 /** Share-link settings applied over the defaults: a starting point, never an override. */
-export function seedViewSettings(seed: Partial<ViewSettings> | undefined): ViewSettings {
+export function seedViewSettings(seed: Partial<ViewSettings> | undefined): StoredViewSettings {
   return { ...DEFAULT_VIEW_SETTINGS, ...seed };
 }
 

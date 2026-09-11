@@ -12,9 +12,8 @@ import type { Result } from '../src/types';
 
 const result = (partial: Partial<Result>): Result => ({
   loinc: '',
-  analysis: '',
-  symbol: '',
-  section: '',
+  rawName: '',
+    section: '',
   value: null,
   rawValue: '',
   valueQualifier: '',

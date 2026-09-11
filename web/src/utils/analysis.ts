@@ -18,17 +18,3 @@ export function getPanelAnalyses(p: Panel): string[] {
   }
   return p.loincs || [];
 }
-
-export function getOtherLangNames(a: Analysis, lang: Lang): string[] {
-  const names: string[] = [];
-  if (lang !== 'ru-RU' && a.lang['ru-RU']) names.push(a.lang['ru-RU']);
-  if (lang !== 'uk-UA' && a.lang['uk-UA']) names.push(a.lang['uk-UA']);
-  if (lang !== 'en') names.unshift(a.friendlyName);
-  return names;
-}
-
-export function getResultDisplayName(result: { analysis: string; loinc: string }, catalog: Record<string, Analysis>, lang: Lang): string {
-  if (result.analysis) return result.analysis;
-  if (result.loinc) return getAnalysisName(result.loinc, catalog, lang);
-  return 'Unknown Analysis';
-}
