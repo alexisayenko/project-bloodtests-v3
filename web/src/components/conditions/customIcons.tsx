@@ -161,6 +161,49 @@ export const TestesIcon: IconComponent = ({ size = 24, color = 'currentColor', s
   </svg>
 );
 
+/** A signalling molecule: a hub with three straight branches, each ending in a hollow node. */
+export const HormoneIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 1.75, ...rest }) => (
+  <svg {...lineIconProps(size, color, strokeWidth)} {...rest}>
+    <circle cx="12" cy="14" r="2" />
+    <circle cx="12" cy="5.5" r="2.5" />
+    <circle cx="4.64" cy="18.25" r="2.5" />
+    <circle cx="19.36" cy="18.25" r="2.5" />
+    <path d="M12 12V8M10.27 15l-3.46 2M13.73 15l3.46 2" />
+  </svg>
+);
+
+const CARRIER_BEADS: ReadonlyArray<readonly [number, number, number]> = [
+  [24, 9, 6.5], [32.5, 12.3, 6.2], [38.5, 19.3, 6.6], [37.9, 28.5, 6.3], [32.8, 36.1, 6.6],
+  [24, 38.8, 6.3], [15.1, 36.3, 6.5], [10.2, 28.5, 6.2], [9.6, 19.3, 6.6], [15.4, 12.1, 6.3],
+  [28.4, 17.9, 6], [31.1, 26.3, 5.8], [24, 31.5, 6], [16.9, 26.3, 5.8], [19.6, 17.9, 6],
+];
+
+/** A transport protein: a round cluster of beads carrying a three-ring steroid. */
+export const CarrierIcon: IconComponent = ({ size = 48, color = 'currentColor', strokeWidth = 1.5, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    <g style={{ fill: 'var(--pathway-carrier)' }}>
+      {CARRIER_BEADS.map(([cx, cy, r]) => (
+        <circle key={`${cx},${cy}`} cx={cx} cy={cy} r={r} />
+      ))}
+    </g>
+    <path
+      style={{ fill: 'var(--pathway-steroid)' }}
+      d="M18.54 23.45 22.18 25.55V29.75L18.54 31.85 14.9 29.75V25.55ZM25.82 23.45 29.46 25.55V29.75L25.82 31.85 22.18 29.75V25.55ZM29.46 17.15 33.1 19.25V23.45L29.46 25.55 25.82 23.45V19.25Z"
+    />
+  </svg>
+);
+
 /** A round patch of tissue holding three cells, each with its nucleus. */
 export const TargetTissueIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 1.75, ...rest }) => (
   <svg {...lineIconProps(size, color, strokeWidth)} {...rest}>

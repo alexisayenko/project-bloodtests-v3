@@ -1,7 +1,9 @@
 import { PageHeader } from './PageHeader';
 import {
   BrainPituitaryIcon,
+  CarrierIcon,
   HeartPulseIcon,
+  HormoneIcon,
   TargetTissueIcon,
   TestesIcon,
   type IconComponent,
@@ -20,6 +22,25 @@ const SITES: PathwaySite[] = [
   { id: 'testes', title: 'Testes', description: 'Produce sex steroids', Icon: TestesIcon },
   { id: 'target', title: 'Target tissues', description: 'Where hormones exert their effects', Icon: TargetTissueIcon },
 ];
+
+const CARDIO_NODES: { label: string; Icon: IconComponent }[] = [
+  { label: 'SHBG', Icon: CarrierIcon },
+  { label: 'T', Icon: HormoneIcon },
+  { label: 'Albumin', Icon: CarrierIcon },
+];
+
+function CardioDiagram() {
+  return (
+    <div className="mc-pathway-row">
+      {CARDIO_NODES.map(({ label, Icon }) => (
+        <figure key={label} className="mc-pathway-node">
+          <Icon size={56} />
+          <figcaption className="mc-pathway-node-label">{label}</figcaption>
+        </figure>
+      ))}
+    </div>
+  );
+}
 
 export function HormonalPathwaysView() {
   return (
@@ -40,7 +61,7 @@ export function HormonalPathwaysView() {
               </span>
               <p className="mc-pathway-desc">{description}</p>
             </div>
-            <div className="mc-pathway-diagram" />
+            <div className="mc-pathway-diagram">{id === 'cardio' && <CardioDiagram />}</div>
           </section>
         ))}
       </div>

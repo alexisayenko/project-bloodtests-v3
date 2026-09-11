@@ -19,7 +19,7 @@ A [monitoring panel](monitoring-panel.md) lists markers; a pathway shows how the
 
 A node kind describes a **role in the axis, not chemistry**. T and LH are both signals although one is a steroid and one a glycoprotein; the chemical class appears only in hover text. A molecule can play several roles — T is a signal and the substrate of two conversions — and the line carries the relation, never a second kind.
 
-Drawn: bands, signals, carriers, enzymes, badges and lines. **Not drawn**: cells, tissues and regions, and receptors — no node, shape or icon for any of them.
+Drawn: bands, signals, carriers, enzymes, badges and lines. **Not drawn**: cells, tissues and regions, and receptors — no node or shape for any of them. Cells and tissues have a role icon, never a diagram node; receptors have none.
 
 ### Band
 
@@ -81,16 +81,17 @@ A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B
 
 ## Icons
 
-Custom SVG icons, one per role, drawn by us in the woven-knot logo's line style — navy, 2px, round caps, no fills. ChatGPT, stock and AI images are inspiration only, never shipped.
+Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). ChatGPT, stock and AI images are inspiration only, never shipped.
 
 | Role | Icon |
 | --- | --- |
-| Signal | a small hub with three branches ending in circles |
-| Carrier | a ball of one thick woven thread with steroids docked in its gaps — SHBG holds one deep in a gap, Albumin two or three loosely at its edge |
-| Enzyme | a closed ring of interlocked links (a hexagonal chain), no outward stubs |
+| Signal / hormone | a small hub circle with three branches ending in hollow circles, navy line |
+| Carrier / transport protein | SHBG and albumin alike: a dense cluster of round beads — flat teal fill, navy outline — with an amber steroid docked in it, like a space-filling protein model |
+| Enzyme | 5α-reductase and aromatase: a ring of small beads (a circular chain of small circles), light teal/blue |
+| Cells / tissues | a few loose blue circles, each with a smaller circle (nucleus) inside |
 | Provenance | flask = measured, calculator = calculated, dashed circle = not measured |
 
-Carriers alone come filled — navy outline, teal fill, amber steroids — for diagram nodes, with a 24px line version and a soft 3D rendering for hover cards. A detailed steroid is angular fused rings, three hexagons and one pentagon. Badge groups carry no icon, and there is no tissue, cell or receptor icon.
+The carrier and the cells must stay visually distinct: a dense filled cluster against a few separate outlined circles with nuclei. A detailed steroid is angular fused rings, three hexagons and one pentagon. Badge groups carry no icon, and there is no receptor icon.
 
 ## Notation
 
