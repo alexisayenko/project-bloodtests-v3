@@ -323,14 +323,20 @@ drawn in `customIcons.tsx` to the same stroke and size, `PillIcon` (a split
 capsule, also the Medications header's pillar and the Pancreatic Function card's
 icon, `PageHeader` pillars accepting either kind) for Medications and
 `PathwaysIcon` (three linked hollow circles) for Hormonal Pathways — Account
-pinned to its foot above a three-line tagline, hidden below a 760px viewport
-height — the active one a
+pinned to its foot above a « / » collapse toggle, and a three-line tagline
+vertically centered in the free space between the sections and Account, hidden
+below a 760px viewport height — the active one a
 soft teal pill, active and blocked state coming from `routing.ts`'s
 `isNavItemActive` / `isNavItemBlocked`. The sidebar is `position: fixed` under
 the top bar, never scrolls, and `.mc-page` and the footer (`.mc-footer`) are
 offset by its width (`--mc-sidebar-w`, 232px, 200px below 1024px) — fixed
 rather than sticky, since the footer sits outside the shell and pushed a sticky
-sidebar up under the top bar at the page's end. Phones keep the old wrapping `NavBar`
+sidebar up under the top bar at the page's end. The toggle collapses it to a
+64px icon rail (labels and tagline hidden, each item named by `aria-label` and
+a tooltip): `AppShell` stamps `data-sidebar-collapsed` on the root element,
+since the footer outside the shell reads the same width variable, and
+`sidebarCollapsed.ts` keeps the choice under localStorage
+`bloodtests_sidebar_collapsed_v1` (`"true"`, the key removed when expanded). Phones keep the old wrapping `NavBar`
 (brand mark plus the same nine labels), until task-0020 designs their shell, and every
 slot stays in place across the breakpoint so rotating a phone remounts nothing.
 Every section's landing page opens with the same `PageHeader.tsx` banner —
@@ -428,10 +434,28 @@ indices, or the union over the panels on offer, so a share link's allowlist,
 which limits the panel options but never the observation rows, does narrow
 the indices), Monitoring Panels
 (the default/entry route), Hormonal Pathways (`#pathways`, blocked while
-validation errors exist, like Monitoring Panels: for now only a placeholder,
-`HormonalPathwaysView.tsx` — a `PageHeader` with overline "Endocrinology",
-title "Hormonal Pathways" and "Biochemical pathways of hormones", over "Coming
-soon."; what it becomes is task-0024), Scheduled Visits (`#plan`, reachable despite validation
+validation errors exist, like Monitoring Panels: a first static version of
+task-0024 in `HormonalPathwaysView.tsx`, under a `PageHeader` with overline
+"Endocrinology", title "Hormonal Pathways" and "Biochemical pathways of
+hormones" — one canvas of four zones, each captioned by small uppercase text at
+its top left with its description on hover: Hypothalamus + Pituitary (empty so
+far); Blood Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
+with albumin-bound T docked, E2); Testes (Sertoli and Leydig cells); Target
+tissues (5α-reductase → DHT, aromatase → E2, androgen and estrogen receptors).
+Every value is hand-coded sample data — nothing reads the user's results yet.
+The pathway arrows are an SVG overlay measured from the DOM and re-measured by
+a `ResizeObserver` — FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
+enzymes and down to the androgen receptors, enzymes → products,
+DHT → androgen receptors, E2 → blood E2 → estrogen receptors — thin pale
+strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon`,
+`CarrierIcon` and `ReceptorIcon` SVGs, plus `web/public/pathways/enzyme.png`
+and `leydig-cells.png`, cropped from a mockup with transparent backgrounds. A
+column of badges on the right — Total T, Free T, Bioavailable T, T/LH, DHT/T,
+T/E2 — each expands on click to Meaning / Low / High / Caveats, static text in
+the component for now (`INDEX_DEFS` the intended source), and while one is
+hovered, focused or open draws its association lines, hidden at rest: one
+purple bus from the badge to a lane above its targets, stubs down to dashed
+rings around each target), Scheduled Visits (`#plan`, reachable despite validation
 errors: under a "Planned for <month>" pill, in a table card, every scheduled observation, folded
 to its primary code, as one "Observation" cell — `friendlyName`, with the short
 name in parentheses where it differs, opening the analyte popup — beside one
@@ -496,7 +520,8 @@ from the zip left empty and `laboratory-prices.json` never restored — the
 shipped registry wins — with the result reported per part. "Clear all data",
 after a confirm, runs the reports' own Clear and `clearSharedMeta`, then sweeps
 `backupArchive.ts`'s `USER_DATA_KEYS` (reports, Database details, medications,
-schedule, view settings, share-link meta, imported links) plus the
+schedule, view settings, share-link meta, imported links, the sidebar's
+collapsed state — cleared but not in `settings.json`) plus the
 chart-preference prefixes — one list the export, the clear and the import all
 read; the shell then reloads its schedule and table controls from storage, so
 nothing stale stays on screen. Validation

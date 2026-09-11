@@ -173,9 +173,13 @@ band), `FIELD_INPUT` (an inline text or select field), `OVERLINE`,
   icon each, Account pinned to its foot; the active section is a soft
   teal pill. The sidebar is fixed under the top bar and never scrolls:
   the page and the footer are offset by its width (232px, 200px below
-  1024px), items are padded 8px × 12px, and the three-line tagline under
-  Account hides below a 760px viewport height so all nine items still
-  fit. Icons are `lucide-react` line icons except two drawn to the same
+  1024px), items are padded 8px × 12px, and the three-line tagline,
+  vertically centered in the free space above Account, hides below a
+  760px viewport height so all nine items still fit. A « / » toggle
+  under Account collapses the sidebar to a 64px rail of 36px icon
+  buttons — labels and tagline hidden, each section named by its
+  tooltip — with width and page offset easing over 150ms; the choice is
+  remembered in this browser and cleared by Clear all data. Icons are `lucide-react` line icons except two drawn to the same
   stroke and size in `customIcons.tsx`: `PillIcon`, a split capsule
   (Medications — also its page-header pillar and the Pancreatic Function
   card), and `PathwaysIcon`, three linked hollow circles (Hormonal

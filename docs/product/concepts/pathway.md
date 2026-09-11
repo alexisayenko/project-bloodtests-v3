@@ -1,9 +1,15 @@
 # Pathway
 
-> **Status: planned, not built** — specified 2026-09-11
+> **Status: first static version built** — specified 2026-09-11
 > ([task-0024](../../tasks/task-0024.md),
 > [ADR-0014](../../tech/decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
-> Nothing in the app implements this yet; what follows is the agreed shape.
+> `HormonalPathwaysView.tsx` draws four captioned zones on one canvas —
+> Hypothalamus + Pituitary (empty so far), Blood Transport, Testes, Target
+> tissues — with hand-coded sample values, pathway arrows measured from the
+> DOM, and six clickable badges; no user data, `pathways.json`, month stepper
+> or feedback arrows yet. Where the build departs from what follows (zones,
+> not bands; badges in one column; association lines hidden at rest; cells
+> and receptors drawn), task-0024's status note records it.
 
 One hormonal axis drawn as its wiring — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
 
@@ -23,7 +29,7 @@ Drawn: bands, signals, carriers, enzymes, badges and lines. **Not drawn**: cells
 
 ### Band
 
-An organ, drawn as a horizontal band: Hypothalamus, Pituitary, Testes, Blood transport, Target tissues. Blood transport is a compartment rather than an organ, drawn as a band alike.
+An organ, drawn as a zone of one canvas and named by a small uppercase caption at its top left, its description on hover: Hypothalamus + Pituitary, Blood Transport, Testes, Target tissues. Blood Transport is a compartment rather than an organ, drawn as a zone alike. (The spec's five horizontal bands became these four zones in the first build.)
 
 **Where an arrow acts is data, not drawing.** Each arrow keeps its site as organ → region/tissue → cell → receptor, shown as its hover text — "T acts on Kp neurons in the arcuate nucleus via the androgen receptor":
 
@@ -53,7 +59,7 @@ A converter: aromatase (T → E2), 5α-reductase (T → DHT), drawn as a node on
 
 ## Badges
 
-Badges are descriptive — they report a value, they do not make a diagnosis. Two kinds, on the right:
+Badges are descriptive — they report a value, they do not make a diagnosis. They sit in one column on the right, in the order Total T, Free T, Bioavailable T, T/LH, DHT/T, T/E2, with no group headings. Two kinds:
 
 - **Measures** of pools — Total T, Free T, Bioavailable T — each joined to the T bubbles it sums.
 - **Ratios** of processes, each tied to what it reads:
@@ -66,15 +72,15 @@ Badges are descriptive — they report a value, they do not make a diagnosis. Tw
 
 **Face** — value, unit, status dot, and a provenance icon: measured, calculated, or not measured (with a grey "–").
 
-**Hover** — the badge, its association lines and what it links to light up in one highlight color. The highlight is never a status color, so it cannot be read as a judgement.
+**Hover, focus or open** — its association lines appear, hidden at rest: one purple bus from the badge to a lane above its targets, a stub down to each, and a dashed ring around each target. Purple is never a status color, so it cannot be read as a judgement.
 
-**Click** — expands meaning, what low means, what high means, and caveats. Wherever an index exists the text is `INDEX_DEFS`', never restated: `cft` for Free T, `biot` for Bioavailable T, and `tlh`, `dhtt`, `te2` for the ratios, a shorter summary derived from it at most. Only Total T, which has no index, has its own text with citations.
+**Click** — expands meaning, what low means, what high means, and caveats (static text in the component in the first build). Wherever an index exists the text is to be `INDEX_DEFS`', never restated: `cft` for Free T, `biot` for Bioavailable T, and `tlh`, `dhtt`, `te2` for the ratios, a shorter summary derived from it at most. Only Total T, which has no index, has its own text with citations.
 
 ## Lines
 
 Two families, visually distinct:
 
-- **Association** — no arrowhead, faint, no thickness. Part of (a measure badge to the pools it sums), ratio link (a ratio badge to the enzyme or cell label it reads), docking (T on its carrier). A node sits in its band by containment, not by a line.
+- **Association** — no arrowhead, no thickness, hidden until its badge is hovered, focused or open. Part of (a measure badge to the pools it sums), ratio link (a ratio badge to the enzyme or cell label it reads), docking (T on its carrier). A node sits in its band by containment, not by a line.
 - **Pathway arrows** — signaling (signal → signal), conversion (T → enzyme → product), feedback and crosstalk (dashed), and exchange (⇄, free T ↔ docked T, unmarked).
 
 A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B** means "B rises when the source rises", **↓B** "B falls when the source rises" — B being the arrow's target signal, a conversion's product (↑DHT) included. Its **thickness** has three steps, set by where the **source** value sits in its reference range; it is grey when the source was not measured that month.
