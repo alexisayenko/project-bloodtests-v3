@@ -162,6 +162,12 @@ export function AllObservationsView({
   } else {
     analysisTab = (
       <>
+        <ControlsBar
+          {...controls}
+          panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: setPanelFilter }}
+          markerQuery={{ value: query, onChange: setQuery }}
+          enabled={controlsForTab('analysis')}
+        />
         <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 16 }}>
           {filtered ? `${visibleRows.length} of ${rows.length}` : rows.length} observations across{' '}
           {sortedDates.length} lab reports
@@ -213,12 +219,6 @@ export function AllObservationsView({
           { icon: Search, line1: 'Fast multi-code', line2: 'marker search' },
           { icon: Layers, line1: 'Normalized SI & US', line2: 'unit systems' },
         ]}
-      />
-      <ControlsBar
-        {...controls}
-        panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: setPanelFilter }}
-        markerQuery={{ value: query, onChange: setQuery }}
-        enabled={controlsForTab(tab)}
       />
       <TabBar tabs={OBSERVATIONS_TABS} active={tab} onChange={onTabChange} />
 

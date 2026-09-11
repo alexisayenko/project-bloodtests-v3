@@ -125,8 +125,6 @@ export function PanelDetailView({
     onSelectCell,
     onOpenResultPopup,
     scheduling,
-    showPricing: true,
-    showLabs: true,
   };
 
   return (
@@ -137,16 +135,16 @@ export function PanelDetailView({
         </span>
         {name}
       </h1>
-      {/* No panelFilter: the picker renders disabled, since this view is already one panel. */}
-      <ControlsBar
-        {...controls}
-        markerQuery={{ value: query, onChange: setQuery }}
-        enabled={controlsForTab(detailTab)}
-      />
       <TabBar tabs={DETAIL_TABS} active={detailTab} onChange={setDetailTab} />
 
       {detailTab === 'analysis' && (
         <div>
+          {/* No panelFilter: the picker renders disabled, since this view is already one panel. */}
+          <ControlsBar
+            {...controls}
+            markerQuery={{ value: query, onChange: setQuery }}
+            enabled={controlsForTab('analysis')}
+          />
           {dates.length === 0 ? (
             <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No results recorded for this panel yet.</div>
           ) : (

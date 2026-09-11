@@ -181,6 +181,7 @@ docs/
 │   ├── performance-guide.md            # end-to-end UX performance
 │   ├── screens/                        # entry: screens/README.md
 │   └── journeys.md                     # multi-screen paths
+├── references.md                       # external standards and vocabularies
 ├── README.md                           # this file
 └── concerns.md                         # cross-cutting axes (C1, C2, …)
 ```
@@ -212,6 +213,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Journeys (paths across screens) | [`ui-ux/journeys.md`](ui-ux/journeys.md) | Designing or changing a multi-screen flow |
 | UX style standards (visual + interaction) | [`ui-ux/style-guide.md`](ui-ux/style-guide.md) | Picking a color, type, motion, or interaction pattern |
 | UX performance standards | [`ui-ux/performance-guide.md`](ui-ux/performance-guide.md) | Setting or checking a UX performance metric / threshold |
+| External standards & terminology (LOINC, UCUM, HL7, FHIR, CAS) | [`references.md`](references.md) | Looking up external specifications, schemas, official portals, or GitHub repos |
 
 ### Section, file, folder
 
