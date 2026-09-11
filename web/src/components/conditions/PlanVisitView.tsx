@@ -22,14 +22,17 @@ const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}
 const labTh = { ...th, textAlign: 'right', width: LAB_COL_WIDTH } as const;
 const labTd = { ...td, textAlign: 'right' } as const;
 const gapCell = { padding: 0, border: 'none', width: GAP_COL_WIDTH } as const;
-const totalTd = { ...labTd, borderTop: `1px solid ${COLOR.textSecondary}`, borderBottom: 'none', fontWeight: 600 } as const;
+const totalTd = { ...labTd, borderBottom: 'none', fontWeight: 600 } as const;
+// A collapsed-border tie goes to the upper cell, so the rule above Total is drawn by the last data row.
+const totalRule = { borderBottom: `1px solid ${COLOR.textSecondary}` } as const;
 const muted = { color: COLOR.textMuted, fontSize: 12, fontWeight: 400 } as const;
 
-function PriceCell({ cell, lab }: Readonly<{ cell: PlanCell; lab: Laboratory }>) {
-  if (cell.kind === 'unpriced') return <td style={{ ...labTd, color: COLOR.textMuted }}>—</td>;
-  if (cell.kind === 'bundled') return <td style={{ ...labTd, ...muted }}>in {cell.line.label}</td>;
+function PriceCell({ cell, lab, last }: Readonly<{ cell: PlanCell; lab: Laboratory; last: boolean }>) {
+  const style = last ? { ...labTd, ...totalRule } : labTd;
+  if (cell.kind === 'unpriced') return <td style={{ ...style, color: COLOR.textMuted }}>—</td>;
+  if (cell.kind === 'bundled') return <td style={{ ...style, ...muted }}>in {cell.line.label}</td>;
   return (
-    <td style={labTd} title={cell.line.note ?? cell.line.label}>
+    <td style={style} title={cell.line.note ?? cell.line.label}>
       {formatPrice(cell.line.price, lab)}
     </td>
   );
@@ -100,6 +103,7 @@ export function PlanVisitView({
             </thead>
             <tbody>
               {rows.map((code, i) => {
+                const last = i === rows.length - 1;
                 const a = ANALYTE_BY_LOINC[code];
                 const friendlyName = a?.friendlyName ?? code;
                 const short = SHORT_LABELS[code]?.short;
@@ -120,6 +124,7 @@ export function PlanVisitView({
                       {...(onOpenPopup ? pressable((e) => onOpenPopup(observation, e)) : {})}
                       style={{
                         ...td,
+                        ...(last ? totalRule : {}),
                         whiteSpace: 'normal',
                         minWidth: 240,
                         cursor: onOpenPopup ? 'pointer' : 'default',
@@ -130,7 +135,7 @@ export function PlanVisitView({
                     </td>
                     <td style={gapCell} />
                     {LABORATORIES.map((lab, l) => (
-                      <PriceCell key={lab.id} cell={cells[l]![i]!} lab={lab} />
+                      <PriceCell key={lab.id} cell={cells[l]![i]!} lab={lab} last={last} />
                     ))}
                   </tr>
                 );
