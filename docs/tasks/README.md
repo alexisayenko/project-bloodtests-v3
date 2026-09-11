@@ -35,11 +35,11 @@ the index.
 | [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | in progress |
 | [task-0016](task-0016.md) | Implement FIB-4 for fibrosis-risk staging | to do |
 | [task-0017](task-0017.md) | Audit the computed-index unit fallback for unchecked values | to do |
-| [task-0018](task-0018.md) | Add a Medications history section for tracking what was taken and at what dosage | to do |
+| [task-0018](task-0018.md) | Add a Medications history section for tracking what was taken and at what dosage | done |
 | [task-0019](task-0019.md) | Record laboratory prices for the tests each laboratory sells | done |
 | [task-0020](task-0020.md) | Adapt the app shell to phones | to do |
 | [task-0021](task-0021.md) | Rework monitoring panels — industry standard sets, condition mapping, custom panels, and export | to do |
-| [task-0022](task-0022.md) | Add panel detail results table, analyte trends chart with lab history, report-specific ranges, and raw mapping audit | to do |
+| [task-0022](task-0022.md) | Add panel detail results table, analyte trends chart with lab history, report-specific ranges, and raw mapping audit | in progress |
 | [task-0023](task-0023.md) | Monitoring panels controls & customization — name toggle, status filters, and edit panels mode (hide/show, custom panels, drag-and-drop reorder) | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under

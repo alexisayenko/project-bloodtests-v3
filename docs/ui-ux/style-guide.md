@@ -38,9 +38,14 @@ rationale per rule so future-us can revisit.
   in-range, red = out-of-range. A [computed
   index](../product/concepts/computed-index.md) is 3-state against
   its own cut-points instead: green = ok, amber = warn, red = bad.
-  A selected table row blends its cell color with the row-selection
-  blue rather than replacing it, so status stays visible while
-  selected.
+  A selected table row blends its cell color with the accent-tinted
+  row selection rather than replacing it, so status stays visible
+  while selected. The Monitoring Panels grid's chip dots add two
+  states for the latest reading: amber = reported without a reference
+  range, grey = never measured.
+- **Accent.** Teal (`--accent`, `#14757e`) carries the active section,
+  the active tab underline, selection, relation marks and the
+  Scheduled ✓.
 
 ### Numbers
 
@@ -76,18 +81,34 @@ rationale per rule so future-us can revisit.
 
 ### Navigation
 
-- **Top-level sections** (Get Started, Diagnostic Reports, All
-  Observations, Monitoring Panels, Reference Book) are a persistent
-  top nav on every page, each section its own URL hash (`#profile`,
-  `#reports`, `#all`, `#panels`,
-  `#reference`) so browser back/forward always works. Active section:
-  bold + blue underline.
-- The persistent top nav is the only cross-section navigation
-  chrome — no breadcrumb trail anywhere. Nested position within a
-  section (e.g. panel detail under Monitoring Panels) still gets its
-  own URL hash so browser back/forward works. Panel Detail is the one
-  exception: a back chevron (‹) before its `<h1>` name, a single link
-  back to the Monitoring Panels grid — not a breadcrumb path.
+- **Top-level sections** (`NAV_ITEMS` in `routing.ts`, in this order:
+  Get Started, Diagnostic Reports, All Observations, Monitoring Panels,
+  Scheduled Visits, Medications, Reference Book, Account) are on every
+  page, each its own URL hash (`#profile`, `#reports`, `#all`,
+  `#panels`, `#plan`, `#medications`, `#reference`, `#account`) so
+  browser back/forward always works. All Observations' non-default
+  tabs are part of the hash too (`#all/trends`, `#all/in-range`).
+- **Shell, by width.** From 768px up: a white top bar (mark and
+  wordmark linking to Monitoring Panels, a lock and "Your data stays in
+  this browser") over a left sidebar listing the sections with a line
+  icon each, Account pinned to its foot; the active section is a soft
+  teal pill. Below 768px: the wrapping top nav, which slides away
+  scrolling down and back scrolling up; the active section is bold
+  with a teal underline. Blocked sections (Monitoring Panels and All
+  Observations while a report has errors) are dimmed with a
+  `not-allowed` cursor in both.
+- The section nav is the only cross-section navigation chrome — no
+  breadcrumb trail anywhere. Nested position within a section (e.g.
+  panel detail under Monitoring Panels) still gets its own URL hash so
+  browser back/forward works, and keeps its parent section active. The
+  two detail views are the exception: Panel Detail and Diagnostic
+  Report detail put a back chevron (‹) before their `<h1>`, a single
+  link back to the grid or the reports list — not a breadcrumb path.
+- **Page header banner.** Every top-level section opens with the same
+  `PageHeader`: an uppercase teal overline, a two-tone title (second
+  half in teal), two description lines and three icon "pillars" on the
+  right, over a bottom rule. Detail views and Reference Book sub-pages
+  use a plain `<h1>` instead.
 - A popup is never part of the URL/history; navigating away always
   closes it rather than leaving it open over the next page.
 
@@ -106,13 +127,20 @@ rationale per rule so future-us can revisit.
   of opening; the row label still opens on a single click.
 - **Relation marks:** selecting a Results row marks its related rows
   — an index's input observations, or the indices an observation feeds
-  — with a blue • in a fixed gutter left of the name. The gutter is
+  — with a teal • in a fixed gutter left of the name. The gutter is
   reserved on every row (All Observations too, though it shows no
   marks) so a mark never shifts the text beside it.
-- **Scheduled column:** a per-row single-click toggle (`role=checkbox`,
-  ✓ in primary blue), set apart at the right of the table by a spacer
-  column so it reads as a separate concern from the dated value cells.
-  On Panel Detail's Observations and Indices tables and on All
+- **Results table:** observations and computed indices share one
+  table, the indices below an "Indices" divider row, on both Panel
+  Detail and All Observations.
+- **Controls bar:** unit system, sample limit, panel select and marker
+  search sit inside the Results tab, between the tab strip and the
+  table, and are not rendered on the other tabs. Panel Detail shows the
+  panel select disabled rather than hiding it.
+- **Scheduled column:** a per-row single-click toggle (a native
+  checkbox, visually hidden, ✓ in teal), set apart at the right of the
+  table by a spacer column so it reads as a separate concern from the
+  dated value cells. On Panel Detail's Results table and on All
   Observations, over one shared set — the same row toggled in either
   place is the same row. Its header is a control, not a label: a month
   pill above a tri-state select-all box that carries the word
@@ -129,13 +157,14 @@ rationale per rule so future-us can revisit.
   its own in grey beside the number, so a figure is never shown under
   another reading's scale.
 - [TODO: popup dismissal — backdrop tap, swipe-down, both.]
-- **Tab placement:** top (web) — both the section nav and the
-  Results/Trends/What's-in-range/Charts tabs use the same top,
-  underlined-active style. Only the in-page strip is a shared component
-  (`TabBar`); the section nav keeps its own markup, because it also
-  carries a blocked state, its own spacing and font size, and an active
-  tab derived from the route — it shares the look (`tabStyle`), not the
-  component.
+- **Tab placement:** top (web) — the in-page
+  Results/Trends/What's-in-range/Charts tabs use a top,
+  underlined-active style, and so does the phone's section nav. Only
+  the in-page strip is a shared component (`TabBar`); the phone nav
+  keeps its own markup, because it also carries a blocked state, its
+  own spacing and font size, and an active tab derived from the route —
+  it shares the look (`tabStyle`), not the component. The desktop
+  sidebar shares neither.
 - [TODO: gesture conventions — long-press, swipe-to-delete.]
 
 ### Voice & copy

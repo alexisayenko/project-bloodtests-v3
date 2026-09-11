@@ -52,9 +52,11 @@ owns identity / spirit; the style guide operationalizes it.
     [`paneloom-mark.svg`](paneloom-mark.svg), hand-drawn from
     `logo-woven-knot.png` as four rotated copies of one arm and stub,
     with no embedded raster.
-- **Domain**: `blood.isayenko.net` — subdomain, no separate
-  registration. `paneloom.app` / `.com` / `.net` were unregistered on
-  2026-09-08.
+- **Domain**: `paneloom.com`, registered 2026-09-09. The app is served
+  from both `paneloom.com` and `blood.isayenko.net` (two custom-domain
+  routes in `web/wrangler.jsonc`); `www.paneloom.com` does not resolve.
+  `paneloom.app` / `.net` were unregistered on 2026-09-08; only `.com`
+  is in [`budget.md`](../business/budget.md).
 - **Wordmark / logo**: horizontal lockup, mark left of the wordmark,
   "Paneloom" in navy with "loom" sometimes carried in teal. Tagline
   used in the landing concept: *Track today. See tomorrow.*
@@ -92,7 +94,7 @@ Per-folder applications live with their code.
 | Web favicon (vector) | `web/public/favicon.svg` |
 | Web favicon (PNG fallback) | `web/public/favicon.png` |
 | iOS home-screen icon | `web/public/apple-touch-icon.png` |
-| App header mark | `web/public/brand/paneloom-mark.svg`, rendered by `NavBar.tsx` |
+| App header mark | `web/public/brand/paneloom-mark.svg`, rendered by `TopBar.tsx` (768px and up) and `NavBar.tsx` (phones) |
 
 ## Names considered
 
@@ -113,7 +115,7 @@ Optional. Useful when the name is still in motion.
 | `biomarks.cc` | candidate (2026-09-08) — same on the short TLD |
 | `bloodtests.cc` | candidate (2026-09-08) — plainly descriptive, matches the repo name |
 | `paneloom.app` | candidate (2026-09-08) — panel + loom: the one name so far that says what the app does to the data, weaving readings from different labs and years into one fabric, rather than naming a lab test |
-| `paneloom.com` | candidate (2026-09-08) — same on the default TLD |
+| `paneloom.com` | **registered (2026-09-09)** — same on the default TLD |
 | `paneloom.net` | candidate (2026-09-08) — same on `.net` |
 
 Registration was checked by RDAP (`https://rdap.org/domain/<name>`) on

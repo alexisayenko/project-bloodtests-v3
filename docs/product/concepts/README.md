@@ -18,7 +18,8 @@ Current concepts: [observation](observation.md),
 [monitoring panel](monitoring-panel.md),
 [diagnostic report](lab-report.md), [computed index](computed-index.md),
 [companion observation](companion-observation.md) (planned),
-[unit](unit.md) (derivation built, canonical unit not stored).
+[unit](unit.md) (partly built: derived on import, the canonical
+code written on export, no UCUM parser yet).
 
 ## What a concept is not
 

@@ -26,7 +26,7 @@ Product / business / UX live in their own sections.
 
 ## Reference data
 
-Four of the files under `web/public/data/`, all of them data and none of
+The five files under `web/public/data/`, all of them data and none of
 them mirrored in TypeScript
 ([ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md),
 [ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)):
@@ -64,7 +64,11 @@ them mirrored in TypeScript
 `web/src/data/analyteCatalog.ts` imports the catalog and derives every
 lookup map the app uses from it — short labels, expected and allowed
 units, and the reverse alias map (primary → its variants) — so none of
-them can drift from the file. `buildConditions` in
+them can drift from the file. `analyses.json`, `laboratories.json` and
+`molar-masses.json` are imported statically and so ship inside the entry
+bundle; `panels.json` and `monitoring-panels.json` are fetched from the
+app's own origin at load (`web/src/data/DataContext.tsx`), so a panel edit
+needs no rebuild. `buildConditions` in
 `web/src/components/conditions/markers.ts` resolves a Monitoring Panel
 against the groups and the catalog. The first three files are described
 by
@@ -83,14 +87,14 @@ The core user journey for data ingestion and local editing:
 
 2. **Upload** — File is imported into the app:
    - Parser (`web/src/data/parseUpload.ts`) validates v3 JSON structure and accepts nothing else — `schema: 1`, v2 canonical-draws and the two legacy array shapes were dropped in [ADR-0009](decisions/adr-0009-v3-only-and-rawname.md); an older file is converted first with `npm run convert:v3`.
-   - **Validation tiers** (`web/src/data/validateDiagnosticReports.ts`): an observation missing its test name or a value (numeric `value` *or* non-empty `rawValue`), or carrying a non-empty code that isn't LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like "900101"), is an **error**; an empty LOINC (the observation won't appear in panels or All Observations), a missing unit, and a missing reference range (no min+max pair and no reference text) are **warnings**. While any error exists, Monitoring Panels and All Observations are disabled in the nav and their routes redirect to Diagnostic Reports; Get Started and Reference Book stay reachable. Warnings are informational only.
+   - **Validation tiers** (`web/src/data/validateDiagnosticReports.ts`): an observation missing its test name or a value (numeric `value` *or* non-empty `rawValue`), or carrying a non-empty code that isn't LOINC-shaped (`^\d{1,7}-\d$` — catches lab-internal codes like "900101"), is an **error**; an empty LOINC (the observation won't appear in panels or All Observations), a missing unit, a missing reference range (no min+max pair and no reference text), a printed unit whose dimension contradicts the code, and a unit the tables cannot place are **warnings** (the last two are described under [Unit normalization](#unit-normalization)). While any error exists, Monitoring Panels and All Observations are disabled in the nav and their routes redirect to Diagnostic Reports; every other section — Get Started, Scheduled Visits, Medications, Reference Book and Account — stays reachable (`isNavItemBlocked` in `routing.ts`). Warnings are informational only.
    - Get Started's "Import JSON" button, the identical button on Diagnostic Reports' "Back up your database" card, and share-link imports replace all stored sessions (import-replace model); the "Add a report" card's step-3 **Add** button (with "Adding…" progress and "✓ Added N reports" feedback) and generated test data merge by session id instead. A v3 report's `identifiers` (visit/order/accession) feed the session id, so two same-day same-lab draws no longer collide and replace each other on merge.
    - All data stays local in `localStorage` — nothing reaches a server.
 
 3. **Edit in Diagnostic Reports** — the management hub. Top to bottom: a collapsible "Database details" card, the reports table, the "Add a report" card, and a "Back up your database" card (Export JSON / Import JSON (replaces) / Clear behind a divider). The user can:
    - View parsed lab results grouped by report date/lab, with per-report error/warning dots.
    - Fix errors by inline-editing each observation's LOINC, value, and unit in the report detail view.
-   - Cross-check LOINCs (`web/src/data/loincCheck.ts`): a "Cross-check LOINCs" button derives each row's LOINC deterministically from the printed name + unit ([ADR-0004](decisions/adr-0004-derive-loinc-from-name-and-unit.md)) — a Latin-name pass against catalog English names, then a `lang`-translation pass for Greek/Russian/Ukrainian printouts, with the row's unit hard-selecting among unit variants of one analyte, a candidate whose unit dimension contradicts the row's dropped outright (hemoglobin in g/L is never offered HbA1c's %), and a Cyrillic name required to cover a candidate's translation too, so a qualifier such as "общий", "ЛПВП" or "ЛПНП" decides between cholesterol siblings; a word that names no analyte (acid, total, serum, plasma, blood, level, count, "общий", "загальний") may settle between siblings but never makes a match — or a name agreement — alone, and a translation carrying "общий" asks no printout to repeat it, so a bare "Холестерин" still resolves to total cholesterol; a printed -ic acid reads as its -ate anion, so "Folic Acid" is folate and "Ascorbic Acid" is no longer uric acid, and the translation pass reads a printed "-иевая/-овая кислота" or "-ієва/-ова кислота" both as printed and as its "-ат" anion, so "Фолиевая кислота" is folate while "Мочевая кислота" still meets its own translation — and treats a printed code as corroborating evidence only: ✓ derivation agrees with the code (a code that is already the top match agrees even without confidence, with no chips), ⚠ a confident derivation contradicts it (the warning names both codes), ✗ unknown code with no derivation. Without a confident derivation, "Printed name differs from the LOINC name" shows only when the printed name is none of the code's display, badge or ru-RU/uk-UA names (case and punctuation ignored) and shares too few words with its English or translated ones. Running the check applies every confident fix through the edit draft immediately — no second click — and reports it as "✓ N codes filled automatically — review and Save", then re-runs the derivation over the updated rows, Save/Cancel still gating persistence; the rows it could not settle confidently keep clickable suggestion chips that fill that row's LOINC through the same draft. Suggestion chips are unit-labeled where the unit disambiguates variants; the official LOINC name shows in grey under the printed name (printed name preserved as provenance; resolved names are session-only, never stored). A second-stage "Check online (NLM)" button, offered only for rows the offline pass couldn't resolve, sends test names — never values — to clinicaltables.nlm.nih.gov (results unit-selected the same way via EXAMPLE_UCUM_UNITS); this explicit opt-in is the single exception to the everything-stays-local rule, and it lives in its own module, `web/src/data/loincNlm.ts` — the app's only `fetch`, in a file whose name says what it does, rather than a branch buried in the resolver. The resolver's approximate token matching (Damerau-Levenshtein plus a length-bucketed vocabulary index) is likewise its own domain-free module, `web/src/data/fuzzyMatch.ts`, with no tie to the analyte catalog. The React side is split the same way: `reportDetailHelpers.ts` holds the pure row helpers and `useLoincCrossCheck.ts` the cross-check state, which the detail view passes as one object instead of eight props.
+   - Cross-check LOINCs (`web/src/data/loincCheck.ts`): a "Cross-check LOINCs" button derives each row's LOINC deterministically from the printed name + unit ([ADR-0004](decisions/adr-0004-derive-loinc-from-name-and-unit.md)) — a Latin-name pass against catalog English names, then a `lang`-translation pass for Greek/Russian/Ukrainian printouts, with the row's unit hard-selecting among unit variants of one analyte, a candidate whose unit dimension contradicts the row's dropped outright (hemoglobin in g/L is never offered HbA1c's %), and a Cyrillic name required to cover a candidate's translation too, so a qualifier such as "общий", "ЛПВП" or "ЛПНП" decides between cholesterol siblings; a word that names no analyte (acid, total, serum, plasma, blood, level, count, "общий", "загальний") may settle between siblings but never makes a match — or a name agreement — alone, and a translation carrying "общий" asks no printout to repeat it, so a bare "Холестерин" still resolves to total cholesterol; a printed -ic acid reads as its -ate anion, so "Folic Acid" is folate and "Ascorbic Acid" is no longer uric acid, and the translation pass reads a printed "-иевая/-овая кислота" or "-ієва/-ова кислота" both as printed and as its "-ат" anion, so "Фолиевая кислота" is folate while "Мочевая кислота" still meets its own translation — and treats a printed code as corroborating evidence only: ✓ derivation agrees with the code (a code that is already the top match agrees even without confidence, with no chips), ⚠ a confident derivation contradicts it (the warning names both codes), ✗ unknown code with no derivation. Without a confident derivation, "Printed name differs from the LOINC name" shows only when the printed name is none of the code's display, badge or ru-RU/uk-UA names (case and punctuation ignored) and shares too few words with its English or translated ones. Running the check applies every confident fix through the edit draft immediately — no second click — and reports it as "✓ N codes filled automatically — review and Save", then re-runs the derivation over the updated rows, Save/Cancel still gating persistence; the rows it could not settle confidently keep clickable suggestion chips that fill that row's LOINC through the same draft. Suggestion chips are unit-labeled where the unit disambiguates variants; the official LOINC name shows in grey under the printed name (printed name preserved as provenance; resolved names are session-only, never stored). A second-stage "Check online (NLM)" button, offered only for rows the offline pass couldn't resolve, sends test names — never values — to clinicaltables.nlm.nih.gov (results unit-selected the same way via EXAMPLE_UCUM_UNITS); this explicit opt-in is the single exception to the everything-stays-local rule, and it lives in its own module, `web/src/data/loincNlm.ts` — the app's only request to another origin (its other `fetch`es, for `panels.json`, `monitoring-panels.json` and a share link's payload, stay on its own), in a file whose name says what it does, rather than a branch buried in the resolver. The resolver's approximate token matching (Damerau-Levenshtein plus a length-bucketed vocabulary index) is likewise its own domain-free module, `web/src/data/fuzzyMatch.ts`, with no tie to the analyte catalog. The React side is split the same way: `reportDetailHelpers.ts` holds the pure row helpers and `useLoincCrossCheck.ts` the cross-check state, which the detail view passes as one object instead of eight props.
    - Edit envelope metadata in "Database details": subject, sex, birth year, notes, plus a read-only `generatedAt` stamped on each export. Persisted under localStorage key `bloodtests_envelope_meta_v1` and written into the export envelope (empty fields omitted). Sex/birthYear are not yet *used* for reference-range selection — they're carried in the envelope only.
 
 4. **Save Locally** — Changes auto-save to `localStorage` (no manual save button; data persists across sessions).
@@ -100,7 +104,7 @@ The core user journey for data ingestion and local editing:
    - Writes a reduced envelope — not every spec field is emitted yet; see the [interchange-format status note](interchange-format.md).
    - Ready to share or version control.
 
-**Data privacy:** Everything stays client-side. No file ever reaches a server except optionally via a share link on a Cloudflare Worker (read-only, no reverse lookup); the one other explicit-opt-in exception is the "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov — the app's only network call, and it is the whole of `web/src/data/loincNlm.ts`, so the exception can be audited by reading one short file. The format itself carries no identity — see [`interchange-format.md#subject`](interchange-format.md#subject).
+**Data privacy:** Everything stays client-side. No file ever reaches a server except optionally via a share link on a Cloudflare Worker (read-only, no reverse lookup); the one other explicit-opt-in exception is the "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov — the app's only request that leaves its own origin, and it is the whole of `web/src/data/loincNlm.ts`, so the exception can be audited by reading one short file. The format itself carries no identity — see [`interchange-format.md#subject`](interchange-format.md#subject).
 
 ## Unit normalization
 
@@ -149,7 +153,12 @@ so `ui.ts`'s `sharedUnit` can give a row one label when its readings only
 *look* like two units (`uIU/mL` / `mIU/L`), while a genuine scale
 difference still splits the label onto the cells. It compares, it never
 converts, and an unrecognized unit answers "no" rather than optimistically
-"yes".
+"yes". Given the row's LOINC, it also treats `U` and `IU` as one unit where
+that code's LOINC property says which of the two it is measured in — a
+catalytic activity or the arbitrary WHO kind, both sets derived from the
+catalog's long common names in `analyteCatalog.ts` — and without a LOINC
+they stay different
+([ADR-0013](decisions/adr-0013-u-and-iu-fold-by-loinc-property.md)).
 
 The case worth naming is mass versus molar. A `mmol/L` result stored
 under Cholesterol's `[Mass/volume]` code `2093-3` is a **code** error,
@@ -191,7 +200,7 @@ finished is the UCUM parser itself, [task-0008](../tasks/task-0008.md).
 
 The app ships as a Cloudflare Worker serving static assets
 (`web/wrangler.jsonc`: worker `bloodtests`, `assets.directory` `./dist`,
-custom domain `blood.isayenko.net`). Deploys are automated: the `deploy`
+custom domains `blood.isayenko.net` and `paneloom.com`). Deploys are automated: the `deploy`
 job in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs
 on every push to `main` and deliberately gates on nothing — it carries no
 `needs:` and starts at once beside the `test` and `sonar` jobs, so a push is
@@ -200,10 +209,12 @@ the code is already serving: a red suite means rolling forward, not a blocked
 deploy, and the only check that can still stop a publish is `npm run build`'s
 own `tsc -b`. It is guarded
 by `if: github.ref == 'refs/heads/main' && github.event_name == 'push'`
-so pull requests never publish. It uses `cloudflare/wrangler-action@v3`
-with `workingDirectory: web` and `command: deploy` — the same
-`wrangler deploy` that `npm run deploy` runs locally — authenticated by
-the `CLOUDFLARE_API_TOKEN` repository secret, with `permissions:
+so pull requests never publish. It runs its own `npm ci` and `npm run
+build` (passing `GITHUB_SHA` and `BUILD_TIME` for the footer's build
+stamp), then `cloudflare/wrangler-action@v3` with `workingDirectory: web`
+and `command: deploy` — the same `wrangler deploy` that `npm run deploy`
+runs locally — authenticated by the `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` repository secrets, with `permissions:
 contents: read` and a `deploy-production` concurrency group so two pushes
 cannot overtake each other. A manual `wrangler deploy` from `web/` still
 works and is still needed for the case below.
@@ -241,16 +252,16 @@ Build- and dependency-level, and all currently accepted rather than
 scheduled. Format and round-trip gaps are listed separately, under
 [the interchange format](interchange-format.md#known-round-trip-gaps).
 
-- **An oversized entry chunk, now mostly catalog.** The two chart tabs
-  are `React.lazy`-split (`LabExploreView` ≈ 78 kB, `PanelChartsView`
-  ≈ 14 kB), which took the entry chunk from ~698 kB to ~616 kB raw; it
-  measures ~688 kB raw (~201 kB gzipped) now that the Reference Book has
-  its mass↔molar, units and LOINC-database pages and `INDEX_DEFS` its two
-  LDL-C estimates, still over
-  Vite's "larger than 500 kB" advisory.
-  What is left is largely
-  `analyteCatalog.ts` importing `analyses.json` statically, so the
-  catalog is bundled rather than fetched. It is an advisory, not an
+- **An oversized entry chunk, the catalog its largest piece.** The two
+  chart tabs are `React.lazy`-split (`LabExploreView` ≈ 78 kB,
+  `PanelChartsView` ≈ 14 kB) and Account's backup loads `fflate` on click
+  (≈ 32 kB), which once took the entry chunk from ~698 kB to ~616 kB raw;
+  it has grown back since with every section added and measures ~763 kB
+  raw (~227 kB gzipped) as of 2026-09-11, still over Vite's "larger than
+  500 kB" advisory.
+  Its largest single piece is `analyteCatalog.ts` importing
+  `analyses.json` (~305 kB on disk) statically, so the catalog is bundled
+  rather than fetched. It is an advisory, not an
   error, and a catalog that cannot arrive late is a fair trade on a
   single-page app — but the warning is real and the remaining fix (a
   dynamic `import()` of the catalog, or a raised

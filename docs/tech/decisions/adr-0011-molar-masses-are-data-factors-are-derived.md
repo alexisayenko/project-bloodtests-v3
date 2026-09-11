@@ -150,3 +150,10 @@ The full table, its citations and the conventional cases are in
 - A consumer of this data outside the app — a converter, a build step —
   at which point the closed objects become a compatibility question,
   exactly as ADR-0010 already anticipates for the analyte catalog.
+
+## Notes
+
+- 2026-09-11: the Reference Book page shipped (`#reference/molar-masses`)
+  printing each tabulated mass beside its formula rather than showing the
+  working, so `molarMassFromFormula`'s only caller is still the
+  conformance suite; nothing else changed.

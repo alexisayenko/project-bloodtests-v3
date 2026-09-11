@@ -113,3 +113,13 @@ still [task-0008](../../tasks/task-0008.md).
   becomes the real design question.
 - LOINC or FHIR moving off UCUM, which would break the single
   argument that makes it the cheap choice here.
+
+## Notes
+
+- 2026-09-11: the context above describes the code as it stood. The
+  default and allowed units per code now live in the analyte catalog and
+  are derived by `web/src/data/analyteCatalog.ts`
+  ([ADR-0010](adr-0010-analyte-catalog-is-the-source-of-truth.md)), and
+  the validation unit warning fires only when a unit's dimension
+  contradicts the code, not for any unit outside the set. The decision is
+  unchanged.

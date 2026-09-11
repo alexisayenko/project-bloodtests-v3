@@ -23,7 +23,8 @@ reference data ships as static JSON (`web/public/data/`), uploaded lab
 results are parsed client-side and kept in `localStorage`. That
 reference data is the single source of truth and is never mirrored in
 TypeScript (ADR-0010): `analyses.json` is the analyte catalog, one
-entry per LOINC carrying its names, translations and popup prose plus
+entry per LOINC carrying its names (`friendlyName`, the clinical name the UI
+shows, and `longCommonName`), translations and popup prose plus
 `short` (badge label), `unit` (expected unit), `allowedUnits`, and
 `aliasOf`/`aliasLabel` on a unit or method variant of another code;
 `web/src/data/analyteCatalog.ts` imports it and derives every lookup
@@ -59,6 +60,14 @@ it in the same closed-object style, and the same test file recomputes each mass
 from its formula and holds it to its sources. See
 [`docs/tech/molar-masses.md`](docs/tech/molar-masses.md) and
 [ADR-0011](docs/tech/decisions/adr-0011-molar-masses-are-data-factors-are-derived.md).
+Prices follow the same rule: `web/public/data/laboratories.json` is the
+laboratory registry (Esculab, Medis, Synevo — locale, currency, `pricesAsOf`
+and price lines, each line `covers` one or more LOINCs, so a bundle prices
+several), described by `laboratories-1.schema.json` in the same closed style
+and validated in the same test file; `data/labPricing.ts`'s `quoteSchedule`
+folds a schedule to primary codes, picks each code's cheapest covering line,
+charges a line once however many codes it covers, and names what no line
+covers.
 A read-only
 share link, `/?data=<guid>`, fetches `/d/<guid>.data.json` and imports it
 through the same parse path as an upload, then strips the param; in
@@ -101,8 +110,9 @@ The app shell is `web/src/components/conditions/MedicalConditionsPage.tsx`
 (route + results + shared settings + popup state); each section renders
 its own sibling view component (`PanelsGridView` / `PanelDetailView` /
 `AllObservationsView` / `DiagnosticReportsView` /
-`DiagnosticReportDetailView` / `ProfileView` / `ReferenceBookPage`, plus shared
-`NavBar` / `ControlsBar` / `ResultTables` / `Popup` and `TabBar` — the in-page
+`DiagnosticReportDetailView` / `ProfileView` / `PlanVisitView` /
+`MedicationsView` / `ReferenceBookPage` / `AccountView`, plus shared
+`NavBar` / `ControlsBar` / `ResultTables` / `Popup` / `PageHeader` and `TabBar` — the in-page
 tab strip Panel Detail and All Observations both render; `NavBar` deliberately
 does not use it, since it differs in container, three-state colors, its
 blocked/`not-allowed` state and its route-derived active tab, and shares only
@@ -112,8 +122,8 @@ in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` /
 `data/generateTestData.ts`; the report detail view's cross-check state lives in
 the `useLoincCrossCheck` hook, which is what it passes around instead of eight
 separate props. On a narrow screen both of a results table's headers are
-retrievable rather than resident: `TableScroller.tsx` wraps every table
-(observations and both indices tables) and, on mobile only — `useIsMobile`
+retrievable rather than resident: `TableScroller.tsx` wraps every results
+table (`ResultTables.tsx`'s one `ResultsTable`) and, on mobile only — `useIsMobile`
 (`web/src/hooks/useIsMobile.ts`) reading the stylesheet's own `max-width: 767px`
 as `MOBILE_QUERY`, so the JS-mounted overlays exist exactly where the CSS
 placing them applies — parks the marker-name column and the date header row at
@@ -150,12 +160,15 @@ against `mmol/L` still splits onto the cells. The identities it folds unconditio
 `convertUnit`, which
 folds a printed spelling to Latin before matching, so `ммоль/л` converts like
 `mmol/L` (it used to match no rule, leaving the printed number under a
-converted label). Monitoring Panels grid cards list each
+converted label). Monitoring Panels grid cards (under a search box matching
+panel names and, through `observationMatchesQuery` / `indexMatchesQuery`, their
+markers and indices; icon and tint from `panelMeta.ts`, a marker count, and a
+"View panel →" link) list each
 panel's observations and, below a divider, its computed indices
 (`INDEX_DEFS`, in `data/indexDefs.ts` — the clinical definitions, prose and
 citations, split from the engine in `computedIndices.ts` and importing its types
-one-directionally, with no re-export back so no cycle forms), both dot-colored
-by status. Cardiovascular Risk carries both calculated LDL-C estimates —
+one-directionally, with no re-export back so no cycle forms), both as chips
+dot-colored by status. Cardiovascular Risk carries both calculated LDL-C estimates —
 `ldlf` (Friedewald, LOINC `13457-7`) and `ldls` (Sampson/NIH equation 2, no
 LOINC exists for the method) — each returning null outside its own validity
 range (TG ≥ 400 and > 800 mg/dL) so it renders as `–` rather than a
@@ -217,17 +230,18 @@ instead of on first paint (All Observations shares the lab-explore
 chunk). Both views also carry a "Trends" tab, second in the strip, which is
 deliberately empty for now — a placeholder while what belongs in it is
 undecided (task-0014). Panel Detail's Results
-tab (the default: Observations and Indices tables) and All
-Observations both carry a "Scheduled"
-column, set apart at the right of each table — a single-click toggle
-per row (`role=checkbox`, ✓ in primary blue); scheduling an index also
+tab (the default) and All Observations' each render one `ResultsTable` —
+observations, then an "Indices" divider row and the indices — carrying a
+"Scheduled"
+column, set apart at the right of the table — a single-click toggle
+per row (a visually hidden native checkbox, ✓ in the accent teal); scheduling an index also
 schedules its input observations, unscheduling it leaves them, and
 toggling an observation re-derives every index (scheduled iff all its
-inputs are) — the same cascade in both views, since All Observations renders
-an Indices table too. The column header is a control rather than a word: a
+inputs are) — the same cascade in both views. The column header is controls
+only, named through `aria-label`: a
 month pill (this month and the next 23, plus a stored month that has since
-fallen outside that window) above a select-all box carrying the "Scheduled"
-label, tri-state through native `indeterminate` (`ScheduleHeader.tsx`, which
+fallen outside that window) beside a select-all box over the observation and
+index rows alike, tri-state through native `indeterminate` (`ScheduleHeader.tsx`, which
 keeps its own copy of the filter pill's style rather than importing
 `AllObservationsView`'s, since that module already imports the tables). The
 month is an ISO `YYYY-MM` label *for* the one global schedule, not a partition
@@ -235,27 +249,32 @@ of it — switching months leaves every checked row checked — and select-all
 scopes to the rows the table is actually rendering, so All Observations' panel
 and text filters narrow it. Global state in localStorage
 `bloodtests_scheduled_v1`
-(`{loincs, indices, month?}` — backward compatible in both directions: an
+(`{loincs, indices, month?, lab?}` — backward compatible in both directions: an
 unset month is `undefined`, so `JSON.stringify` drops the key and an
 unscheduled payload keeps the old shape, and a missing or malformed one loads
-as undefined with the checked sets intact), logic in `scheduled.ts`, whose
+as undefined with the checked sets intact; `lab` is a `laboratories.json` id
+read the same way, though the header's laboratory picker and total sit behind
+a `showPricing` prop no caller passes since the tables were unified), logic in `scheduled.ts`, whose
 `useScheduled` hook the
 shell owns and hands down as `RowScheduling` / `IndexScheduling`, rather than
 Panel Detail, which remounts per panel. Selecting an index
-row there marks each input observation with a blue • in a fixed 10px
+row there marks each input observation with an accent • in a fixed 10px
 gutter left of its name, and selecting an observation marks each index
 that uses it; the gutter is reserved on every row so names never shift
 (All Observations indents names by the same 13px, no marks there).
 From 768px up the nav is an app shell (`AppShell.tsx`): a white top bar
 (`TopBar.tsx` — mark and wordmark linking to Monitoring Panels, a lock and
 "Your data stays in this browser") over a left sidebar (`SideNav.tsx`) listing
-all eight `NAV_ITEMS` with a `lucide-react` line icon each, the active one a
+all eight `NAV_ITEMS` with a `lucide-react` line icon each — Account pinned to
+its foot above a three-line tagline — the active one a
 soft teal pill, active and blocked state coming from `routing.ts`'s
 `isNavItemActive` / `isNavItemBlocked`; phones keep the old wrapping `NavBar`
-described below, untouched, until task-0020 designs their shell, and every
+(brand mark plus the same eight labels), until task-0020 designs their shell, and every
 slot stays in place across the breakpoint so rotating a phone remounts nothing.
-Persistent top nav
-across five sections — Get Started (`#profile`: app description,
+Every section's landing page opens with the same `PageHeader.tsx` banner —
+overline, two-tone title, description lines and up to three icon pillars —
+while Panel Detail, report detail and the Reference Book's sub-pages keep a
+plain `<h1>`. The eight sections, in nav order — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
@@ -302,7 +321,7 @@ updated rows, and leaves unit-labeled suggestion chips on the rows it
 could not settle, each filling that row's LOINC on click — Save/Cancel
 still gate persistence) / ✗ unknown with no derivation (without a
 confident derivation, "Printed name differs from the LOINC name" shows
-only when the printed name is none of the code's display, badge or
+only when the printed name is none of the code's `friendlyName`, badge or
 ru-RU/uk-UA names, case and punctuation ignored, and shares too few
 words with its English or translated ones) — shows the official LOINC name
 in grey under the printed name (printed name kept as provenance;
@@ -326,15 +345,13 @@ the bar jump, while its marker box does filter that panel's own tables.
 `ControlsBar` holds no state: each view keeps its filter in `useState`
 and passes it down, deliberately not lifting it to the shell, which owns
 the *persisted* settings — a filter living there invites persisting it.
-The bar sits between the `<h1>` and the `TabBar` in both views, so it
-stays put across tabs rather than living inside the Results branch; a
-control the active tab does not read renders disabled, never hidden,
-which is what keeps the row's height the same on every tab
-(`controlsForTab` in `ui.ts` — "What's in range" reads the unit system
-and nothing else, Trends and Charts read none of it). Where the tab and
-the view both disable the panel picker, the view's reason is the one
-shown: it is still true after switching back to Results.
-Both are session
+The bar renders inside the Results tab in both views, under the page's
+heading and the `TabBar`, and no other tab shows it; each control still asks
+`controlsForTab` (`ui.ts`) whether it is enabled, though only `'analysis'` is
+passed today, so the per-tab disabling it encodes ("What's in range" reads
+the unit system and nothing else, Trends and Charts read none of it) is
+unused.
+Both filters are session
 state, never stored, so a filter cannot go on hiding rows the way a
 stored `showPanels` once did; both the panel's codes and the rows fold
 through `ALIAS_TO_PRIMARY` (`panelRowLoincs`, `markers.ts`) so a reading
@@ -343,14 +360,16 @@ matches its panel whichever of its codes the lab used, while
 (`observationMatchesQuery` / `indexMatchesQuery`, `markers.ts`) matches the
 badge label, the displayed and long common names, every LOINC the row
 answers for and every `rawName` a lab printed for it, so a Cyrillic printed
-name finds its row; below the observations sits the same `IndexTable` Panel
-Detail renders, scoped the way Panel Detail scopes it — the selected panel's
+name finds its row; below the observations, in the same `ResultsTable`, sit
+the indices, scoped the way Panel Detail scopes them — the selected panel's
 indices, or the union over the panels on offer, so a share link's allowlist,
 which limits the panel options but never the observation rows, does narrow
 the indices), Monitoring Panels
 (the default/entry route), Scheduled Visits (`#plan`, reachable despite validation
-errors: every scheduled observation, folded to its primary code, as a LOINC /
-full name / short name row beside one price column per laboratory, a bundle
+errors: under a "Planned for <month>" line, every scheduled observation, folded
+to its primary code, as one "Observation" cell — `friendlyName`, with the badge
+label in parentheses where it differs, opening the analyte popup — beside one
+price column per laboratory, a bundle
 priced on its first covered row and marked "in <label>" on the rest by
 `data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own), Medications (`#medications`, reachable despite
 validation errors: a free-text medication / dosage table with a Jan–Dec month
@@ -538,7 +557,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (609 tests across 25 files, 1 skipped: index
+Vitest suites in `web/test/` (682 tests across 30 files, 1 skipped: index
 golden-masters ported from v2, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
@@ -553,10 +572,13 @@ nothing schema-related is bundled), reference-data conformance
 LOINC, every `aliasOf` resolving, every `short` carrying a unit;
 molar-masses against `molar-masses-1.schema.json`, plus every mass
 recomputed from its formula, agreeing with a cited source within
-0.05%, and every sibling pair naming a tabulated entry),
+0.05%, and every sibling pair naming a tabulated entry; laboratories against
+`laboratories-1.schema.json`),
 share-link and shared-meta,
 explore-model, markers, routing,
-scheduling, ui helpers, build stamp, format utils; the mobile reveal —
+scheduling, ui helpers, build stamp, format utils, lab pricing and the visit
+plan, medications, the backup archive and its restore, the showcase generator,
+import-results and the results context, analyte sort; the mobile reveal —
 `TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile` — has none
 yet). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build in a

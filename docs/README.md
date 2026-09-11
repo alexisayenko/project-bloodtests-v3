@@ -157,10 +157,14 @@ with a UI has more than one screen).
 
 ```text
 docs/
+├── assets/                             # images embedded by docs (e.g. task-0022's mockup)
 ├── brand/                              # entry: brand/README.md
+│   ├── brief.md                        # the naming/artwork brief, verbatim
+│   └── paneloom-mark.svg               # the mark (+ candidate PNGs, landing concept)
 ├── business/                           # entry: business/README.md
 │   ├── compliance.md                   # external obligations
-│   └── budget.md                       # out-of-pocket costs
+│   ├── budget.md                       # out-of-pocket costs
+│   └── receipts/                       # invoices cited by budget.md
 ├── content/                            # entry: content/README.md
 │   └── laboratory-prices.md            # how prices map to LOINCs (data in laboratories.json)
 ├── milestones.md                       # dated project events
@@ -193,6 +197,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 
 | Concern | Home | Read it when |
 | --- | --- | --- |
+| Images embedded by docs (mockups, screenshots) | [`assets/`](assets/) | Adding a picture to a task or spec |
 | Brand identity (logos, fonts, colors, naming) | [`brand/`](brand/) | Naming, identity, brand assets, app icon question |
 | Business — audience, scope, monetization | [`business/`](business/) | Pricing, scope, audience, monetization question |
 | Externally-imposed obligations (licensing, regulation) | [`business/compliance.md`](business/compliance.md) | Anything legally or contractually required (vs self-imposed) |

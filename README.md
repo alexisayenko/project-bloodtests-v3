@@ -4,7 +4,7 @@ LOINC-coded blood-test monitoring app. Three-step workflow: generate lab-results
 
 ## Overview
 
-React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker to `blood.isayenko.net`. All data stays local — nothing leaves your device except through optional share links and the explicit-opt-in "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov.
+React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker, served from `paneloom.com` and `blood.isayenko.net`. All data stays local — nothing leaves your device except through optional share links and the explicit-opt-in "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov.
 
 **Workflow:**
 
@@ -22,17 +22,20 @@ Folders sort first (alphabetically), then files — VS Code
 default.
 
 ```text
-project-root/
+project-bloodtests-v3/
+├── .github/                              # CI workflow (ci.yml) + Dependabot config
 ├── archive/                              # obsolete code + docs (single graveyard)
 ├── docs/                                 # project-level strategy + documentation
-├── scripts/                              # cross-cutting build tooling
-├── mobile/                               # mobile app (example name)
-├── web/                                  # web app or static site (example name)
-├── <shared-infra>/                       # e.g. supabase/, prisma/, infra/
-├── CLAUDE.md                             # agent-specific guidance (optional)
+├── web/                                  # the app: src/, public/ (data, schema), test/, scripts/, wrangler.jsonc
+├── CLAUDE.md                             # agent-specific guidance
+├── LICENSE                               # license
 ├── README.md                             # this file — entry point + structure
-└── LICENSE                               # license
+└── sonar-project.properties              # SonarCloud scan config
 ```
+
+No root `scripts/` or shared-infra folder exists yet: the Node scripts
+(`convert-to-v3.mjs`, `recode-molar.mjs`, `generate-envelope-types.mjs`,
+`fetch-loinc-names.mjs`) touch `web/` only, so they live in `web/scripts/`.
 
 **Don't pre-create empty folders.** Add a folder on the day a
 second code folder, archived artifact, or per-folder doc
@@ -92,6 +95,9 @@ decisions into `archive/docs/` — code in archive rots; docs
 survive.
 
 `archive/` doesn't exist by default. Create on first retirement.
+Here it holds `archive/src/components/` — the pre-nav upload / panels /
+results flow — outside `web/`, so it is outside the build, lint and
+coverage; there is no `archive/docs/` yet.
 
 ## Key implementation details
 

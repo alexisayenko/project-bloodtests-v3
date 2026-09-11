@@ -16,9 +16,12 @@ is built from.
 Don't pre-create — extract on first real entry. See
 [Section, file, folder](../README.md#section-file-folder).
 
-- **`panels.json` / `analyses.json`** (in `web/public/data/`) — the
-  primary corpus: LOINC-coded biomarker panels and per-analyte
-  reference data.
+- **`analyses.json` / `panels.json` / `monitoring-panels.json` /
+  `molar-masses.json` / `laboratories.json`** (in `web/public/data/`) —
+  the primary corpus: per-analyte reference data, laboratory groups,
+  the product's monitoring panels, molar masses, and laboratory prices.
+  Their reasoning lives here when a JSON file has no room for it — so
+  far [`laboratory-prices.md`](laboratory-prices.md).
 - **`sources.md`** — bibliography / canonical sources for factual
   claims (with licensing notes per source).
 - **`prompts/`** — prompt sources for AI-assisted content

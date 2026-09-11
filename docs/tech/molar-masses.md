@@ -229,6 +229,8 @@ g/mol → factor chain worked through cholesterol, the full table with its
 `basis` and its PubChem/CIAAW links, and the conventional entries with
 their notes quoted verbatim from the JSON. Nothing on it is typed out in
 the page — it reads `molarMasses.ts`, so the page cannot drift from the
-data the app computes with, which is the point
+data the app computes with, which is the page
 [ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)
-anticipated when it kept `molarMassFromFormula` around.
+anticipated. It prints each tabulated `molarMassGPerMol` beside its formula
+rather than recomputing it: `molarMassFromFormula` is still called only by
+the conformance suite.

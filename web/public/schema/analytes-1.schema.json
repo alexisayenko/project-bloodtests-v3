@@ -52,7 +52,7 @@
         "unit": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional. The unit this code is expected in, as printed rather than in UCUM. A LOINC fixes the kind of quantity but not the scale, so this is what lets a row's unit pick the right variant of a multi-code analyte. Absent means the app knows nothing about the code's units and never warns about them.",
+          "description": "Optional. The unit this code is expected in, as printed rather than in UCUM. A LOINC fixes the kind of quantity but not the scale, so this is what lets a row's unit pick the right variant of a multi-code analyte. Absent means the app knows nothing about the code's units and never checks a printed unit's dimension against the code.",
           "$comment": "Was DEFAULT_UNITS/SUPPLEMENTARY_UNITS in loincCheck.ts."
         },
         "allowedUnits": {
@@ -60,7 +60,7 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 },
-          "description": "Optional. Further units accepted for this code beyond `unit` — LOINC's own example units for 1848-1 (DHT) list both ng/dL and pg/mL. The validation warning fires only for a unit outside `unit` plus this set.",
+          "description": "Optional. Further units accepted for this code beyond `unit` — LOINC's own example units for 1848-1 (DHT) list both ng/dL and pg/mL. The validation warning fires only for a unit whose dimension matches neither `unit` nor any unit in this set; another scale of the same quantity raises nothing.",
           "$comment": "Was ALLOWED_UNITS in loincCheck.ts."
         },
         "aliasOf": {
