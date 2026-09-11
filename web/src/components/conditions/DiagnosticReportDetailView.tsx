@@ -17,20 +17,15 @@ import {
   referenceRangeOf,
   resolvedNameOf,
   saveButtonLabel,
-  saveButtonStyle,
   unitRepairFor,
   type EditableField,
 } from './reportDetailHelpers';
 import { useLoincCrossCheck, type LoincCrossCheck } from './useLoincCrossCheck';
+import { Button, EmptyState, FIELD_INPUT, StatusDot, TABLE, TABLE_TD, TABLE_TH as th } from '../primitives';
 import { COLOR } from '../../styles/tokens';
 
-const th = {
-  textAlign: 'left',
-  padding: '8px 12px',
-  borderBottom: `1.5px solid ${COLOR.accent}`,
-  whiteSpace: 'nowrap',
-} as const;
-const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}` } as const;
+const td = { ...TABLE_TD, whiteSpace: 'normal' } as const;
+const cellInput = { ...FIELD_INPUT, padding: '2px 4px' } as const;
 
 interface ReportResultsSectionProps {
   items: Result[];
@@ -66,28 +61,17 @@ function ReportResultsSection({
   return (
     <>
       <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-        <button
-          onClick={crossCheck.onCrossCheck}
-          style={{
-            padding: '6px 16px',
-            backgroundColor: 'transparent',
-            color: COLOR.accent,
-            border: `1.5px solid ${COLOR.accent}`,
-            borderRadius: 999,
-            fontSize: 13,
-            cursor: 'pointer',
-          }}
-        >
+        <Button size="sm" onClick={crossCheck.onCrossCheck}>
           Cross-check LOINCs
-        </button>
+        </Button>
         {autoFilledCount > 0 && (
-          <span style={{ fontSize: 13, color: COLOR.statusOk }}>
+          <span style={{ fontSize: 13, color: COLOR.statusOkText }}>
             ✓ {autoFilledCount} code{pluralize(autoFilledCount)} filled automatically — review and Save
           </span>
         )}
       </div>
       <div style={{ overflowX: 'auto', marginBottom: 16 }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}></th>
@@ -117,10 +101,7 @@ function ReportResultsSection({
                 <Fragment key={`${item.loinc}-${i}`}>
                   <tr>
                     <td style={td}>
-                      <span
-                        style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: dotColor }}
-                        title={dotTitle}
-                      />
+                      <StatusDot color={dotColor} title={dotTitle} />
                     </td>
                     <td style={td}>{item.analysis}</td>
                     <td style={td}>
@@ -130,7 +111,7 @@ function ReportResultsSection({
                           value={item.loinc}
                           onChange={(e) => onEditItem(i, 'loinc', e.currentTarget.value)}
                           onBlur={() => {}}
-                          style={{ width: 80, border: `1px solid ${COLOR.border}`, padding: '2px 4px', fontSize: 13 }}
+                          style={{ ...cellInput, width: 80 }}
                         />
                         {linkedName && (
                           <a
@@ -150,7 +131,7 @@ function ReportResultsSection({
                         value={item.rawValue || (item.value != null ? String(item.value) : '')}
                         onChange={(e) => onEditItem(i, 'value', e.currentTarget.value)}
                         onBlur={() => {}}
-                        style={{ width: 70, border: `1px solid ${COLOR.border}`, padding: '2px 4px', fontSize: 13 }}
+                        style={{ ...cellInput, width: 70 }}
                       />
                     </td>
                     <td style={td}>
@@ -159,7 +140,7 @@ function ReportResultsSection({
                         value={item.unit}
                         onChange={(e) => onEditItem(i, 'unit', e.currentTarget.value)}
                         onBlur={() => {}}
-                        style={{ width: 80, border: `1px solid ${COLOR.border}`, padding: '2px 4px', fontSize: 13 }}
+                        style={{ ...cellInput, width: 80 }}
                       />
                     </td>
                     <td style={td}>{referenceRangeOf(item)}</td>
@@ -216,20 +197,9 @@ function ReportResultsSection({
           <span style={{ color: COLOR.textSecondary }}>
             {unresolvedRows.length} observation{pluralize(unresolvedRows.length)} unresolved —
           </span>
-          <button
-            onClick={crossCheck.onNlmCheck}
-            style={{
-              padding: '4px 12px',
-              backgroundColor: 'transparent',
-              color: COLOR.accent,
-              border: `1.5px solid ${COLOR.accent}`,
-              borderRadius: 999,
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
-          >
+          <Button size="sm" onClick={crossCheck.onNlmCheck}>
             Check online (NLM)
-          </button>
+          </Button>
           <span style={{ fontSize: 11, color: COLOR.textMuted }}>
             sends test names to clinicaltables.nlm.nih.gov, never values
           </span>
@@ -239,20 +209,20 @@ function ReportResultsSection({
         <div style={{ fontSize: 12, color: COLOR.textSecondary, marginBottom: 16 }}>Checking against NLM…</div>
       )}
       {nlmState === 'failed' && (
-        <div style={{ fontSize: 12, color: COLOR.statusBad, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: COLOR.statusBadText, marginBottom: 16 }}>
           NLM lookup failed — check your network and try again.
         </div>
       )}
       {(errorCount > 0 || warningCount > 0) && (
         <div style={{ fontSize: 13, color: COLOR.textSecondary, marginBottom: 12 }}>
           {errorCount > 0 && (
-            <span style={{ color: COLOR.statusBad, fontWeight: 600 }}>
+            <span style={{ color: COLOR.statusBadText, fontWeight: 600 }}>
               {errorCount} error{pluralize(errorCount)}
             </span>
           )}
           {errorCount > 0 && warningCount > 0 && <span>, </span>}
           {warningCount > 0 && (
-            <span style={{ color: COLOR.statusWarn, fontWeight: 600 }}>
+            <span style={{ color: COLOR.statusWarnText, fontWeight: 600 }}>
               {warningCount} warning{pluralize(warningCount)}
             </span>
           )}
@@ -260,23 +230,10 @@ function ReportResultsSection({
       )}
       {draftItems && (
         <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={onSave} disabled={isSaving || hasErrors} style={saveButtonStyle(hasErrors)}>
+          <Button variant="primary" onClick={onSave} disabled={isSaving || hasErrors}>
             {saveButtonLabel(isSaving)}
-          </button>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: COLOR.surfaceMuted,
-              color: COLOR.text,
-              border: `1px solid ${COLOR.border}`,
-              borderRadius: 4,
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
+          </Button>
+          <Button onClick={onCancel}>Cancel</Button>
         </div>
       )}
     </>
@@ -359,7 +316,7 @@ export function DiagnosticReportDetailView({
         {group ? `${group.place} · ${formatFullDate(group.date)}` : 'Diagnostic Report'}
       </h1>
       {!items || items.length === 0 ? (
-        <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No results recorded on this report.</div>
+        <EmptyState>No results recorded on this report.</EmptyState>
       ) : (
         <ReportResultsSection
           items={items}

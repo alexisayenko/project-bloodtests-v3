@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import type { Analysis, Result } from '../../types';
 import { fmtNum } from '../../utils/format';
 import type { ValidationIssue } from '../../data/validateDiagnosticReports';
@@ -176,19 +175,6 @@ export function getUnitLabel(suggestion: SuggestionChip, chipSuggestions: Sugges
     suggestion.loinc in ALSO_REFS ||
     chipSuggestions.some((o) => o !== suggestion && o.name === suggestion.name);
   return disambiguates ? ` · ${suggestion.unit}` : '';
-}
-
-export function saveButtonStyle(hasErrors: boolean): CSSProperties {
-  return {
-    padding: '8px 16px',
-    backgroundColor: hasErrors ? COLOR.border : COLOR.accent,
-    color: COLOR.textOnAccent,
-    border: 'none',
-    borderRadius: 4,
-    fontSize: 13,
-    cursor: hasErrors ? 'not-allowed' : 'pointer',
-    opacity: hasErrors ? 0.5 : 1,
-  };
 }
 
 export function saveButtonLabel(isSaving: boolean): string {

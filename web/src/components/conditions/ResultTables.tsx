@@ -25,7 +25,8 @@ import {
 } from './scheduled';
 import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
 import type { Result } from '../../types';
-import { COLOR } from '../../styles/tokens';
+import { COLOR, FONT } from '../../styles/tokens';
+import { TABLE_TD, TABLE_TH } from '../primitives/styles';
 
 const DATE_COL_WIDTH = 96;
 // The Scheduled column sits after an empty spacer column so it reads as a
@@ -37,14 +38,8 @@ const GAP_COL_WIDTH = 16;
 // single glyph.
 const SCHEDULED_COL_WIDTH = 132;
 
-const th = {
-  textAlign: 'left',
-  padding: '8px 12px',
-  verticalAlign: 'top',
-  borderBottom: `1.5px solid ${COLOR.accent}`,
-  whiteSpace: 'nowrap',
-} as const;
-const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap', cursor: 'pointer' } as const;
+const th = { ...TABLE_TH, verticalAlign: 'top' } as const;
+const td = { ...TABLE_TD, cursor: 'pointer' } as const;
 const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere' } as const;
 const gapCell = { padding: 0, border: 'none' } as const;
 const scheduledTh = {
@@ -223,25 +218,37 @@ function ObservationCells({
 }
 
 const sectionDividerTd = {
-  ...th,
-  padding: '14px 12px 6px',
-  fontWeight: 700,
-  fontSize: 12,
-  color: COLOR.textSecondary,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-  borderTop: `1px solid ${COLOR.borderSubtle}`,
-  borderBottom: `1.5px solid ${COLOR.accent}`,
-  backgroundColor: COLOR.surface,
-  whiteSpace: 'nowrap' as const,
-};
+  textAlign: 'left',
+  padding: '14px 12px 4px',
+  fontSize: FONT.overline,
+  fontWeight: FONT.overlineWeight,
+  letterSpacing: FONT.overlineTracking,
+  textTransform: 'uppercase',
+  color: COLOR.textMuted,
+  borderBottom: `1px solid ${COLOR.borderSubtle}`,
+  whiteSpace: 'nowrap',
+} as const;
 
-const sectionDividerRestTd = {
-  padding: 0,
-  borderTop: `1px solid ${COLOR.borderSubtle}`,
-  borderBottom: `1.5px solid ${COLOR.accent}`,
-  backgroundColor: COLOR.surface,
-};
+const sectionDividerRestTd = { padding: 0, borderBottom: `1px solid ${COLOR.borderSubtle}` } as const;
+
+/**
+ * Spans exactly the grid's real columns -- never the trailing auto column, which
+ * no other row fills -- and keeps the Scheduled column's side rules unbroken.
+ */
+function SectionDividerRow({ label, dateCount, scheduling }: Readonly<{ label: string; dateCount: number; scheduling: boolean }>) {
+  return (
+    <tr>
+      <th scope="rowgroup" style={sectionDividerTd}>{label}</th>
+      {dateCount > 0 && <td colSpan={dateCount} style={sectionDividerRestTd} />}
+      {scheduling && (
+        <>
+          <td style={gapCell} />
+          <td style={{ ...scheduledTd, ...sectionDividerRestTd, cursor: 'default' }} />
+        </>
+      )}
+    </tr>
+  );
+}
 
 function ObservationRow({
   test,
@@ -474,8 +481,6 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
     },
   };
 
-  const otherColSpan = visibleDates.length + (hasScheduling ? 2 : 0) + 1;
-
   return (
     <TableScroller
       colgroup={<ColGroup dates={visibleDates} scheduling={hasScheduling} />}
@@ -501,10 +506,7 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
           />
         ))}
         {hasObs && hasIndices && (
-          <tr key="__indices_divider__">
-            <td style={sectionDividerTd}>Indices</td>
-            <td colSpan={otherColSpan} style={sectionDividerRestTd} />
-          </tr>
+          <SectionDividerRow key="__indices_divider__" label="Indices" dateCount={visibleDates.length} scheduling={hasScheduling} />
         )}
         {builtIndexRows.map(({ test, cells, rowUnit, showCellUnits }) => (
           <ObservationRow

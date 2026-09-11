@@ -29,10 +29,38 @@ rationale per rule so future-us can revisit.
 
 ### Color
 
-- [TODO: e.g. red = destructive (delete, irreversible). Used
-  for destructive confirmations only.]
-- [TODO: accent color use cases — call-to-action, success
-  state, brand surfaces.]
+Every value lives once, as a custom property in `web/src/styles/index.css`'s
+`:root`; inline styles reach it through `web/src/styles/tokens.ts`
+(`COLOR`, `TINT`).
+
+| Role | Token | Value |
+|---|---|---|
+| Page ground | `--surface-page` | `#f6f9fa` |
+| Card | `--surface-card` (= `--surface`) | `#ffffff` |
+| Mint wash (page header glow) | `--surface-mint` | `rgba(20,117,126,.06)` |
+| Brand teal / deep | `--brand-teal` / `--brand-teal-deep` | `#3eb0b0` / `#2a9ea4` |
+| Navy (ink) | `--navy` (= `--text`) | `#062a4f` |
+| Primary fill + its text | `--primary` / `--primary-text` | `#0e5a66` / `#ffffff` |
+| Link | `--link` | `#137a7f` |
+| Accent (active, selection, text-safe teal) | `--accent` | `#14757e` |
+
+| Status | Dot | Text | Background |
+|---|---|---|---|
+| In range | `--status-ok` `#4caf7a` | `--status-ok-text` `#1f6b45` | `--status-ok-bg` `#e3f4ea` |
+| Borderline | `--status-warn` `#e6a93a` | `--status-warn-text` `#85600f` | `--status-warn-bg` `#fbf0db` |
+| Out of range | `--status-bad` `#d9605a` | `--status-bad-text` `#8e2f2b` | `--status-bad-bg` `#fbe5e3` |
+| Not tested | `--status-none` `#a8b0ba` | — | — |
+
+- **Dot vs text.** The bare status token is for dots, borders and rules
+  only; anything read as words (errors, "✓ Added", warnings) uses the
+  `-text` token, since the dot colours do not clear AA as 13px text.
+  `--status-*-bg-selected` is derived (`color-mix` with `--accent-line`),
+  never typed.
+- **Panel tints.** Each Monitoring Panel card takes one `--tint-<role>-*`
+  family (`ink` icon, `bg` card, `icon` disc, `line` border): teal
+  (default), blue, violet, amber, green, rose, cyan, slate, orange,
+  indigo; Kidney and Anemia/Hematology borrow amber's and rose's
+  surfaces with their own `--tint-ochre-ink` / `--tint-crimson-ink`.
 - **Result status.** An [observation](../product/concepts/observation.md)'s
   result is 2-state against its lab reference range: green =
   in-range, red = out-of-range. A [computed
@@ -70,8 +98,22 @@ rationale per rule so future-us can revisit.
 
 ### Typography
 
-- [TODO: type scale — base size, line-height, weight ladder.]
-- [TODO: typeface pairing — display + body + mono.]
+One family, Manrope (400/500/600/700), with the system UI stack as
+fallback. The scale is `FONT` in `tokens.ts`:
+
+| Role | Token | Size / weight |
+|---|---|---|
+| Overline | `--font-overline` | 12px / 600, uppercase, `letter-spacing: .16em` |
+| Body | `--font-body` | 14px |
+| Small | `--font-small` | 13px |
+| Card title | `--font-card-title` / `--font-card-title-lg` | 17px / 20px |
+| Detail `<h1>` | `--font-detail-h1` | 28px |
+| Display `<h1>` (page header) | `--font-display-h1` | 36px |
+
+Shape and space tokens sit beside it: radii `--radius-pill` 999px,
+`--radius-card` 16px, `--radius-control` 10px; shadows `--shadow-card`
+(hairline ring + faint navy lift) and `--shadow-pop` (stronger, for
+popups); spacing `--space-1`…`--space-6` = 4 / 8 / 12 / 16 / 24 / 32px.
 
 ### Motion
 

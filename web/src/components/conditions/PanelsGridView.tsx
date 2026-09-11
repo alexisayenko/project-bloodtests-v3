@@ -6,26 +6,23 @@ import type { Result } from '../../types';
 import { INDEX_LOINCS, testLoincs, observationMatchesQuery, indexMatchesQuery, type Observation } from './markers';
 import { pressable } from './ui';
 import { getStatus, type LatestByLoinc, type Status } from './resultsLookup';
-import { COLOR } from '../../styles/tokens';
+import { COLOR, RADIUS } from '../../styles/tokens';
 import { getPanelMeta } from './panelMeta';
 import { PageHeader } from './PageHeader';
+import { StatusChip, StatusLegend, type StatusTone } from '../primitives';
 
 export type Condition = { name: string; tests: Observation[] };
 
-const NEUTRAL_DOT = '#94a3b8';
-
-const STATUS_DOT: Record<Status, string> = {
-  'in-range': '#16a34a',
-  'out-of-range': '#dc2626',
-  unknown: '#f59e0b',
-  never: NEUTRAL_DOT,
+// A reading without a reference range reads as borderline: measured, but not placeable.
+const STATUS_TONE: Record<Status, StatusTone> = {
+  'in-range': 'ok',
+  'out-of-range': 'bad',
+  unknown: 'warn',
+  never: 'none',
 };
 
-const ZONE_DOT: Record<Zone, string> = {
-  ok: '#16a34a',
-  warn: '#f59e0b',
-  bad: '#dc2626',
-};
+const SECTION_LABEL = { fontSize: 13, fontWeight: 600, color: COLOR.text, lineHeight: 1.4 } as const;
+const CHIP_ROW = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 10 } as const;
 
 /** Newest-first scan for the first draw with a computable value. */
 function latestZone(def: IndexDef, datesDesc: string[], resultsByDate: Record<string, Record<string, Result>>): Zone | null {
@@ -34,63 +31,6 @@ function latestZone(def: IndexDef, datesDesc: string[], resultsByDate: Record<st
     if (value != null) return zone(value, def.cut[0], def.cut[1], def.hi);
   }
   return null;
-}
-
-/**
- * A white rounded pill chip with an individual status dot indicator.
- * Shrinks to fit its label width naturally.
- */
-function DotChip({
-  label,
-  dotColor,
-  onClick,
-}: Readonly<{ label: string; dotColor: string; onClick: (e: { currentTarget: HTMLElement }) => void }>) {
-  return (
-    <button
-      type="button"
-      {...pressable(onClick)}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '7px 15px',
-        borderRadius: 9999,
-        background: '#ffffff',
-        border: '1px solid rgba(0, 0, 0, 0.06)',
-        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
-        fontSize: 13,
-        fontWeight: 500,
-        color: COLOR.text,
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        flex: '0 0 auto',
-        width: 'auto',
-        fontFamily: 'inherit',
-        lineHeight: 1.3,
-        transition: 'transform 0.1s ease, box-shadow 0.1s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.08)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'none';
-        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04)';
-      }}
-    >
-      <span
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          background: dotColor,
-          flexShrink: 0,
-        }}
-        aria-hidden="true"
-      />
-      <span>{label}</span>
-    </button>
-  );
 }
 
 export function PanelsGridView({
@@ -124,7 +64,6 @@ export function PanelsGridView({
 
   return (
     <>
-      {/* Page Header Banner */}
       <PageHeader
         overline="Condition-Oriented Tracking"
         titlePrimary="Monitoring"
@@ -140,39 +79,20 @@ export function PanelsGridView({
         ]}
       />
 
-      {/* Search Row */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: COLOR.surface,
-            border: `1px solid ${COLOR.borderSubtle}`,
-            borderRadius: 9999,
-            padding: '6px 14px',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-          }}
-        >
-          <Search size={14} color={COLOR.textMuted} strokeWidth={2} aria-hidden="true" />
+      <div className="mc-panels-toolbar">
+        <StatusLegend />
+        <label className="mc-panels-search" style={{ borderRadius: RADIUS.control }}>
+          <Search size={16} color={COLOR.textMuted} strokeWidth={2} aria-hidden="true" />
           <input
             type="search"
             placeholder="Search markers or panels…"
+            aria-label="Search markers or panels"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              fontSize: 13,
-              color: COLOR.text,
-              width: 170,
-            }}
           />
         </label>
       </div>
 
-      {/* Panels Grid */}
       <div className="mc-panels-grid">
         {filtered.map((condition) => {
           const meta = getPanelMeta(condition.name);
@@ -184,118 +104,55 @@ export function PanelsGridView({
             <div
               key={condition.name}
               className="mc-panel-card"
-              style={{
-                padding: '24px 22px',
-                background: meta.bgColor,
-                borderRadius: 16,
-                border: `1px solid ${meta.borderColor}`,
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16,
-              }}
+              style={{ background: meta.bgColor, border: `1px solid ${meta.borderColor}`, borderRadius: RADIUS.card }}
             >
-              {/* Header: Circle Icon + Panel Name + Subtitle + Count */}
-              <div
-                {...pressable(() => onOpenDetail(condition.name))}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 14,
-                  cursor: 'pointer',
-                }}
-              >
-                <span
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    background: meta.iconBg,
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon size={26} color={meta.color} strokeWidth={2.2} aria-hidden="true" />
+              <div {...pressable(() => onOpenDetail(condition.name))} className="mc-panel-head">
+                <span className="mc-panel-icon" style={{ background: meta.iconBg, color: meta.color }}>
+                  <Icon size={30} color="currentColor" strokeWidth={2} aria-hidden="true" />
                 </span>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: COLOR.text, lineHeight: 1.3 }}>
-                      {condition.name}
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: COLOR.textMuted, flexShrink: 0 }}>
-                      {observations.length} markers
-                    </div>
-                  </div>
-                  {meta.description && (
-                    <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 3, lineHeight: 1.35 }}>
-                      {meta.description}
-                    </div>
-                  )}
+                  <div className="mc-panel-title">{condition.name}</div>
+                  {meta.description && <div className="mc-panel-desc">{meta.description}</div>}
                 </div>
               </div>
 
-              {/* Section 1: Observations */}
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: COLOR.text, marginBottom: 10 }}>
-                  Observations
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={SECTION_LABEL}>Observations</div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: COLOR.textMuted, flexShrink: 0 }}>
+                    {observations.length} markers
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                  {observations.map((test) => {
-                    const status = getStatus(latestByLoinc, testLoincs(test));
-                    const dotColor = STATUS_DOT[status];
-
-                    return (
-                      <DotChip
-                        key={test.loinc}
-                        label={test.full}
-                        dotColor={dotColor}
-                        onClick={(e) => onOpenPopup(test, e)}
-                      />
-                    );
-                  })}
+                <div style={CHIP_ROW}>
+                  {observations.map((test) => (
+                    <StatusChip
+                      key={test.loinc}
+                      label={test.full}
+                      tone={STATUS_TONE[getStatus(latestByLoinc, testLoincs(test))]}
+                      onClick={(e) => onOpenPopup(test, e)}
+                    />
+                  ))}
                 </div>
               </div>
 
-              {/* Section 2: Indices */}
               {computedForPanel.length > 0 && (
-                <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.06)', paddingTop: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: COLOR.text, marginBottom: 10 }}>
-                    Indices
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                    {computedForPanel.map((def) => {
-                      const z = latestZone(def, datesDesc, resultsByDate);
-                      const dotColor = z ? ZONE_DOT[z] : NEUTRAL_DOT;
-
-                      return (
-                        <DotChip
-                          key={def.key}
-                          label={def.nameCompact}
-                          dotColor={dotColor}
-                          onClick={(e) => onOpenIndexPopup(def, e)}
-                        />
-                      );
-                    })}
+                <div style={{ borderTop: `1px solid ${meta.borderColor}`, paddingTop: 16 }}>
+                  <div style={SECTION_LABEL}>Indices</div>
+                  <div style={CHIP_ROW}>
+                    {computedForPanel.map((def) => (
+                      <StatusChip
+                        key={def.key}
+                        label={def.nameCompact}
+                        tone={latestZone(def, datesDesc, resultsByDate) ?? 'none'}
+                        onClick={(e) => onOpenIndexPopup(def, e)}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Footer: View panel → */}
-              <div style={{ marginTop: 'auto', paddingTop: 6 }}>
-                <span
-                  {...pressable(() => onOpenDetail(condition.name))}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: COLOR.accent,
-                    cursor: 'pointer',
-                  }}
-                >
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+                <span {...pressable(() => onOpenDetail(condition.name))} className="mc-panel-link">
                   View panel →
                 </span>
               </div>

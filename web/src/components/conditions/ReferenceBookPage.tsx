@@ -56,6 +56,7 @@ import {
 import type { Analysis } from '../../types';
 import { BookOpen, Calculator, ShieldCheck } from 'lucide-react';
 import { PageHeader } from './PageHeader';
+import { TABLE, TABLE_TD, TABLE_TH } from '../primitives/styles';
 
 // Reference Book — one page per computed index, carrying the full clinical
 // prose (meaning + evidence standing) and its cited sources with verbatim
@@ -215,14 +216,8 @@ function HpAxisPage() {
   );
 }
 
-const th = {
-  textAlign: 'left',
-  padding: '8px 12px',
-  borderBottom: `1.5px solid ${COLOR.accent}`,
-  whiteSpace: 'nowrap',
-  fontSize: 13,
-} as const;
-const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap', fontSize: 13 } as const;
+const th = { ...TABLE_TH, fontSize: 13 } as const;
+const td = { ...TABLE_TD, fontSize: 13 } as const;
 
 const SIBLING_UNITS = new Map(MASS_MOLAR_SIBLINGS.map((p) => [p.molarMass, { mass: p.mass.unit, molar: p.molar.unit }]));
 
@@ -357,7 +352,7 @@ function MolarMassesPage() {
 
       <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 10 }}>The analytes</h2>
       <div style={{ overflowX: 'auto', marginBottom: 8 }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}>Analyte</th>
@@ -419,7 +414,7 @@ function MolarMassesPage() {
         used for the arithmetic and the published interval is kept beside it.
       </p>
       <div style={{ overflowX: 'auto', marginBottom: 8 }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}>Symbol</th>
@@ -643,7 +638,7 @@ function UnitsPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
         Every row below is computed by the same functions the importer calls, on the spelling in its first column:
       </p>
       <Scroller>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}>As printed</th>
@@ -690,7 +685,7 @@ function UnitsPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
         nothing here to update.
       </p>
       <Scroller>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}>Spellings of one unit</th>
@@ -756,7 +751,7 @@ function UnitsPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
         nothing needs to be listed by hand.
       </p>
       <Scroller>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}>Two spellings</th>
@@ -807,7 +802,7 @@ function UnitsPage({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
         factor for it would be worse than leaving it alone.
       </p>
       <Scroller>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <th style={th}>Marker</th>
@@ -1147,7 +1142,7 @@ function LoincDatabasePage({
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={TABLE}>
           <thead>
             <tr>
               <SortableHeader label="LOINC" column="loinc" sort={sort} onSort={toggle} />

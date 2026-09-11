@@ -35,7 +35,7 @@ export function NavBar({ route, navigate, hasValidationErrors = false }: Readonl
         style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 12, cursor: 'pointer' }}
       >
         <img src="/brand/paneloom-mark.svg" alt="" width={26} height={26} />
-        <span style={{ fontSize: 19, fontWeight: 700, color: '#062a4f', letterSpacing: -0.2 }}>Paneloom</span>
+        <span style={{ fontSize: 19, fontWeight: 700, color: COLOR.navy, letterSpacing: -0.2 }}>Paneloom</span>
       </div>
       {NAV_ITEMS.map((item) => {
         const active =

@@ -24,6 +24,7 @@ import type { ResultEntry } from './resultsLookup';
 import type { ObservationsTab } from './routing';
 import { List, Search, Layers } from 'lucide-react';
 import { PageHeader } from './PageHeader';
+import { EmptyState } from '../primitives';
 import { COLOR } from '../../styles/tokens';
 
 // Not the default tab, and it pulls uPlot plus the vendored
@@ -31,9 +32,8 @@ import { COLOR } from '../../styles/tokens';
 // PanelDetailView, which shares this chunk.
 const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
 
-// Matches the muted empty-state text below; the min-height reserves roughly a
-// chart's worth of room so the tab doesn't jump on load.
-const chartFallback = <div style={{ color: COLOR.textMuted, fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
+// The min-height reserves roughly a chart's worth of room so the tab doesn't jump on load.
+const chartFallback = <EmptyState style={{ minHeight: 420 }}>Loading chart…</EmptyState>;
 
 const OBSERVATIONS_TABS: readonly { id: ObservationsTab; label: string }[] = [
   { id: 'analysis', label: 'Results' },
@@ -158,7 +158,7 @@ export function AllObservationsView({
 
   let analysisTab: ReactNode;
   if (rows.length === 0) {
-    analysisTab = <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No results uploaded yet.</div>;
+    analysisTab = <EmptyState>No results uploaded yet.</EmptyState>;
   } else {
     analysisTab = (
       <>
@@ -173,7 +173,7 @@ export function AllObservationsView({
           {sortedDates.length} lab reports
         </div>
         {visibleRows.length === 0 && visibleIndexDefs.length === 0 ? (
-          <div style={{ color: COLOR.textMuted, fontSize: 14 }}>{emptyMessage(activePanel?.name, query)}</div>
+          <EmptyState>{emptyMessage(activePanel?.name, query)}</EmptyState>
         ) : (
           <>
             {(visibleRows.length > 0 || visibleIndexDefs.length > 0) && (

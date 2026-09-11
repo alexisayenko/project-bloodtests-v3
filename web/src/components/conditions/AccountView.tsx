@@ -3,21 +3,10 @@ import type { DiagnosticReport } from '../../types';
 import { backupFilename, buildBackupFiles, zipBackupFiles } from '../../data/backupArchive';
 import { BackupImportError, readBackup, unzipBackup, type BackupContents } from '../../data/backupRestore';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
-import { pressable } from './ui';
 import { Database, HardDriveDownload, SlidersHorizontal } from 'lucide-react';
 import { PageHeader } from './PageHeader';
+import { Button, FileButton, SectionTitle } from '../primitives';
 import { COLOR } from '../../styles/tokens';
-
-const ACTION = {
-  display: 'inline-block',
-  padding: '8px 20px',
-  borderRadius: 9999,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: 'pointer',
-  border: `1.5px solid ${COLOR.accent}`,
-  color: COLOR.accent,
-} as const;
 
 async function downloadBackup(sessions: DiagnosticReport[]): Promise<void> {
   const now = new Date();
@@ -110,24 +99,14 @@ export function AccountView({
         ]}
       />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <div {...pressable(() => run('export', () => downloadBackup(sessions), 'Export failed. Please try again.'))} style={ACTION}>
+        <Button onClick={() => run('export', () => downloadBackup(sessions), 'Export failed. Please try again.')}>
           {busy === 'export' ? 'Exporting...' : 'Export all data'}
-        </div>
-        <label style={ACTION}>
+        </Button>
+        <FileButton accept=".zip,application/zip" onFile={(file) => void importBackup(file)}>
           {busy === 'import' ? 'Importing...' : 'Import all data'}
-          <input
-            type="file"
-            accept=".zip,application/zip"
-            style={{ display: 'none' }}
-            onChange={(e) => {
-              const file = e.currentTarget.files?.[0];
-              if (file) void importBackup(file);
-              e.currentTarget.value = '';
-            }}
-          />
-        </label>
+        </FileButton>
       </div>
-      {error && <div style={{ color: COLOR.statusBad, fontSize: 13, marginTop: 12 }}>{error}</div>}
+      {error && <div style={{ color: COLOR.statusBadText, fontSize: 13, marginTop: 12 }}>{error}</div>}
       {notice && (
         <div style={{ fontSize: 13, marginTop: 12 }}>
           {notice.map((line) => (
@@ -136,13 +115,13 @@ export function AccountView({
         </div>
       )}
       <div style={{ borderTop: `1px solid ${COLOR.borderSubtle}`, marginTop: 24, paddingTop: 16, maxWidth: 640 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>Clear all data</div>
+        <SectionTitle>Clear all data</SectionTitle>
         <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 12 }}>
           Removes everything this app stores in this browser. Export first if you want to keep it.
         </div>
-        <div {...pressable(clearAll)} style={{ ...ACTION, border: `1.5px solid ${COLOR.statusBad}`, color: COLOR.statusBad }}>
+        <Button variant="danger" onClick={clearAll}>
           Clear all data
-        </div>
+        </Button>
       </div>
     </div>
   );

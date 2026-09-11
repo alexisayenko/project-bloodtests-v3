@@ -303,7 +303,7 @@ export function MedicalConditionsPage() {
         <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 12 }}>{sharedLinkError}</div>
       )}
       {hasValidationErrors && (route.view === 'reports' || route.view === 'report') && (
-        <div style={{ fontSize: 13, color: COLOR.statusBad, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: COLOR.statusBadText, marginBottom: 16 }}>
           Errors in diagnostic reports must be resolved before accessing other sections.
         </div>
       )}

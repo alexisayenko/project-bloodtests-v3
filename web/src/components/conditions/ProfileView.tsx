@@ -1,18 +1,9 @@
 import type { DiagnosticReport } from '../../types';
 import { generateTestDataThen } from '../../data/generateTestData';
-import { pressable } from './ui';
 import { Shield, Upload, Sparkles } from 'lucide-react';
 import { PageHeader } from './PageHeader';
+import { Button, FileButton } from '../primitives';
 import { COLOR } from '../../styles/tokens';
-
-const ACTION = {
-  display: 'inline-block',
-  padding: '8px 20px',
-  borderRadius: 9999,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: 'pointer',
-} as const;
 
 const SECTION_DIVIDER = {
   borderTop: `1px solid ${COLOR.borderSubtle}`,
@@ -65,20 +56,10 @@ export function ProfileView({
           Import it — it replaces whatever is currently loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'}{' '}
           currently).
         </div>
-        <label style={{ ...ACTION, border: `1.5px solid ${COLOR.accent}`, background: COLOR.accent, color: COLOR.textOnAccent }}>
-          {'Import JSON'}
-          <input
-            type="file"
-            accept=".json,application/json"
-            style={{ display: 'none' }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) uploadFile(file);
-              e.target.value = '';
-            }}
-          />
-        </label>
-        {uploadError && <div style={{ color: COLOR.statusBad, fontSize: 14, marginTop: 12 }}>{uploadError}</div>}
+        <FileButton variant="primary" accept=".json,application/json" onFile={uploadFile}>
+          Import JSON
+        </FileButton>
+        {uploadError && <div style={{ color: COLOR.statusBadText, fontSize: 14, marginTop: 12 }}>{uploadError}</div>}
       </div>
 
       <div style={SECTION_DIVIDER}>
@@ -86,9 +67,7 @@ export function ProfileView({
         <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
           Create one starting from adding your first diagnostic report.
         </div>
-        <div {...pressable(goToReports)} style={{ ...ACTION, border: `1.5px solid ${COLOR.accent}`, color: COLOR.accent }}>
-          Go to Diagnostic Reports
-        </div>
+        <Button onClick={goToReports}>Go to Diagnostic Reports</Button>
       </div>
 
       <div style={SECTION_DIVIDER}>
@@ -98,12 +77,7 @@ export function ProfileView({
           loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'} currently), medications you already list keep
           their entries, and a sample schedule is set only if nothing is scheduled yet.
         </div>
-        <div
-          {...pressable(() => generateTestDataThen(loadGenerated, [onStoredStateChanged, onGenerated]))}
-          style={{ ...ACTION, border: `1.5px solid ${COLOR.accent}`, color: COLOR.accent }}
-        >
-          Generate Test Data
-        </div>
+        <Button onClick={() => generateTestDataThen(loadGenerated, [onStoredStateChanged, onGenerated])}>Generate Test Data</Button>
       </div>
     </>
   );

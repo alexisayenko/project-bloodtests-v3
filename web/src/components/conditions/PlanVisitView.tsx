@@ -6,19 +6,14 @@ import type { Observation } from './markers';
 import { pressable } from './ui';
 import { CalendarCheck, Coins, CheckSquare } from 'lucide-react';
 import { PageHeader } from './PageHeader';
+import { EmptyState, TABLE, TABLE_TD, TABLE_TH } from '../primitives';
 import { COLOR } from '../../styles/tokens';
 
 const GAP_COL_WIDTH = 16;
 const LAB_COL_WIDTH = 120;
 
-const th = {
-  textAlign: 'left',
-  padding: '8px 12px',
-  verticalAlign: 'bottom',
-  borderBottom: `1.5px solid ${COLOR.accent}`,
-  whiteSpace: 'nowrap',
-} as const;
-const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap', verticalAlign: 'top' } as const;
+const th = { ...TABLE_TH, verticalAlign: 'bottom' } as const;
+const td = { ...TABLE_TD, verticalAlign: 'top' } as const;
 const labTh = { ...th, textAlign: 'right', width: LAB_COL_WIDTH } as const;
 const labTd = { ...td, textAlign: 'right' } as const;
 const gapCell = { padding: 0, border: 'none', width: GAP_COL_WIDTH } as const;
@@ -84,12 +79,12 @@ export function PlanVisitView({
         <strong>{scheduled.month ? formatScheduleMonth(scheduled.month) : 'No month selected'}</strong>
       </div>
       {rows.length === 0 ? (
-        <div style={{ color: COLOR.textMuted, fontSize: 14 }}>
+        <EmptyState>
           Nothing is scheduled yet — tick rows in the Scheduled column of Monitoring Panels or All Observations.
-        </div>
+        </EmptyState>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'collapse', fontSize: 14 }}>
+          <table style={{ ...TABLE, fontSize: 14 }}>
             <thead>
               <tr>
                 <th style={th}>Observation</th>

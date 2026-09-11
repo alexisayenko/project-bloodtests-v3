@@ -21,6 +21,7 @@ import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './sc
 import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
+import { EmptyState } from '../primitives';
 
 // Neither chart tab is the default one, so both are split out of the initial
 // bundle: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit,
@@ -37,9 +38,8 @@ const DETAIL_TABS: readonly { id: DetailTab; label: string }[] = [
   { id: 'charts', label: 'Charts' },
 ];
 
-// Matches the muted empty-state text used across these views; the min-height
-// reserves roughly a chart's worth of room so the tab doesn't jump on load.
-const chartFallback = <div style={{ color: COLOR.textMuted, fontSize: 14, minHeight: 420 }}>Loading chart…</div>;
+// The min-height reserves roughly a chart's worth of room so the tab doesn't jump on load.
+const chartFallback = <EmptyState style={{ minHeight: 420 }}>Loading chart…</EmptyState>;
 
 export function PanelDetailView({
   name,
@@ -146,11 +146,11 @@ export function PanelDetailView({
             enabled={controlsForTab('analysis')}
           />
           {dates.length === 0 ? (
-            <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No results recorded for this panel yet.</div>
+            <EmptyState>No results recorded for this panel yet.</EmptyState>
           ) : (
             <>
               {nothingMatches && (
-                <div style={{ color: COLOR.textMuted, fontSize: 14 }}>Nothing in {name} matches “{query.trim()}”.</div>
+                <EmptyState>Nothing in {name} matches “{query.trim()}”.</EmptyState>
               )}
               {(visibleObservations.length > 0 || visibleIndices.length > 0 || visibleComputed.length > 0) && (
                 <ResultsTable

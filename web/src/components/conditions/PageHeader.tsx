@@ -35,7 +35,7 @@ export function PageHeader({
         borderBottom: `1px solid ${COLOR.borderSubtle}`,
         flexWrap: 'wrap',
         background:
-          'radial-gradient(ellipse 60% 90% at 88% 20%, rgba(20, 117, 126, 0.06) 0%, rgba(20, 117, 126, 0) 70%)',
+          `radial-gradient(ellipse 60% 90% at 88% 20%, ${COLOR.surfaceMint} 0%, transparent 70%)`,
       }}
     >
       <div style={{ flex: '1 1 460px', minWidth: 300 }}>

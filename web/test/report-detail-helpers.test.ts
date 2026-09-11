@@ -15,10 +15,10 @@ import {
   referenceRangeOf,
   resolvedNameOf,
   saveButtonLabel,
-  saveButtonStyle,
   unitRepairFor,
   type SuggestionChip,
 } from '../src/components/conditions/reportDetailHelpers';
+import { buttonStyle } from '../src/components/primitives/styles';
 import { COLOR } from '../src/styles/tokens';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, ANALYTE_BY_LOINC } from '../src/data/analyteCatalog';
 import { crossCheckLocal, type CrossCheckResult } from '../src/data/loincCheck';
@@ -398,8 +398,8 @@ describe('getUnitLabel', () => {
 
 describe('save button', () => {
   it('greys out and blocks the pointer while errors stand, and reports progress in its label', () => {
-    expect(saveButtonStyle(true)).toMatchObject({ backgroundColor: COLOR.border, cursor: 'not-allowed', opacity: 0.5 });
-    expect(saveButtonStyle(false)).toMatchObject({ backgroundColor: COLOR.accent, cursor: 'pointer', opacity: 1 });
+    expect(buttonStyle('primary', 'md', true)).toMatchObject({ background: COLOR.border, cursor: 'not-allowed', opacity: 0.5 });
+    expect(buttonStyle('primary', 'md', false)).toMatchObject({ background: COLOR.primary, cursor: 'pointer' });
     expect(saveButtonLabel(true)).toBe('Saving...');
     expect(saveButtonLabel(false)).toBe('Save');
   });

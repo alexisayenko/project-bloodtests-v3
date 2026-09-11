@@ -25,23 +25,26 @@ export const LiverIcon: IconComponent = ({ size = 26, color = 'currentColor', ..
 );
 
 /**
- * Kidney pair with ureters — exact vector extracted from design mockup.
+ * Kidney pair whose ureters join below them — a line icon in lucide's 24-unit
+ * grid, since the mockup's traced polygon rendered as an unreadable blot.
  */
-export const KidneyIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
+export const KidneyIcon: IconComponent = ({ size = 26, color = 'currentColor', strokeWidth = 2, ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
-    viewBox="0 0 27 31"
+    viewBox="0 0 24 24"
     fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     aria-hidden="true"
     {...rest}
   >
-    <path
-      d="M 24.00 13.75 L 22.75 15.75 L 23.00 19.75 L 24.25 21.00 L 27.00 21.25 L 27.00 24.00 L 24.00 23.75 L 21.75 21.75 L 20.75 21.75 L 21.00 28.75 L 20.00 30.25 L 18.75 30.75 L 18.00 29.75 L 18.00 17.00 L 19.25 12.75 L 20.75 11.75 L 20.75 10.50 L 19.00 8.00 L 19.00 3.00 L 21.50 0.00 L 27.00 0.00 L 27.00 2.50 L 23.25 2.00 L 21.75 3.50 L 22.00 8.00 L 24.25 11.00 L 24.00 13.75 Z M 8.75 24.75 L 10.50 24.25 L 12.00 22.25 L 12.00 20.00 L 9.75 18.00 L 9.75 16.50 L 10.75 15.75 L 10.25 12.75 L 13.00 10.25 L 13.00 7.25 L 10.75 5.25 L 8.00 5.50 L 5.50 7.25 L 3.75 10.00 L 2.50 14.75 L 2.75 18.50 L 4.25 22.50 L 6.25 24.25 L 8.75 24.75 Z M 16.00 16.50 L 16.25 30.00 L 15.75 31.00 L 14.75 31.00 L 14.00 30.00 L 13.50 25.25 L 11.00 27.00 L 7.75 27.50 L 4.00 26.00 L 1.75 23.50 L 0.00 20.00 L 0.00 11.25 L 2.25 7.00 L 5.25 4.00 L 8.25 2.75 L 12.25 3.00 L 14.00 4.00 L 15.75 7.00 L 15.75 10.25 L 14.25 14.50 L 15.75 15.25 L 16.00 16.50 Z"
-      fill={color}
-      fillRule="evenodd"
-    />
+    <path d="M6 3.2C2.9 2.6 1 5.6 1 10s1.9 7.4 5 6.8c1.9-.4 2.2-2.6 1-4-.7-.8-.7-4.8 0-5.6 1.2-1.4.9-3.6-1-4Z" />
+    <path d="M18 3.2c3.1-.6 5 2.4 5 6.8s-1.9 7.4-5 6.8c-1.9-.4-2.2-2.6-1-4 .7-.8.7-4.8 0-5.6-1.2-1.4-.9-3.6 1-4Z" />
+    <path d="M6.6 10c3.4.5 5.4 3 5.4 6.5V22M17.4 10c-3.4.5-5.4 3-5.4 6.5" />
   </svg>
 );
 

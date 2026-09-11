@@ -2,30 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { MONTH_LABELS, monthKey, useMedications, type MedicationRow } from '../../data/medications';
 import { Pill, Clock, TrendingUp } from 'lucide-react';
 import { PageHeader } from './PageHeader';
+import { Button, EmptyState, FIELD_INPUT, TABLE, TABLE_TD, TABLE_TH } from '../primitives';
 import { COLOR } from '../../styles/tokens';
 
 const NAME_COL_WIDTH = 220;
 const DOSAGE_COL_WIDTH = 160;
 const MONTH_COL_WIDTH = 32;
 
-const BUTTON = {
-  padding: '4px 14px',
-  borderRadius: 9999,
-  fontSize: 13,
-  fontWeight: 600,
-  fontFamily: 'inherit',
-  border: `1.5px solid ${COLOR.accent}`,
-  color: COLOR.accent,
-  background: 'none',
-  cursor: 'pointer',
-} as const;
-const th = {
-  textAlign: 'left',
-  padding: '8px 12px',
-  verticalAlign: 'bottom',
-  borderBottom: `1.5px solid ${COLOR.accent}`,
-  whiteSpace: 'nowrap',
-} as const;
+const th = { ...TABLE_TH, verticalAlign: 'bottom' } as const;
 const yearTh = {
   ...th,
   textAlign: 'center',
@@ -33,18 +17,9 @@ const yearTh = {
   borderBottom: `1px solid ${COLOR.borderMuted}`,
   borderLeft: `1px solid ${COLOR.borderMuted}`,
 } as const;
-const td = { padding: '6px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap' } as const;
-const input = {
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '4px 8px',
-  fontSize: 13,
-  fontFamily: 'inherit',
-  border: `1px solid ${COLOR.border}`,
-  borderRadius: 6,
-  background: COLOR.surface,
-  color: COLOR.text,
-} as const;
+const td = { ...TABLE_TD, padding: '6px 12px' } as const;
+const input = { ...FIELD_INPUT, width: '100%', boxSizing: 'border-box', padding: '4px 8px' } as const;
+const removeButton = { padding: '0 7px', border: `1px solid ${COLOR.border}`, color: COLOR.textMuted, lineHeight: '18px' } as const;
 
 // The first month of each year carries the stronger edge, so years read as blocks.
 function monthEdge(monthIndex: number) {
@@ -116,28 +91,27 @@ export function MedicationsView() {
         ]}
       />
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-        <button type="button" style={BUTTON} onClick={toggleEditing}>
+        <Button size="sm" onClick={toggleEditing}>
           {editing ? 'Done' : 'Edit'}
-        </button>
+        </Button>
         {editing && (
           <>
-            <button type="button" style={BUTTON} onClick={() => setFocusId(onAddRow())}>
+            <Button size="sm" onClick={() => setFocusId(onAddRow())}>
               Add medication
-            </button>
-            <button type="button" style={BUTTON} onClick={onAddPastYear}>
+            </Button>
+            <Button size="sm" onClick={onAddPastYear}>
               Add past year
-            </button>
+            </Button>
           </>
         )}
       </div>
       {!editing && rows.length === 0 ? (
-        <div style={{ color: COLOR.textMuted, fontSize: 14 }}>No medications recorded yet — press Edit to add the first one.</div>
+        <EmptyState>No medications recorded yet — press Edit to add the first one.</EmptyState>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table
             style={{
-              borderCollapse: 'collapse',
-              fontSize: 13,
+              ...TABLE,
               tableLayout: 'fixed',
               width: NAME_COL_WIDTH + DOSAGE_COL_WIDTH + MONTH_COL_WIDTH * 12 * years.length,
             }}
@@ -177,14 +151,14 @@ export function MedicationsView() {
                   <td style={td}>
                     {editing ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <button
-                          type="button"
+                        <Button
+                          size="sm"
                           aria-label={`Remove ${row.name.trim() || 'unnamed medication'}`}
                           onClick={() => onRemoveRow(row.id)}
-                          style={{ ...BUTTON, padding: '0 7px', border: `1px solid ${COLOR.border}`, color: COLOR.textMuted, lineHeight: '18px' }}
+                          style={removeButton}
                         >
                           ×
-                        </button>
+                        </Button>
                         <input
                           ref={(el) => {
                             if (el) nameInputs.current.set(row.id, el);

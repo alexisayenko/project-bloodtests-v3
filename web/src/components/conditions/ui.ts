@@ -19,12 +19,7 @@ export const STATUS_STYLES = {
 export const ZONE_BG = { ok: COLOR.statusOkBg, warn: COLOR.statusWarnBg, bad: COLOR.statusBadBg } as const;
 // Selected-row variants, blended with the row-selection tint (--accent-soft).
 export const SELECTED_ZONE_BG = { ok: COLOR.statusOkBgSelected, warn: COLOR.statusWarnBgSelected, bad: COLOR.statusBadBgSelected } as const;
-// Saturated dot colors for the same 3 zones, for compact list rows (e.g. the
-// Monitoring Panels grid card) where ZONE_BG's pale backgrounds would be too
-// faint to read as a small dot. ok/bad reuse STATUS_STYLES' green/red so the
-// two-state and three-state dots read as one color language; warn is Google's
-// amber, completing the same red/yellow/green triad.
-export const ZONE_DOT = { ok: COLOR.statusOk, warn: COLOR.statusWarn, bad: COLOR.statusBad } as const;
+// Saturated dot colors for the same zones live in primitives/tones.ts's TONE_DOT.
 
 export const PANEL_PADDING = 20;
 export const PANEL_GAP = 24;
