@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { newRowId } from './ids';
 
 export const MEDICATIONS_KEY = 'bloodtests_medications_v1';
 
@@ -113,12 +114,6 @@ export function saveMedications(meds: Medications): void {
   } catch {
     // storage unavailable -- history just won't persist
   }
-}
-
-function newRowId(): string {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function useMedications() {
