@@ -172,6 +172,14 @@ export const HormoneIcon: IconComponent = ({ size = 24, color = 'currentColor', 
   </svg>
 );
 
+/** A receptor: a Y-shaped protein standing in a double-line cell membrane. */
+export const ReceptorIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 1.75, ...rest }) => (
+  <svg {...lineIconProps(size, color, strokeWidth)} {...rest}>
+    <path d="M2 17.5c6.5-2.6 13.5-2.6 20 0M2 21c6.5-2.6 13.5-2.6 20 0" />
+    <path d="M12 19V11M12 11L7.5 4.5M12 11l4.5-6.5" />
+  </svg>
+);
+
 const CELLS: ReadonlyArray<readonly [number, number, number]> = [
   [16, 11, 7], [31, 9, 6.5], [9, 26, 6.5], [24, 24, 7.5], [38, 23, 6.5], [18, 39, 6.5], [33, 38, 6.5],
 ];
