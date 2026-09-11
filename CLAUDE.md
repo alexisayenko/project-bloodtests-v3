@@ -196,7 +196,25 @@ panel link, and narrows the columns (`.mc-panels-grid--compact`). Cardiovascular
 `ldlf` (Friedewald, LOINC `13457-7`) and `ldls` (Sampson/NIH equation 2, no
 LOINC exists for the method) — each returning null outside its own validity
 range (TG ≥ 400 and > 800 mg/dL) so it renders as `–` rather than a
-confidently wrong number; Martin-Hopkins is deferred to task-0012. An index
+confidently wrong number; Martin-Hopkins is deferred to task-0012.
+Hypogonadism carries `biot` (bioavailable testosterone, nmol/L) beside `cft`,
+both solving the same Vermeulen quadratic (`vermeulenFreeT`, `indexDefs.ts`) —
+bio-T is free T × (1 + Ka·albumin). Albumin is an `optionalInputKeys` input on
+both: read when a same-draw reading places in g/dL, 4.3 g/dL otherwise, never
+gating the index nor among its scheduled inputs; `ALB` now converts g/L ↔ g/dL,
+which fixed cFT silently reading a g/L albumin as g/dL. `biot` is also the first
+index whose bands differ by sex: an index may carry `bandsBySex` in place of
+`cut`/`hi`, and `computedIndices.ts`'s `indexBands` / `indexZone` pick the band
+from a `SubjectProfile` whose `sex` comes from Database details
+(`bloodtests_envelope_meta_v1`). With sex unset there is no band, so no status —
+a grey chip in the grid, an uncolored number in the tables, "depends on sex, not
+set" as the popup's Ref, and "sex not set" in What's in range's not-taken list rather than a series
+plotted against some band; the Reference Book, having no profile, names both
+("men > … · women < …"). The bands are Mayo Clinic Laboratories' TTBS reference
+limits converted from ng/dL; `birthYear` is not read, so the men's borderline
+band is the span Mayo calls low at 20–29 but normal at 60–69 (task-0004). A
+citation may carry an optional ISO `retrieved` date, shown in the Reference
+Book as "· retrieved <date>". An index
 reads its inputs through `MARKER_CANDIDATE_LOINCS`, which expands
 `MARKER_LOINC` through the catalog's derived alias maps and places each value
 in the formula's unit or declines it, so a molar-coded history computes the
@@ -414,7 +432,13 @@ links — task-0018), Reference Book (Indices and derived
 measurements: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Organism-wide aspects: HP Axis page with v2's
-homepage-derived feedback-loop cascades; Formulas and math: a "Mass ↔ molar
+homepage-derived feedback-loop cascades, and a Testosterone page at
+`#reference/testosterone` (`reference/TestosteronePage.tsx`: secretion, plasma
+binding, conversion to DHT/E2, negative feedback and clomiphene as flow
+diagrams, each claim carrying an `[n]` link that scrolls to its quoted source
+without rewriting the routing hash, and analyte names opening the analyte popup
+through the `onOpenPopup` `MedicalConditionsPage` now passes the Reference
+Book); Formulas and math: a "Mass ↔ molar
 conversion" page at `#reference/molar-masses` rendered entirely from
 `molarMasses.ts` — why one analyte reports on two scales, the
 atomic-weights → formula → g/mol → factor chain worked through
@@ -598,8 +622,9 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (789 tests across 35 files — 788 passing, 1 skipped — as run on 2026-09-11: index
-golden-masters ported from v2, upload parsing — the v3 envelope, and
+Vitest suites in `web/test/` (802 tests across 35 files — 801 passing, 1 skipped — as run on 2026-09-11: index
+golden-masters ported from v2, bioavailable testosterone and sex-dependent index
+bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
 report-detail row helpers, unit normalization (Latin/UCUM stages, dimension check,
