@@ -14,6 +14,7 @@ import { Popup, type PopupPosition, type PopupState } from './Popup';
 import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
 import { MedicationsView } from './MedicationsView';
+import { HormonalPathwaysView } from './HormonalPathwaysView';
 import { AccountView } from './AccountView';
 import { PlanVisitView } from './PlanVisitView';
 import { PanelDetailView } from './PanelDetailView';
@@ -269,6 +270,8 @@ export function MedicalConditionsPage() {
             onGenerated={() => navigate({ view: 'all', tab: 'in-range' })}
           />
         );
+      case 'pathways':
+        return <HormonalPathwaysView />;
       case 'medications':
         return <MedicationsView />;
       case 'account':

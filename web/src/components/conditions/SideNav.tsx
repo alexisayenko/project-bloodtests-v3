@@ -1,4 +1,4 @@
-import { Rocket, FileText, List, LayoutGrid, CalendarCheck, BookOpen, CircleUser, type LucideIcon } from 'lucide-react';
+import { Rocket, FileText, List, LayoutGrid, Workflow, CalendarCheck, BookOpen, CircleUser, type LucideIcon } from 'lucide-react';
 import { PillIcon, type IconComponent } from './customIcons';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
@@ -8,6 +8,7 @@ const ICONS: Record<NavView, LucideIcon | IconComponent> = {
   reports:     FileText,
   all:         List,
   panels:      LayoutGrid,
+  pathways:    Workflow,
   plan:        CalendarCheck,
   medications: PillIcon,
   reference:   BookOpen,

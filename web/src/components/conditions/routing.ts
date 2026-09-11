@@ -8,6 +8,7 @@ export const DEFAULT_OBSERVATIONS_TAB: ObservationsTab = 'analysis';
 export type Route =
   | { view: 'panels' }
   | { view: 'panel'; name: string }
+  | { view: 'pathways' }
   | { view: 'reference'; key?: string }
   | { view: 'all'; tab?: ObservationsTab }
   | { view: 'reports' }
@@ -17,11 +18,12 @@ export type Route =
   | { view: 'plan' }
   | { view: 'account' };
 
-export const NAV_ITEMS: { view: 'reference' | 'panels' | 'all' | 'reports' | 'profile' | 'medications' | 'plan' | 'account'; label: string }[] = [
+export const NAV_ITEMS: { view: 'reference' | 'panels' | 'pathways' | 'all' | 'reports' | 'profile' | 'medications' | 'plan' | 'account'; label: string }[] = [
   { view: 'profile',      label: 'Get Started' },
   { view: 'reports',      label: 'Diagnostic Reports' },
   { view: 'all',          label: 'All Observations' },
   { view: 'panels',       label: 'Monitoring Panels' },
+  { view: 'pathways',     label: 'Hormonal Pathways' },
   { view: 'plan',         label: 'Scheduled Visits' },
   { view: 'medications',  label: 'Medications' },
   { view: 'reference',    label: 'Reference Book' },
@@ -36,7 +38,7 @@ export function isNavItemActive(route: Route, view: NavView): boolean {
 
 // Panel Detail nests under Monitoring Panels, so it is blocked with it.
 export function isRouteBlocked(route: Route, hasValidationErrors: boolean): boolean {
-  return hasValidationErrors && (route.view === 'panels' || route.view === 'panel' || route.view === 'all');
+  return hasValidationErrors && (route.view === 'panels' || route.view === 'panel' || route.view === 'pathways' || route.view === 'all');
 }
 
 export function isNavItemBlocked(view: NavView, hasValidationErrors: boolean): boolean {
@@ -56,6 +58,7 @@ export function routeToHash(route: Route): string {
   if (route.view === 'all') return route.tab && route.tab !== DEFAULT_OBSERVATIONS_TAB ? `#all/${route.tab}` : '#all';
   if (route.view === 'report') return `#reports/${encodeURIComponent(route.file)}`;
   if (route.view === 'reports') return '#reports';
+  if (route.view === 'pathways') return '#pathways';
   if (route.view === 'profile') return '#profile';
   if (route.view === 'medications') return '#medications';
   if (route.view === 'plan') return '#plan';
@@ -72,6 +75,7 @@ export function hashToRoute(hash: string): Route {
   if (value.startsWith('all/')) return allObservationsRoute(value.slice('all/'.length));
   if (value === 'reports') return { view: 'reports' };
   if (value.startsWith('reports/')) return { view: 'report', file: value.slice('reports/'.length) };
+  if (value === 'pathways') return { view: 'pathways' };
   if (value === 'profile') return { view: 'profile' };
   if (value === 'medications') return { view: 'medications' };
   if (value === 'plan') return { view: 'plan' };
