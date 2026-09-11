@@ -1,5 +1,5 @@
-import { Rocket, FileText, List, LayoutGrid, Workflow, CalendarCheck, BookOpen, CircleUser, type LucideIcon } from 'lucide-react';
-import { PillIcon, type IconComponent } from './customIcons';
+import { Rocket, FileText, List, LayoutGrid, CalendarCheck, BookOpen, CircleUser, type LucideIcon } from 'lucide-react';
+import { PathwaysIcon, PillIcon, type IconComponent } from './customIcons';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
 
@@ -8,7 +8,7 @@ const ICONS: Record<NavView, LucideIcon | IconComponent> = {
   reports:     FileText,
   all:         List,
   panels:      LayoutGrid,
-  pathways:    Workflow,
+  pathways:    PathwaysIcon,
   plan:        CalendarCheck,
   medications: PillIcon,
   reference:   BookOpen,
@@ -56,7 +56,7 @@ export function SideNav({
             {renderItem(accountItem)}
           </nav>
         )}
-        <div style={{ padding: '4px 12px 12px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        <div className="mc-side-tagline">
           <div>Your results.</div>
           <div>Your history.</div>
           <div>In your browser.</div>

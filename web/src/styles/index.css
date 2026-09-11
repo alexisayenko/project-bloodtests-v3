@@ -273,15 +273,19 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border-subtle);
   }
-  .mc-shell-body { display: flex; align-items: flex-start; }
+  :root { --mc-sidebar-w: 232px; }
+  /* Fixed rather than sticky: the footer sits outside the shell, so a sticky
+     sidebar was pushed up under the top bar once the page reached its end. */
   .mc-sidebar {
-    position: sticky; top: var(--mc-topbar-h); flex: none; width: 232px;
-    height: calc(100dvh - var(--mc-topbar-h)); overflow: hidden;
-    padding: 20px 12px; background: var(--surface); border-right: 1px solid var(--border-subtle);
+    position: fixed; top: var(--mc-topbar-h); bottom: 0; left: 0; z-index: 30;
+    width: var(--mc-sidebar-w); overflow: hidden;
+    padding: 16px 12px; background: var(--surface); border-right: 1px solid var(--border-subtle);
   }
+  .mc-page, .mc-footer { margin-left: var(--mc-sidebar-w); }
   .mc-side-list { display: flex; flex-direction: column; gap: 2px; }
+  .mc-side-tagline { padding: 4px 12px 8px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
   .mc-side-item {
-    display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 8px;
+    display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 8px;
     font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
   }
   .mc-side-item:hover { background: var(--surface-muted); color: var(--text); }
@@ -289,10 +293,13 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   .mc-side-item[aria-current='page'] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   .mc-side-item[aria-disabled='true'] { cursor: not-allowed; opacity: 0.5; }
   .mc-side-item[aria-disabled='true']:not([aria-current='page']) { background: none; color: var(--text-disabled); }
-  .mc-page { flex: 1; min-width: 0; padding: 32px 40px 56px; }
+  .mc-page { min-width: 0; padding: 32px 40px 56px; }
+}
+@media (min-width: 768px) and (max-height: 760px) {
+  .mc-side-tagline { display: none; }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
-  .mc-sidebar { width: 200px; }
+  :root { --mc-sidebar-w: 200px; }
   .mc-page { padding: 28px 24px 48px; }
 }
 

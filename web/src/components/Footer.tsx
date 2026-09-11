@@ -14,7 +14,7 @@ const FOOTER = {
 export function Footer() {
   const commit = __BUILD_COMMIT__;
   return (
-    <footer style={FOOTER}>
+    <footer className="mc-footer" style={FOOTER}>
       <div>{copyrightLine(__BUILD_TIME__)}</div>
       <div>
         Build{' '}

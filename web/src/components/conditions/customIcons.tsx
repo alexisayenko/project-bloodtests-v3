@@ -76,6 +76,31 @@ export const PillIcon: IconComponent = ({ size = 24, color = 'currentColor', str
 );
 
 /**
+ * Three hollow nodes in an inverted V, the top one linked to each bottom one
+ * and the bottom pair unlinked — a line icon in lucide's 24-unit grid.
+ */
+export const PathwaysIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    <circle cx="12" cy="5" r="3" />
+    <circle cx="5" cy="19" r="3" />
+    <circle cx="19" cy="19" r="3" />
+    <path d="M10.66 7.68 6.34 16.32M13.34 7.68l4.32 8.64" />
+  </svg>
+);
+
+/**
  * Thyroid gland butterfly outline — exact vector extracted from design mockup.
  */
 export const ThyroidIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
