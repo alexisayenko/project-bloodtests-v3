@@ -9,6 +9,7 @@ import { SHARED_META_KEY } from './sharedMeta';
 import { IMPORTED_LINKS_KEY } from './sharedLink';
 import { parseScheduled, SCHEDULED_KEY } from '../components/conditions/scheduled';
 import { VIEW_SETTINGS_KEY } from '../components/conditions/ui';
+import { SIDEBAR_COLLAPSED_KEY } from '../components/conditions/sidebarCollapsed';
 
 export type StorageReader = Pick<Storage, 'getItem' | 'key' | 'length'>;
 export type BackupInput = {
@@ -34,6 +35,7 @@ export const USER_DATA_KEYS = [
   VIEW_SETTINGS_KEY,
   SHARED_META_KEY,
   IMPORTED_LINKS_KEY,
+  SIDEBAR_COLLAPSED_KEY,
 ];
 
 export function isSettingsKey(key: string): boolean {

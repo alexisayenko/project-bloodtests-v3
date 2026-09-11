@@ -49,7 +49,7 @@ function Carrier({ carrier }: Readonly<{ carrier: DockedCarrier }>) {
     </div>
   );
   const bound = (
-    <div className="mc-pathway-anchor" style={{ height: CARRIER_SIZE, alignItems: 'center' }}>
+    <div className="mc-pathway-anchor" style={{ height: CARRIER_SIZE, alignItems: 'center' }} data-node={carrier.label === 'SHBG' ? 'shbg-t' : 'alb-t'}>
       <span className="mc-pathway-bubble">
         <HormoneIcon size={24} />
       </span>
@@ -144,10 +144,10 @@ function TargetDiagram() {
           <Hormone label="E2" value="38 pg/mL" node="e2" />
         </Enzyme>
         <div className="mc-pathway-er">
-          <Receptor label="Estrogen receptor" node="er" />
+          <Receptor label="Estrogen receptors" node="er" />
         </div>
         <div className="mc-pathway-ar">
-          <Receptor label="Androgen receptor" node="ar" />
+          <Receptor label="Androgen receptors" node="ar" />
         </div>
       </div>
     </div>
@@ -205,8 +205,24 @@ function roundedPath(points: string, radius = 10): string {
   return `${d} L${last[0]},${last[1]}`;
 }
 
-function PathwayArrows({ root }: Readonly<{ root: RefObject<HTMLDivElement | null> }>) {
+const ASSOCIATIONS: Readonly<Record<string, readonly string[]>> = {
+  'total-t': ['shbg-t', 't', 'alb-t'],
+  'free-t': ['t'],
+  'bio-t': ['t', 'alb-t'],
+  tlh: ['leydig'],
+  dhtt: ['srd5a'],
+  't-e2': ['aromatase'],
+};
+
+interface Association {
+  badge: string;
+  paths: string[];
+  rings: { cx: number; cy: number; r: number }[];
+}
+
+function PathwayArrows({ root, active }: Readonly<{ root: RefObject<HTMLDivElement | null>; active: string | null }>) {
   const [lines, setLines] = useState<Line[]>([]);
+  const [associations, setAssociations] = useState<Association[]>([]);
 
   useEffect(() => {
     const el = root.current;
@@ -269,6 +285,31 @@ function PathwayArrows({ root }: Readonly<{ root: RefObject<HTMLDivElement | nul
           extra.push(`${centerX(d)},${dBottom} ${centerX(d)},${midY} ${arEdge},${midY}`);
         }
       }
+      setAssociations(
+        Object.entries(ASSOCIATIONS).flatMap(([badge, targets]) => {
+          const badgeEl = el.querySelector(`[data-badge="${badge}"]`);
+          if (!badgeEl) return [];
+          const br = badgeEl.getBoundingClientRect();
+          const bx = br.left - base.left;
+          const by = br.top + 20 - base.top;
+          const rings = targets.flatMap((target) => {
+            const node = el.querySelector(`[data-node="${target}"]`);
+            if (!node) return [];
+            const r = (node.querySelector('img, svg, .mc-pathway-bubble') ?? node).getBoundingClientRect();
+            return [{ cx: r.left + r.width / 2 - base.left, cy: r.top + r.height / 2 - base.top, r: Math.max(r.width, r.height) / 2 + 6 }];
+          });
+          if (rings.length === 0) return [];
+          const lane = Math.min(...rings.map((g) => g.cy - g.r)) - 16;
+          const rightmost = Math.max(...rings.map((g) => g.cx));
+          const leftmost = Math.min(...rings.map((g) => g.cx));
+          const turn = Math.max(rightmost + 24, bx - 24);
+          const paths = [
+            roundedPath(`${bx},${by} ${turn},${by} ${turn},${lane} ${leftmost},${lane}`, 12),
+            ...rings.map((g) => `M${g.cx},${lane} L${g.cx},${g.cy - g.r}`),
+          ];
+          return [{ badge, paths, rings }];
+        }),
+      );
       setLines([
         ...extra,
         ...fork('t', ['aromatase', 'srd5a']),
@@ -310,6 +351,18 @@ function PathwayArrows({ root }: Readonly<{ root: RefObject<HTMLDivElement | nul
           <path d="M0 0L10 5L0 10z" fill="currentColor" />
         </marker>
       </defs>
+      {associations
+        .filter((a) => a.badge === active)
+        .map((a) => (
+          <g key={a.badge} className="mc-pathway-assoc">
+            {a.paths.map((d) => (
+              <path key={d} d={d} fill="none" />
+            ))}
+            {a.rings.map((g) => (
+              <circle key={`${g.cx},${g.cy}`} cx={g.cx} cy={g.cy} r={g.r} fill="none" />
+            ))}
+          </g>
+        ))}
       {lines.map((line) => {
         const trunk = line.startsWith('trunk:');
         return (
@@ -328,8 +381,104 @@ function PathwayArrows({ root }: Readonly<{ root: RefObject<HTMLDivElement | nul
   );
 }
 
+interface Badge {
+  id: string;
+  name: string;
+  value: string;
+  status: 'ok' | 'warn' | 'bad';
+  meaning: string;
+  low: string;
+  high: string;
+  caveats: string;
+}
+
+const BADGES: ReadonlyArray<Badge> = [
+  {
+    id: 'total-t', name: 'Total Testosterone', value: '16.0 nmol/L', status: 'ok',
+    meaning: 'All testosterone in blood: SHBG-bound, albumin-bound and free.',
+    low: 'Less testosterone made, or less SHBG holding it.',
+    high: 'More made, or more SHBG holding it (free T may still be normal).',
+    caveats: 'Peaks in the morning; SHBG changes it without changing free T.',
+  },
+  {
+    id: 'free-t', name: 'Free Testosterone', value: '0.32 nmol/L', status: 'ok',
+    meaning: 'The unbound share (about 1–3%) that can enter cells. Calculated from total T, SHBG and albumin (Vermeulen).',
+    low: 'Less testosterone available to tissues.',
+    high: 'More available to tissues.',
+    caveats: 'Direct free-T immunoassays are unreliable; the calculation is preferred.',
+  },
+  {
+    id: 'bio-t', name: 'Bioavailable Testosterone', value: '8.4 nmol/L', status: 'ok',
+    meaning: 'Free plus albumin-bound testosterone — the part not locked to SHBG.',
+    low: 'Less testosterone reaching tissues.',
+    high: 'More reaching tissues.',
+    caveats: 'Calculated; reference bands depend on sex and age.',
+  },
+  {
+    id: 'tlh', name: 'T/LH', value: '3.1', status: 'ok',
+    meaning: 'How much testosterone the Leydig cells make per unit of LH stimulus.',
+    low: 'The testes respond poorly (primary or compensated hypogonadism).',
+    high: 'A strong testicular response.',
+    caveats: 'LH is pulsatile, so one sample is noisy; no agreed reference range.',
+  },
+  {
+    id: 'dhtt', name: 'DHT/T', value: '0.10', status: 'ok',
+    meaning: 'Share of testosterone converted to DHT — a rough gauge of 5α-reductase activity.',
+    low: 'Less conversion (e.g. finasteride, dutasteride).',
+    high: 'More conversion.',
+    caveats: 'Serum DHT understates tissue DHT; LC-MS/MS assays are more reliable.',
+  },
+  {
+    id: 't-e2', name: 'T/E2', value: '0.42', status: 'warn',
+    meaning: 'Testosterone left relative to estradiol made from it — aromatase balance.',
+    low: 'More aromatization (often more body fat).',
+    high: 'Less aromatization.',
+    caveats: 'E2 immunoassays are unreliable at male levels; units matter.',
+  },
+];
+
+function Badges({ open, setOpen, setHovered }: Readonly<{ open: string | null; setOpen: (id: string | null) => void; setHovered: (id: string | null) => void }>) {
+  return (
+    <aside className="mc-pathway-badges" aria-label="Measures and ratios">
+      {BADGES.map((b) => {
+        const expanded = open === b.id;
+        return (
+          <button
+            key={b.id}
+            type="button"
+            className={expanded ? 'mc-pathway-badge mc-pathway-badge-open' : 'mc-pathway-badge'}
+            data-badge={b.id}
+            aria-expanded={expanded}
+            onClick={() => setOpen(expanded ? null : b.id)}
+            onMouseEnter={() => setHovered(b.id)}
+            onMouseLeave={() => setHovered(null)}
+            onFocus={() => setHovered(b.id)}
+            onBlur={() => setHovered(null)}
+          >
+            <span className="mc-pathway-badge-head">
+              <span className="mc-pathway-badge-name">{b.name}</span>
+              <span className={`mc-pathway-dot mc-pathway-dot-${b.status}`} />
+            </span>
+            <span className="mc-pathway-badge-value">{b.value}</span>
+            {expanded && (
+              <span className="mc-pathway-badge-body">
+                <span><b>Meaning</b> {b.meaning}</span>
+                <span><b>Low</b> {b.low}</span>
+                <span><b>High</b> {b.high}</span>
+                <span><b>Caveats</b> {b.caveats}</span>
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </aside>
+  );
+}
+
 export function HormonalPathwaysView() {
   const bandsRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
   return (
     <div>
       <PageHeader
@@ -338,8 +487,9 @@ export function HormonalPathwaysView() {
         titleAccent="Pathways"
         description={['Biochemical pathways of hormones']}
       />
-      <div className="mc-pathway-bands" ref={bandsRef}>
-        <PathwayArrows root={bandsRef} />
+      <div className="mc-pathway-layout" ref={bandsRef}>
+      <PathwayArrows root={bandsRef} active={hovered ?? open} />
+      <div className="mc-pathway-bands">
         {SITES.map(({ id, title, description }) => (
           <section key={id} className="mc-pathway-band" aria-label={title}>
             <div className="mc-pathway-site">
@@ -352,6 +502,8 @@ export function HormonalPathwaysView() {
             </div>
           </section>
         ))}
+      </div>
+      <Badges open={open} setOpen={setOpen} setHovered={setHovered} />
       </div>
     </div>
   );
