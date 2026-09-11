@@ -145,55 +145,59 @@ function count(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+async function restoreReports(reports: BackupContents['reports'], importReports: RestoreDeps['importReports']): Promise<string> {
+  if (!reports) return 'Lab reports: not in the backup, left empty.';
+  if (reports.count > 0) await importReports(reports.text);
+  if (Object.keys(reports.meta).length > 0) saveEnvelopeMeta(reports.meta);
+  return `Lab reports: ${count(reports.count, 'report', 'reports')} restored.`;
+}
+
+function restoreMedications(medications: BackupContents['medications']): string {
+  if (!medications) return 'Medications: not in the backup, left empty.';
+  saveMedications(medications);
+  return `Medications: ${count(medications.rows.length, 'row', 'rows')} restored.`;
+}
+
+function restoreScheduled(scheduled: BackupContents['scheduled']): string {
+  if (!scheduled) return 'Scheduled visits: not in the backup, left empty.';
+  saveScheduled(scheduled);
+  const { loincs, indices } = scheduled;
+  return `Scheduled visits: ${count(loincs.length, 'observation', 'observations')} and ${count(indices.length, 'index', 'indices')} restored.`;
+}
+
+function restoreSetting(key: string, value: unknown): void {
+  if (key === VIEW_SETTINGS_KEY) {
+    saveViewSettings(value as ViewSettings);
+    return;
+  }
+  try {
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+  } catch {
+    // storage unavailable -- the preference just won't persist
+  }
+}
+
+function restoreSettings(settings: BackupContents['settings']): string {
+  if (!settings) return 'Settings: not in the backup, left at defaults.';
+  for (const [key, value] of Object.entries(settings)) restoreSetting(key, value);
+  return `Settings: ${count(Object.keys(settings).length, 'entry', 'entries')} restored.`;
+}
+
+function laboratoryPricesLine(hasLaboratoryPrices: boolean): string {
+  return hasLaboratoryPrices
+    ? 'Laboratory prices: not restored; the prices that ship with the app are used.'
+    : 'Laboratory prices: ship with the app, nothing to restore.';
+}
+
 /** Clears everything, then writes back each validated part through its own module; returns one line per part. */
 export async function restoreBackup(backup: BackupContents, deps: RestoreDeps): Promise<string[]> {
   clearAllData(deps.clearReports);
-  const lines: string[] = [];
-
-  if (backup.reports) {
-    if (backup.reports.count > 0) await deps.importReports(backup.reports.text);
-    if (Object.keys(backup.reports.meta).length > 0) saveEnvelopeMeta(backup.reports.meta);
-    lines.push(`Lab reports: ${count(backup.reports.count, 'report', 'reports')} restored.`);
-  } else {
-    lines.push('Lab reports: not in the backup, left empty.');
-  }
-
-  if (backup.medications) {
-    saveMedications(backup.medications);
-    lines.push(`Medications: ${count(backup.medications.rows.length, 'row', 'rows')} restored.`);
-  } else {
-    lines.push('Medications: not in the backup, left empty.');
-  }
-
-  if (backup.scheduled) {
-    saveScheduled(backup.scheduled);
-    const { loincs, indices } = backup.scheduled;
-    lines.push(`Scheduled visits: ${count(loincs.length, 'observation', 'observations')} and ${count(indices.length, 'index', 'indices')} restored.`);
-  } else {
-    lines.push('Scheduled visits: not in the backup, left empty.');
-  }
-
-  if (backup.settings) {
-    for (const [key, value] of Object.entries(backup.settings)) {
-      if (key === VIEW_SETTINGS_KEY) {
-        saveViewSettings(value as ViewSettings);
-        continue;
-      }
-      try {
-        localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-      } catch {
-        // storage unavailable -- the preference just won't persist
-      }
-    }
-    lines.push(`Settings: ${count(Object.keys(backup.settings).length, 'entry', 'entries')} restored.`);
-  } else {
-    lines.push('Settings: not in the backup, left at defaults.');
-  }
-
-  lines.push(
-    backup.hasLaboratoryPrices
-      ? 'Laboratory prices: not restored; the prices that ship with the app are used.'
-      : 'Laboratory prices: ship with the app, nothing to restore.'
-  );
-  return lines;
+  const reportsLine = await restoreReports(backup.reports, deps.importReports);
+  return [
+    reportsLine,
+    restoreMedications(backup.medications),
+    restoreScheduled(backup.scheduled),
+    restoreSettings(backup.settings),
+    laboratoryPricesLine(backup.hasLaboratoryPrices),
+  ];
 }

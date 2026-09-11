@@ -71,8 +71,9 @@ function readSettings(storage: StorageReader): Record<string, unknown> {
     const key = storage.key(i);
     if (key && isSettingsKey(key)) keys.push(key);
   }
+  keys.sort((a, b) => a.localeCompare(b));
   const settings: Record<string, unknown> = {};
-  for (const key of keys.sort((a, b) => a.localeCompare(b))) {
+  for (const key of keys) {
     const raw = storage.getItem(key);
     if (raw !== null) settings[key] = storedValue(raw);
   }

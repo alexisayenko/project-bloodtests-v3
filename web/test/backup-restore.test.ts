@@ -125,6 +125,23 @@ describe('restoreBackup', () => {
     expect(loadScheduled()).toEqual(SCHEDULED);
   });
 
+  it('reports one line per part, in order, for a backup holding only its manifest', async () => {
+    seed();
+    const files = without(await exportZip(), 'lab-reports.json', 'medications.json', 'scheduled-visits.json', 'settings.json', 'laboratory-prices.json');
+
+    const lines = await importFiles(files);
+
+    expect(lines).toEqual([
+      'Lab reports: not in the backup, left empty.',
+      'Medications: not in the backup, left empty.',
+      'Scheduled visits: not in the backup, left empty.',
+      'Settings: not in the backup, left at defaults.',
+      'Laboratory prices: ship with the app, nothing to restore.',
+    ]);
+    expect(store.has(RESULTS_STORAGE_KEY)).toBe(false);
+    expect(store.has(SCHEDULED_KEY)).toBe(false);
+  });
+
   it('restores an exported empty database', async () => {
     const files = await exportZip().then((f) => ({ ...f, 'lab-reports.json': JSON.stringify({ schema: '3.1', diagnosticReports: [] }) }));
     seed();
