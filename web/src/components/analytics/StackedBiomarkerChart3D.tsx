@@ -74,8 +74,8 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
     return [...seen].sort((a, b) => a - b);
   }, [series]);
 
-  const first = years.length > 0 ? years[0] : null;
-  const last = years.length > 0 ? years[years.length - 1] : null;
+  const first = years[0] ?? null;
+  const last = years.at(-1) ?? null;
   const activeFrom = fromYear != null && years.includes(fromYear) ? fromYear : first;
   const activeTo = toYear != null && years.includes(toYear) ? toYear : last;
 

@@ -271,7 +271,7 @@ export const initStackedChart3D = (
         maxX = Math.max(maxX, sx);
       }
       const width = (maxX - minX) / zoom;
-      if (!(width > 0)) break;
+      if (Number.isNaN(width) || width <= 0) break;
       xHalf = Math.min(X_HALF_MAX, Math.max(X_HALF_MIN, xHalf * ((X_FILL * W) / width)));
     }
     return xHalf;
@@ -374,34 +374,35 @@ export const initStackedChart3D = (
           const botB0 = P(a.nx, -1, zBack);
           const botB1 = P(b.nx, -1, zBack);
 
-          prims.push({
-            depth: (topF0.depth + topF1.depth) / 2,
-            draw: () => fillQuad(topF0, topF1, botF1, botF0, frontFill),
-          });
-          prims.push({
-            depth: (topB0.depth + topB1.depth) / 2,
-            draw: () => fillQuad(topB0, topB1, botB1, botB0, backFill),
-          });
-          prims.push({
-            depth: (topF0.depth + topF1.depth + topB0.depth + topB1.depth) / 4,
-            draw: () => fillQuad(topF0, topF1, topB1, topB0, topFill),
-          });
-
-          prims.push({
-            depth: (topF0.depth + topF1.depth) / 2 - 0.001,
-            draw: () => {
-              ctx.save();
-              ctx.strokeStyle = edgeColor;
-              ctx.lineWidth = 2;
-              ctx.lineJoin = "round";
-              ctx.lineCap = "round";
-              ctx.beginPath();
-              ctx.moveTo(topF0.sx, topF0.sy);
-              ctx.lineTo(topF1.sx, topF1.sy);
-              ctx.stroke();
-              ctx.restore();
+          prims.push(
+            {
+              depth: (topF0.depth + topF1.depth) / 2,
+              draw: () => fillQuad(topF0, topF1, botF1, botF0, frontFill),
             },
-          });
+            {
+              depth: (topB0.depth + topB1.depth) / 2,
+              draw: () => fillQuad(topB0, topB1, botB1, botB0, backFill),
+            },
+            {
+              depth: (topF0.depth + topF1.depth + topB0.depth + topB1.depth) / 4,
+              draw: () => fillQuad(topF0, topF1, topB1, topB0, topFill),
+            },
+            {
+              depth: (topF0.depth + topF1.depth) / 2 - 0.001,
+              draw: () => {
+                ctx.save();
+                ctx.strokeStyle = edgeColor;
+                ctx.lineWidth = 2;
+                ctx.lineJoin = "round";
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.moveTo(topF0.sx, topF0.sy);
+                ctx.lineTo(topF1.sx, topF1.sy);
+                ctx.stroke();
+                ctx.restore();
+              },
+            },
+          );
         }
       }
 
