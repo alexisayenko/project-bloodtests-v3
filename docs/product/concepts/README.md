@@ -18,6 +18,7 @@ Current concepts: [observation](observation.md),
 [monitoring panel](monitoring-panel.md),
 [diagnostic report](lab-report.md), [computed index](computed-index.md),
 [companion observation](companion-observation.md) (planned),
+[pathway](pathway.md) (planned),
 [unit](unit.md) (partly built: derived on import, the canonical
 code written on export, no UCUM parser yet).
 

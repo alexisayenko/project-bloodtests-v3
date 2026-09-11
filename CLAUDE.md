@@ -680,9 +680,10 @@ weekly npm (minor+patch grouped) and github-actions bumps.
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
   panel, lab report, computed index, companion observation (planned),
-  unit (printed and canonical are a pair: `rawUnit` and `unit`)
+  pathway (planned), unit (printed and canonical are a pair: `rawUnit` and
+  `unit`)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
-  (thirteen records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
-  ADR-0012 and ADR-0013 2026-09-09)
+  (fourteen records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
+  ADR-0012 and ADR-0013 2026-09-09, ADR-0014 2026-09-11)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
   envelope spec, and its published JSON Schema

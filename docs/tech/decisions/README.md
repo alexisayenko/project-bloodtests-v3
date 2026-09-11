@@ -29,6 +29,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0011](adr-0011-molar-masses-are-data-factors-are-derived.md) | Molar masses are cited reference data; conversion factors are derived | accepted · 2026-09-08 |
 | [ADR-0012](adr-0012-envelope-version-is-a-major-minor-string.md) | The envelope version is a `"major.minor"` string | accepted · 2026-09-09 |
 | [ADR-0013](adr-0013-u-and-iu-fold-by-loinc-property.md) | `U` and `IU` are one unit only where the analyte's LOINC property says so | accepted · 2026-09-09 |
+| [ADR-0014](adr-0014-pathway-wiring-is-mermaid-generated-to-json.md) | Pathway wiring is written in Mermaid and generated to JSON | accepted · 2026-09-11 |
 
 ## Where each one bites
 
@@ -65,6 +66,10 @@ Each record opens with `# ADR-NNNN: <title>` and a
   catalog's long common names (0010) in
   `web/src/data/analyteCatalog.ts`, and a label is all it decides
   (0003).
+- **Pathways** — 0014, still unbuilt: per-axis Mermaid wiring generated
+  to `web/public/data/pathways.json`, the same single-source rule as
+  0010; see the [pathway](../../product/concepts/pathway.md) concept and
+  [task-0024](../../tasks/task-0024.md).
 
 ## Adding one
 
