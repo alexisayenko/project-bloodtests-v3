@@ -77,21 +77,16 @@ export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
 export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
 export const DEFAULT_VIEW_SETTINGS: ViewSettings = { unitSystem: 'si', sampleLimit: 5 };
 
-export type ControlsTab = 'analysis' | 'trends' | 'in-range' | 'charts';
+/** Only the Results tab renders ControlsBar, and it reads every control. */
+export type ControlsTab = 'analysis';
 export type ControlsEnabled = { unitSystem: boolean; sampleLimit: boolean; filters: boolean };
 
-/**
- * ControlsBar sits above the tab strip, so a control the active tab does not
- * read is disabled rather than hidden -- hiding one would change the bar's
- * height as you switch tabs. "What's in range" reads the unit system and
- * nothing else; Trends and Charts read none of it.
- */
+const TAB_CONTROLS: Readonly<Record<ControlsTab, ControlsEnabled>> = {
+  analysis: { unitSystem: true, sampleLimit: true, filters: true },
+};
+
 export function controlsForTab(tab: ControlsTab): ControlsEnabled {
-  return {
-    unitSystem: tab === 'analysis' || tab === 'in-range',
-    sampleLimit: tab === 'analysis',
-    filters: tab === 'analysis',
-  };
+  return { ...TAB_CONTROLS[tab] };
 }
 
 export function loadViewSettings(): ViewSettings {
@@ -222,11 +217,14 @@ export function displayedResult(
   return { value: result.value, rawValue: result.rawValue, unit: own, converted: false };
 }
 
-/** The spelling most of the readings used; ties go to the earliest column. */
-function mostCommon(units: string[]): string {
+/** The spelling most of the readings used; ties go to the earliest column, and no readings name none. */
+export function mostCommon(units: readonly string[]): string | undefined {
   const counts = new Map<string, number>();
   for (const unit of units) counts.set(unit, (counts.get(unit) ?? 0) + 1);
-  return units.reduce((best, unit) => ((counts.get(unit) ?? 0) > (counts.get(best) ?? 0) ? unit : best));
+  return units.reduce<string | undefined>(
+    (best, unit) => (best === undefined || (counts.get(unit) ?? 0) > (counts.get(best) ?? 0) ? unit : best),
+    undefined
+  );
 }
 
 /**

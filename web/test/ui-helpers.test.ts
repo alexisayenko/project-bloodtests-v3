@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   buildRowCells,
   cellBg,
+  controlsForTab,
   formatFullDate,
   formatMonthYear,
   greenRangeOf,
@@ -9,6 +10,7 @@ import {
   isCellArmed,
   labsByDate,
   loadViewSettings,
+  mostCommon,
   DEFAULT_VIEW_SETTINGS,
   displayedResult,
   popupPosition,
@@ -262,6 +264,38 @@ describe('displayedResult', () => {
   it('keeps the printed unit when the SI/US target is unreachable', () => {
     // No TC rule for g/L: relabelling to mg/dL here would be the same mislabel.
     expect(displayedResult('TC', reading('2093-3', 2, 'g/L'), 'us')).toMatchObject({ value: 2, unit: 'g/L', converted: false });
+  });
+});
+
+describe('controlsForTab', () => {
+  it('enables every control on the Results tab, the only one that renders the bar', () => {
+    expect(controlsForTab('analysis')).toEqual({ unitSystem: true, sampleLimit: true, filters: true });
+  });
+
+  it('hands out a fresh object each call', () => {
+    const first = controlsForTab('analysis');
+    first.filters = false;
+    expect(controlsForTab('analysis').filters).toBe(true);
+  });
+});
+
+describe('mostCommon', () => {
+  it('names none for no readings', () => {
+    expect(mostCommon([])).toBeUndefined();
+  });
+
+  it('is the only spelling when there is one', () => {
+    expect(mostCommon(['mIU/L'])).toBe('mIU/L');
+  });
+
+  it('picks the majority spelling, wherever it first appears', () => {
+    expect(mostCommon(['uIU/mL', 'mIU/L', 'mIU/L'])).toBe('mIU/L');
+    expect(mostCommon(['ug/L', 'ng/mL', 'ug/L', 'ng/mL', 'ng/mL'])).toBe('ng/mL');
+  });
+
+  it('breaks a tie toward the earliest column', () => {
+    expect(mostCommon(['uIU/mL', 'mIU/L'])).toBe('uIU/mL');
+    expect(mostCommon(['mIU/L', 'uIU/mL', 'uIU/mL', 'mIU/L'])).toBe('mIU/L');
   });
 });
 

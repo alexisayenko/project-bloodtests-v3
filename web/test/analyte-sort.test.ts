@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { compareAnalytes, sortAnalytes, type AnalyteSortValues } from '../src/components/conditions/analyteSort';
+import {
+  compareAnalytes,
+  sortAnalytes,
+  sortedUnique,
+  type AnalyteSortValues,
+} from '../src/components/conditions/analyteSort';
 
 function row(values: Partial<AnalyteSortValues> & { loinc: string }): AnalyteSortValues {
   return { name: undefined, specimen: undefined, unit: undefined, lastTested: undefined, ...values };
@@ -95,5 +100,39 @@ describe('compareAnalytes', () => {
     const a = row({ loinc: '1-1', unit: 'g/L' });
     expect(compareAnalytes(a, a, 'unit', 'asc')).toBe(0);
     expect(compareAnalytes(a, row({ loinc: '2-1', unit: 'g/L' }), 'unit', 'asc')).toBeLessThan(0);
+  });
+
+  it('ranks a present cell above an absent one, and two absent ones by LOINC, either way round', () => {
+    const present = row({ loinc: '9-1', unit: 'g/L' });
+    const absent = row({ loinc: '1-1' });
+    const alsoAbsent = row({ loinc: '2-1' });
+    for (const direction of ['asc', 'desc'] as const) {
+      expect(compareAnalytes(present, absent, 'unit', direction)).toBe(-1);
+      expect(compareAnalytes(absent, present, 'unit', direction)).toBe(1);
+      expect(compareAnalytes(absent, alsoAbsent, 'unit', direction)).toBeLessThan(0);
+      expect(compareAnalytes(alsoAbsent, absent, 'unit', direction)).toBeGreaterThan(0);
+      expect(compareAnalytes(absent, absent, 'unit', direction)).toBe(0);
+    }
+  });
+});
+
+describe('sortedUnique', () => {
+  it('is empty for no values', () => {
+    expect(sortedUnique([])).toEqual([]);
+  });
+
+  it('drops duplicates and orders ISO dates chronologically', () => {
+    expect(sortedUnique(['2026-09-08', '2025-01-15', '2026-09-08', '2025-12-01'])).toEqual([
+      '2025-01-15',
+      '2025-12-01',
+      '2026-09-08',
+    ]);
+  });
+
+  it('orders by code unit, as the default sort does, and leaves its input untouched', () => {
+    const input = ['b', 'B', 'a', 'Z', '10', '9', 'é', 'e', 'a'];
+    const before = [...input];
+    expect(sortedUnique(input)).toEqual(['10', '9', 'B', 'Z', 'a', 'b', 'e', 'é']);
+    expect(input).toEqual(before);
   });
 });

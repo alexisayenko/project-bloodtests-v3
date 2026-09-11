@@ -185,7 +185,7 @@ export function setScheduleLab(scheduled: Scheduled, lab: string | undefined): S
 }
 
 export function selectionState(flags: readonly boolean[]): SelectionState {
-  if (flags.length === 0 || flags.every((f) => !f)) return 'none';
+  if (flags.every((f) => !f)) return 'none';
   return flags.every(Boolean) ? 'all' : 'some';
 }
 

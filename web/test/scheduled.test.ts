@@ -281,4 +281,12 @@ describe('selectionState', () => {
   it('reads an empty table as none rather than all', () => {
     expect(selectionState([])).toBe('none');
   });
+
+  it('reads the raw flags the same way at every size', () => {
+    expect(selectionState([false])).toBe('none');
+    expect(selectionState([true])).toBe('all');
+    expect(selectionState([false, false, false])).toBe('none');
+    expect(selectionState([false, true, false])).toBe('some');
+    expect(selectionState([true, true, true])).toBe('all');
+  });
 });

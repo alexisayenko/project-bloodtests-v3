@@ -37,7 +37,7 @@ import {
   panelMembershipOf,
   type Observation,
 } from './markers';
-import { sortAnalytes, type AnalyteSortKey, type AnalyteSortValues, type SortDirection } from './analyteSort';
+import { sortAnalytes, sortedUnique, type AnalyteSortKey, type AnalyteSortValues, type SortDirection } from './analyteSort';
 import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { routeToHash, type Route } from './routing';
 import { COLOR } from '../../styles/tokens';
@@ -301,7 +301,7 @@ function MolarMassesPage() {
   const exampleUnits = unitsOf('cholesterol');
   const conventional = MOLAR_MASSES.filter((m) => m.basis === 'conventional');
   const noted = MOLAR_MASSES.filter((m) => m.basis !== 'conventional' && m.note);
-  const retrieved = Array.from(new Set(MOLAR_MASSES.flatMap((m) => m.sources.map((s) => s.retrieved)))).sort();
+  const retrieved = sortedUnique(MOLAR_MASSES.flatMap((m) => m.sources.map((s) => s.retrieved)));
 
   return (
     <div style={{ maxWidth: 860 }}>
@@ -944,6 +944,7 @@ const sortableLabel = {
 } as const;
 
 const ARROW = { asc: '▲', desc: '▼' } as const;
+const ARIA_SORT = { asc: 'ascending', desc: 'descending' } as const;
 
 function SortableHeader({
   label,
@@ -958,7 +959,7 @@ function SortableHeader({
 }>) {
   const active = sort.key === column;
   return (
-    <th style={sortableTh} aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
+    <th style={sortableTh} aria-sort={active ? ARIA_SORT[sort.direction] : 'none'}>
       <span
         {...pressable(() => onSort(column))}
         aria-label={`Sort by ${label}`}

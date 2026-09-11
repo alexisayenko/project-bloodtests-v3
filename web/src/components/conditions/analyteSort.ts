@@ -2,6 +2,7 @@
  * Column sorting for the Reference Book's LOINC database table. Pure, so the
  * two rules that look like bugs from the outside -- numeric LOINC order and
  * empty cells at the bottom in both directions -- are testable on their own.
+ * Also the Reference Book's one other ordering, its list of retrieval dates.
  */
 
 // 'lastTested' ranks on the ISO date behind the cell, never the "Aug 26" and
@@ -34,7 +35,11 @@ export function compareAnalytes(
   const right = b[key];
   // An absent cell is not a value that ranks below "A" -- it is a row the
   // column says nothing about, so it sinks to the bottom in both directions.
-  if (!left || !right) return left ? -1 : (right ? 1 : compareLoinc(a.loinc, b.loinc));
+  if (!left || !right) {
+    if (left) return -1;
+    if (right) return 1;
+    return compareLoinc(a.loinc, b.loinc);
+  }
   const within = key === 'loinc' ? compareLoinc(left, right) : left.localeCompare(right);
   if (within === 0) return compareLoinc(a.loinc, b.loinc);
   return direction === 'asc' ? within : -within;
@@ -47,4 +52,9 @@ export function sortAnalytes<T>(
   direction: SortDirection
 ): T[] {
   return [...rows].sort((a, b) => compareAnalytes(valuesOf(a), valuesOf(b), key, direction));
+}
+
+/** Each distinct string once, in code-unit order -- which for ISO dates is chronological. */
+export function sortedUnique(values: Iterable<string>): string[] {
+  return Array.from(new Set(values)).sort((a, b) => (a < b ? -1 : Number(a > b)));
 }
