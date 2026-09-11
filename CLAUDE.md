@@ -253,8 +253,9 @@ and text filters narrow it. Global state in localStorage
 unset month is `undefined`, so `JSON.stringify` drops the key and an
 unscheduled payload keeps the old shape, and a missing or malformed one loads
 as undefined with the checked sets intact; `lab` is a `laboratories.json` id
-read the same way, though the header's laboratory picker and total sit behind
-a `showPricing` prop no caller passes since the tables were unified), logic in `scheduled.ts`, whose
+read the same way, which nothing sets any more — the header's laboratory picker
+and total were removed — and which is still parsed and saved only so stored
+schedules and backups carrying it keep loading), logic in `scheduled.ts`, whose
 `useScheduled` hook the
 shell owns and hands down as `RowScheduling` / `IndexScheduling`, rather than
 Panel Detail, which remounts per panel. Selecting an index

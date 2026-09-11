@@ -12,7 +12,6 @@ import {
   selectionState,
   setIndicesScheduled,
   setRowsScheduled,
-  setScheduleLab,
   setScheduleMonth,
   toggleIndex,
   toggleRow,
@@ -210,7 +209,7 @@ describe('the chosen laboratory', () => {
   });
 
   it('writes no lab key when none is chosen, so the stored shape stays as it was', () => {
-    saveScheduled(setScheduleLab({ loincs: ['2093-3'], indices: [] }, undefined));
+    saveScheduled({ loincs: ['2093-3'], indices: [], lab: undefined });
     expect(store.get(SCHEDULED_KEY)).toBe('{"loincs":["2093-3"],"indices":[]}');
   });
 
@@ -219,11 +218,10 @@ describe('the chosen laboratory', () => {
       store.set(SCHEDULED_KEY, `{"loincs":["2093-3"],"indices":[],"lab":${lab}}`);
       expect(loadScheduled()).toEqual({ loincs: ['2093-3'], indices: [] });
     }
-    expect(setScheduleLab(EMPTY_SCHEDULED, 'no-such-lab').lab).toBeUndefined();
   });
 
   it('survives every kind of toggle and a month change', () => {
-    const base = setScheduleLab(EMPTY_SCHEDULED, 'esculab');
+    const base = { ...EMPTY_SCHEDULED, lab: 'esculab' };
     expect(toggleRow(base, ['2093-3']).lab).toBe('esculab');
     expect(toggleIndex(base, 'ka').lab).toBe('esculab');
     expect(setRowsScheduled(base, [['2093-3']], true).lab).toBe('esculab');

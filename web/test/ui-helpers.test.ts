@@ -6,11 +6,10 @@ import {
   formatFullDate,
   formatMonthYear,
   greenRangeOf,
-  indexInputEntries,
   isCellArmed,
-  labsByDate,
   loadViewSettings,
   mostCommon,
+  namedLab,
   DEFAULT_VIEW_SETTINGS,
   displayedResult,
   popupPosition,
@@ -425,42 +424,9 @@ describe('buildRowCells', () => {
   });
 });
 
-function drawnAt(loinc: string, date: string, value: number, place: string): ResultEntry {
-  return { ...entry(loinc, date, value, 'mg/dL'), place };
-}
-
-describe('labsByDate', () => {
-  it('names each lab in a column once, in first-seen order, and nothing for a reading without one', () => {
-    const labs = labsByDate([
-      drawnAt('2093-3', '2026-05-07', 200, 'Esculab'),
-      null,
-      drawnAt('2085-9', '2026-05-07', 50, ' NeoGenesis '),
-      drawnAt('2571-8', '2026-05-07', 90, 'Esculab'),
-      drawnAt('2093-3', '2024-01-01', 190, ''),
-      drawnAt('2085-9', '2024-01-01', 48, 'Unknown Lab'),
-      drawnAt('2571-8', '2024-01-01', 80, ' — '),
-    ]);
-    expect(labs).toEqual({ '2026-05-07': ['Esculab', 'NeoGenesis'], '2024-01-01': [] });
-  });
-
-  it('ignores an entry that lists a marker without a reading', () => {
-    const blank = drawnAt('2093-3', '2026-05-07', 200, 'Synevo');
-    blank.result = { ...blank.result, value: null, rawValue: '' };
-    expect(labsByDate([blank])).toEqual({});
-  });
-});
-
-describe('indexInputEntries', () => {
-  const tchdl = INDEX_DEFS.find((def) => def.key === 'tchdl')!;
-
-  it('returns the readings an index was computed from, and none for a date it could not compute', () => {
-    const tc = drawnAt('2093-3', '2026-05-07', 200, 'Esculab');
-    const hdl = drawnAt('2085-9', '2026-05-07', 50, 'NeoGenesis');
-    const unrelated = drawnAt('2345-7', '2026-05-07', 90, 'Synevo');
-    const alone = drawnAt('2093-3', '2024-01-01', 190, 'Dila');
-    const all = [tc, hdl, unrelated, alone];
-    const resultsByDate: Record<string, Record<string, Result>> = {};
-    for (const e of all) (resultsByDate[e.date] ??= {})[e.loinc] = e.result;
-    expect(indexInputEntries([tchdl], ['2024-01-01', '2026-05-07'], all, resultsByDate)).toEqual([tc, hdl]);
+describe('namedLab', () => {
+  it('trims a named lab and names nothing for an empty field, a placeholder or "Unknown Lab"', () => {
+    expect(namedLab(' NeoGenesis ')).toBe('NeoGenesis');
+    for (const place of ['', ' — ', '?', 'Unknown Lab']) expect(namedLab(place)).toBeUndefined();
   });
 });

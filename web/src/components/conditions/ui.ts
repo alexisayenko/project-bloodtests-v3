@@ -1,5 +1,5 @@
 import { fmtNum } from '../../utils/format';
-import { MARKER_CANDIDATE_LOINCS, SI_US_UNIT, computeIndex, convertUnit, type IndexDef } from '../../data/computedIndices';
+import { SI_US_UNIT, convertUnit, type IndexDef } from '../../data/computedIndices';
 import { DEFAULT_UNITS } from '../../data/analyteCatalog';
 import { toLatinUnit, sameUnitScale } from '../../data/unitNormalization';
 import { UNKNOWN_LAB } from '../../data/parseUpload';
@@ -321,45 +321,6 @@ const NAMES_A_LAB = /[\p{L}\p{N}]/u;
 export function namedLab(place: string): string | undefined {
   const name = place.trim();
   return NAMES_A_LAB.test(name) && name !== UNKNOWN_LAB ? name : undefined;
-}
-
-/**
- * The labs behind each date column, named from the readings actually shown in
- * it. Columns are keyed by date alone, so two same-day draws from different
- * labs share one and both are named; an entry without a reading, or without a
- * lab, names nothing.
- */
-export function labsByDate(entries: readonly (ResultEntry | null)[]): Record<string, string[]> {
-  const labs: Record<string, string[]> = {};
-  for (const entry of entries) {
-    if (!entry || (entry.result.value == null && !entry.result.rawValue)) continue;
-    const names = (labs[entry.date] ??= []);
-    const place = namedLab(entry.place);
-    if (place && !names.includes(place)) names.push(place);
-  }
-  return labs;
-}
-
-/**
- * The entries each visible date's computed indices were computed from: for
- * every index with a value that day, the readings under any code its input
- * markers answer for that are the very results the formula was handed.
- */
-export function indexInputEntries(
-  defs: readonly IndexDef[],
-  visibleDates: readonly string[],
-  allResults: readonly ResultEntry[],
-  resultsByDate: Record<string, Record<string, Result>>
-): ResultEntry[] {
-  return visibleDates.flatMap((date) => {
-    const byLoinc = resultsByDate[date] ?? {};
-    const inputs = new Set(
-      defs
-        .filter((def) => computeIndex(def, byLoinc) != null)
-        .flatMap((def) => def.needs.flatMap((marker) => MARKER_CANDIDATE_LOINCS[marker] ?? []))
-    );
-    return allResults.filter((e) => e.date === date && inputs.has(e.loinc) && byLoinc[e.loinc] === e.result);
-  });
 }
 
 /**
