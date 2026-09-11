@@ -54,7 +54,7 @@ export function ProfileView({
         ]}
         pillars={[
           { icon: Shield, line1: '100% private', line2: 'client-side only' },
-          { icon: Upload, line1: 'Direct PDF & JSON', line2: 'import support' },
+          { icon: Upload, line1: 'JSON import,', line2: 'PDFs via a chatbot' },
           { icon: Sparkles, line1: 'Evidence-graded', line2: 'clinical indices' },
         ]}
       />

@@ -7,8 +7,6 @@ import {
   LABEL_COL_WIDTH,
   buildRowCells,
   formatMonthYear,
-  indexInputEntries,
-  labsByDate,
   pressable,
   cellBg,
   isCellArmed,
@@ -44,16 +42,6 @@ const th = {
   padding: '8px 12px',
   verticalAlign: 'top',
   borderBottom: `1.5px solid ${COLOR.accent}`,
-  whiteSpace: 'nowrap',
-} as const;
-const labLine = {
-  height: 14,
-  lineHeight: '14px',
-  fontSize: 11,
-  fontWeight: 400,
-  color: COLOR.textMuted,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 } as const;
 const td = { padding: '8px 12px', borderBottom: `1px solid ${COLOR.borderSubtle}`, whiteSpace: 'nowrap', cursor: 'pointer' } as const;
@@ -97,25 +85,17 @@ function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling:
 }
 
 function TableHead({
-  label, dates, labs, schedule,
-}: Readonly<{ label: string; dates: string[]; labs?: Record<string, string[]>; schedule?: ScheduleHeaderProps }>) {
+  label, dates, schedule,
+}: Readonly<{ label: string; dates: string[]; schedule?: ScheduleHeaderProps }>) {
   return (
     <thead>
       <tr>
         <th style={th}>{label}</th>
-        {dates.map((date) => {
-          const names = labs?.[date]?.join(', ') ?? '';
-          return (
-            <th key={date} style={th}>
-              {formatMonthYear(date)}
-              {labs && (
-                <div style={labLine} title={names || undefined}>
-                  {names}
-                </div>
-              )}
-            </th>
-          );
-        })}
+        {dates.map((date) => (
+          <th key={date} style={th}>
+            {formatMonthYear(date)}
+          </th>
+        ))}
         {schedule && (
           <>
             <th style={gapCell} />
@@ -194,32 +174,6 @@ function armedCellHandler({
   };
 }
 
-export type ObservationTableProps = {
-  label: string;
-  rows: Observation[];
-  visibleDates: string[];
-  allResults: ResultEntry[];
-  unitSystem: 'si' | 'us';
-  selectedLoinc: string | null;
-  onSelect: (loinc: string) => void;
-  onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
-  /** Which single (row, date) data cell is armed for a second click to open. */
-  selectedCell: SelectedCell;
-  onSelectCell: (loinc: string, date: string) => void;
-  /** Second click on an already-armed cell: open the result popup for that specific value. */
-  onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
-  /** Show the lab's raw string (qualifiers like "<0.1") when no unit conversion applies. */
-  preferRaw?: boolean;
-  /** When set, appends the Scheduled toggle column. */
-  scheduling?: RowScheduling;
-  /** Adds the laboratory select and total to the Scheduled header (Panel Detail only). */
-  showPricing?: boolean;
-  /** Names the laboratories under each date in the header (Panel Detail only). */
-  showLabs?: boolean;
-  /** The selected computed index: rows answering for any of its input `loincs` get a mark before their name (Panel Detail only). */
-  inputsOf?: Relation;
-};
-
 /** One observation row's cells across the visible dates. */
 function ObservationCells({
   test, cells, showCellUnits, selected, selectedCell, onSelect, onSelectCell, onOpenResultPopup, preferRaw,
@@ -231,7 +185,7 @@ function ObservationCells({
   selectedCell: SelectedCell;
   onSelect: (loinc: string) => void;
   onSelectCell: (loinc: string, date: string) => void;
-  onOpenResultPopup: ObservationTableProps['onOpenResultPopup'];
+  onOpenResultPopup: ResultsTableProps['onOpenResultPopup'];
   preferRaw?: boolean;
 }>) {
   return (
@@ -442,15 +396,18 @@ export type ResultsTableProps = {
   onSelect: (loinc: string) => void;
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexPopup?: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
+  /** Which single (row, date) data cell is armed for a second click to open. */
   selectedCell: SelectedCell;
   onSelectCell: (loinc: string, date: string) => void;
+  /** Second click on an already-armed cell: open the result popup for that specific value. */
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexResultPopup?: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
+  /** Show the lab's raw string (qualifiers like "<0.1") when no unit conversion applies. */
   preferRaw?: boolean;
+  /** When set, appends the Scheduled toggle column. */
   scheduling?: RowScheduling;
   indexScheduling?: IndexScheduling;
-  showPricing?: boolean;
-  showLabs?: boolean;
+  /** The selected computed index: rows answering for any of its input `loincs` get a mark before their name. */
   inputsOf?: Relation;
   usedBy?: Relation;
 };
@@ -478,8 +435,6 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
     indexScheduling,
     inputsOf,
     usedBy,
-    showPricing,
-    showLabs,
   } = props;
 
   const hasObs = rows.length > 0;
@@ -488,14 +443,6 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
 
   const builtRows = rows.map((test) => ({ test, ...buildRowCells(test, visibleDates, allResults, unitSystem) }));
   const builtIndexRows = indices.map((test) => ({ test, ...buildRowCells(test, visibleDates, allResults, unitSystem) }));
-
-  const labs = showLabs
-    ? labsByDate([
-        ...builtRows.flatMap(({ cells }) => cells.map((cell) => cell.match)),
-        ...builtIndexRows.flatMap(({ cells }) => cells.map((cell) => cell.match)),
-        ...(defs.length > 0 && resultsByDate ? indexInputEntries(defs, visibleDates, allResults, resultsByDate) : []),
-      ])
-    : undefined;
 
   const hasScheduling = Boolean(scheduling || indexScheduling);
   const visibleRowLoincs = [
@@ -525,7 +472,6 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
         indexScheduling.onToggleAll(visibleKeys, on);
       }
     },
-    showPricing,
   };
 
   const otherColSpan = visibleDates.length + (hasScheduling ? 2 : 0) + 1;
@@ -533,7 +479,7 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
   return (
     <TableScroller
       colgroup={<ColGroup dates={visibleDates} scheduling={hasScheduling} />}
-      head={<TableHead label={tableLabel} dates={visibleDates} labs={labs} schedule={schedule || undefined} />}
+      head={<TableHead label={tableLabel} dates={visibleDates} schedule={schedule || undefined} />}
     >
       <tbody>
         {builtRows.map(({ test, cells, rowUnit, showCellUnits }) => (
@@ -599,39 +545,3 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
   );
 }
 
-export function ObservationTable(props: Readonly<ObservationTableProps>) {
-  return <ResultsTable {...props} />;
-}
-
-export type IndexTableProps = {
-  defs: IndexDef[];
-  visibleDates: string[];
-  allResults: ResultEntry[];
-  resultsByDate: Record<string, Record<string, Result>>;
-  selectedLoinc: string | null;
-  onSelect: (key: string) => void;
-  onOpenPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
-  selectedCell: SelectedCell;
-  onSelectCell: (key: string, date: string) => void;
-  onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
-  scheduling?: IndexScheduling;
-  usedBy?: Relation;
-  showPricing?: boolean;
-  showLabs?: boolean;
-};
-
-export function IndexTable(props: Readonly<IndexTableProps>) {
-  const { onOpenPopup, scheduling, ...rest } = props;
-  return (
-    <ResultsTable
-      {...rest}
-      label="Indices"
-      rows={[]}
-      onOpenPopup={() => {}}
-      onOpenIndexPopup={onOpenPopup}
-      onOpenResultPopup={() => {}}
-      unitSystem="si"
-      indexScheduling={scheduling}
-    />
-  );
-}
