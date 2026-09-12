@@ -9,6 +9,8 @@
     "prices": [
       { "label": "ALP", "price": 171, "covers": ["6768-6"] },
       { "label": "ALT", "price": 171, "covers": ["1742-6"] },
+      { "label": "Apo A1", "price": 288, "covers": ["1869-7"] },
+      { "label": "Apo B", "price": 288, "covers": ["1884-6"] },
       { "label": "AST", "price": 171, "covers": ["1920-8"] },
       {
         "label": "FBC",
@@ -21,6 +23,7 @@
         ],
         "note": "A bundle, taken to be the catalog's whole fbc group. Whether Esculab's FBC includes the differential has not been recorded."
       },
+      { "label": "Ferritin", "price": 405, "covers": ["2276-4"] },
       {
         "label": "Glucose",
         "price": 189,
@@ -28,6 +31,7 @@
         "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
       },
       { "label": "HDL-C", "price": 167, "covers": ["2085-9"] },
+      { "label": "Insulin", "price": 351, "covers": ["20448-7"] },
       {
         "label": "LDL-C",
         "price": 162,
@@ -36,7 +40,8 @@
       },
       { "label": "TBIL", "price": 171, "covers": ["1975-2"] },
       { "label": "TC", "price": 167, "covers": ["2093-3"] },
-      { "label": "TRIG", "price": 185, "covers": ["2571-8"] }
+      { "label": "TRIG", "price": 185, "covers": ["2571-8"] },
+      { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] }
     ]
   },
   {

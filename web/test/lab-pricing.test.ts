@@ -86,13 +86,13 @@ describe('quoteSchedule', () => {
     expect(quoteSchedule(schedule, synevo).total).toBe(1420);
   });
 
-  it('adds ApoB and insulin where a laboratory prices them and leaves them unpriced where it does not', () => {
+  it('adds ApoB and insulin, now priced at every laboratory including Esculab', () => {
     const schedule = ['2093-3', '2085-9', '13457-7', '2571-8', '718-7', '2345-7', '1884-6', '20448-7'];
     expect(quoteSchedule(schedule, LABORATORY_BY_ID.medis!).total).toBe(1744);
     expect(quoteSchedule(schedule, LABORATORY_BY_ID.synevo!).total).toBe(2210);
     const esculab = quoteSchedule(schedule, LABORATORY_BY_ID.esculab!);
-    expect(esculab.total).toBe(1198);
-    expect(esculab.unpriced).toEqual(['1884-6', '20448-7']);
+    expect(esculab.total).toBe(1837);
+    expect(esculab.unpriced).toEqual([]);
   });
 
   it("prices Medis's C-peptide, hsCRP, creatinine, HbA1c and uric acid, a molar-coded creatinine included", () => {
