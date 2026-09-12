@@ -485,6 +485,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-sources { margin-top: 4px; }
 .mc-pathway-sources ol { margin: 2px 0 0; padding-left: 18px; }
 .mc-pathway-sources a { color: var(--accent); }
+.mc-pathway-badge-body .mc-pathway-sources { margin-top: 0; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
 .mc-pathway-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
 .mc-pathway-check input { accent-color: var(--accent); width: 15px; height: 15px; }
 .mc-pathway-stepper {

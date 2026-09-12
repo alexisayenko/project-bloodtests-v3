@@ -320,27 +320,31 @@ function ReferenceBlock({ scope, info }: Readonly<{ scope: string; info: Referen
         </div>
       ))}
       {info.empty && <div className="mc-pathway-ref-empty">{info.empty}</div>}
-      {info.sources.length > 0 && (
-        <div className="mc-pathway-sources">
-          <b>Sources</b>
-          <ol>
-            {info.sources.map((s, i) => (
-              <li key={`${s.title}|${s.url ?? ''}`} id={`${scope}-src-${i + 1}`}>
-                {s.organization}.{' '}
-                {s.url ? (
-                  <a href={s.url} target="_blank" rel="noreferrer">
-                    {s.title}
-                  </a>
-                ) : (
-                  s.title
-                )}
-                {s.year ? ` (${s.year})` : ''}
-                {s.retrieved ? `, retrieved ${s.retrieved}` : ''}
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
+    </div>
+  );
+}
+
+function SourcesBlock({ scope, info }: Readonly<{ scope: string; info: ReferenceInfo }>) {
+  if (info.sources.length === 0) return null;
+  return (
+    <div className="mc-pathway-sources">
+      <b>Sources</b>
+      <ol>
+        {info.sources.map((s, i) => (
+          <li key={`${s.title}|${s.url ?? ''}`} id={`${scope}-src-${i + 1}`}>
+            {s.organization}.{' '}
+            {s.url ? (
+              <a href={s.url} target="_blank" rel="noreferrer">
+                {s.title}
+              </a>
+            ) : (
+              s.title
+            )}
+            {s.year ? ` (${s.year})` : ''}
+            {s.retrieved ? `, retrieved ${s.retrieved}` : ''}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
@@ -381,6 +385,8 @@ const CARD_WIDTH = 300;
 function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ id: CaptionId; left: number; top: number; snapshot: Snapshot; date: string | undefined; unitSystem: 'si' | 'us' }>) {
   const spec = CAPTIONS[id];
   const measure = snapshot[spec.measure];
+  const info = referenceOf(spec.measure, snapshot, unitSystem);
+  const scope = `pathway-${id}`;
   return (
     <div className="mc-pathway-pop" role="dialog" aria-label={spec.title} style={{ left, top, width: CARD_WIDTH }}>
       <div className="mc-pathway-pop-title">{spec.title}</div>
@@ -389,7 +395,8 @@ function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ i
         <span><b>Date</b> {date ? formatFullDate(date) : DASH}</span>
       </div>
       {spec.note && <p className="mc-pathway-pop-note">{spec.note}</p>}
-      <ReferenceBlock scope={`pathway-${id}`} info={referenceOf(spec.measure, snapshot, unitSystem)} />
+      <ReferenceBlock scope={scope} info={info} />
+      <SourcesBlock scope={scope} info={info} />
     </div>
   );
 }
@@ -772,7 +779,7 @@ const BADGES: ReadonlyArray<Badge> = [
     caveats: 'Peaks in the morning; SHBG changes it without changing free T.',
   },
   {
-    id: 'free-t', name: 'cFT', measure: 'cft',
+    id: 'free-t', name: 'Free Testosterone', measure: 'cft',
     meaning: 'The unbound share (about 1–3%) that can enter cells. Calculated from total T, SHBG and albumin (Vermeulen).',
     low: 'Less testosterone available to tissues.',
     high: 'More available to tissues.',
@@ -819,6 +826,8 @@ function Badges({
     <aside className="mc-pathway-badges" aria-label="Measures and ratios">
       {BADGES.map((b) => {
         const expanded = open === b.id;
+        const scope = `pathway-${b.id}`;
+        const info = expanded ? referenceOf(b.measure, snapshot, unitSystem) : null;
         return (
           <div
             key={b.id}
@@ -841,13 +850,14 @@ function Badges({
               </span>
               <span className="mc-pathway-badge-value">{snapshot[b.measure].text}</span>
             </button>
-            {expanded && (
+            {expanded && info && (
               <div className="mc-pathway-badge-body">
-                <ReferenceBlock scope={`pathway-${b.id}`} info={referenceOf(b.measure, snapshot, unitSystem)} />
+                <ReferenceBlock scope={scope} info={info} />
                 <span><b>Meaning</b> {b.meaning}</span>
                 <span><b>Low</b> {b.low}</span>
                 <span><b>High</b> {b.high}</span>
                 <span><b>Caveats</b> {b.caveats}</span>
+                <SourcesBlock scope={scope} info={info} />
               </div>
             )}
           </div>
