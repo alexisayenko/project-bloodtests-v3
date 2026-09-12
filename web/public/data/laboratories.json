@@ -12,7 +12,6 @@
       { "label": "AST", "price": 171, "covers": ["1920-8"] },
       { "label": "Creatinine", "price": 185, "covers": ["2160-0"] },
       { "label": "Cystatin C", "price": 685, "covers": ["33863-2"] },
-      { "label": "eGFR", "price": 189, "covers": ["48642-3"] },
       {
         "label": "FBC",
         "price": 328,
