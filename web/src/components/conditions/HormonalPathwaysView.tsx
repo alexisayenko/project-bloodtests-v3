@@ -819,6 +819,13 @@ const BADGES: ReadonlyArray<Badge> = [
     caveats: 'Sartorius’s (2009) fitted coefficients are published only behind Annals of Clinical Biochemistry’s paywall and could not be read or verified here, so no value can be computed.',
   },
   {
+    id: 'cft-zakharov', name: 'cFT (Zakharov)', unavailable: true,
+    meaning: 'Another published calculation for free testosterone — a multi-step, dynamic allosteric model of testosterone’s binding to SHBG (Zakharov et al. 2015, Molecular and Cellular Endocrinology), distinct from the Vermeulen equation (cFT) used above.',
+    low: 'Not shown — no formula is implemented.',
+    high: 'Not shown — no formula is implemented.',
+    caveats: 'Zakharov et al.’s (2015) full text and equations are published only behind Elsevier’s paywall — unreadable via PMC, its DOI, or the authors’ institutional pages — so no value can be computed here. Independently of that, Fiers et al. (2018) tested this model against direct equilibrium-dialysis measurement and found it ran roughly twofold high (median ratio ~2.05), despite Zakharov’s own validation reporting good agreement — so even a readable copy would carry a reported accuracy problem.',
+  },
+  {
     id: 'bio-t', name: 'Bioavailable Testosterone', measure: 'biot',
     meaning: 'The androgen pool tissues can actually draw on — free plus the share loosely held by albumin, as opposed to what sits inertly locked to SHBG.',
     low: 'Less testosterone reaching tissues.',
