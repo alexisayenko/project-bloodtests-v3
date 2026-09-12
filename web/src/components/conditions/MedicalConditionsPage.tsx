@@ -309,7 +309,7 @@ export function MedicalConditionsPage() {
       case 'account':
         return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':
-        return <PlanVisitView visits={scheduledVisits.visits} onOpenPopup={openPopup} onSelectLab={onSelectLab} />;
+        return <PlanVisitView visits={scheduledVisits.visits} onOpenPopup={openPopup} onSelectLab={onSelectLab} onSetMonth={onSetMonth} />;
       case 'reference':
         return (
           <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} onOpenPopup={openPopup} />

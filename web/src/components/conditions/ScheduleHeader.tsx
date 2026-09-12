@@ -7,6 +7,31 @@ import { COLOR } from '../../styles/tokens';
 const NO_MONTH = '';
 const MONTHS_AHEAD = 23;
 
+export type MonthSelectProps = {
+  /** Accessible name -- the select carries no visible label of its own. */
+  ariaLabel: string;
+  month: string | undefined;
+  onSetMonth: (month: string | undefined) => void;
+};
+
+/** A visit's target-month picker: this month plus the next 23, styled as a small inline field. Shared by ScheduleHeader (in a results table) and PlanVisitView (in the "Planned for" pill), so both edit the same underlying month. */
+export function MonthSelect({ ariaLabel, month, onSetMonth }: Readonly<MonthSelectProps>) {
+  return (
+    <select
+      aria-label={ariaLabel}
+      value={month ?? NO_MONTH}
+      onChange={(e) => onSetMonth(e.currentTarget.value || undefined)}
+      className="mc-field mc-field-select mc-field-sm"
+    >
+      <option value={NO_MONTH}>No month</option>
+      {monthChoices(new Date(), MONTHS_AHEAD, month).map((m) => (
+        <option key={m} value={m}>
+          {formatMonthFullYear(m)}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export type ScheduleHeaderProps = {
   /** The table this header sits on, for the select-all box's accessible name. */
@@ -36,19 +61,7 @@ export function ScheduleHeader({ label, month, onSetMonth, state, disabled, onTo
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-      <select
-        aria-label="Month this visit is planned for"
-        value={month ?? NO_MONTH}
-        onChange={(e) => onSetMonth(e.currentTarget.value || undefined)}
-        className="mc-field mc-field-select mc-field-sm"
-      >
-        <option value={NO_MONTH}>No month</option>
-        {monthChoices(new Date(), MONTHS_AHEAD, month).map((m) => (
-          <option key={m} value={m}>
-            {formatMonthFullYear(m)}
-          </option>
-        ))}
-      </select>
+      <MonthSelect ariaLabel="Month this visit is planned for" month={month} onSetMonth={onSetMonth} />
       <input
         ref={box}
         type="checkbox"

@@ -1,5 +1,5 @@
 import type { ScheduledVisit } from './scheduled';
-import { formatMonthFullYear } from '../../data/months';
+import { MonthSelect } from './ScheduleHeader';
 import { LABORATORIES, formatPrice, quoteSchedule, type LabQuote, type Laboratory } from '../../data/labPricing';
 import { planCells, planRows, planRowLabel, type PlanCell } from '../../data/visitPlan';
 import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
@@ -77,12 +77,14 @@ function VisitPlanCard({
   index,
   onOpenPopup,
   onSelectLab,
+  onSetMonth,
 }: Readonly<{
   visit: ScheduledVisit;
   /** Distinguishes this visit's radio-button group from every other visit's, so picking a lab in one never touches another. */
   index: number;
   onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onSelectLab: (labId: string | undefined) => void;
+  onSetMonth: (month: string | undefined) => void;
 }>) {
   const rows = planRows(visit.loincs);
   const cells = LABORATORIES.map((lab) => planCells(rows, lab));
@@ -108,10 +110,8 @@ function VisitPlanCard({
           }}
         >
           <CalendarCheck size={14} color={COLOR.accent} strokeWidth={2} aria-hidden="true" />
-          <span>Planned for</span>{' '}
-          <strong style={{ color: COLOR.navy, fontWeight: 600 }}>
-            {visit.month ? formatMonthFullYear(visit.month) : 'No month selected'}
-          </strong>
+          <span>Planned for</span>
+          <MonthSelect ariaLabel={`Month visit ${index + 1} is planned for`} month={visit.month} onSetMonth={onSetMonth} />
         </span>
       </div>
       {rows.length === 0 ? (
@@ -248,10 +248,12 @@ export function PlanVisitView({
   visits,
   onOpenPopup,
   onSelectLab,
+  onSetMonth,
 }: Readonly<{
   visits: ScheduledVisit[];
   onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onSelectLab: (visitId: string, labId: string | undefined) => void;
+  onSetMonth: (visitId: string, month: string | undefined) => void;
 }>) {
   return (
     <>
@@ -282,6 +284,7 @@ export function PlanVisitView({
             index={i}
             onOpenPopup={onOpenPopup}
             onSelectLab={(labId) => onSelectLab(visit.id, labId)}
+            onSetMonth={(month) => onSetMonth(visit.id, month)}
           />
         ))
       )}
