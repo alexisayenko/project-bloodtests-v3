@@ -1066,6 +1066,10 @@ function UnitsCell({ analyte }: Readonly<{ analyte: Analysis }>) {
   );
 }
 
+function FshPage() {
+  return <h1>FSH</h1>;
+}
+
 function LoincDatabasePage({
   allResults,
   navigate,
@@ -1216,6 +1220,7 @@ export function ReferenceBookPage({
   if (indexKey === 'molar-masses') return <MolarMassesPage />;
   if (indexKey === 'units') return <UnitsPage navigate={navigate} />;
   if (indexKey === 'loinc-database') return <LoincDatabasePage allResults={allResults} navigate={navigate} />;
+  if (indexKey === 'fsh') return <FshPage />;
   const def = indexKey ? INDEX_DEFS.find((d) => d.key === indexKey) : undefined;
   if (def) return <IndexDetail def={def} />;
 
@@ -1285,6 +1290,12 @@ export function ReferenceBookPage({
         <span style={{ fontSize: 14, color: COLOR.textSecondary }}>
           Every analyte the app knows — code, name, specimen, units and panels
         </span>
+      </div>
+      <div
+        {...pressable(() => navigate({ view: 'reference', key: 'fsh' }))}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', cursor: 'pointer', marginBottom: 24 }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 600, color: COLOR.accent }}>FSH</span>
       </div>
       <h2 style={{ fontSize: 19, fontWeight: 600, marginBottom: 6 }}>Indices and derived measurements</h2>
       <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 24 }}>
