@@ -526,15 +526,31 @@ when it has one, prefixed as "<innerId> · <label>" — linked to the lab's own
 app's generic name and a marker showing it's a fallback; a "Show generic
 names" control clears the selection, since a native radio can't
 self-deselect), Medications (`#medications`, reachable despite
-validation errors: a free-text medication / dosage table in a card with a Jan–Dec month
+validation errors: a medication table in a card with a Jan–Dec month
 grid per shown year, each taken month a soft bar that joins its neighbours within
-a year, its Medication and Dosage columns `position: sticky` (reusing the
+a year, its Medication and Notes columns `position: sticky` (reusing the
 mobile results-table reveal's `.mc-col-cut` edge shadow) so only the month
 columns scroll horizontally, edited behind an Edit / Done toggle and kept by
 `data/medications.ts`'s `useMedications` under its own localStorage key
 `bloodtests_medications_v1`, outside the envelope, export, import and share
-links — task-0018; its shape is described, documentation-only, by
-`medications-1.schema.json`, the same way the interchange envelope schema
+links — task-0018. A `MedicationRow` splits brand from active ingredient: `brand`
+is the medication's name as printed (a plain supplement name is often the whole
+of it), `compounds` is zero or more free-text `{name, dose}` pairs (e.g.
+`valsartan`/`80mg`) broken out only for combo drugs — empty is the common case —
+and `notes` is free-text timing/frequency (e.g. "вечором", "курсами"), no
+longer mixed into a dose field; the Medication cell renders the brand bold with
+a smaller muted line of `"<name> <dose>"` compounds underneath when there are
+any, and an empty `notes` is never stored as a string but shown as a muted
+"1 tablet daily" placeholder so the assumption reads as an assumption rather
+than a blank cell. Edit mode adds a compact repeatable compound editor (name +
+dose inputs, add/remove per entry) under the brand input. A row saved before
+this split, in the retired `name`/`dosage` shape, is migrated transparently and
+losslessly by `parseMedications` on read — `name` to `brand`, `dosage` to
+`notes` verbatim, `compounds` empty — deliberately without trying to parse a
+parenthetical compound note or align it against a "+"-separated dose, since
+that pairing cannot be done reliably; its shape is described,
+documentation-only, by `medications-1.schema.json` (the current brand/compounds/notes
+shape only, not the retired one), the same way the interchange envelope schema
 is, with no change to `medications.ts`'s own lenient parser as the real
 gatekeeper), Reference Book (Indices and derived
 measurements: a page

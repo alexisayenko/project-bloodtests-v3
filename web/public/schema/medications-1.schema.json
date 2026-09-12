@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://blood.isayenko.net/schema/medications-1.schema.json",
   "title": "Medications",
-  "description": "The medication history, schema 1: web/src/data/medications.ts's Medications type, stored under localStorage key bloodtests_medications_v1 and exported unchanged as medications.json inside an Account backup zip. Published for documentation only, the same way the interchange envelope schema is — it does NOT gate the app's own import path. medications.json is purely user-generated at runtime (never committed, never touched by CI, unlike analyses.json/laboratories.json/pathway-reference-ranges.json), and its real gatekeeper stays the hand-written, deliberately lenient parser in medications.ts (isMedicationsShape + parseMedications): a malformed row or month is dropped rather than failing the whole import, and this schema must never be wired into that path to enforce strictly instead. The objects are CLOSED, as in the app's other schemas, so this document only describes shapes the app itself produces.",
+  "description": "The medication history, schema 1: web/src/data/medications.ts's Medications type, stored under localStorage key bloodtests_medications_v1 and exported unchanged as medications.json inside an Account backup zip. Published for documentation only, the same way the interchange envelope schema is — it does NOT gate the app's own import path. medications.json is purely user-generated at runtime (never committed, never touched by CI, unlike analyses.json/laboratories.json/pathway-reference-ranges.json), and its real gatekeeper stays the hand-written, deliberately lenient parser in medications.ts (isMedicationsShape + parseMedications): a malformed row or month is dropped rather than failing the whole import, a row still in the pre-redesign name/dosage shape is migrated into brand/notes, and this schema must never be wired into that path to enforce strictly instead. The objects are CLOSED, as in the app's other schemas, so this document only describes the current shape the app itself produces — it does not describe the retired name/dosage shape a not-yet-migrated stored payload may still be found in.",
   "type": "object",
   "required": ["years", "rows"],
   "additionalProperties": false,
@@ -31,10 +31,26 @@
       "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
       "description": "An ISO YYYY-MM month key, as isMonthKey() in months.ts checks it. Read off the string itself rather than through a Date, so no locale or zone can move it."
     },
+    "compound": {
+      "type": "object",
+      "title": "Compound",
+      "required": ["name", "dose"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Required, but may be empty mid-edit. The active-ingredient name, e.g. \"valsartan\". Free text -- not a LOINC or catalog reference, since this is the medication list, not lab-analyte data."
+        },
+        "dose": {
+          "type": "string",
+          "description": "Required, but may be empty mid-edit. Free text, e.g. \"80mg\" -- deliberately no unit-system modeling here, unlike the lab-result side of the app."
+        }
+      }
+    },
     "medicationRow": {
       "type": "object",
       "title": "MedicationRow",
-      "required": ["id", "name", "dosage", "months"],
+      "required": ["id", "brand", "compounds", "notes", "months"],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -42,13 +58,18 @@
           "minLength": 1,
           "description": "Required. Non-empty; a UUID in practice (newRowId()), but only non-emptiness is enforced, matching what parseRow actually checks."
         },
-        "name": {
+        "brand": {
           "type": "string",
-          "description": "Required. The medication's name. Empty is out of scope for a finished row — dropUnnamed() removes unnamed rows on every backup export (medications.json is always built by parseMedications, which applies dropUnnamed as its last step) and whenever the Medications view leaves edit mode — but the raw value saved to localStorage on every keystroke is not itself filtered, so a row can transiently sit there with an empty name while it is mid-edit."
+          "description": "Required. The medication's name as printed, e.g. \"Вальсакор Н80\" or a plain supplement name with no separate compound breakdown. Empty is out of scope for a finished row — dropUnnamed() removes unnamed rows on every backup export (medications.json is always built by parseMedications, which applies dropUnnamed as its last step) and whenever the Medications view leaves edit mode — but the raw value saved to localStorage on every keystroke is not itself filtered, so a row can transiently sit there with an empty brand while it is mid-edit."
         },
-        "dosage": {
+        "compounds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/compound" },
+          "description": "Required, but commonly empty -- most simple supplements have no separate compound breakdown. Only combo drugs (e.g. a brand combining valsartan and hydrochlorothiazide) carry more than one entry."
+        },
+        "notes": {
           "type": "string",
-          "description": "Required, but may be empty — a row can have a name with no dosage recorded yet."
+          "description": "Required, but may be empty -- free text for timing/frequency (e.g. \"вечором\", \"курсами\", \"по потребності\"), not the dose amount, which lives per-compound. An empty value is not stored as a placeholder string: the UI shows a muted \"1 tablet daily\" assumption in its place instead of leaving the cell blank."
         },
         "months": {
           "type": "array",
