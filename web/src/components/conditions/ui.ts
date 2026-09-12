@@ -68,8 +68,13 @@ export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
 // Monitoring Panels grid's Compact view rides along as a view preference.
 export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
 export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
-export type StoredViewSettings = ViewSettings & { compactPanels: boolean };
-export const DEFAULT_VIEW_SETTINGS: StoredViewSettings = { unitSystem: 'si', sampleLimit: 5, compactPanels: false };
+export type StoredViewSettings = ViewSettings & { compactPanels: boolean; medsCurrentYearOnly: boolean };
+export const DEFAULT_VIEW_SETTINGS: StoredViewSettings = {
+  unitSystem: 'si',
+  sampleLimit: 5,
+  compactPanels: false,
+  medsCurrentYearOnly: false,
+};
 
 export function loadViewSettings(): StoredViewSettings {
   try {
@@ -80,6 +85,7 @@ export function loadViewSettings(): StoredViewSettings {
         unitSystem: stored.unitSystem ?? DEFAULT_VIEW_SETTINGS.unitSystem,
         sampleLimit: stored.sampleLimit ?? DEFAULT_VIEW_SETTINGS.sampleLimit,
         compactPanels: stored.compactPanels === true,
+        medsCurrentYearOnly: stored.medsCurrentYearOnly === true,
       };
     }
   } catch {
@@ -88,15 +94,16 @@ export function loadViewSettings(): StoredViewSettings {
   return { ...DEFAULT_VIEW_SETTINGS };
 }
 
-/** Persist the shared table controls and Compact view, dropping any value outside the accepted set. */
-export function saveViewSettings(settings: ViewSettings & { compactPanels?: boolean }): void {
-  const { unitSystem, sampleLimit, compactPanels } = settings;
+/** Persist the shared table controls and the Compact view / current-year-only view preferences, dropping any value outside the accepted set. */
+export function saveViewSettings(settings: ViewSettings & { compactPanels?: boolean; medsCurrentYearOnly?: boolean }): void {
+  const { unitSystem, sampleLimit, compactPanels, medsCurrentYearOnly } = settings;
   const validLimit =
     sampleLimit === 'all' || (typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0);
   const safe: StoredViewSettings = {
     unitSystem: unitSystem === 'us' ? 'us' : 'si',
     sampleLimit: validLimit ? sampleLimit : DEFAULT_VIEW_SETTINGS.sampleLimit,
     compactPanels: compactPanels === true,
+    medsCurrentYearOnly: medsCurrentYearOnly === true,
   };
   try {
     localStorage.setItem(VIEW_SETTINGS_KEY, JSON.stringify(safe));

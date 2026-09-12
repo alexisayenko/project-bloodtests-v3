@@ -20,7 +20,7 @@ const SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
 // Stored while the schedule still carried a laboratory: it must restore all the same, without it.
 const STORED_SCHEDULED = { ...SCHEDULED, lab: 'esculab' };
 const SETTINGS = {
-  [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all', compactPanels: true }),
+  [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all', compactPanels: true, medsCurrentYearOnly: false }),
   'exploreSel:Lipids': JSON.stringify(['ldl', 'hdl']),
   'hpgAutoscale:all': '1',
   'exploreEv:all:meds': '0',

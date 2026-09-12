@@ -175,7 +175,7 @@ describe('popupPosition', () => {
 describe('loadViewSettings', () => {
   it('falls back to defaults when storage is unavailable', () => {
     // node environment: localStorage is undefined → the try/catch default path
-    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: false });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: false, medsCurrentYearOnly: false });
   });
 
   it('defaults compactPanels to false when missing or not a boolean true', () => {
@@ -188,7 +188,7 @@ describe('loadViewSettings', () => {
 
   it('keeps a stored compactPanels choice', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"si","sampleLimit":5,"compactPanels":true}', setItem: () => {} });
-    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: true });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: true, medsCurrentYearOnly: false });
     vi.unstubAllGlobals();
   });
 
@@ -196,7 +196,7 @@ describe('loadViewSettings', () => {
     const store = new Map<string, string>();
     vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) });
     saveViewSettings({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
-    expect(JSON.parse(store.get(VIEW_SETTINGS_KEY)!)).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
+    expect(JSON.parse(store.get(VIEW_SETTINGS_KEY)!)).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: true, medsCurrentYearOnly: false });
     expect(loadViewSettings().compactPanels).toBe(true);
     saveViewSettings({ unitSystem: 'us', sampleLimit: 10, compactPanels: 'on' as unknown as boolean });
     expect(loadViewSettings().compactPanels).toBe(false);
@@ -218,7 +218,7 @@ describe('loadViewSettings', () => {
 
   it('ignores the retired dateOrder field a pre-existing payload still carries', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"us","sampleLimit":10,"dateOrder":"desc"}', setItem: () => {} });
-    expect(loadViewSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: false });
+    expect(loadViewSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: false, medsCurrentYearOnly: false });
     vi.unstubAllGlobals();
   });
 

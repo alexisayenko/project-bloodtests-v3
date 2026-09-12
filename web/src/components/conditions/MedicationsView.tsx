@@ -4,7 +4,7 @@ import { MONTH_LABELS, monthKey } from '../../data/months';
 import { Clock, TrendingUp } from 'lucide-react';
 import { PillIcon } from './customIcons';
 import { PageHeader } from './PageHeader';
-import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, TABLE, TABLE_CARD } from '../primitives';
+import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, SwitchToggle, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
 const NAME_COL_WIDTH = 220;
@@ -115,12 +115,17 @@ function monthLabel(row: MedicationRow, year: number, monthIndex: number): strin
   return `${row.name.trim() || 'Unnamed medication'}, ${MONTH_LABELS[monthIndex]} ${year}`;
 }
 
-export function MedicationsView() {
+export function MedicationsView({
+  currentYearOnly,
+  onCurrentYearOnlyChange,
+}: Readonly<{ currentYearOnly: boolean; onCurrentYearOnlyChange: (next: boolean) => void }>) {
   const { medications, onAddRow, onUpdateRow, onRemoveRow, onToggleMonth, onAddPastYear, onDropUnnamed } = useMedications();
   const [editing, setEditing] = useState(false);
   const [focusId, setFocusId] = useState<string>();
   const nameInputs = useRef(new Map<string, HTMLInputElement>());
-  const { years, rows } = medications;
+  const { years: allYears, rows } = medications;
+  const currentYear = new Date().getFullYear();
+  const years = currentYearOnly ? allYears.filter((year) => year === currentYear) : allYears;
 
   useEffect(() => {
     if (focusId) nameInputs.current.get(focusId)?.focus();
@@ -161,6 +166,7 @@ export function MedicationsView() {
             </Button>
           </>
         )}
+        <SwitchToggle label="Show only current year" pressed={currentYearOnly} onChange={onCurrentYearOnlyChange} />
       </div>
       {!editing && rows.length === 0 ? (
         <EmptyState>No medications recorded yet — press Edit to add the first one.</EmptyState>
