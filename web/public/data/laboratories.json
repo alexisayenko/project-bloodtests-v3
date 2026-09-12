@@ -9,11 +9,8 @@
     "prices": [
       { "label": "ALP", "price": 171, "covers": ["6768-6"] },
       { "label": "ALT", "price": 171, "covers": ["1742-6"] },
-      { "label": "Apo A1", "price": 288, "covers": ["1869-7"] },
-      { "label": "Apo B", "price": 288, "covers": ["1884-6"] },
       { "label": "AST", "price": 171, "covers": ["1920-8"] },
       { "label": "Creatinine", "price": 185, "covers": ["2160-0"] },
-      { "label": "CRP", "price": 185, "covers": ["1988-5"] },
       { "label": "Cystatin C", "price": 685, "covers": ["33863-2"] },
       { "label": "eGFR", "price": 189, "covers": ["48642-3"] },
       {
@@ -27,16 +24,7 @@
         ],
         "note": "A bundle, taken to be the catalog's whole fbc group. Whether Esculab's FBC includes the differential has not been recorded."
       },
-      { "label": "Ferritin", "price": 405, "covers": ["2276-4"] },
-      {
-        "label": "Glucose",
-        "price": 189,
-        "covers": ["2345-7", "2339-0"],
-        "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
-      },
       { "label": "HDL-C", "price": 167, "covers": ["2085-9"] },
-      { "label": "Insulin", "price": 351, "covers": ["20448-7"] },
-      { "label": "Iron", "price": 243, "covers": ["2498-4"] },
       {
         "label": "LDL-C",
         "price": 162,
@@ -45,9 +33,27 @@
       },
       { "label": "TBIL", "price": 171, "covers": ["1975-2"] },
       { "label": "TC", "price": 167, "covers": ["2093-3"] },
-      { "label": "TIBC", "price": 324, "covers": ["2500-7"] },
       { "label": "TRIG", "price": 185, "covers": ["2571-8"] },
       { "label": "Urea", "price": 180, "covers": ["3091-6"] },
+      { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] },
+      { "label": "Аполіпопротеїн А1 (Apo A1)", "price": 288, "covers": ["1869-7"], "innerId": "F2004" },
+      { "label": "Аполіпопротеїн В (Apo B)", "price": 288, "covers": ["1884-6"], "innerId": "F2009" },
+      {
+        "label": "Глюкоза (сироватка крові)",
+        "price": 189,
+        "covers": ["2345-7", "2339-0"],
+        "innerId": "A4003",
+        "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
+      },
+      {
+        "label": "Загальна залізозв'язуюча здатність сироватки (TIBC)",
+        "price": 324,
+        "covers": ["2500-7"],
+        "innerId": "F1007"
+      },
+      { "label": "Залізо крові (IRON)", "price": 243, "covers": ["2498-4"], "innerId": "F1000" },
+      { "label": "Інсулін (INS)", "price": 351, "covers": ["20448-7"], "innerId": "A4000" },
+      { "label": "С-реактивний білок (СРБ, CRP)", "price": 184.5, "covers": ["1988-5"], "innerId": "F3004" },
       {
         "label": "Сечова кислота (UA)",
         "price": 180,
@@ -55,7 +61,7 @@
         "innerId": "F0013",
         "url": "https://esculab.com/sechova-kyslota-ua"
       },
-      { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] }
+      { "label": "Феритин (FER)", "price": 405, "covers": ["2276-4"], "innerId": "F1003" }
     ]
   },
   {

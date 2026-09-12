@@ -63,18 +63,20 @@ describe('quoteSchedule', () => {
     const esculab = LABORATORY_BY_ID.esculab!;
     const fbc = PANELS.find((p) => p.id === 'fbc')!.sections!.flatMap((s) => s.loincs);
     const quote = quoteSchedule([...fbc, '2339-0', '14749-6', '11580-8'], esculab);
-    expect(quote.charged.map((line) => line.label)).toEqual(['FBC', 'Glucose']);
+    expect(quote.charged.map((line) => line.label)).toEqual(['FBC', 'Глюкоза (сироватка крові)']);
     expect(quote.total).toBe(517);
     expect(quote.unpriced).toEqual(['11580-8']);
   });
 
   it('prices one schedule at each laboratory from that laboratory alone', () => {
     const schedule = ['2093-3', '2085-9', '13457-7', '2571-8', '718-7', '2345-7'];
+    // Esculab's Glucose line now carries a Ukrainian label, so match it by
+    // covered code rather than by (laboratory-specific) label text.
     const ownTotal = (candidate: Laboratory) =>
-      ['TC', 'HDL-C', 'LDL-C', 'TRIG', 'FBC', 'Glucose'].reduce(
+      ['TC', 'HDL-C', 'LDL-C', 'TRIG', 'FBC'].reduce(
         (sum, label) => sum + candidate.prices.find((line) => line.label === label)!.price,
         0
-      );
+      ) + candidate.prices.find((line) => line.covers.includes('2345-7'))!.price;
     const esculab = LABORATORY_BY_ID.esculab!;
     const medis = LABORATORY_BY_ID.medis!;
     const synevo = LABORATORY_BY_ID.synevo!;
