@@ -7,8 +7,11 @@ import { PageHeader } from './PageHeader';
 import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, SwitchToggle, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
-const NAME_COL_WIDTH = 220;
-const DOSAGE_COL_WIDTH = 160;
+/** Shown in the Notes column in place of a truly blank cell -- the assumed default for a medication with no timing note. */
+const NOTES_PLACEHOLDER = '1 tablet daily';
+
+const NAME_COL_WIDTH = 260;
+const DOSAGE_COL_WIDTH = 170;
 const MONTH_COL_WIDTH = 32;
 const YEAR_EDGE = `1px solid ${COLOR.borderMuted}`;
 const BAR_FILL = `color-mix(in srgb, ${COLOR.brandTeal} 38%, ${COLOR.surface})`;
@@ -45,7 +48,10 @@ function dosageCellStyle<T extends object>(cell: T) {
   } as const;
 }
 const input = { ...FIELD_INPUT, width: '100%', boxSizing: 'border-box', padding: '4px 8px' } as const;
+const compoundInput = { ...input, padding: '3px 6px', fontSize: 12 } as const;
 const removeButton = { padding: '0 7px', border: `1px solid ${COLOR.border}`, color: COLOR.textMuted, lineHeight: '18px' } as const;
+const removeCompoundButton = { ...removeButton, padding: '0 5px', fontSize: 11, lineHeight: '16px' } as const;
+const addCompoundButton = { padding: '2px 8px', fontSize: 11 } as const;
 
 // Only the first month of each year carries an edge, so years read as blocks and a run of months as one bar.
 function monthEdge(monthIndex: number) {
@@ -112,14 +118,30 @@ function MonthBar({ joinsPrevious, joinsNext }: Readonly<{ joinsPrevious: boolea
 }
 
 function monthLabel(row: MedicationRow, year: number, monthIndex: number): string {
-  return `${row.name.trim() || 'Unnamed medication'}, ${MONTH_LABELS[monthIndex]} ${year}`;
+  return `${row.brand.trim() || 'Unnamed medication'}, ${MONTH_LABELS[monthIndex]} ${year}`;
+}
+
+/** The compounds subline shown under the brand name in view mode; empty when there is nothing to break out. */
+function compoundsLine(row: MedicationRow): string {
+  return row.compounds.map((c) => `${c.name} ${c.dose}`.trim()).join(', ');
 }
 
 export function MedicationsView({
   currentYearOnly,
   onCurrentYearOnlyChange,
 }: Readonly<{ currentYearOnly: boolean; onCurrentYearOnlyChange: (next: boolean) => void }>) {
-  const { medications, onAddRow, onUpdateRow, onRemoveRow, onToggleMonth, onAddPastYear, onDropUnnamed } = useMedications();
+  const {
+    medications,
+    onAddRow,
+    onUpdateRow,
+    onRemoveRow,
+    onAddCompound,
+    onUpdateCompound,
+    onRemoveCompound,
+    onToggleMonth,
+    onAddPastYear,
+    onDropUnnamed,
+  } = useMedications();
   const [editing, setEditing] = useState(false);
   const [focusId, setFocusId] = useState<string>();
   const nameInputs = useRef(new Map<string, HTMLInputElement>());
@@ -198,7 +220,7 @@ export function MedicationsView({
                     Medication
                   </th>
                   <th rowSpan={2} scope="col" style={dosageTh}>
-                    Dosage
+                    Notes
                   </th>
                   {years.map((year) => (
                     <th key={year} colSpan={12} scope="colgroup" style={yearTh}>
@@ -226,45 +248,105 @@ export function MedicationsView({
                     <tr key={row.id}>
                       <td style={nameCellStyle(cell)}>
                         {editing ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Button
-                              size="sm"
-                              aria-label={`Remove ${row.name.trim() || 'unnamed medication'}`}
-                              onClick={() => onRemoveRow(row.id)}
-                              style={removeButton}
-                            >
-                              ×
-                            </Button>
-                            <input
-                              ref={(el) => {
-                                if (el) nameInputs.current.set(row.id, el);
-                                else nameInputs.current.delete(row.id);
-                              }}
-                              aria-label="Medication name"
-                              value={row.name}
-                              onChange={(e) => onUpdateRow(row.id, { name: e.target.value })}
-                              style={input}
-                            />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Button
+                                size="sm"
+                                aria-label={`Remove ${row.brand.trim() || 'unnamed medication'}`}
+                                onClick={() => onRemoveRow(row.id)}
+                                style={removeButton}
+                              >
+                                ×
+                              </Button>
+                              <input
+                                ref={(el) => {
+                                  if (el) nameInputs.current.set(row.id, el);
+                                  else nameInputs.current.delete(row.id);
+                                }}
+                                aria-label="Medication brand name"
+                                value={row.brand}
+                                onChange={(e) => onUpdateRow(row.id, { brand: e.target.value })}
+                                style={input}
+                              />
+                            </div>
+                            {row.compounds.map((compound, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 26 }}>
+                                <input
+                                  aria-label={`Compound ${i + 1} name`}
+                                  placeholder="Compound"
+                                  value={compound.name}
+                                  onChange={(e) => onUpdateCompound(row.id, i, { name: e.target.value })}
+                                  style={{ ...compoundInput, flex: 2, minWidth: 0 }}
+                                />
+                                <input
+                                  aria-label={`Compound ${i + 1} dose`}
+                                  placeholder="Dose"
+                                  value={compound.dose}
+                                  onChange={(e) => onUpdateCompound(row.id, i, { dose: e.target.value })}
+                                  style={{ ...compoundInput, flex: 1, minWidth: 0 }}
+                                />
+                                <Button
+                                  size="xs"
+                                  aria-label={`Remove compound ${i + 1}`}
+                                  onClick={() => onRemoveCompound(row.id, i)}
+                                  style={removeCompoundButton}
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            ))}
+                            <div style={{ paddingLeft: 26 }}>
+                              <Button size="xs" onClick={() => onAddCompound(row.id)} style={addCompoundButton}>
+                                + Compound
+                              </Button>
+                            </div>
                           </div>
                         ) : (
-                          <span
-                            style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500, color: COLOR.navy }}
-                          >
-                            {row.name}
-                          </span>
+                          <>
+                            <span
+                              style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500, color: COLOR.navy }}
+                            >
+                              {row.brand}
+                            </span>
+                            {row.compounds.length > 0 && (
+                              <span
+                                style={{
+                                  display: 'block',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  fontSize: 11,
+                                  color: COLOR.textMuted,
+                                }}
+                              >
+                                {compoundsLine(row)}
+                              </span>
+                            )}
+                          </>
                         )}
                       </td>
                       <td style={dosageCellStyle(cell)}>
                         {editing ? (
                           <input
-                            aria-label={`Dosage of ${row.name.trim() || 'unnamed medication'}`}
-                            value={row.dosage}
-                            onChange={(e) => onUpdateRow(row.id, { dosage: e.target.value })}
+                            aria-label={`Notes for ${row.brand.trim() || 'unnamed medication'}`}
+                            value={row.notes}
+                            onChange={(e) => onUpdateRow(row.id, { notes: e.target.value })}
                             style={input}
                           />
-                        ) : (
+                        ) : row.notes.trim() !== '' ? (
                           <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', color: COLOR.textSecondary }}>
-                            {row.dosage}
+                            {row.notes}
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              color: COLOR.textMuted,
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            {NOTES_PLACEHOLDER}
                           </span>
                         )}
                       </td>
