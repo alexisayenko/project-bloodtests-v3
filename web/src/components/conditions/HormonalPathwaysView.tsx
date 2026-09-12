@@ -843,11 +843,11 @@ function Badges({
             </button>
             {expanded && (
               <div className="mc-pathway-badge-body">
+                <ReferenceBlock scope={`pathway-${b.id}`} info={referenceOf(b.measure, snapshot, unitSystem)} />
                 <span><b>Meaning</b> {b.meaning}</span>
                 <span><b>Low</b> {b.low}</span>
                 <span><b>High</b> {b.high}</span>
                 <span><b>Caveats</b> {b.caveats}</span>
-                <ReferenceBlock scope={`pathway-${b.id}`} info={referenceOf(b.measure, snapshot, unitSystem)} />
               </div>
             )}
           </div>
