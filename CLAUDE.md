@@ -289,31 +289,40 @@ tab (the default) and All Observations' each render one `ResultsTable` in a
 observations, then an "Indices" divider row (an overline label and a hairline
 spanning only the table's own columns) and the indices, each dated reading's
 status a soft tint behind the number rather than across the cell — carrying a
-"Scheduled"
-column, set apart at the right of the table — a single-click toggle
-per row (a visually hidden native checkbox, ✓ in the primary teal); scheduling an index also
-schedules its input observations, unscheduling it leaves them, and
-toggling an observation re-derives every index (scheduled iff all its
-inputs are) — the same cascade in both views. The column header is controls
-only, named through `aria-label`: a
-small month select (`.mc-field-sm`; this month and the next 23, plus a stored month that has since
-fallen outside that window) beside a select-all box over the observation rows
-only — index rows follow their inputs — tri-state through native `indeterminate`
-and disabled when no observation row is shown (`ScheduleHeader.tsx`). The
-month is an ISO `YYYY-MM` label *for* the one global schedule, not a partition
-of it — switching months leaves every checked row checked — and select-all
-scopes to the rows the table is actually rendering, so All Observations' panel
-and text filters narrow it. Global state in localStorage
-`bloodtests_scheduled_v1`
-(`{loincs, indices, month?}` — backward compatible in both directions: an
-unset month is `undefined`, so `JSON.stringify` drops the key and an
-unscheduled payload keeps the old shape, and a missing or malformed one loads
-as undefined with the checked sets intact; a `lab` key left by the removed
-laboratory picker is ignored on load like any unknown field and no longer
-written, backups included), logic in `scheduled.ts`, whose
-`useScheduled` hook the
-shell owns and hands down as `RowScheduling` / `IndexScheduling`, rather than
-Panel Detail, which remounts per panel. Selecting an index
+Scheduled block: one column per scheduled visit (stable order, by creation),
+each a single-click toggle per row (a visually hidden native checkbox, ✓ in
+the primary teal), plus a trailing "add a visit" column (a + button calling
+`onAddVisit`, always present, even with zero visits — a table with nothing
+scheduled renders no visit columns at all rather than a phantom default one).
+Scheduling an index also schedules its input observations in that same
+visit, unscheduling it leaves them, and toggling an observation re-derives
+that visit's own indices (scheduled iff all its inputs are, within that
+visit) — the same cascade in both views, and never cross-wired into another
+visit's column. Each visit's column header (`ScheduleHeader.tsx`) is controls
+only, named through `aria-label`: a small month select (`.mc-field-sm`; this
+month and the next 23, plus a stored month that has since fallen outside
+that window) scoped to that one visit, a select-all box over the observation
+rows only — index rows follow their inputs — tri-state through native
+`indeterminate` and disabled when no observation row is shown, and a remove
+button (`onRemove`) that drops the whole visit, unscheduling everything it
+had. A visit's month labels its own schedule, not a partition of it —
+switching months leaves every checked row in that visit checked — and
+select-all scopes to the rows the table is actually rendering, so All
+Observations' panel and text filters narrow it, still only within that one
+visit's column. Global state in localStorage `bloodtests_scheduled_v1` is a
+list of independent visits, `{visits: ScheduledVisit[]}`, each
+`{id, loincs, indices, month?, selectedLabId?}` (`id` from the same
+`newRowId()` helper as medications/results rows) — logic in `scheduled.ts`,
+whose `useScheduled` hook the shell owns and hands down as one
+`RowScheduling` / `IndexScheduling` per visit (plus `onAddVisit` /
+`onRemoveVisit`), rather than Panel Detail, which remounts per panel. A
+payload stored before multiple visits existed — one schedule object with no
+`visits` array — migrates transparently on load into a list of exactly one
+visit, carrying its `loincs`/`indices`/`month`/`selectedLabId` over as-is
+under a fresh id, unless that object was itself fully empty, which migrates
+to an empty list rather than manufacturing a pointless visit; a `lab` key
+left by the removed laboratory picker is still ignored on load like any
+unknown field and never written, backups included. Selecting an index
 row there marks each input observation with an accent • in a fixed 10px
 gutter left of its name, and selecting an observation marks each index
 that uses it; the gutter is reserved on every row so names never shift
@@ -349,7 +358,7 @@ plain `<h1>`. The nine sections, in nav order — Get Started (`#profile`: app d
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
-a showcase test dataset (15 demo reports under their own ids, 5 medications, and a sample schedule only when none exists), then opens `#all/in-range` once it has finished), Diagnostic Reports (`#reports`: the
+a showcase test dataset (15 demo reports under their own ids, 5 medications, and one sample scheduled visit, only when no visit exists yet), then opens `#all/in-range` once it has finished), Diagnostic Reports (`#reports`: the
 data-management hub — the reports table in a card with a
 report count and one status dot per row (red errors, amber warnings, green no
 issues), an "Add a report" card of three step tiles (1. "Copy" the
@@ -508,24 +517,34 @@ or open it draws its association lines, hidden at rest: one purple bus from
 the badge to a lane above its targets, stubs down to dashed rings around each
 target; only an opened badge also veils the rest of the diagram, hover
 drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
-errors: under a "Planned for <month>" pill, in a table card, every scheduled observation, folded
-to its primary code, as one "Observation" cell — `friendlyName`, with the short
-name in parentheses where it differs, opening the analyte popup — beside one
-price column per laboratory, a bundle
-priced on its first covered row and marked "in <label>" on the rest by
-`data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own, where the
-lowest total is tinted green and marked "Cheapest" — every laboratory sharing
-it, and none when the totals are in different currencies or the lowest is
-zero; a radio button in a laboratory's own column header lets the owner pick
-exactly ONE laboratory (`Scheduled.selectedLabId`, persisted with the
-schedule in `bloodtests_scheduled_v1`, distinct from an older, now-removed
-`lab` key that is still just ignored), and once picked every priced row's
-Observation cell shows that lab's own product name instead — its `innerId`,
+errors: one section per scheduled visit, stacked, each under its own "Planned
+for <month>" pill and its own table card — every visit-local scheduled
+observation, folded to its primary code, as one "Observation" cell —
+`friendlyName`, with the short name in parentheses where it differs, opening
+the analyte popup — beside one price column per laboratory, a bundle priced
+on its first covered row and marked "in <label>" on the rest by
+`data/visitPlan.ts` (called once per visit, scoped to that visit's own
+`loincs`), over a Total row that is that visit's own `quoteSchedule` call,
+where the lowest total is tinted green and marked "Cheapest" — every
+laboratory sharing it, and none when the totals are in different currencies
+or the lowest is zero; a radio button in a laboratory's own column header
+lets the owner pick exactly ONE laboratory for that visit
+(`ScheduledVisit.selectedLabId`, persisted with the visit in
+`bloodtests_scheduled_v1`, distinct from an older, now-removed `lab` key
+that is still just ignored, and independent of every other visit's own
+selection — each visit's radio group is its own, keyed by the visit's
+position), and once picked every priced row's Observation cell in that
+visit's table shows that lab's own product name instead — its `innerId`,
 when it has one, prefixed as "<innerId> · <label>" — linked to the lab's own
 `url` when one exists, with a row unpriced at that lab falling back to the
 app's generic name and a marker showing it's a fallback; a "Show generic
-names" control clears the selection, since a native radio can't
-self-deselect), Medications (`#medications`, reachable despite
+names" control clears that visit's own selection, since a native radio can't
+self-deselect. With no visits at all, the page keeps the pre-redesign empty
+state, now naming the way to get there: "tick rows in the Scheduled column
+of Monitoring Panels or All Observations, or add a visit there with the +
+button next to it" — the add/remove affordances live only in the results
+tables, not on this page, since a page with nothing to plan has nothing to
+attach an "add" control to), Medications (`#medications`, reachable despite
 validation errors: a medication table in a card with a Jan–Dec month
 grid per shown year, each taken month a soft bar that joins its neighbours
 chronologically -- December and the next year's January join into one
@@ -768,7 +787,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (829 tests across 36 files — 828 passing, 1 skipped — as run on 2026-09-12: index
+Vitest suites in `web/test/` (851 tests across 37 files — 850 passing, 1 skipped — as run on 2026-09-12: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
