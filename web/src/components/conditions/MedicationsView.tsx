@@ -170,6 +170,13 @@ export function MedicationsView() {
             <table
               style={{
                 ...TABLE,
+                // `border-collapse: collapse` (the shared TABLE default) makes browsers paint cell
+                // backgrounds/borders through the table's own collapsed-border algorithm instead of normal
+                // z-index stacking, so a sticky cell's box-shadow stops painting over a scrolled-under sibling
+                // once the two overlap. `.mc-col-cut`'s sticky shadow (index.css) never hits this: those tables
+                // rely on the browser default of `separate`. Match that here instead of `collapse`.
+                borderCollapse: 'separate',
+                borderSpacing: 0,
                 tableLayout: 'fixed',
                 width: NAME_COL_WIDTH + DOSAGE_COL_WIDTH + MONTH_COL_WIDTH * 12 * years.length,
               }}
