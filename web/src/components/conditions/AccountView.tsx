@@ -1,12 +1,96 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import type { DiagnosticReport } from '../../types';
 import { backupFilename, buildBackupFiles, zipBackupFiles } from '../../data/backupArchive';
 import { BackupImportError, readBackup, unzipBackup, type BackupContents } from '../../data/backupRestore';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { Database, Download, HardDriveDownload, SlidersHorizontal, Trash2, Upload, type LucideIcon } from 'lucide-react';
 import { PageHeader } from './PageHeader';
-import { Button, Card, CardDescription, CardTitle, DangerCard, FileButton, IconBadge } from '../primitives';
+import { Button, Card, CardDescription, CardTitle, DangerCard, FileButton, IconBadge, buttonStyle } from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
+
+const HOLD_TO_CLEAR_MS = 2000;
+
+/** "Clear all data": a press-and-hold trigger (mouse, touch and keyboard) instead of a confirm() dialog — the hold itself is the confirmation. */
+function HoldToClearButton({
+  onConfirm,
+  disabled,
+  idleLabel,
+  holdingLabel,
+}: Readonly<{ onConfirm: () => void; disabled?: boolean; idleLabel: string; holdingLabel: string }>) {
+  const [progress, setProgress] = useState(0);
+  const [holding, setHolding] = useState(false);
+  const activeRef = useRef(false);
+  const frameRef = useRef<number | null>(null);
+  const startRef = useRef<number | null>(null);
+
+  const stop = () => {
+    activeRef.current = false;
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    startRef.current = null;
+    setHolding(false);
+    setProgress(0);
+  };
+
+  useEffect(() => stop, []);
+
+  const tick = (now: number) => {
+    if (startRef.current === null) startRef.current = now;
+    const fraction = Math.min(1, (now - startRef.current) / HOLD_TO_CLEAR_MS);
+    setProgress(fraction);
+    if (fraction >= 1) {
+      stop();
+      onConfirm();
+      return;
+    }
+    frameRef.current = requestAnimationFrame(tick);
+  };
+
+  const start = () => {
+    if (disabled || activeRef.current) return;
+    activeRef.current = true;
+    setHolding(true);
+    startRef.current = null;
+    frameRef.current = requestAnimationFrame(tick);
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    start();
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    start();
+  };
+
+  const onKeyUp = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') stop();
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onPointerDown={onPointerDown}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onPointerCancel={stop}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
+      onBlur={stop}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(progress * 100)}
+      style={{ ...buttonStyle('danger', 'md', disabled), position: 'relative', overflow: 'hidden' }}
+    >
+      <span aria-hidden="true" style={{ position: 'absolute', inset: 0, width: `${progress * 100}%`, background: COLOR.statusBadBg }} />
+      <span style={{ position: 'relative' }}>{holding ? holdingLabel : idleLabel}</span>
+    </button>
+  );
+}
 
 const ACTION_GRID = {
   display: 'grid',
@@ -112,7 +196,6 @@ export function AccountView({
 
   const clearAll = () => {
     if (busy) return;
-    if (!window.confirm('Remove everything this app stores in this browser: lab reports, medications, scheduled visits and settings? This cannot be undone.')) return;
     onClearAll();
     setError(null);
     setNotice(['All data was removed from this browser.']);
@@ -165,9 +248,7 @@ export function AccountView({
             title="Clear all data"
             description="Removes everything this app stores in this browser. Export first if you want to keep it."
           >
-            <Button variant="danger" onClick={clearAll}>
-              Clear all data
-            </Button>
+            <HoldToClearButton onConfirm={clearAll} disabled={!!busy} idleLabel="Clear all data" holdingLabel="Keep holding…" />
           </ActionCardBody>
         </DangerCard>
       </div>
