@@ -527,8 +527,10 @@ app's generic name and a marker showing it's a fallback; a "Show generic
 names" control clears the selection, since a native radio can't
 self-deselect), Medications (`#medications`, reachable despite
 validation errors: a medication table in a card with a Jan–Dec month
-grid per shown year, each taken month a soft bar that joins its neighbours within
-a year, its Medication and Notes columns `position: sticky` (reusing the
+grid per shown year, each taken month a soft bar that joins its neighbours
+chronologically -- December and the next year's January join into one
+continuous bar the same as any other adjacent pair, the year columns being
+a display grouping rather than a break in the run -- its Medication and Notes columns `position: sticky` (reusing the
 mobile results-table reveal's `.mc-col-cut` edge shadow) so only the month
 columns scroll horizontally, edited behind an Edit / Done toggle and kept by
 `data/medications.ts`'s `useMedications` under its own localStorage key

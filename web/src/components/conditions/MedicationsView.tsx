@@ -242,8 +242,14 @@ export function MedicationsView({
                 {rows.map((row, r) => {
                   const last = r === rows.length - 1;
                   const cell = last ? lastTd : td;
-                  const isMarked = (year: number, monthIndex: number) =>
-                    monthIndex >= 0 && monthIndex < 12 && row.months.includes(monthKey(year, monthIndex));
+                  // Chronological, not scoped to a year's own 12 columns: December of one year and
+                  // January of the next are adjacent calendar months, so a run marked across that
+                  // boundary still joins into one bar instead of resetting at each year's column group.
+                  const isMarked = (year: number, monthIndex: number) => {
+                    const rolloverYear = monthIndex < 0 ? year - 1 : monthIndex > 11 ? year + 1 : year;
+                    const rolloverMonth = (monthIndex + 12) % 12;
+                    return row.months.includes(monthKey(rolloverYear, rolloverMonth));
+                  };
                   return (
                     <tr key={row.id}>
                       <td style={nameCellStyle(cell)}>
