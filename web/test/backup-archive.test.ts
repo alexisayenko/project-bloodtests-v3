@@ -59,7 +59,10 @@ describe('buildBackupFiles', () => {
   });
 
   it('zips every file with its stored content', async () => {
-    const medications = { years: [2025, 2026], rows: [{ id: 'm1', name: 'Vitamin D', dosage: '2000 IU', months: ['2026-01'] }] };
+    const medications = {
+      years: [2025, 2026],
+      rows: [{ id: 'm1', brand: 'Vitamin D', compounds: [], notes: '2000 IU', months: ['2026-01'] }],
+    };
     const scheduled = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
     const storage = fakeStorage({
       bloodtests_medications_v1: JSON.stringify(medications),

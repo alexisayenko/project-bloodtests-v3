@@ -348,26 +348,27 @@ export function generateTestData(): DiagnosticReport[] {
   return parseUploadedResults(buildTestEnvelope());
 }
 
-const TEST_MEDICATIONS: { name: string; dosage: string; taken: (previousYear: boolean, month: number) => boolean }[] = [
-  { name: 'Levothyroxine', dosage: '75 mcg once daily', taken: () => true },
-  { name: 'Metformin', dosage: '500 mg twice daily', taken: (previousYear, month) => !previousYear || month >= 5 },
-  { name: 'Vitamin D3', dosage: '2000 IU daily', taken: (_, month) => month <= 3 || month >= 9 },
-  { name: 'Atorvastatin', dosage: '10 mg at night', taken: (previousYear, month) => !previousYear && month >= 1 },
+const TEST_MEDICATIONS: { brand: string; notes: string; taken: (previousYear: boolean, month: number) => boolean }[] = [
+  { brand: 'Levothyroxine', notes: '75 mcg once daily', taken: () => true },
+  { brand: 'Metformin', notes: '500 mg twice daily', taken: (previousYear, month) => !previousYear || month >= 5 },
+  { brand: 'Vitamin D3', notes: '2000 IU daily', taken: (_, month) => month <= 3 || month >= 9 },
+  { brand: 'Atorvastatin', notes: '10 mg at night', taken: (previousYear, month) => !previousYear && month >= 1 },
   {
-    name: 'Magnesium citrate',
-    dosage: '200 mg daily',
+    brand: 'Magnesium citrate',
+    notes: '200 mg daily',
     taken: (previousYear, month) => (previousYear ? month >= 2 && month <= 7 : month >= 4 && month <= 6),
   },
 ];
 
-/** The demo medications appended, marked across last year and this year up to `today`; a name already present is skipped. */
+/** The demo medications appended, marked across last year and this year up to `today`; a brand already present is skipped. */
 export function withTestMedications(meds: Medications, today: Date, newId: () => string): Medications {
   const year = today.getFullYear();
-  const present = new Set(meds.rows.map((row) => row.name.trim().toLowerCase()));
-  const added = TEST_MEDICATIONS.filter((med) => !present.has(med.name.toLowerCase())).map((med) => ({
+  const present = new Set(meds.rows.map((row) => row.brand.trim().toLowerCase()));
+  const added = TEST_MEDICATIONS.filter((med) => !present.has(med.brand.toLowerCase())).map((med) => ({
     id: newId(),
-    name: med.name,
-    dosage: med.dosage,
+    brand: med.brand,
+    compounds: [],
+    notes: med.notes,
     months: [year - 1, year].flatMap((y) =>
       Array.from({ length: y < year ? 12 : today.getMonth() + 1 }, (_, month) => month)
         .filter((month) => med.taken(y < year, month))

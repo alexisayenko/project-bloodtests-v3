@@ -15,7 +15,10 @@ import type { DiagnosticReport, Result } from '../src/types';
 const NOW = new Date('2026-09-10T08:30:00Z');
 const APP = { commit: 'abc1234', builtAt: '2026-09-10T08:00:00Z' };
 
-const MEDICATIONS = { years: [2025, 2026], rows: [{ id: 'm1', name: 'Vitamin D', dosage: '2000 IU', months: ['2026-01'] }] };
+const MEDICATIONS = {
+  years: [2025, 2026],
+  rows: [{ id: 'm1', brand: 'Vitamin D', compounds: [], notes: '2000 IU', months: ['2026-01'] }],
+};
 const SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
 // Stored while the schedule still carried a laboratory: it must restore all the same, without it.
 const STORED_SCHEDULED = { ...SCHEDULED, lab: 'esculab' };

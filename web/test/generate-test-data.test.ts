@@ -117,8 +117,8 @@ describe('withTestMedications', () => {
     expect(months.every((m) => m >= '2025-01' && m <= '2026-09')).toBe(true);
   });
 
-  it('skips a name already listed and leaves a complete list untouched', () => {
-    const real = { id: 'real', name: ' metformin', dosage: '850 mg', months: ['2026-01'] };
+  it('skips a brand already listed and leaves a complete list untouched', () => {
+    const real = { id: 'real', brand: ' metformin', compounds: [], notes: '850 mg', months: ['2026-01'] };
     const once = withTestMedications({ years: [2026], rows: [real] }, TODAY, newId);
     expect(once.rows).toHaveLength(5);
     expect(once.rows[0]).toBe(real);
