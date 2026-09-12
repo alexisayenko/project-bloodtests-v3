@@ -91,7 +91,7 @@ body {
 button.mc-chip { cursor: pointer; transition: transform 0.1s ease, box-shadow 0.1s ease; }
 button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); }
 .mc-segmented {
-  display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill);
+  display: inline-flex; gap: 2px; padding: 3px; border: 0; margin: 0; border-radius: var(--radius-pill);
   background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .mc-segment {
@@ -228,11 +228,11 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-panel-card {
   width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;
   padding: 22px 24px; box-shadow: 0 1px 2px rgba(6, 42, 79, 0.03);
+  position: relative;
 }
 .mc-panel-head { display: flex; align-items: center; gap: 16px; cursor: pointer; }
 /* The marker count sits in the card's top-right corner, above the title line,
    so it never takes width from a long panel name. */
-.mc-panel-card { position: relative; }
 .mc-panel-count {
   position: absolute; top: 5px; right: 14px;
   font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; color: var(--text-muted);
@@ -271,13 +271,12 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 /* Desktop and tablet shell: a top bar over a sidebar. Phones keep .mc-nav
    (task-0020), so nothing here may reach below the mobile breakpoint. */
 @media (min-width: 768px) {
-  :root { --mc-topbar-h: 60px; }
+  :root { --mc-topbar-h: 60px; --mc-sidebar-w: 232px; }
   .mc-topbar {
     position: sticky; top: 0; z-index: 40; height: var(--mc-topbar-h);
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border-subtle);
   }
-  :root { --mc-sidebar-w: 232px; }
   /* Fixed rather than sticky: the footer sits outside the shell, so a sticky
      sidebar was pushed up under the top bar once the page reached its end. */
   .mc-sidebar {
@@ -418,6 +417,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-bands {
   display: flex; flex-direction: column; border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card); overflow: hidden; background: var(--surface-band);
+  position: relative;
 }
 .mc-pathway-band { position: relative; display: flex; padding-top: 32px; border-top: 1px solid var(--border-subtle); }
 .mc-pathway-band:nth-of-type(1) { border-top: none; }
@@ -441,7 +441,6 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-row {
   display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 0 24px 52px;
 }
-.mc-pathway-bands { position: relative; }
 .mc-pathway-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; color: #8FA3B5; z-index: 1; }
 .mc-pathway-group { display: flex; align-items: center; gap: 12px; margin-left: 64px; }
 .mc-pathway-enzymes { position: relative; display: flex; align-items: flex-start; gap: 160px; margin-left: 268px; padding-bottom: 96px; }
