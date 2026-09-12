@@ -12,6 +12,7 @@
       { "label": "Apo A1", "price": 288, "covers": ["1869-7"] },
       { "label": "Apo B", "price": 288, "covers": ["1884-6"] },
       { "label": "AST", "price": 171, "covers": ["1920-8"] },
+      { "label": "CRP", "price": 185, "covers": ["1988-5"] },
       {
         "label": "FBC",
         "price": 328,
@@ -32,6 +33,7 @@
       },
       { "label": "HDL-C", "price": 167, "covers": ["2085-9"] },
       { "label": "Insulin", "price": 351, "covers": ["20448-7"] },
+      { "label": "Iron", "price": 243, "covers": ["2498-4"] },
       {
         "label": "LDL-C",
         "price": 162,
@@ -40,6 +42,7 @@
       },
       { "label": "TBIL", "price": 171, "covers": ["1975-2"] },
       { "label": "TC", "price": 167, "covers": ["2093-3"] },
+      { "label": "TIBC", "price": 324, "covers": ["2500-7"] },
       { "label": "TRIG", "price": 185, "covers": ["2571-8"] },
       { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] }
     ]
