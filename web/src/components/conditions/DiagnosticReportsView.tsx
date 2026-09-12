@@ -3,10 +3,8 @@ import type { DiagnosticReport } from '../../types';
 import { validateDiagnosticReports, groupHasErrors, groupHasWarnings } from '../../data/validateDiagnosticReports';
 import { parseUploadedResults } from '../../data/parseUpload';
 import { formatFullDate, pressable } from './ui';
-import { exportData } from '../../utils/exportData';
-import { loadEnvelopeMeta, saveEnvelopeMeta } from '../../data/envelopeMeta';
 import { CHATBOT_PROMPT } from '../../data/chatbotPrompt';
-import { FileText, CheckCircle2, Sparkles, ChevronRight, HardDriveDownload, Trash2 } from 'lucide-react';
+import { FileText, CheckCircle2, Sparkles, ChevronRight, Trash2 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import {
   Button,
@@ -90,18 +88,13 @@ export function DiagnosticReportsView({
   sessions,
   onOpenDetail,
   onAddReports,
-  onImportFile,
-  importError,
   onClear,
 }: Readonly<{
   sessions: DiagnosticReport[];
   onOpenDetail: (file: string) => void;
   onAddReports: (groups: ReturnType<typeof parseUploadedResults>) => void;
-  onImportFile: (file: File) => Promise<void>;
-  importError: string | null;
   onClear: () => void;
 }>) {
-  const [isExporting, setIsExporting] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -286,60 +279,23 @@ export function DiagnosticReportsView({
       )}
       {addBlock}
       {sessions.length > 0 && (
-        <div
-          style={{
-            ...SECTION,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: SPACE[4],
-          }}
-        >
-          <Card style={STACKED_CARD}>
-            <CardHeader
-              icon={<IconBadge icon={HardDriveDownload} />}
-              title="Back up your database"
-              description="Export it as a JSON file, or import one to replace it."
-            />
-            <div style={ACTIONS}>
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  setIsExporting(true);
-                  try {
-                    const currentMeta = loadEnvelopeMeta();
-                    const generatedAt = await exportData(sessions, currentMeta);
-                    saveEnvelopeMeta({ ...currentMeta, generatedAt });
-                  } finally {
-                    setIsExporting(false);
-                  }
-                }}
-              >
-                {isExporting ? 'Exporting...' : 'Export JSON'}
-              </Button>
-              <FileButton accept=".json,application/json" onFile={onImportFile}>
-                Import JSON
-              </FileButton>
-            </div>
-            {importError && <div style={{ color: COLOR.statusBadText, fontSize: 14 }}>{importError}</div>}
-          </Card>
-          <DangerCard style={STACKED_CARD}>
-            <CardHeader
-              icon={<IconBadge icon={Trash2} color={COLOR.statusBadText} background={COLOR.statusBadBg} />}
-              title="Clear local DB"
-              description="Removes all loaded reports from this browser. Export first if you want to keep them."
-            />
-            <div style={ACTIONS}>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  if (window.confirm('Remove all loaded lab reports?')) onClear();
-                }}
-              >
-                Clear
-              </Button>
-            </div>
-          </DangerCard>
-        </div>
+        <DangerCard style={{ ...SECTION, ...STACKED_CARD }}>
+          <CardHeader
+            icon={<IconBadge icon={Trash2} color={COLOR.statusBadText} background={COLOR.statusBadBg} />}
+            title="Clear local DB"
+            description="Removes all loaded reports from this browser. Back up from Account first if you want to keep them."
+          />
+          <div style={ACTIONS}>
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (window.confirm('Remove all loaded lab reports?')) onClear();
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        </DangerCard>
       )}
     </>
   );

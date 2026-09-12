@@ -208,8 +208,6 @@ export function MedicalConditionsPage() {
       sessions={sessions}
       onOpenDetail={(file) => navigate({ view: 'report', file })}
       onAddReports={loadGenerated}
-      onImportFile={uploadFile}
-      importError={uploadError}
       onClear={clearData}
     />
   );
