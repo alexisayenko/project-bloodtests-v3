@@ -190,7 +190,7 @@ const CAPTIONS: Readonly<Record<CaptionId, CaptionSpec>> = {
   },
   'alb-t': {
     label: 'Albumin-T', title: 'Albumin-bound Testosterone', measure: 'albBound',
-    note: 'Part of bioavailable T: loosely bound, released quickly in tissue capillaries (bioavailable T = free + albumin-bound).',
+    note: 'Loosely bound, released quickly in tissue capillaries.',
   },
   e2: { label: 'E2', title: 'Estradiol', measure: 'E2' },
   e2blood: { label: 'E2', title: 'Estradiol', measure: 'E2' },
@@ -808,9 +808,9 @@ const BADGES: ReadonlyArray<Badge> = [
   },
   {
     id: 't-e2', name: 'T/E2', measure: 'te2',
-    meaning: 'Balance between androgen and estrogen signaling — too low can mean excess estrogen conversion, too high can mean too little estradiol for bone, libido and mood.',
-    low: 'More aromatization (often more body fat).',
-    high: 'Less aromatization.',
+    meaning: 'Aromatase enzyme activity (often due to excess body fat).',
+    low: 'Excess estrogen conversion.',
+    high: 'Too little estradiol for bone, libido and mood.',
     caveats: 'E2 immunoassays are unreliable at male levels; units matter.',
   },
 ];

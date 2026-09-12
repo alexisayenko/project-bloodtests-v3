@@ -527,6 +527,12 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding-top: 8px;
   border-top: 1px solid var(--border-subtle); font-size: 12px; line-height: 1.4; color: var(--text-secondary);
 }
+.mc-pathway-badge-open .mc-pathway-badge-body {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 6;
+  margin-top: 0; padding: 8px 12px 12px; background: var(--surface); border: 1px solid var(--accent);
+  border-top: 1px solid var(--border-subtle); border-radius: 0 0 12px 12px; box-shadow: var(--shadow-pop);
+  max-height: 360px; overflow-y: auto;
+}
 .mc-pathway-badge-body b { display: block; color: var(--navy); font-weight: 600; }
 .mc-pathway-badge-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mc-pathway-badge-name { font-size: 13px; font-weight: 600; }
