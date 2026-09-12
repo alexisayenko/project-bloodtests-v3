@@ -908,7 +908,7 @@
   {
     "loinc": "8099-4",
     "longCommonName": "Thyroperoxidase Ab [Units/volume] in Serum or Plasma",
-    "friendlyName": "Anti-Tg",
+    "friendlyName": "Anti-TPO",
     "shortName": "TPO",
     "unit": "IU/mL",
     "lang": {
@@ -939,7 +939,7 @@
   {
     "loinc": "8098-6",
     "longCommonName": "Thyroglobulin Ab [Units/volume] in Serum or Plasma",
-    "friendlyName": "Anti-TPO",
+    "friendlyName": "Anti-Tg",
     "shortName": "TG",
     "unit": "IU/mL",
     "lang": {
