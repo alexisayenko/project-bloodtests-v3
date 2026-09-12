@@ -36,6 +36,34 @@
       { "label": "Urea", "price": 180, "covers": ["3091-6"] },
       { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] },
       {
+        "label": "Альбумін (ALB)",
+        "price": 153,
+        "covers": ["1751-7"],
+        "innerId": "F0005",
+        "url": "https://esculab.com/albumin-alb"
+      },
+      {
+        "label": "Антитіла до рецепторів ТТГ (АТ до рТТГ, Anti-TSHR) (стимулюючі)",
+        "price": 693,
+        "covers": ["5385-0"],
+        "innerId": "A0006",
+        "url": "https://esculab.com/antytila-do-retceptora-tth-at-do-rtth-antitshr"
+      },
+      {
+        "label": "Антитіла до тиреоглобуліну (АТ до ТГ, Anti-TG)",
+        "price": 337.5,
+        "covers": ["8098-6"],
+        "innerId": "A0007",
+        "url": "https://esculab.com/antytila-do-tyreohlobulinu-at-do-th-antitg"
+      },
+      {
+        "label": "Антитіла до тиреоїдної пероксидази (АТ до ТПО, Anti-TPO)",
+        "price": 382.5,
+        "covers": ["8099-4"],
+        "innerId": "A0008",
+        "url": "https://esculab.com/antytila-do-tyreoyidnoyi-peroksydazy-at-do-tpo-antitpo"
+      },
+      {
         "label": "Аполіпопротеїн А1 (Apo A1)",
         "price": 288,
         "covers": ["1869-7"],
@@ -50,11 +78,32 @@
         "url": "https://esculab.com/apolipoproteyin_v_6703"
       },
       {
+        "label": "Білок загальний (TP)",
+        "price": 180,
+        "covers": ["2885-2"],
+        "innerId": "F0006",
+        "url": "https://esculab.com/bilok-zahalnyy-tp"
+      },
+      {
         "label": "Вітамін В12 (ціанокобаламін, Vit.B12)",
         "price": 378,
         "covers": ["2132-9"],
         "innerId": "F1001",
         "url": "https://esculab.com/vitamin-v12-tcianokobalamin-vitb12"
+      },
+      {
+        "label": "Гамма-глутамілтрансфераза (ГГТ, GGT)",
+        "price": 157.5,
+        "covers": ["2324-2"],
+        "innerId": "F0008",
+        "url": "https://esculab.com/hammahlutamattransferaza-hht-ggt"
+      },
+      {
+        "label": "Глікований гемоглобін (HbA1c)",
+        "price": 355.5,
+        "covers": ["4548-4"],
+        "innerId": "A4001",
+        "url": "https://esculab.com/hlikovanyy-hemohlobin-hba1c"
       },
       {
         "label": "Глюкоза (сироватка крові)",
@@ -63,6 +112,13 @@
         "innerId": "A4003",
         "url": "https://esculab.com/hlyukoza-syrovatka-krovi",
         "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
+      },
+      {
+        "label": "Гомоцистеїн",
+        "price": 625.5,
+        "covers": ["13965-9"],
+        "innerId": "F3005",
+        "url": "https://esculab.com/homotcysteyin"
       },
       {
         "label": "Загальна залізозв'язуюча здатність сироватки (TIBC)",
@@ -93,6 +149,13 @@
         "url": "https://esculab.com/kaliy-ionizovanyy-k"
       },
       {
+        "label": "Кальцитонін (CT)",
+        "price": 589.5,
+        "covers": ["1992-7"],
+        "innerId": "A0005",
+        "url": "https://esculab.com/kaltcytonin"
+      },
+      {
         "label": "Кальцій загальний (Cа)",
         "price": 166.5,
         "covers": ["17861-6"],
@@ -105,6 +168,20 @@
         "covers": ["1994-3"],
         "innerId": "A1001",
         "url": "https://esculab.com/kaltciy-ionizovanyy-ca2"
+      },
+      {
+        "label": "Лептин (ОВ)",
+        "price": 801,
+        "covers": ["21365-2"],
+        "innerId": "A4006",
+        "url": "https://esculab.com/leptyn-ov"
+      },
+      {
+        "label": "Ліпаза (LIPC)",
+        "price": 198,
+        "covers": ["3040-3"],
+        "innerId": "F0016",
+        "url": "https://esculab.com/lipaza-lipc"
       },
       {
         "label": "Магній (MG)",
@@ -121,6 +198,13 @@
         "url": "https://esculab.com/natriy-ionizovanyy-na"
       },
       {
+        "label": "С-пептид",
+        "price": 369,
+        "covers": ["1986-9"],
+        "innerId": "A4007",
+        "url": "https://esculab.com/s-peptyd-speptide"
+      },
+      {
         "label": "С-реактивний білок (СРБ, CRP)",
         "price": 184.5,
         "covers": ["1988-5"],
@@ -133,6 +217,34 @@
         "covers": ["3084-1"],
         "innerId": "F0013",
         "url": "https://esculab.com/sechova-kyslota-ua"
+      },
+      {
+        "label": "Тиреотропний гормон (ТТГ, TSH)",
+        "price": 292.5,
+        "covers": ["11580-8"],
+        "innerId": "A0000",
+        "url": "https://esculab.com/tyreotropnyy-hormon-tth-tsh"
+      },
+      {
+        "label": "Тироксин вільний (Т4 віл, FT4)",
+        "price": 288,
+        "covers": ["3024-7"],
+        "innerId": "A0003",
+        "url": "https://esculab.com/tyroksyn-vilnyy-vt4-ft4"
+      },
+      {
+        "label": "Трансферин (TRSF)",
+        "price": 288,
+        "covers": ["3034-6"],
+        "innerId": "F1002",
+        "url": "https://esculab.com/transferyn-trsf"
+      },
+      {
+        "label": "Трийодтиронін вільний (Т3 віл, FT3)",
+        "price": 288,
+        "covers": ["3051-0"],
+        "innerId": "A0002",
+        "url": "https://esculab.com/tryyodtyronin-vilnyy-vt3-ft3"
       },
       {
         "label": "Феритин (FER)",

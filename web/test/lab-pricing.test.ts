@@ -59,13 +59,17 @@ describe('quoteSchedule', () => {
     expect(quote.unpriced).toEqual(['1742-6', '1975-2']);
   });
 
-  it("costs Esculab's full blood count once beside its glucose", () => {
+  it("costs Esculab's full blood count once beside its glucose and TSH", () => {
     const esculab = LABORATORY_BY_ID.esculab!;
     const fbc = PANELS.find((p) => p.id === 'fbc')!.sections!.flatMap((s) => s.loincs);
     const quote = quoteSchedule([...fbc, '2339-0', '14749-6', '11580-8'], esculab);
-    expect(quote.charged.map((line) => line.label)).toEqual(['FBC', 'Глюкоза (сироватка крові)']);
-    expect(quote.total).toBe(517);
-    expect(quote.unpriced).toEqual(['11580-8']);
+    expect(quote.charged.map((line) => line.label)).toEqual([
+      'FBC',
+      'Глюкоза (сироватка крові)',
+      'Тиреотропний гормон (ТТГ, TSH)',
+    ]);
+    expect(quote.total).toBe(809.5);
+    expect(quote.unpriced).toEqual([]);
   });
 
   it('prices one schedule at each laboratory from that laboratory alone', () => {
@@ -116,12 +120,12 @@ describe('quoteSchedule', () => {
     );
   });
 
-  it('prices GGT at Medis and Synevo and leaves it unpriced at Esculab', () => {
+  it('prices GGT at Medis, Synevo and Esculab', () => {
     expect(quoteSchedule(['2324-2'], LABORATORY_BY_ID.medis!).total).toBe(153);
     expect(quoteSchedule(['2324-2'], LABORATORY_BY_ID.synevo!).total).toBe(200);
     const esculab = quoteSchedule(['2324-2'], LABORATORY_BY_ID.esculab!);
-    expect(esculab.total).toBe(0);
-    expect(esculab.unpriced).toEqual(['2324-2']);
+    expect(esculab.total).toBe(157.5);
+    expect(esculab.unpriced).toEqual([]);
   });
 });
 

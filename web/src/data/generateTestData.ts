@@ -381,8 +381,8 @@ export function withTestMedications(meds: Medications, today: Date, newId: () =>
   };
 }
 
-// An FBC pair (priced once, as a bundle), HbA1c and insulin (not priced at
-// Esculab), TSH (priced nowhere), and the inputs of a few indices.
+// An FBC pair (priced once, as a bundle), TSH (priced only at Esculab,
+// among these three labs), and the inputs of a few indices.
 export const TEST_SCHEDULE_LOINCS = ['718-7', '6690-2', '2345-7', '20448-7', '4548-4', '2093-3', '2085-9', '2571-8', '11580-8'];
 
 /** A demo schedule for next month, only where nothing is scheduled yet; any other schedule is returned untouched. */

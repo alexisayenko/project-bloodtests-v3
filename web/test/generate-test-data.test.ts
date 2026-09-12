@@ -133,7 +133,7 @@ describe('withTestSchedule', () => {
     expect(seeded.loincs).toEqual(expect.arrayContaining(TEST_SCHEDULE_LOINCS));
     expect(seeded.indices).toEqual(expect.arrayContaining(['homair', 'tyg', 'tchdl']));
     const esculab = quoteSchedule(seeded.loincs, LABORATORY_BY_ID.esculab!);
-    expect(esculab.unpriced).toEqual(expect.arrayContaining(['4548-4', '11580-8']));
+    expect(esculab.unpriced).toEqual([]);
     expect(esculab.charged.filter((line) => line.label === 'FBC')).toHaveLength(1);
     expect(quoteSchedule(seeded.loincs, LABORATORY_BY_ID.synevo!).unpriced).toEqual(['11580-8']);
   });
