@@ -13,8 +13,13 @@ const MONTH_COL_WIDTH = 32;
 const YEAR_EDGE = `1px solid ${COLOR.borderMuted}`;
 const BAR_FILL = `color-mix(in srgb, ${COLOR.brandTeal} 38%, ${COLOR.surface})`;
 const BAR_INSET = 3;
+// Same right-edge cut used by the mobile results-table reveal (index.css's `.mc-col-cut`), reused here so a
+// frozen pane reads the same way everywhere in the app.
+const STICKY_EDGE_SHADOW = '2px 0 5px rgba(0, 0, 0, 0.14)';
 
 const th = { ...CARD_TABLE_TH, verticalAlign: 'bottom' } as const;
+const nameTh = { ...th, position: 'sticky', left: 0, zIndex: 1 } as const;
+const dosageTh = { ...th, position: 'sticky', left: NAME_COL_WIDTH, zIndex: 1, boxShadow: STICKY_EDGE_SHADOW } as const;
 const yearTh = {
   ...th,
   textAlign: 'center',
@@ -25,6 +30,20 @@ const yearTh = {
 } as const;
 const td = { ...CARD_TABLE_TD, padding: '6px 12px' } as const;
 const lastTd = { ...td, borderBottom: 'none' } as const;
+
+function nameCellStyle<T extends object>(cell: T) {
+  return { ...cell, position: 'sticky', left: 0, zIndex: 1, background: COLOR.surfaceCard } as const;
+}
+function dosageCellStyle<T extends object>(cell: T) {
+  return {
+    ...cell,
+    position: 'sticky',
+    left: NAME_COL_WIDTH,
+    zIndex: 1,
+    background: COLOR.surfaceCard,
+    boxShadow: STICKY_EDGE_SHADOW,
+  } as const;
+}
 const input = { ...FIELD_INPUT, width: '100%', boxSizing: 'border-box', padding: '4px 8px' } as const;
 const removeButton = { padding: '0 7px', border: `1px solid ${COLOR.border}`, color: COLOR.textMuted, lineHeight: '18px' } as const;
 
@@ -162,10 +181,10 @@ export function MedicationsView() {
               </colgroup>
               <thead>
                 <tr>
-                  <th rowSpan={2} scope="col" style={th}>
+                  <th rowSpan={2} scope="col" style={nameTh}>
                     Medication
                   </th>
-                  <th rowSpan={2} scope="col" style={th}>
+                  <th rowSpan={2} scope="col" style={dosageTh}>
                     Dosage
                   </th>
                   {years.map((year) => (
@@ -192,7 +211,7 @@ export function MedicationsView() {
                     monthIndex >= 0 && monthIndex < 12 && row.months.includes(monthKey(year, monthIndex));
                   return (
                     <tr key={row.id}>
-                      <td style={cell}>
+                      <td style={nameCellStyle(cell)}>
                         {editing ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <Button
@@ -222,7 +241,7 @@ export function MedicationsView() {
                           </span>
                         )}
                       </td>
-                      <td style={cell}>
+                      <td style={dosageCellStyle(cell)}>
                         {editing ? (
                           <input
                             aria-label={`Dosage of ${row.name.trim() || 'unnamed medication'}`}
