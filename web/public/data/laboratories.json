@@ -15,6 +15,7 @@
       { "label": "Creatinine", "price": 185, "covers": ["2160-0"] },
       { "label": "CRP", "price": 185, "covers": ["1988-5"] },
       { "label": "Cystatin C", "price": 685, "covers": ["33863-2"] },
+      { "label": "eGFR", "price": 189, "covers": ["48642-3"] },
       {
         "label": "FBC",
         "price": 328,
@@ -46,6 +47,8 @@
       { "label": "TC", "price": 167, "covers": ["2093-3"] },
       { "label": "TIBC", "price": 324, "covers": ["2500-7"] },
       { "label": "TRIG", "price": 185, "covers": ["2571-8"] },
+      { "label": "Urea", "price": 180, "covers": ["3091-6"] },
+      { "label": "Uric Acid", "price": 180, "covers": ["3084-1"] },
       { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] }
     ]
   },
