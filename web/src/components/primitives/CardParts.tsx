@@ -8,8 +8,16 @@ export function Overline({ style, ...rest }: Readonly<HTMLAttributes<HTMLDivElem
   return <div style={{ ...OVERLINE, ...style }} {...rest} />;
 }
 
-export function CardTitle({ style, ...rest }: Readonly<HTMLAttributes<HTMLHeadingElement>>) {
-  return <h2 style={{ margin: 0, fontSize: FONT.cardTitle, fontWeight: 600, lineHeight: 1.3, color: COLOR.navy, ...style }} {...rest} />;
+export function CardTitle({
+  style,
+  children,
+  ...rest
+}: Readonly<Omit<HTMLAttributes<HTMLHeadingElement>, 'children'> & { children: ReactNode }>) {
+  return (
+    <h2 style={{ margin: 0, fontSize: FONT.cardTitle, fontWeight: 600, lineHeight: 1.3, color: COLOR.navy, ...style }} {...rest}>
+      {children}
+    </h2>
+  );
 }
 
 export function CardDescription({ style, ...rest }: Readonly<HTMLAttributes<HTMLDivElement>>) {

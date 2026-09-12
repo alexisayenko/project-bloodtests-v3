@@ -1,3 +1,5 @@
+import { VISUALLY_HIDDEN } from './styles';
+
 export function SegmentedControl<T extends string | number>({
   options,
   value,
@@ -14,7 +16,8 @@ export function SegmentedControl<T extends string | number>({
   label: string;
 }>) {
   return (
-    <div role="group" aria-label={label} className="mc-segmented">
+    <fieldset className="mc-segmented">
+      <legend style={VISUALLY_HIDDEN}>{label}</legend>
       {options.map((option) => (
         <button
           key={option}
@@ -27,6 +30,6 @@ export function SegmentedControl<T extends string | number>({
           {format(option)}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }

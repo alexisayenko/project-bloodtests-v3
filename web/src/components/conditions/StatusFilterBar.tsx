@@ -1,4 +1,4 @@
-import { StatusToggle, type StatusTone } from '../primitives';
+import { StatusToggle, VISUALLY_HIDDEN, type StatusTone } from '../primitives';
 import { FILTER_TONES, toggleTone, type ToneCounts } from './statusFilter';
 
 export function StatusFilterBar({
@@ -7,7 +7,8 @@ export function StatusFilterBar({
   onChange,
 }: Readonly<{ active: ReadonlySet<StatusTone>; counts: ToneCounts; onChange: (next: ReadonlySet<StatusTone>) => void }>) {
   return (
-    <div role="group" aria-label="Filter markers by status" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+    <fieldset style={{ display: 'flex', flexWrap: 'wrap', gap: 8, border: 0, margin: 0, padding: 0 }}>
+      <legend style={VISUALLY_HIDDEN}>Filter markers by status</legend>
       {FILTER_TONES.map((tone) => (
         <StatusToggle
           key={tone}
@@ -17,6 +18,6 @@ export function StatusFilterBar({
           onToggle={() => onChange(toggleTone(active, tone))}
         />
       ))}
-    </div>
+    </fieldset>
   );
 }

@@ -86,6 +86,19 @@ export const CARD_TABLE_TD = {
 /** Holds a table: no padding, clipped to the card's radius so a tinted header or footer follows the corners. */
 export const TABLE_CARD = { padding: 0, overflow: 'hidden' } as const;
 
+/** Keeps a label in the accessibility tree (e.g. a `<legend>`) without showing it visually. */
+export const VISUALLY_HIDDEN = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
+
 export const DANGER_CARD = {
   border: `1px solid color-mix(in srgb, ${COLOR.statusBad} 30%, ${COLOR.surface})`,
   background: `color-mix(in srgb, ${COLOR.statusBadBg} 35%, ${COLOR.surface})`,

@@ -8,4 +8,4 @@ export { SegmentedControl } from './SegmentedControl';
 export { TABLE, TABLE_TH, TABLE_TD, FIELD_INPUT, buttonStyle, type ButtonSize, type ButtonVariant } from './styles';
 export { TONE_DOT, TONE_LABEL, type StatusTone } from './tones';
 export { Overline, CardTitle, CardDescription, CardHeader, IconBadge, DangerCard } from './CardParts';
-export { OVERLINE, CARD_TABLE_TH, CARD_TABLE_TD, TABLE_CARD, DANGER_CARD } from './styles';
+export { OVERLINE, CARD_TABLE_TH, CARD_TABLE_TD, TABLE_CARD, DANGER_CARD, VISUALLY_HIDDEN } from './styles';
