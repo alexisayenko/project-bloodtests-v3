@@ -28,7 +28,7 @@ const muted = { color: COLOR.textMuted, fontSize: 12, fontWeight: 400 } as const
 function cheapestLabIds(quotes: readonly LabQuote[]): Set<string> {
   if (quotes.length < 2 || new Set(quotes.map((q) => q.currency)).size > 1) return new Set();
   const lowest = Math.min(...quotes.map((q) => q.total));
-  if (!(lowest > 0)) return new Set();
+  if (lowest <= 0) return new Set();
   return new Set(LABORATORIES.filter((_lab, i) => quotes[i]!.total === lowest).map((lab) => lab.id));
 }
 

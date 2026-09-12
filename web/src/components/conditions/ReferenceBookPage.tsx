@@ -1184,8 +1184,7 @@ function FshPage() {
           style={{ color: COLOR.accent }}
         >
           Creative Commons Attribution (CC BY 4.0) licence
-        </a>
-        .
+        </a>.
       </ImageAttribution>
 
       <h3 style={{ fontSize: 15, fontWeight: 600, margin: '24px 0 8px' }}>3D structure (cartoon representation)</h3>

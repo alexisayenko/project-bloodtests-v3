@@ -31,6 +31,8 @@ export type LatestEntryOptions = {
   numericOnly: boolean;
 };
 
+const DEFAULT_LATEST_ENTRY_OPTIONS: LatestEntryOptions = { numericOnly: false };
+
 /**
  * The newest entry recorded under each LOINC exactly as the lab printed it —
  * deliberately not folded through the alias maps; `getLatest` folds a badge's
@@ -39,7 +41,7 @@ export type LatestEntryOptions = {
  */
 export function latestEntryByLoinc(
   entries: readonly ResultEntry[],
-  { numericOnly }: LatestEntryOptions = { numericOnly: false },
+  { numericOnly }: LatestEntryOptions = DEFAULT_LATEST_ENTRY_OPTIONS,
 ): Record<string, ResultEntry> {
   const map: Record<string, ResultEntry> = {};
   for (const entry of entries) {

@@ -20,7 +20,9 @@ export function AppShell({
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.toggleAttribute('data-sidebar-collapsed', collapsed);
-    return () => root.removeAttribute('data-sidebar-collapsed');
+    return () => {
+      delete root.dataset.sidebarCollapsed;
+    };
   }, [collapsed]);
 
   const toggleCollapsed = () => {
