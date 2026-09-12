@@ -2,11 +2,97 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, typ
 import type { DiagnosticReport } from '../../types';
 import { backupFilename, buildBackupFiles, zipBackupFiles } from '../../data/backupArchive';
 import { BackupImportError, readBackup, unzipBackup, type BackupContents } from '../../data/backupRestore';
-import { loadEnvelopeMeta } from '../../data/envelopeMeta';
+import { loadEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from '../../data/envelopeMeta';
 import { Database, Download, HardDriveDownload, SlidersHorizontal, Trash2, Upload, type LucideIcon } from 'lucide-react';
 import { PageHeader } from './PageHeader';
-import { Button, Card, CardDescription, CardTitle, DangerCard, FileButton, IconBadge, buttonStyle } from '../primitives';
+import { Button, Card, CardDescription, CardHeader, CardTitle, DangerCard, FIELD_INPUT, FileButton, IconBadge, buttonStyle } from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
+
+const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
+
+/** "Database details": subject/sex/birth-year/notes written into every export. Always expanded here — no collapse toggle. */
+function DatabaseDetailsCard() {
+  const [meta, setMeta] = useState<EnvelopeMeta>(() => loadEnvelopeMeta());
+
+  function updateMeta(patch: Partial<EnvelopeMeta>) {
+    setMeta((prev) => {
+      const next = { ...prev, ...patch };
+      saveEnvelopeMeta(next);
+      return next;
+    });
+  }
+
+  return (
+    <Card style={{ maxWidth: 960, marginBottom: SPACE[5] }}>
+      <CardHeader
+        icon={<IconBadge icon={Database} size={36} />}
+        title="Database details"
+        description="Subject, sex, birth year and notes written into each export."
+      />
+      <div
+        style={{
+          marginTop: SPACE[4],
+          paddingTop: SPACE[4],
+          borderTop: `1px solid ${COLOR.borderSubtle}`,
+          display: 'grid',
+          gridTemplateColumns: '90px minmax(0, 480px)',
+          columnGap: 14,
+          rowGap: 12,
+          alignItems: 'center',
+          fontSize: 13,
+        }}
+      >
+        <span style={{ color: COLOR.textMuted, textAlign: 'right' }}>Generated at</span>
+        <span style={{ color: COLOR.textMuted }}>
+          {meta.generatedAt ? new Date(meta.generatedAt).toLocaleString() : '—'}
+          <span style={{ color: COLOR.textDisabled, fontSize: 11, marginLeft: 8 }}>updates on each export</span>
+        </span>
+        <span style={FIELD_LABEL}>Subject</span>
+        <input
+          type="text"
+          value={meta.subject ?? ''}
+          onChange={(e) => updateMeta({ subject: e.currentTarget.value || undefined })}
+          style={{ ...FIELD_INPUT, width: '100%', boxSizing: 'border-box' }}
+        />
+        <span style={FIELD_LABEL}>Sex</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <select
+            value={meta.sex ?? ''}
+            onChange={(e) => {
+              const v = e.currentTarget.value;
+              updateMeta({ sex: v === 'female' || v === 'male' ? v : undefined });
+            }}
+            style={FIELD_INPUT}
+          >
+            <option value="">(not set)</option>
+            <option value="female">female</option>
+            <option value="male">male</option>
+          </select>
+          <span style={{ color: COLOR.textSecondary, fontWeight: 600 }}>Birth year</span>
+          <input
+            type="number"
+            min={1900}
+            max={new Date().getFullYear()}
+            step={1}
+            value={meta.birthYear ?? ''}
+            onChange={(e) => {
+              const v = e.currentTarget.value;
+              updateMeta({ birthYear: v === '' ? undefined : Number(v) });
+            }}
+            style={{ ...FIELD_INPUT, width: 90 }}
+          />
+        </div>
+        <span style={{ ...FIELD_LABEL, alignSelf: 'start', marginTop: 6 }}>Notes</span>
+        <textarea
+          rows={4}
+          value={meta.notes ?? ''}
+          onChange={(e) => updateMeta({ notes: e.currentTarget.value || undefined })}
+          style={{ ...FIELD_INPUT, width: '100%', boxSizing: 'border-box', resize: 'vertical' }}
+        />
+      </div>
+    </Card>
+  );
+}
 
 const HOLD_TO_CLEAR_MS = 2000;
 
@@ -217,6 +303,7 @@ export function AccountView({
           { icon: SlidersHorizontal, line1: 'Instant restore', line2: 'at any time' },
         ]}
       />
+      <DatabaseDetailsCard />
       <div style={ACTION_GRID}>
         <Card style={ACTION_CARD}>
           <ActionCardBody

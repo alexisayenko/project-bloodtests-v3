@@ -4,20 +4,18 @@ import { validateDiagnosticReports, groupHasErrors, groupHasWarnings } from '../
 import { parseUploadedResults } from '../../data/parseUpload';
 import { formatFullDate, pressable } from './ui';
 import { exportData } from '../../utils/exportData';
-import { loadEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from '../../data/envelopeMeta';
+import { loadEnvelopeMeta, saveEnvelopeMeta } from '../../data/envelopeMeta';
 import { CHATBOT_PROMPT } from '../../data/chatbotPrompt';
-import { FileText, CheckCircle2, Sparkles, ChevronDown, ChevronRight, Database, HardDriveDownload, Trash2 } from 'lucide-react';
+import { FileText, CheckCircle2, Sparkles, ChevronRight, HardDriveDownload, Trash2 } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import {
   Button,
   CARD_TABLE_TD,
   CARD_TABLE_TH,
   Card,
-  CardDescription,
   CardHeader,
   CardTitle,
   DangerCard,
-  FIELD_INPUT,
   FileButton,
   IconBadge,
   StatusDot,
@@ -28,7 +26,6 @@ import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
 const COLUMN_WIDTH = 960;
 const SECTION = { marginBottom: SPACE[5], maxWidth: COLUMN_WIDTH } as const;
-const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
 const STACKED_CARD = { display: 'flex', flexDirection: 'column', gap: SPACE[4] } as const;
 const ACTIONS = { display: 'flex', flexWrap: 'wrap', gap: SPACE[3], alignItems: 'center', marginTop: 'auto' } as const;
 const STEP_GRID = {
@@ -107,21 +104,11 @@ export function DiagnosticReportsView({
   const [isExporting, setIsExporting] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [addedCount, setAddedCount] = useState<number | null>(null);
-  const [meta, setMeta] = useState<EnvelopeMeta>(() => loadEnvelopeMeta());
   const issues = useMemo(() => validateDiagnosticReports(sessions), [sessions]);
   const promptId = useId();
-
-  function updateMeta(patch: Partial<EnvelopeMeta>) {
-    setMeta((prev) => {
-      const next = { ...prev, ...patch };
-      saveEnvelopeMeta(next);
-      return next;
-    });
-  }
 
   async function handleCopyPrompt() {
     try {
@@ -252,87 +239,6 @@ export function DiagnosticReportsView({
         ]}
       />
       {sessions.length > 0 && (
-        <Card padding={0} style={SECTION}>
-          <details onToggle={(e) => setDetailsOpen(e.currentTarget.open)}>
-            <summary
-              style={{ display: 'flex', alignItems: 'center', gap: SPACE[3], padding: '16px 20px', cursor: 'pointer', listStyle: 'none' }}
-            >
-              <IconBadge icon={Database} size={36} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <CardTitle>Database details</CardTitle>
-                <CardDescription>Subject, sex, birth year and notes written into each export.</CardDescription>
-              </div>
-              <ChevronDown
-                size={20}
-                color={COLOR.link}
-                aria-hidden="true"
-                style={{ flexShrink: 0, transition: 'transform 150ms', transform: detailsOpen ? 'rotate(180deg)' : undefined }}
-              />
-            </summary>
-            <div
-              style={{
-                borderTop: `1px solid ${COLOR.borderSubtle}`,
-                padding: '16px 20px 20px',
-                display: 'grid',
-                gridTemplateColumns: '90px minmax(0, 480px)',
-                columnGap: 14,
-                rowGap: 12,
-                alignItems: 'center',
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: COLOR.textMuted, textAlign: 'right' }}>Generated at</span>
-              <span style={{ color: COLOR.textMuted }}>
-                {meta.generatedAt ? new Date(meta.generatedAt).toLocaleString() : '—'}
-                <span style={{ color: COLOR.textDisabled, fontSize: 11, marginLeft: 8 }}>updates on each export</span>
-              </span>
-              <span style={FIELD_LABEL}>Subject</span>
-              <input
-                type="text"
-                value={meta.subject ?? ''}
-                onChange={(e) => updateMeta({ subject: e.currentTarget.value || undefined })}
-                style={{ ...FIELD_INPUT, width: '100%', boxSizing: 'border-box' }}
-              />
-              <span style={FIELD_LABEL}>Sex</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <select
-                  value={meta.sex ?? ''}
-                  onChange={(e) => {
-                    const v = e.currentTarget.value;
-                    updateMeta({ sex: v === 'female' || v === 'male' ? v : undefined });
-                  }}
-                  style={FIELD_INPUT}
-                >
-                  <option value="">(not set)</option>
-                  <option value="female">female</option>
-                  <option value="male">male</option>
-                </select>
-                <span style={{ color: COLOR.textSecondary, fontWeight: 600 }}>Birth year</span>
-                <input
-                  type="number"
-                  min={1900}
-                  max={new Date().getFullYear()}
-                  step={1}
-                  value={meta.birthYear ?? ''}
-                  onChange={(e) => {
-                    const v = e.currentTarget.value;
-                    updateMeta({ birthYear: v === '' ? undefined : Number(v) });
-                  }}
-                  style={{ ...FIELD_INPUT, width: 90 }}
-                />
-              </div>
-              <span style={{ ...FIELD_LABEL, alignSelf: 'start', marginTop: 6 }}>Notes</span>
-              <textarea
-                rows={4}
-                value={meta.notes ?? ''}
-                onChange={(e) => updateMeta({ notes: e.currentTarget.value || undefined })}
-                style={{ ...FIELD_INPUT, width: '100%', boxSizing: 'border-box', resize: 'vertical' }}
-              />
-            </div>
-          </details>
-        </Card>
-      )}
-      {sessions.length > 0 && (
         <Card style={{ ...SECTION, ...TABLE_CARD }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE[3], padding: '16px 20px' }}>
             <CardTitle>Reports</CardTitle>
@@ -400,8 +306,9 @@ export function DiagnosticReportsView({
                 onClick={async () => {
                   setIsExporting(true);
                   try {
-                    const generatedAt = await exportData(sessions, meta);
-                    updateMeta({ generatedAt });
+                    const currentMeta = loadEnvelopeMeta();
+                    const generatedAt = await exportData(sessions, currentMeta);
+                    saveEnvelopeMeta({ ...currentMeta, generatedAt });
                   } finally {
                     setIsExporting(false);
                   }
