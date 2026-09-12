@@ -240,7 +240,7 @@ function indexReference(key: IndexKey): ReferenceInfo {
     : [['Within range', `< ${good}${u}`], ['Borderline', `${good} – ${warn}${u}`], ['High', `≥ ${warn}${u}`]];
   const sources = def.references.map((r) => ({ organization: r.organization, title: r.document, url: r.url, year: r.year, retrieved: r.retrieved }));
   return {
-    tag: 'Guide zones, adult men',
+    tag: 'guide',
     headCites: sources.map((_, i) => i + 1),
     lines: zones.map(([label, text]) => ({ label, text, cites: [] })),
     sources,
@@ -277,7 +277,7 @@ function referenceOf(measureKey: MeasureKey, snapshot: Snapshot, unitSystem: 'si
   const measure = snapshot[subject.key];
   if (measure.lab) {
     const { low, high, unit } = measure.lab;
-    return { tag: 'From the lab report', headCites: [], lines: [{ text: formatBounds(low, high, unit, false), cites: [] }], sources: [] };
+    return { tag: 'lab', headCites: [], lines: [{ text: formatBounds(low, high, unit, false), cites: [] }], sources: [] };
   }
   return curatedReference(subject.key, measure, unitSystem);
 }
@@ -773,42 +773,42 @@ interface Badge {
 const BADGES: ReadonlyArray<Badge> = [
   {
     id: 'total-t', name: 'Total Testosterone', measure: 'T',
-    meaning: 'All testosterone in blood: SHBG-bound, albumin-bound and free.',
+    meaning: 'The overall androgen output your body is producing, before protein binding decides how much of it is actually active.',
     low: 'Less testosterone made, or less SHBG holding it.',
     high: 'More made, or more SHBG holding it (free T may still be normal).',
     caveats: 'Peaks in the morning; SHBG changes it without changing free T.',
   },
   {
     id: 'free-t', name: 'Free Testosterone', measure: 'cft',
-    meaning: 'The unbound share (about 1–3%) that can enter cells. Calculated from total T, SHBG and albumin (Vermeulen).',
+    meaning: 'The unbound share (about 1–3% of total) that can actually enter cells — the androgen signal tissues have available to use.',
     low: 'Less testosterone available to tissues.',
     high: 'More available to tissues.',
     caveats: 'Direct free-T immunoassays are unreliable; the calculation is preferred.',
   },
   {
     id: 'bio-t', name: 'Bioavailable Testosterone', measure: 'biot',
-    meaning: 'Free plus albumin-bound testosterone — the part not locked to SHBG.',
+    meaning: 'The androgen pool tissues can actually draw on — free plus the share loosely held by albumin, as opposed to what sits inertly locked to SHBG.',
     low: 'Less testosterone reaching tissues.',
     high: 'More reaching tissues.',
     caveats: 'Calculated; reference bands depend on sex and age.',
   },
   {
     id: 'tlh', name: 'T/LH', measure: 'tlh',
-    meaning: 'How much testosterone the Leydig cells make per unit of LH stimulus.',
+    meaning: 'A functional readout of Leydig-cell activity — how well the testes respond to pituitary LH drive.',
     low: 'The testes respond poorly (primary or compensated hypogonadism).',
     high: 'A strong testicular response.',
     caveats: 'LH is pulsatile, so one sample is noisy; no agreed reference range.',
   },
   {
     id: 'dhtt', name: 'DHT/T', measure: 'dhtt',
-    meaning: 'Share of testosterone converted to DHT — a rough gauge of 5α-reductase activity.',
+    meaning: 'How much testosterone is being converted to the more potent DHT — the androgen signal driving skin, scalp and prostate tissue.',
     low: 'Less conversion (e.g. finasteride, dutasteride).',
     high: 'More conversion.',
     caveats: 'Serum DHT understates tissue DHT; LC-MS/MS assays are more reliable.',
   },
   {
     id: 't-e2', name: 'T/E2', measure: 'te2',
-    meaning: 'Testosterone left relative to estradiol made from it — aromatase balance.',
+    meaning: 'Balance between androgen and estrogen signaling — too low can mean excess estrogen conversion, too high can mean too little estradiol for bone, libido and mood.',
     low: 'More aromatization (often more body fat).',
     high: 'Less aromatization.',
     caveats: 'E2 immunoassays are unreliable at male levels; units matter.',
