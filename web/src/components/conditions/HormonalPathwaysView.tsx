@@ -23,7 +23,6 @@ import {
   CarrierIcon,
   HeartPulseIcon,
   HormoneIcon,
-  ReceptorIcon,
   TargetTissueIcon,
   TestesIcon,
   type IconComponent,
@@ -489,11 +488,6 @@ function TestesDiagram() {
   );
 }
 
-const SRD5A_CREDIT =
-  'Atom coordinates: Ren, R.B., Han, Y.F., Xiao, Q.J., Deng, D. (RCSB PDB 7C83, https://www.rcsb.org/structure/7C83); ' +
-  'Visualization: Wikimedia Commons user Synpath, CC BY-SA 4.0 ' +
-  '(https://commons.wikimedia.org/wiki/File:PbSDR5A_steroid_5-alpha-reductase_PDB=7c83.png).';
-
 const LH_CREDIT =
   'Structure: RCSB PDB entry 7FII, from Structures of full-length glycoprotein hormone receptor signalling complexes, Nature (2021). ' +
   "LH receptor (LHCGR) bound to chorionic gonadotropin (hCG) — hCG's close structural similarity to LH makes it the standard proxy " +
@@ -512,15 +506,13 @@ function Enzyme({
   label,
   node,
   image,
-  credit,
   children,
-}: Readonly<{ label: string; node: string; image: string; credit?: string; children?: ReactNode }>) {
+}: Readonly<{ label: string; node: string; image: string; children?: ReactNode }>) {
   return (
     <div className="mc-pathway-enzyme-col">
       <div className="mc-pathway-enzyme" data-node={node}>
         <img className="mc-pathway-structure-img" src={image} alt="" width={56} height={56} />
         <span className="mc-pathway-node-label">{label}</span>
-        {credit && <StructureCredit href="https://www.rcsb.org/structure/7C83" label="PDB 7C83 · CC BY-SA 4.0" credit={credit} />}
       </div>
       {children && <div className="mc-pathway-product">{children}</div>}
     </div>
@@ -530,7 +522,7 @@ function Enzyme({
 function Receptor({ label, node }: Readonly<{ label: string; node: string }>) {
   return (
     <div className="mc-pathway-anchor mc-pathway-node" data-node={node}>
-      <ReceptorIcon size={36} />
+      <img className="mc-pathway-structure-img" src="/pathways/receptor-icon.png" alt="" width={56} height={56} />
       <div className="mc-pathway-caption">
         <span className="mc-pathway-node-label">{label}</span>
       </div>
@@ -542,10 +534,10 @@ function TargetDiagram() {
   return (
     <div className="mc-pathway-row mc-pathway-row-start">
       <div className="mc-pathway-enzymes">
-        <Enzyme label="5α-reductase" node="srd5a" image="/pathways/5-alpha-reductase.png" credit={SRD5A_CREDIT}>
+        <Enzyme label="5α-reductase" node="srd5a" image="/pathways/enzyme-icon.png">
           <Hormone id="dht" />
         </Enzyme>
-        <Enzyme label="aromatase" node="aromatase" image="/pathways/aromatase.png">
+        <Enzyme label="aromatase" node="aromatase" image="/pathways/enzyme-icon.png">
           <Hormone id="e2" />
         </Enzyme>
         <div className="mc-pathway-er">
