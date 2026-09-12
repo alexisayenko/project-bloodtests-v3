@@ -5,8 +5,11 @@
 > [ADR-0014](../../tech/decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
 > `HormonalPathwaysView.tsx` draws four captioned zones on one canvas —
 > Hypothalamus + Pituitary (empty so far), Blood Transport, Testes, Target
-> tissues — with pathway arrows measured from the DOM and six clickable badges,
-> now on the user's own readings: a ‹ date › stepper over the Hypogonadism
+> tissues — with pathway arrows measured from the DOM and, as of 2026-09-12,
+> ten clickable badges (Total T, Bioavailable T, the measured Free
+> Testosterone, cFT (Vermeulen), three `unavailable` cFT variants — Ly &
+> Handelsman, Sartorius, Zakharov — that render "Not available" rather than a
+> value, then T/LH, DHT/T, T/E2), now on the user's own readings: a ‹ date › stepper over the Hypogonadism
 > panel's results-table dates (latest by default), values in the SI/US unit
 > system, indices from `INDEX_DEFS`, the bound pools from `testosteronePools`,
 > and an albumin default of 4.3 g/dL behind a checkbox. Node captions are
@@ -16,8 +19,10 @@
 > the calculated pools. No `pathways.json` or feedback arrows yet. Where the
 > build departs from what follows (zones, not bands; badges in one column;
 > association lines hidden at rest; cells and receptors drawn; a date stepper
-> rather than a month stepper; a default albumin), task-0024's status note
-> records it.
+> rather than a month stepper; a default albumin; ten badges rather than six,
+> an expanded badge overlaying rather than pushing down its neighbors, and
+> real PDB structure images for FSH, LH, aromatase and 5α-reductase in place
+> of their custom icon), task-0024's status note records it.
 
 One hormonal axis drawn as its wiring — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
 

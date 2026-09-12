@@ -63,7 +63,10 @@ from its formula and holds it to its sources. See
 Prices follow the same rule: `web/public/data/laboratories.json` is the
 laboratory registry (Esculab, Medis, Synevo — locale, currency, `pricesAsOf`
 and price lines, each line `covers` one or more LOINCs, so a bundle prices
-several), described by `laboratories-1.schema.json` in the same closed style
+several, carries `label` (the lab's own product name, as given) and may
+optionally carry `innerId` (the lab's own internal SKU, e.g. Esculab's
+"Артикул") and `url` (a link to that specific analysis on the lab's own
+site)), described by `laboratories-1.schema.json` in the same closed style
 and validated in the same test file; `data/labPricing.ts`'s `quoteSchedule`
 folds a schedule to primary codes, picks each code's cheapest covering line,
 charges a line once however many codes it covers, and names what no line
@@ -472,16 +475,36 @@ The pathway arrows are an SVG overlay measured from the DOM and re-measured by
 a `ResizeObserver` — FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
 enzymes and down to the androgen receptors, enzymes → products,
 DHT → androgen receptors, E2 → blood E2 → estrogen receptors — thin pale
-strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon`,
-`CarrierIcon` and `ReceptorIcon` SVGs, plus `web/public/pathways/enzyme.png`
-and `leydig-cells.png`, cropped from a mockup with transparent backgrounds. A
-column of badges on the right — Total T, Free T, Bioavailable T, T/LH, DHT/T,
-T/E2 — each expands on click to Meaning / Low / High / Caveats, static text in
-the component for now (`INDEX_DEFS` the intended source), and while one is
-hovered, focused or open draws its association lines, hidden at rest: one
-purple bus from the badge to a lane above its targets, stubs down to dashed
-rings around each target; only an opened badge also veils the rest of the
-diagram, hover drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
+strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon` (T, E2
+and blood E2 — the signals with no real structure image), `CarrierIcon` and
+`ReceptorIcon` SVGs, plus `web/public/pathways/leydig-cells.png` (Sertoli and
+Leydig cells, cropped from a mockup with a transparent background); FSH, LH,
+aromatase and 5α-reductase instead show real PDB structure images, framed as
+white tiles (sips can't do transparency) — a deliberate style break from the
+abstract icons elsewhere: aromatase (PDB 3EQM, public domain), 5α-reductase
+(PDB 7C83, CC BY-SA 4.0, credited via a visible inline credit line), FSH (PDB
+1XWD, CC0), and LH (PDB 7FII, a hormone-receptor-Gs complex whose bound
+hormone is actually chorionic gonadotropin, hCG — LH's structural proxy since
+it shares the same receptor, stated as an honest caveat on the page rather
+than hidden). A column of ten badges on the right, in order — Total
+Testosterone, Bioavailable Testosterone, Free Testosterone (the measured
+value, LOINC `2991-8`), cFT (Vermeulen) (the calculated value, formerly plain
+"Free Testosterone"), cFT (Ly & Handelsman), cFT (Sartorius) and cFT
+(Zakharov) (all three `Badge.unavailable: true` — no formula implemented,
+paywalled coefficients, Zakharov's also independently reported ~2x high by
+Fiers 2018 against equilibrium dialysis — rendering a neutral status dot and
+"Not available" with a caveat naming the reason), T/LH, DHT/T, T/E2 — each
+expands on click, an open badge overlaying 150% width over the canvas and,
+absolutely positioned, over the badges below it in the column rather than
+pushing them down: Reference range now leads, then Meaning (rewritten
+throughout to state physiological significance rather than restate the
+formula), Low, High, Caveats, and Sources as its own footer at the very end
+(previously bundled inside the reference block); static text in the component
+for now (`INDEX_DEFS` the intended source), and while one is hovered, focused
+or open it draws its association lines, hidden at rest: one purple bus from
+the badge to a lane above its targets, stubs down to dashed rings around each
+target; only an opened badge also veils the rest of the diagram, hover
+drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
 errors: under a "Planned for <month>" pill, in a table card, every scheduled observation, folded
 to its primary code, as one "Observation" cell — `friendlyName`, with the short
 name in parentheses where it differs, opening the analyte popup — beside one
@@ -489,7 +512,17 @@ price column per laboratory, a bundle
 priced on its first covered row and marked "in <label>" on the rest by
 `data/visitPlan.ts`, over a Total row that is `quoteSchedule`'s own, where the
 lowest total is tinted green and marked "Cheapest" — every laboratory sharing
-it, and none when the totals are in different currencies or the lowest is zero), Medications (`#medications`, reachable despite
+it, and none when the totals are in different currencies or the lowest is
+zero; a radio button in a laboratory's own column header lets the owner pick
+exactly ONE laboratory (`Scheduled.selectedLabId`, persisted with the
+schedule in `bloodtests_scheduled_v1`, distinct from an older, now-removed
+`lab` key that is still just ignored), and once picked every priced row's
+Observation cell shows that lab's own product name instead — its `innerId`,
+when it has one, prefixed as "<innerId> · <label>" — linked to the lab's own
+`url` when one exists, with a row unpriced at that lab falling back to the
+app's generic name and a marker showing it's a fallback; a "Show generic
+names" control clears the selection, since a native radio can't
+self-deselect), Medications (`#medications`, reachable despite
 validation errors: a free-text medication / dosage table in a card with a Jan–Dec month
 grid per shown year, each taken month a soft bar that joins its neighbours within
 a year, edited behind an Edit / Done toggle and kept by
@@ -525,7 +558,13 @@ LOINC Users' Guide, each with what it settles and a retrieval date; Analytes: a
 "LOINC database" page at `#reference/loinc-database` listing every analyte the
 app knows — LOINC code over its LOINC name, then friendly name over the short name
 where it differs, specimen, units, last tested and panels, sortable by every
-column but panels) — each
+column but panels, and an FSH page at `#reference/fsh`: FSH's identity, its
+LOINC references, and a molecular-notation walkthrough that contrasts a real
+mislabeled PubChem record (CID 62819 — actually an unrelated 980 Da peptide
+carrying "Follicle-stimulating hormone" only as a PubChem synonym) against
+FSH's real structure (PDB 1XWD) and a glycosylation figure (Lispi et al.
+2023, CC BY 4.0, attributed) — images under `web/public/reference/fsh/`, the
+first Reference Book page to embed a raster image) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
 while validation errors exist) lays out three action cards — "Export all data",
@@ -695,7 +734,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (816 tests across 36 files — 815 passing, 1 skipped — as run on 2026-09-11: index
+Vitest suites in `web/test/` (828 tests across 36 files — 827 passing, 1 skipped — as run on 2026-09-12: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
