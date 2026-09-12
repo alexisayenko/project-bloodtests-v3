@@ -74,10 +74,13 @@ function withVariants(loinc: string): string[] {
   return [...new Set([loinc, primary, ...(ALSO_REFS[primary] ?? []).map((ref) => ref.loinc)])];
 }
 
-type MarkerKey = 'LH' | 'FSH' | 'T' | 'SHBG' | 'ALB' | 'E2' | 'DHT';
+type MarkerKey = 'LH' | 'FSH' | 'T' | 'SHBG' | 'ALB' | 'E2' | 'DHT' | 'FT';
 type IndexKey = 'cft' | 'biot' | 'tlh' | 'dhtt' | 'te2';
 type MeasureKey = MarkerKey | IndexKey | 'shbgBound' | 'albBound';
 type Snapshot = Record<MeasureKey, Measure>;
+
+/** Measured Free Testosterone — a direct immunoassay, not an index input, so (like FSH) it has no MARKER_LOINC entry of its own. */
+const FT_LOINC = '2991-8';
 
 const MARKER_CODES: Record<MarkerKey, string[]> = {
   LH: MARKER_CANDIDATE_LOINCS['LH'] ?? [],
@@ -87,6 +90,7 @@ const MARKER_CODES: Record<MarkerKey, string[]> = {
   ALB: MARKER_CANDIDATE_LOINCS['ALB'] ?? [],
   E2: MARKER_CANDIDATE_LOINCS['E2'] ?? [],
   DHT: MARKER_CANDIDATE_LOINCS['DHT'] ?? [],
+  FT: withVariants(FT_LOINC),
 };
 
 const INDEX_KEYS: readonly IndexKey[] = ['cft', 'biot', 'tlh', 'dhtt', 'te2'];
@@ -571,6 +575,7 @@ function roundedPath(points: string, radius = 10): string {
 
 const ASSOCIATIONS: Readonly<Record<string, readonly string[]>> = {
   'total-t': ['shbg-t', 't', 'alb-t'],
+  'measured-ft': ['t'],
   'free-t': ['t'],
   'bio-t': ['t', 'alb-t'],
   tlh: ['leydig'],
@@ -764,12 +769,18 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
 interface Badge {
   id: string;
   name: string;
-  measure: MeasureKey;
+  /** Absent only when `unavailable` is set — a badge for a formula this app does not compute. */
+  measure?: MeasureKey;
   meaning: string;
   low: string;
   high: string;
   caveats: string;
+  /** No formula is implemented for this badge: render a fixed placeholder instead of looking up `measure` in the Snapshot. */
+  unavailable?: boolean;
 }
+
+/** Shown in place of a computed reference range for an `unavailable` badge — there is no value to bound. */
+const NO_REFERENCE: ReferenceInfo = { headCites: [], lines: [], empty: 'No reference range', sources: [] };
 
 const BADGES: ReadonlyArray<Badge> = [
   {
@@ -780,11 +791,32 @@ const BADGES: ReadonlyArray<Badge> = [
     caveats: 'Peaks in the morning; SHBG changes it without changing free T.',
   },
   {
+    id: 'measured-ft', name: 'Measured FT', measure: 'FT',
+    meaning: 'The direct immunoassay reading of unbound testosterone, reported by the lab rather than derived from total T, SHBG and albumin — the same free-T fraction as cFT below, measured instead of calculated.',
+    low: 'Less unbound testosterone by this assay’s reading.',
+    high: 'More unbound testosterone by this assay’s reading.',
+    caveats: 'Direct free-T immunoassays are lab-specific and systematically under-read, so two assays can disagree several-fold with each other and with cFT; see cFT for why the calculated value is trusted when they disagree.',
+  },
+  {
     id: 'free-t', name: 'Free Testosterone', measure: 'cft',
     meaning: 'The unbound share (about 1–3% of total) that can actually enter cells — the androgen signal tissues have available to use.',
     low: 'Less testosterone available to tissues.',
     high: 'More available to tissues.',
     caveats: 'Calculated via the Vermeulen equation (cFT). Direct free-T immunoassays are unreliable; the calculation is preferred.',
+  },
+  {
+    id: 'cft-ly-handelsman', name: 'cFT (Ly & Handelsman)', unavailable: true,
+    meaning: 'Another published equation for calculated free testosterone — an empirical regression fit from total T and SHBG alone, with no albumin term — distinct from the Vermeulen equation (cFT) used above.',
+    low: 'Not shown — no formula is implemented.',
+    high: 'Not shown — no formula is implemented.',
+    caveats: 'Ly & Handelsman’s (2005) fitted regression coefficients are published only behind European Journal of Endocrinology’s paywall and could not be read or verified here, so no value can be computed.',
+  },
+  {
+    id: 'cft-sartorius', name: 'cFT (Sartorius)', unavailable: true,
+    meaning: 'Another published equation for calculated free testosterone, tested by its authors against equilibrium-dialysis measurements alongside Vermeulen’s and Ly & Handelsman’s, distinct from the Vermeulen equation (cFT) used above.',
+    low: 'Not shown — no formula is implemented.',
+    high: 'Not shown — no formula is implemented.',
+    caveats: 'Sartorius’s (2009) fitted coefficients are published only behind Annals of Clinical Biochemistry’s paywall and could not be read or verified here, so no value can be computed.',
   },
   {
     id: 'bio-t', name: 'Bioavailable Testosterone', measure: 'biot',
@@ -828,7 +860,10 @@ function Badges({
       {BADGES.map((b) => {
         const expanded = open === b.id;
         const scope = `pathway-${b.id}`;
-        const info = expanded ? referenceOf(b.measure, snapshot, unitSystem) : null;
+        const measure = b.unavailable || !b.measure ? undefined : snapshot[b.measure];
+        const status = measure?.status ?? 'none';
+        const value = measure?.text ?? 'Not available';
+        const info = expanded ? (measure ? referenceOf(b.measure!, snapshot, unitSystem) : NO_REFERENCE) : null;
         return (
           <div
             key={b.id}
@@ -847,9 +882,9 @@ function Badges({
             >
               <span className="mc-pathway-badge-head">
                 <span className="mc-pathway-badge-name">{b.name}</span>
-                <span className={`mc-pathway-dot mc-pathway-dot-${snapshot[b.measure].status}`} />
+                <span className={`mc-pathway-dot mc-pathway-dot-${status}`} />
               </span>
-              <span className="mc-pathway-badge-value">{snapshot[b.measure].text}</span>
+              <span className="mc-pathway-badge-value">{value}</span>
             </button>
             {expanded && info && (
               <div className="mc-pathway-badge-body">
