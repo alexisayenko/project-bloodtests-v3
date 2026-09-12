@@ -20,9 +20,14 @@
 > build departs from what follows (zones, not bands; badges in one column;
 > association lines hidden at rest; cells and receptors drawn; a date stepper
 > rather than a month stepper; a default albumin; ten badges rather than six,
-> an expanded badge overlaying rather than pushing down its neighbors, and
-> real PDB structure images for FSH, LH, aromatase and 5α-reductase in place
-> of their custom icon), task-0024's status note records it.
+> an expanded badge overlaying rather than pushing down its neighbors, and the
+> enzyme and receptor icons drawn as shared PNG artwork — `enzyme-icon.png`,
+> `receptor-icon.png` — rather than hand-drawn per-role SVG), task-0024's
+> status note records it. No protein on the page renders a real structure
+> image any more: FSH and LH briefly did (PDB 1XWD, 7FII), then settled back
+> onto the same `HormoneIcon` schematic as every other signal, and aromatase
+> and 5α-reductase briefly did too (PDB 3EQM, 7C83) before settling onto the
+> shared enzyme icon — task-0024's log has both reversals.
 
 One hormonal axis drawn as its wiring — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
 

@@ -350,19 +350,15 @@ data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
 a showcase test dataset (15 demo reports under their own ids, 5 medications, and a sample schedule only when none exists), then opens `#all/in-range` once it has finished), Diagnostic Reports (`#reports`: the
-data-management hub — a collapsible "Database details" card editing
-export-envelope metadata (read-only `generatedAt` stamped on each
-export, plus subject / sex / birth year / notes; persisted under
-localStorage key `bloodtests_envelope_meta_v1`, written into the export
-envelope with empty fields omitted), the reports table in a card with a
+data-management hub — the reports table in a card with a
 report count and one status dot per row (red errors, amber warnings, green no
 issues), an "Add a report" card of three step tiles (1. "Copy" the
 chatbot prompt, a "View prompt" toggle expanding it — `data/chatbotPrompt.ts`, user-facing prose that follows the
 interchange schema rather than the UI — 2. paste into a chatbot, 3. "Add" the chatbot-built
 JSON — merges by session id, with "Adding…" progress and "✓ Added N
-reports" feedback), and side by side a "Back up your database" card (Export
-JSON / Import JSON (replaces)) and a "Clear local DB" danger card (`DangerCard`,
-its Clear behind a confirm);
+reports" feedback), and a "Clear local DB" danger card (`DangerCard`,
+its Clear behind a confirm) — "Database details" and backup/restore both moved
+to Account;
 `#reports/<file>` detail allows inline editing of each observation's
 LOINC / value / unit, saved to localStorage via `updateGroup`, and
 carries a "Cross-check LOINCs" button (`loincCheck.ts`): an offline
@@ -532,7 +528,9 @@ names" control clears the selection, since a native radio can't
 self-deselect), Medications (`#medications`, reachable despite
 validation errors: a free-text medication / dosage table in a card with a Jan–Dec month
 grid per shown year, each taken month a soft bar that joins its neighbours within
-a year, edited behind an Edit / Done toggle and kept by
+a year, its Medication and Dosage columns `position: sticky` (reusing the
+mobile results-table reveal's `.mc-col-cut` edge shadow) so only the month
+columns scroll horizontally, edited behind an Edit / Done toggle and kept by
 `data/medications.ts`'s `useMedications` under its own localStorage key
 `bloodtests_medications_v1`, outside the envelope, export, import and share
 links — task-0018), Reference Book (Indices and derived
@@ -574,7 +572,12 @@ FSH's real structure (PDB 1XWD) and a glycosylation figure (Lispi et al.
 first Reference Book page to embed a raster image) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
-while validation errors exist) lays out three action cards — "Export all data",
+while validation errors exist) opens with a "Database details" card — subject
+/ sex / birth year / notes plus a read-only `generatedAt` stamped on each
+export, persisted under localStorage key `bloodtests_envelope_meta_v1` and
+written into the export envelope with empty fields omitted — always expanded,
+with no collapse toggle (moved here from Diagnostic Reports), then lays out
+three action cards below it — "Export all data",
 "Import all data" and a "Clear all data" danger card. "Export all data" downloads
 `blood-tests-backup-<yyyymmdd>.zip` — `lab-reports.json` (the Export JSON
 envelope), `medications.json`, `scheduled-visits.json`,
@@ -589,8 +592,11 @@ all data, then restores `lab-reports.json` through the same replacing import as
 Import JSON (Database details from its envelope) and medications, scheduled
 visits and settings through their own modules' save functions, a part missing
 from the zip left empty and `laboratory-prices.json` never restored — the
-shipped registry wins — with the result reported per part. "Clear all data",
-after a confirm, runs the reports' own Clear and `clearSharedMeta`, then sweeps
+shipped registry wins — with the result reported per part. "Clear all data" is
+gated by a press-and-hold rather than a confirm dialog (`HoldToClearButton`,
+mouse/touch/keyboard, a 2-second hold whose progress fills the button; letting
+go early cancels): holding it to completion runs the reports' own Clear and
+`clearSharedMeta`, then sweeps
 `backupArchive.ts`'s `USER_DATA_KEYS` (reports, Database details, medications,
 schedule, view settings, share-link meta, imported links, the sidebar's
 collapsed state — cleared but not in `settings.json`) plus the
@@ -741,7 +747,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (828 tests across 36 files — 827 passing, 1 skipped — as run on 2026-09-12: index
+Vitest suites in `web/test/` (829 tests across 36 files — 828 passing, 1 skipped — as run on 2026-09-12: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
