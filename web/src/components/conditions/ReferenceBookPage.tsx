@@ -1155,62 +1155,6 @@ function FshPage() {
         to attach to.
       </p>
 
-      <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Chemical / molecular formula and skeletal formula</h3>
-      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
-        Both of these describe a small molecule with a fixed atomic composition — a count of atoms, or a 2D diagram
-        of exactly which atom bonds to which. Neither one meaningfully applies to a glycoprotein hormone: FSH has no
-        single fixed atom count (its sugar chains vary from molecule to molecule) and no 2D diagram anyone draws at
-        that scale.
-      </p>
-      <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
-        That gap is exactly where a real data-quality error was caught while building this page. PubChem Compound{' '}
-        <a
-          href={`https://pubchem.ncbi.nlm.nih.gov/compound/${FSH_WRONG_CID}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: COLOR.accent }}
-        >
-          CID {FSH_WRONG_CID}
-        </a>{' '}
-        carries "Follicle-stimulating hormone" among its own listed synonyms — but the structure it actually depicts
-        is a small cyclic peptide, not FSH. This isn't presented as anyone's fabrication; PubChem is a vast
-        aggregation of submitted and computed data, and a mislabeled synonym on one record is the kind of error that
-        happens at that scale. It's worth showing plainly, because it's exactly the kind of mistake a careless
-        "search PubChem, take the top formula" workflow would repeat.
-      </p>
-      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: 20 }}>
-        <img
-          src="/reference/fsh/pubchem-cid62819-wrong.png"
-          alt="Skeletal structure diagram of PubChem CID 62819, a small cyclic peptide mislabeled with FSH as a synonym"
-          width={220}
-          height={220}
-          style={{ border: `1px solid ${COLOR.borderSubtle}`, borderRadius: 8, background: '#fff' }}
-        />
-        <div
-          style={{
-            borderLeft: `3px solid ${COLOR.statusWarn}`,
-            background: COLOR.surfaceMuted,
-            borderRadius: '0 8px 8px 0',
-            padding: '10px 14px',
-            fontSize: 13,
-            color: COLOR.textSecondary,
-            lineHeight: 1.6,
-            maxWidth: 440,
-          }}
-        >
-          <div style={{ fontWeight: 700, color: COLOR.statusWarn, marginBottom: 4 }}>NOT FSH</div>
-          <div>
-            Molecular formula: <span style={{ fontFamily: 'monospace' }}>C₄₂H₆₅N₁₁O₁₂S₂</span>
-            <br />
-            Molecular weight: <span style={{ fontFamily: 'monospace' }}>980.2 Da</span>
-          </div>
-          <div style={{ marginTop: 8 }}>
-            This is PubChem CID {FSH_WRONG_CID}'s own real structure — a mislabeled record, not FSH. Real FSH is a
-            ~30,000 Da glycoprotein, roughly 30× larger than this compound.
-          </div>
-        </div>
-      </div>
-
       <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Amino-acid sequence and subunit composition</h3>
       <p style={{ fontSize: 14, color: COLOR.text, lineHeight: 1.55, marginBottom: 12, maxWidth: 720 }}>
         This is FSH's real "formula": a heterodimer of two peptide chains, non-covalently associated. The common
