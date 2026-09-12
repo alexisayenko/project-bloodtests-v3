@@ -121,7 +121,7 @@ function HoldToClearButton({
   useEffect(() => stop, []);
 
   const tick = (now: number) => {
-    if (startRef.current === null) startRef.current = now;
+    startRef.current ??= now;
     const fraction = Math.min(1, (now - startRef.current) / HOLD_TO_CLEAR_MS);
     setProgress(fraction);
     if (fraction >= 1) {
@@ -167,12 +167,16 @@ function HoldToClearButton({
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
       onBlur={stop}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(progress * 100)}
       style={{ ...buttonStyle('danger', 'md', disabled), position: 'relative', overflow: 'hidden' }}
     >
-      <span aria-hidden="true" style={{ position: 'absolute', inset: 0, width: `${progress * 100}%`, background: COLOR.statusBadBg }} />
+      <span
+        role="progressbar"
+        aria-label="Hold-to-clear progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress * 100)}
+        style={{ position: 'absolute', inset: 0, width: `${progress * 100}%`, background: COLOR.statusBadBg }}
+      />
       <span style={{ position: 'relative' }}>{holding ? holdingLabel : idleLabel}</span>
     </button>
   );
