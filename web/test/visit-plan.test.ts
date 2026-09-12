@@ -56,40 +56,56 @@ describe('planRowLabel', () => {
   const genericLabel = 'Total Cholesterol (TC)';
 
   it('shows the generic name when no laboratory is selected', () => {
-    expect(planRowLabel(undefined, genericLabel)).toEqual({ text: genericLabel, isFallback: false });
+    expect(planRowLabel(undefined, genericLabel)).toEqual({ rest: genericLabel, isFallback: false });
   });
 
-  it("shows the laboratory's own name and link when it prices the row", () => {
+  it("links the laboratory's own name when it prices the row and carries no innerId", () => {
     const [cell] = planCells(['2093-3'], { ...lab, prices: [{ label: 'TC', price: 167, covers: ['2093-3'], url: 'https://lab.example/tc' }] });
-    expect(planRowLabel(cell!, genericLabel)).toEqual({ text: 'TC', url: 'https://lab.example/tc', isFallback: false });
+    expect(planRowLabel(cell!, genericLabel)).toEqual({
+      link: { text: 'TC', url: 'https://lab.example/tc' },
+      rest: '',
+      isFallback: false,
+    });
   });
 
   it("shows the laboratory's own name with no link when the price line carries none", () => {
     const [cell] = planCells(['2093-3'], lab);
-    expect(planRowLabel(cell!, genericLabel)).toEqual({ text: 'TC', url: undefined, isFallback: false });
+    expect(planRowLabel(cell!, genericLabel)).toEqual({ rest: 'TC', isFallback: false });
   });
 
   it('shows the same name for a bundled row, taken from the bundle line', () => {
     const rows = ['718-7', '6690-2'];
     const [, bundled] = planCells(rows, lab);
-    expect(planRowLabel(bundled!, genericLabel)).toEqual({ text: 'FBC', url: undefined, isFallback: false });
+    expect(planRowLabel(bundled!, genericLabel)).toEqual({ rest: 'FBC', isFallback: false });
   });
 
   it('falls back to the generic name, flagged, when the selected laboratory does not price the row', () => {
     const [cell] = planCells(['1742-6'], lab);
-    expect(planRowLabel(cell!, genericLabel)).toEqual({ text: genericLabel, isFallback: true });
+    expect(planRowLabel(cell!, genericLabel)).toEqual({ rest: genericLabel, isFallback: true });
   });
 
-  it("prefixes the laboratory's own innerId before its label when the price line carries one", () => {
+  it("links only the innerId, leaving the label plain, when the price line carries both", () => {
     const [cell] = planCells(['2093-3'], {
       ...lab,
       prices: [{ label: 'Сечова кислота (UA)', price: 180, covers: ['2093-3'], innerId: 'F0013', url: 'https://lab.example/tc' }],
     });
-    expect(planRowLabel(cell!, genericLabel)).toEqual({ text: 'F0013 · Сечова кислота (UA)', url: 'https://lab.example/tc', isFallback: false });
+    expect(planRowLabel(cell!, genericLabel)).toEqual({
+      link: { text: 'F0013', url: 'https://lab.example/tc' },
+      rest: ' · Сечова кислота (UA)',
+      isFallback: false,
+    });
+  });
+
+  it('shows the innerId and label as plain text, unlinked, when the price line carries no url', () => {
+    const [cell] = planCells(['2093-3'], {
+      ...lab,
+      prices: [{ label: 'Сечова кислота (UA)', price: 180, covers: ['2093-3'], innerId: 'F0013' }],
+    });
+    expect(planRowLabel(cell!, genericLabel)).toEqual({ rest: 'F0013 · Сечова кислота (UA)', isFallback: false });
   });
 
   it('shows the label alone, with no stray separator, when the price line carries no innerId', () => {
     const [cell] = planCells(['2093-3'], lab);
-    expect(planRowLabel(cell!, genericLabel).text).toBe('TC');
+    expect(planRowLabel(cell!, genericLabel).rest).toBe('TC');
   });
 });

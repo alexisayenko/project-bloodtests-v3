@@ -36,24 +36,56 @@
       { "label": "TRIG", "price": 185, "covers": ["2571-8"] },
       { "label": "Urea", "price": 180, "covers": ["3091-6"] },
       { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] },
-      { "label": "Аполіпопротеїн А1 (Apo A1)", "price": 288, "covers": ["1869-7"], "innerId": "F2004" },
-      { "label": "Аполіпопротеїн В (Apo B)", "price": 288, "covers": ["1884-6"], "innerId": "F2009" },
+      {
+        "label": "Аполіпопротеїн А1 (Apo A1)",
+        "price": 288,
+        "covers": ["1869-7"],
+        "innerId": "F2004",
+        "url": "https://esculab.com/apolipoproteyin-a1"
+      },
+      {
+        "label": "Аполіпопротеїн В (Apo B)",
+        "price": 288,
+        "covers": ["1884-6"],
+        "innerId": "F2009",
+        "url": "https://esculab.com/apolipoproteyin_v_6703"
+      },
       {
         "label": "Глюкоза (сироватка крові)",
         "price": 189,
         "covers": ["2345-7", "2339-0"],
         "innerId": "A4003",
+        "url": "https://esculab.com/hlyukoza-syrovatka-krovi",
         "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
       },
       {
         "label": "Загальна залізозв'язуюча здатність сироватки (TIBC)",
         "price": 324,
         "covers": ["2500-7"],
-        "innerId": "F1007"
+        "innerId": "F1007",
+        "url": "https://esculab.com/zahalna_zalizozvyazuyucha_zdatnist_syrovatky_tibc_5269"
       },
-      { "label": "Залізо крові (IRON)", "price": 243, "covers": ["2498-4"], "innerId": "F1000" },
-      { "label": "Інсулін (INS)", "price": 351, "covers": ["20448-7"], "innerId": "A4000" },
-      { "label": "С-реактивний білок (СРБ, CRP)", "price": 184.5, "covers": ["1988-5"], "innerId": "F3004" },
+      {
+        "label": "Залізо крові (IRON)",
+        "price": 243,
+        "covers": ["2498-4"],
+        "innerId": "F1000",
+        "url": "https://esculab.com/zalizo-krovi-iron"
+      },
+      {
+        "label": "Інсулін (INS)",
+        "price": 351,
+        "covers": ["20448-7"],
+        "innerId": "A4000",
+        "url": "https://esculab.com/insulin-ins"
+      },
+      {
+        "label": "С-реактивний білок (СРБ, CRP)",
+        "price": 184.5,
+        "covers": ["1988-5"],
+        "innerId": "F3004",
+        "url": "https://esculab.com/sreaktyvnyy-bilok-srb-crp"
+      },
       {
         "label": "Сечова кислота (UA)",
         "price": 180,
@@ -61,7 +93,13 @@
         "innerId": "F0013",
         "url": "https://esculab.com/sechova-kyslota-ua"
       },
-      { "label": "Феритин (FER)", "price": 405, "covers": ["2276-4"], "innerId": "F1003" }
+      {
+        "label": "Феритин (FER)",
+        "price": 405,
+        "covers": ["2276-4"],
+        "innerId": "F1003",
+        "url": "https://esculab.com/ferytyn-fer"
+      }
     ]
   },
   {

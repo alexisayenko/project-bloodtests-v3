@@ -33,18 +33,23 @@ export function planCells(rows: readonly string[], lab: Laboratory): PlanCell[] 
 }
 
 /** What a row's Observation cell should display for one laboratory. */
-export type PlanRowLabel = { text: string; url?: string; isFallback: boolean };
+export type PlanRowLabel = { link?: { text: string; url: string }; rest: string; isFallback: boolean };
 
 /**
  * With no laboratory selected (`cell` undefined) a row shows the app's own
  * generic name. Once one is selected, a row it prices shows that laboratory's
- * own product name (linked when the price line carries a `url`); a row it
- * does not price falls back to the generic name, flagged so that fallback
- * reads as "not this lab's own name" rather than as the lab's own choice.
+ * own product name; a row it does not price falls back to the generic name,
+ * flagged so that fallback reads as "not this lab's own name" rather than as
+ * the lab's own choice. When the price line carries a `url`, only its own
+ * product identifier (`innerId`, e.g. a SKU/Артикул) is the link -- the label
+ * after it stays plain text -- and when there is no `innerId` to carry the
+ * link, the label itself is linked instead, exactly as before.
  */
 export function planRowLabel(cell: PlanCell | undefined, genericLabel: string): PlanRowLabel {
-  if (!cell) return { text: genericLabel, isFallback: false };
-  if (cell.kind === 'unpriced') return { text: genericLabel, isFallback: true };
+  if (!cell) return { rest: genericLabel, isFallback: false };
+  if (cell.kind === 'unpriced') return { rest: genericLabel, isFallback: true };
   const { label, innerId, url } = cell.line;
-  return { text: innerId ? `${innerId} · ${label}` : label, url, isFallback: false };
+  if (innerId && url) return { link: { text: innerId, url }, rest: ` · ${label}`, isFallback: false };
+  if (url) return { link: { text: label, url }, rest: '', isFallback: false };
+  return { rest: innerId ? `${innerId} · ${label}` : label, isFallback: false };
 }

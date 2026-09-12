@@ -210,23 +210,26 @@ export function PlanVisitView({
                           color: COLOR.navy,
                         }}
                       >
-                        {rowLabel.url ? (
-                          <a
-                            href={rowLabel.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={stopBubble}
-                            onKeyDown={stopBubble}
-                            style={{ color: 'inherit' }}
-                          >
-                            {rowLabel.text}
-                          </a>
-                        ) : rowLabel.isFallback ? (
+                        {rowLabel.isFallback ? (
                           <span title="Not priced under its own name at this laboratory — showing the app's generic name" style={{ fontStyle: 'italic' }}>
-                            {rowLabel.text}
+                            {rowLabel.rest}
                           </span>
                         ) : (
-                          rowLabel.text
+                          <>
+                            {rowLabel.link && (
+                              <a
+                                href={rowLabel.link.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={stopBubble}
+                                onKeyDown={stopBubble}
+                                style={{ color: 'inherit' }}
+                              >
+                                {rowLabel.link.text}
+                              </a>
+                            )}
+                            {rowLabel.rest}
+                          </>
                         )}
                       </td>
                       <td style={gapCell} />
