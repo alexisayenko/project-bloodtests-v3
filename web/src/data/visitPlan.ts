@@ -45,5 +45,6 @@ export type PlanRowLabel = { text: string; url?: string; isFallback: boolean };
 export function planRowLabel(cell: PlanCell | undefined, genericLabel: string): PlanRowLabel {
   if (!cell) return { text: genericLabel, isFallback: false };
   if (cell.kind === 'unpriced') return { text: genericLabel, isFallback: true };
-  return { text: cell.line.label, url: cell.line.url, isFallback: false };
+  const { label, innerId, url } = cell.line;
+  return { text: innerId ? `${innerId} · ${label}` : label, url, isFallback: false };
 }

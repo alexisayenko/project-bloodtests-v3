@@ -49,9 +49,10 @@
       { "label": "TRIG", "price": 185, "covers": ["2571-8"] },
       { "label": "Urea", "price": 180, "covers": ["3091-6"] },
       {
-        "label": "Uric Acid",
+        "label": "Сечова кислота (UA)",
         "price": 180,
         "covers": ["3084-1"],
+        "innerId": "F0013",
         "url": "https://esculab.com/sechova-kyslota-ua"
       },
       { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] }
