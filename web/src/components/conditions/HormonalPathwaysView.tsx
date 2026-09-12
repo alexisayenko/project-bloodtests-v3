@@ -446,10 +446,24 @@ function Exchange() {
   );
 }
 
-function Hormone({ id, slot }: Readonly<{ id: CaptionId; slot?: boolean }>) {
+interface HormoneImage {
+  src: string;
+  credit?: { href: string; label: string; text: string };
+  note?: string;
+}
+
+function Hormone({ id, slot, image }: Readonly<{ id: CaptionId; slot?: boolean; image?: HormoneImage }>) {
   return (
     <div className={slot ? 'mc-pathway-anchor mc-pathway-node mc-pathway-slot' : 'mc-pathway-anchor mc-pathway-node'} data-node={id}>
-      <HormoneIcon size={39} />
+      {image ? (
+        <div className="mc-pathway-structure-wrap">
+          <img className="mc-pathway-structure-img" src={image.src} alt="" width={56} height={56} />
+          {image.credit && <StructureCredit href={image.credit.href} label={image.credit.label} credit={image.credit.text} />}
+          {image.note && <div className="mc-pathway-note">{image.note}</div>}
+        </div>
+      ) : (
+        <HormoneIcon size={39} />
+      )}
       <Caption id={id} />
     </div>
   );
@@ -475,12 +489,38 @@ function TestesDiagram() {
   );
 }
 
-function Enzyme({ label, node, children }: Readonly<{ label: string; node: string; children?: ReactNode }>) {
+const SRD5A_CREDIT =
+  'Atom coordinates: Ren, R.B., Han, Y.F., Xiao, Q.J., Deng, D. (RCSB PDB 7C83, https://www.rcsb.org/structure/7C83); ' +
+  'Visualization: Wikimedia Commons user Synpath, CC BY-SA 4.0 ' +
+  '(https://commons.wikimedia.org/wiki/File:PbSDR5A_steroid_5-alpha-reductase_PDB=7c83.png).';
+
+const LH_CREDIT =
+  'Structure: RCSB PDB entry 7FII, from Structures of full-length glycoprotein hormone receptor signalling complexes, Nature (2021). ' +
+  "LH receptor (LHCGR) bound to chorionic gonadotropin (hCG) — hCG's close structural similarity to LH makes it the standard proxy " +
+  'used to solve this receptor complex.';
+
+/** A small, always-visible source credit for a real PDB structure image — label shown inline, full citation in the title tooltip. */
+function StructureCredit({ href, label, credit }: Readonly<{ href: string; label: string; credit: string }>) {
+  return (
+    <a className="mc-pathway-credit" href={href} target="_blank" rel="noreferrer" title={credit}>
+      {label}
+    </a>
+  );
+}
+
+function Enzyme({
+  label,
+  node,
+  image,
+  credit,
+  children,
+}: Readonly<{ label: string; node: string; image: string; credit?: string; children?: ReactNode }>) {
   return (
     <div className="mc-pathway-enzyme-col">
       <div className="mc-pathway-enzyme" data-node={node}>
-        <img src="/pathways/enzyme.png" alt="" width={44} height={44} />
+        <img className="mc-pathway-structure-img" src={image} alt="" width={56} height={56} />
         <span className="mc-pathway-node-label">{label}</span>
+        {credit && <StructureCredit href="https://www.rcsb.org/structure/7C83" label="PDB 7C83 · CC BY-SA 4.0" credit={credit} />}
       </div>
       {children && <div className="mc-pathway-product">{children}</div>}
     </div>
@@ -502,10 +542,10 @@ function TargetDiagram() {
   return (
     <div className="mc-pathway-row mc-pathway-row-start">
       <div className="mc-pathway-enzymes">
-        <Enzyme label="5α-reductase" node="srd5a">
+        <Enzyme label="5α-reductase" node="srd5a" image="/pathways/5-alpha-reductase.png" credit={SRD5A_CREDIT}>
           <Hormone id="dht" />
         </Enzyme>
-        <Enzyme label="aromatase" node="aromatase">
+        <Enzyme label="aromatase" node="aromatase" image="/pathways/aromatase.png">
           <Hormone id="e2" />
         </Enzyme>
         <div className="mc-pathway-er">
@@ -525,8 +565,16 @@ const ALBUMIN_CARRIER: DockedCarrier = { protein: 'alb', bound: 'alb-t', boundSi
 function CardioDiagram() {
   return (
     <div className="mc-pathway-row mc-pathway-row-start">
-      <Hormone id="fsh" slot />
-      <Hormone id="lh" slot />
+      <Hormone id="fsh" slot image={{ src: '/pathways/fsh.png' }} />
+      <Hormone
+        id="lh"
+        slot
+        image={{
+          src: '/pathways/lh.png',
+          credit: { href: 'https://www.rcsb.org/structure/7FII', label: 'PDB 7FII', text: LH_CREDIT },
+          note: "Bound to hCG, LH's structural proxy",
+        }}
+      />
       <div className="mc-pathway-group">
         <Carrier carrier={SHBG_CARRIER} />
         <Exchange />
