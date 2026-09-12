@@ -53,7 +53,7 @@ export function ProfileView({
       <div>
         <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Want a demo first?</h2>
         <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
-          Add 15 sample lab reports from four labs and 5 medications — the reports merge with whatever is already
+          Add 16 sample lab reports from five labs and 5 medications — the reports merge with whatever is already
           loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'} currently), medications you already list keep
           their entries, and a sample schedule is set only if nothing is scheduled yet.
         </div>

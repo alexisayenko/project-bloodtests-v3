@@ -231,10 +231,10 @@ function report<K extends string>(
 }
 
 /**
- * One synthetic patient over five years across four labs (Synevo, Esculab and
- * Medis are priced, Dila is not), 2023 left as a gap. Fixed dates keep every
- * session id stable, so generating again replaces these reports rather than
- * adding a second copy.
+ * One synthetic patient over five years across five labs (Synevo, Esculab,
+ * Medis and NeoGenesis Laboratory are priced, Dila is not), 2023 left as a
+ * gap. Fixed dates keep every session id stable, so generating again
+ * replaces these reports rather than adding a second copy.
  */
 export function buildTestEnvelope(): InterchangeEnvelope {
   return {
@@ -340,6 +340,15 @@ export function buildTestEnvelope(): InterchangeEnvelope {
         glucose: 5.3, tc: 4.4, hdl: 1.24, ldl: 2.5, tg: 1.46,
         alt: 31, ast: 26, fibrinogen: 3.1, inr: 1.02,
       }),
+      report(16, 'NeoGenesis Laboratory', '2025-07-14', EN, {
+        wbc: 6.1, rbc: 4.95, hb: 14.8, hct: 43.6, mcv: 88.1, mch: 29.9, mchc: 33.8, rdw: 12.8, plt: 245, mpv: 9.7,
+        neutAbs: 3.5, lymphAbs: 1.85, monoAbs: 0.44, eosAbs: 0.19, basoAbs: 0.05,
+        neutPct: 57.4, lymphPct: 30.3, monoPct: 7.2, eosPct: 3.1, basoPct: 0.8,
+        tsh: 2.0, ft4: 1.18, ft3: 3.0,
+        tc: 188, hdl: 52, ldl: 112, tg: 118,
+        glucose: 91, insulin: 8.4,
+        hsCrp: 1.2, cortisol: 13.8, shbg: 41.6, uricAcid: 5.6,
+      }),
     ],
   };
 }
@@ -383,8 +392,8 @@ export function withTestMedications(meds: Medications, today: Date, newId: () =>
   };
 }
 
-// An FBC pair (priced once, as a bundle), TSH (priced only at Esculab,
-// among these three labs), and the inputs of a few indices.
+// An FBC pair (priced once, as a bundle), TSH (priced at Esculab and
+// NeoGenesis Laboratory, among these four labs), and the inputs of a few indices.
 export const TEST_SCHEDULE_LOINCS = ['718-7', '6690-2', '2345-7', '20448-7', '4548-4', '2093-3', '2085-9', '2571-8', '11580-8'];
 
 /** A demo visit for next month, seeded only where nothing is scheduled yet; any existing visit is returned untouched. */

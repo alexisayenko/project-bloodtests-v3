@@ -29,13 +29,13 @@ const indexDef = (key: string) => INDEX_DEFS.find((def) => def.key === key)!;
 const computes = (key: string, report: DiagnosticReport) => computeIndex(indexDef(key), byLoinc(report)) != null;
 
 describe('generateTestData', () => {
-  it('yields 15 reports, read through the upload parse path', () => {
-    expect(buildTestEnvelope().diagnosticReports).toHaveLength(15);
-    expect(reports).toHaveLength(15);
+  it('yields 16 reports, read through the upload parse path', () => {
+    expect(buildTestEnvelope().diagnosticReports).toHaveLength(16);
+    expect(reports).toHaveLength(16);
     expect(reports).toEqual(parseUploadedResults(buildTestEnvelope()));
   });
 
-  it('spans the three priced labs plus an unpriced one, over at least four years with a gap', () => {
+  it('spans the four priced labs plus an unpriced one, over at least four years with a gap', () => {
     const places = new Set(reports.map((r) => r.place));
     for (const lab of LABORATORIES) expect(places).toContain(lab.name);
     expect([...places].some((place) => !LABORATORIES.some((lab) => lab.name === place))).toBe(true);
@@ -95,7 +95,7 @@ describe('generateTestData', () => {
 
   it('keeps session ids stable and apart from real reports, so generating again duplicates nothing', () => {
     const ids = reports.map((r) => r.file);
-    expect(new Set(ids).size).toBe(15);
+    expect(new Set(ids).size).toBe(16);
     expect(ids.every((id) => /__demo-\d{2}$/.test(id))).toBe(true);
     expect(generateTestData().map((r) => r.file)).toEqual(ids);
   });
@@ -171,7 +171,7 @@ describe('applyTestData', () => {
   it('merges the reports and seeds medications and a schedule, and running again duplicates nothing', () => {
     applyTestData(merge, TODAY);
     applyTestData(merge, TODAY);
-    expect(sessions).toHaveLength(15);
+    expect(sessions).toHaveLength(16);
     expect(loadMedications(2026).rows).toHaveLength(5);
     const scheduled = loadScheduled();
     expect(scheduled.visits).toHaveLength(1);
@@ -194,7 +194,7 @@ describe('applyTestData', () => {
     const snapshot = (label: string) => () =>
       seen.push(`${label}:${sessions.length}:${loadMedications(2026).rows.length}:${loadScheduled().visits.length > 0}`);
     generateTestDataThen(merge, [snapshot('reload'), snapshot('navigate')], TODAY);
-    expect(seen).toEqual(['reload:15:5:true', 'navigate:15:5:true']);
+    expect(seen).toEqual(['reload:16:5:true', 'navigate:16:5:true']);
   });
 
   it('never navigates when generation throws', () => {

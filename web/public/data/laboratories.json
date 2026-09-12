@@ -348,6 +348,49 @@
     ]
   },
   {
+    "id": "neogenesis",
+    "name": "NeoGenesis Laboratory",
+    "locale": "en-IE",
+    "currency": "EUR",
+    "pricesAsOf": "2026-09-13",
+    "source": "entered by the user, from an invoice photo",
+    "prices": [
+      { "label": "C-Reactive Protein (CRP) High Sensitive", "price": 35, "covers": ["30522-7"] },
+      { "label": "Cortisol, Morning", "price": 35, "covers": ["2143-6"] },
+      {
+        "label": "FBC",
+        "price": 25,
+        "covers": [
+          "6690-2", "751-8", "731-0", "742-7", "711-2", "704-7", "770-8", "736-9", "5905-5", "713-8", "706-2",
+          "789-8", "718-7", "4544-3", "787-2", "785-6", "786-4", "788-0", "21000-5",
+          "777-3", "32623-1"
+        ],
+        "note": "Covers the 21 components the invoice itemized by name. Unlike the other laboratories' FBC lines, it does not claim the catalog's fbc group in full: Immature Granulocytes and three platelet indices (PDW, P-LCR, P-LCC) plus Plateletcrit were not named on the invoice, so no panelId is set here."
+      },
+      { "label": "Free Thyroxine (FT4)", "price": 25, "covers": ["3024-7"] },
+      { "label": "Free Triiodothyronine (FT3)", "price": 25, "covers": ["3051-0"] },
+      {
+        "label": "Glucose, Fasting",
+        "price": 10,
+        "covers": ["2345-7", "2339-0"],
+        "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
+      },
+      { "label": "HDL-Cholesterol", "price": 10, "covers": ["2085-9"] },
+      { "label": "Insulin, Fasting", "price": 25, "covers": ["20448-7"] },
+      {
+        "label": "LDL-Cholesterol",
+        "price": 10,
+        "covers": ["13457-7"],
+        "note": "The label names no method. The catalog holds only the calculated code; a separately priced LDL-C may be a direct assay."
+      },
+      { "label": "SHBG", "price": 50, "covers": ["2942-1"] },
+      { "label": "Thyroid-stimulating hormone (TSH)", "price": 25, "covers": ["11580-8"] },
+      { "label": "Total Cholesterol", "price": 10, "covers": ["2093-3"] },
+      { "label": "Triglycerides", "price": 10, "covers": ["2571-8"] },
+      { "label": "Uric Acid", "price": 10, "covers": ["3084-1"] }
+    ]
+  },
+  {
     "id": "synevo",
     "name": "Synevo",
     "locale": "uk-UA",
