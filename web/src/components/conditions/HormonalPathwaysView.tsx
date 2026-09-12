@@ -1,4 +1,15 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import {
   MARKER_CANDIDATE_LOINCS,
   SI_US_UNIT,
@@ -392,7 +403,7 @@ function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ i
   const info = referenceOf(spec.measure, snapshot, unitSystem);
   const scope = `pathway-${id}`;
   return (
-    <div className="mc-pathway-pop" role="dialog" aria-label={spec.title} style={{ left, top, width: CARD_WIDTH }}>
+    <dialog open className="mc-pathway-pop" aria-label={spec.title} style={{ left, top, width: CARD_WIDTH, margin: 0 }}>
       <div className="mc-pathway-pop-title">{spec.title}</div>
       <div className="mc-pathway-pop-facts">
         <span><b>Value</b> {measure.text}</span>
@@ -401,7 +412,7 @@ function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ i
       {spec.note && <p className="mc-pathway-pop-note">{spec.note}</p>}
       <ReferenceBlock scope={scope} info={info} />
       <SourcesBlock scope={scope} info={info} />
-    </div>
+    </dialog>
   );
 }
 
@@ -555,8 +566,6 @@ const PATHWAYS: ReadonlyArray<readonly [string, string, 'straight' | 'elbow' | '
   ['e2blood', 'er', 'drop'],
 ];
 
-type Line = string;
-
 function roundedPath(points: string, radius = 10): string {
   const pts = points.split(' ').map((p) => p.split(',').map(Number) as [number, number]);
   let d = `M${pts[0][0]},${pts[0][1]}`;
@@ -593,8 +602,143 @@ interface Association {
   rings: { cx: number; cy: number; r: number }[];
 }
 
+type CenterX = (rect: DOMRect) => number;
+
+/** Aligns the two conversion enzymes under T and docks the estrogen-receptor box under blood E2 — a DOM mutation, not a line to draw. */
+function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX): void {
+  const tNode = el.querySelector('[data-node="t"]');
+  const enzymes = el.querySelector<HTMLElement>('.mc-pathway-enzymes');
+  if (!tNode || !enzymes) return;
+  enzymes.style.transform = '';
+  const imgs = [...enzymes.querySelectorAll('.mc-pathway-enzyme img')].map((i) => i.getBoundingClientRect());
+  if (imgs.length !== 2) return;
+  const mid = (centerX(imgs[0]) + centerX(imgs[1])) / 2;
+  const containerLeft = enzymes.getBoundingClientRect().left - base.left;
+  const ar = enzymes.querySelector<HTMLElement>('.mc-pathway-ar');
+  if (ar) ar.style.left = `${mid - containerLeft - ar.offsetWidth / 2}px`;
+  enzymes.style.transform = `translateX(${centerX(tNode.getBoundingClientRect()) + 8 - mid}px)`;
+  const er = enzymes.querySelector<HTMLElement>('.mc-pathway-er');
+  const e2 = el.querySelector('[data-node="e2"]');
+  const e2blood = el.querySelector('[data-node="e2blood"]');
+  if (!er || !e2 || !e2blood) return;
+  const box = enzymes.getBoundingClientRect();
+  const e2Rect = e2.getBoundingClientRect();
+  er.style.left = `${centerX(e2blood.getBoundingClientRect()) + base.left + 48 - box.left}px`;
+  er.style.top = `${e2Rect.top + e2Rect.height / 2 - box.top - er.offsetHeight / 2}px`;
+}
+
+/** A trunk line from T down to the androgen receptors, with a spur to DHT when it has a reading. */
+function buildExtraLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX): string[] {
+  const trunkNode = el.querySelector('[data-node="t"]');
+  const arNode = el.querySelector('[data-node="ar"]');
+  const dhtNode = el.querySelector('[data-node="dht"]');
+  if (!trunkNode || !arNode) return [];
+  const x = centerX(trunkNode.getBoundingClientRect()) + 8;
+  const arRect = arNode.getBoundingClientRect();
+  const firstEnzyme = el.querySelector('[data-node="srd5a"] img');
+  const junction = (firstEnzyme?.getBoundingClientRect().top ?? arRect.top) - base.top - 28;
+  const extra = [
+    `trunk:${x},${junction} ${x},${arRect.top - base.top - 4}`,
+    `${x},${arRect.top - base.top - 12} ${x},${arRect.top - base.top - 4}`,
+  ];
+  if (!dhtNode) return extra;
+  const d = dhtNode.getBoundingClientRect();
+  const dBottom = (dhtNode.querySelector('.mc-pathway-caption') ?? dhtNode).getBoundingClientRect().bottom - base.top + 5;
+  const midY = arRect.top + arRect.height / 2 - base.top;
+  const fromLeft = centerX(d) < centerX(arRect);
+  const arEdge = fromLeft ? arRect.left - base.left - 4 : arRect.right - base.left + 4;
+  extra.push(`${centerX(d)},${dBottom} ${centerX(d)},${midY} ${arEdge},${midY}`);
+  return extra;
+}
+
+/** A single fork's trunk-plus-branches line set, from one node down to several target icons. */
+function forkLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX, from: string, targets: readonly string[]): string[] {
+  const a = el.querySelector(`[data-node="${from}"]`);
+  const icons = targets.map((t) => el.querySelector(`[data-node="${t}"] img`)).filter((n): n is Element => n !== null);
+  if (!a || icons.length === 0) return [];
+  const x = centerX(a.getBoundingClientRect()) + 8;
+  const y1 = (a.querySelector('.mc-pathway-caption') ?? a).getBoundingClientRect().bottom - base.top + 5;
+  const rects = icons.map((i) => i.getBoundingClientRect());
+  const junction = Math.min(...rects.map((r) => r.top)) - base.top - 28;
+  return [
+    `trunk:${x},${y1} ${x},${junction}`,
+    ...rects.map((r) => `${x},${junction - 12} ${x},${junction} ${centerX(r)},${junction} ${centerX(r)},${r.top - base.top - 4}`),
+  ];
+}
+
+/** One pathway edge's line, shaped for the geometry the two nodes need. */
+function pathwayLine(
+  el: HTMLDivElement,
+  base: DOMRect,
+  centerX: CenterX,
+  from: string,
+  to: string,
+  shape: 'straight' | 'elbow' | 'drop'
+): string[] {
+  const a = el.querySelector(`[data-node="${from}"]`);
+  const b = el.querySelector(`[data-node="${to}"]`);
+  if (!a || !b) return [];
+  const ra = (a.classList.contains('mc-pathway-enzyme') ? (a.querySelector('img') ?? a) : a).getBoundingClientRect();
+  const rb = b.getBoundingClientRect();
+  const bottomOf = (node: Element) => (node.querySelector('.mc-pathway-caption') ?? node).getBoundingClientRect().bottom - base.top + 5;
+  const down = rb.top >= ra.top;
+  const x2 = centerX(rb) - (shape === 'elbow' ? 8 : 0);
+  const y2 = down ? rb.top - base.top - 4 : bottomOf(b);
+  if (shape === 'elbow') {
+    const midY = ra.top + ra.height / 2 - base.top;
+    const inset = a.classList.contains('mc-pathway-slot') ? 18 : -4;
+    const x1 = x2 >= centerX(ra) ? ra.right - base.left - inset : ra.left - base.left + inset;
+    return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
+  }
+  if (shape === 'drop') {
+    const x = centerX(ra) + 8;
+    const midY = rb.top + rb.height / 2 - base.top;
+    const edge = x < centerX(rb) ? rb.left - base.left - 4 : rb.right - base.left + 4;
+    return [`${x},${bottomOf(a)} ${x},${midY} ${edge},${midY}`];
+  }
+  return [`${centerX(ra)},${down ? bottomOf(a) : ra.top - base.top - 4} ${x2},${y2}`];
+}
+
+function buildPathwayLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX): string[] {
+  return PATHWAYS.flatMap(([from, to, shape]) => pathwayLine(el, base, centerX, from, to, shape));
+}
+
+/** The rings drawn around an association's target nodes. */
+function ringsFor(el: HTMLDivElement, base: DOMRect, targets: readonly string[]): { cx: number; cy: number; r: number }[] {
+  return targets.flatMap((target) => {
+    const node = el.querySelector(`[data-node="${target}"]`);
+    if (!node) return [];
+    const r = (node.querySelector('img, svg, .mc-pathway-bubble') ?? node).getBoundingClientRect();
+    return [{ cx: r.left + r.width / 2 - base.left, cy: r.top + r.height / 2 - base.top, r: Math.max(r.width, r.height) / 2 + 6 }];
+  });
+}
+
+/** One badge's association bus-plus-rings, or none while its targets aren't on screen. */
+function associationFor(el: HTMLDivElement, base: DOMRect, badge: string, targets: readonly string[]): Association[] {
+  const badgeEl = el.querySelector(`[data-badge="${badge}"]`);
+  if (!badgeEl) return [];
+  const br = badgeEl.getBoundingClientRect();
+  const bx = br.left - base.left;
+  const by = br.top + 20 - base.top;
+  const rings = ringsFor(el, base, targets);
+  if (rings.length === 0) return [];
+  const lane = Math.min(...rings.map((g) => g.cy - g.r)) - 16;
+  const rightmost = Math.max(...rings.map((g) => g.cx));
+  const leftmost = Math.min(...rings.map((g) => g.cx));
+  const turn = Math.max(rightmost + 24, bx - 24);
+  const paths = [
+    roundedPath(`${bx},${by} ${turn},${by} ${turn},${lane} ${leftmost},${lane}`, 12),
+    ...rings.map((g) => `M${g.cx},${lane} L${g.cx},${g.cy - g.r}`),
+  ];
+  return [{ badge, paths, rings }];
+}
+
+function buildAssociations(el: HTMLDivElement, base: DOMRect): Association[] {
+  return Object.entries(ASSOCIATIONS).flatMap(([badge, targets]) => associationFor(el, base, badge, targets));
+}
+
 function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: RefObject<HTMLDivElement | null>; active: string | null; focused: string | null; layoutKey: string }>) {
-  const [lines, setLines] = useState<Line[]>([]);
+  const [lines, setLines] = useState<string[]>([]);
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
 
@@ -603,116 +747,15 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
     if (!el || typeof ResizeObserver === 'undefined') return;
     const measure = () => {
       const base = el.getBoundingClientRect();
-      const centerX = (r: DOMRect) => r.left + r.width / 2 - base.left;
-      const fork = (from: string, targets: string[]): Line[] => {
-        const a = el.querySelector(`[data-node="${from}"]`);
-        const icons = targets.map((t) => el.querySelector(`[data-node="${t}"] img`)).filter((n): n is Element => n !== null);
-        if (!a || icons.length === 0) return [];
-        const x = centerX(a.getBoundingClientRect()) + 8;
-        const y1 = (a.querySelector('.mc-pathway-caption') ?? a).getBoundingClientRect().bottom - base.top + 5;
-        const rects = icons.map((i) => i.getBoundingClientRect());
-        const junction = Math.min(...rects.map((r) => r.top)) - base.top - 28;
-        return [
-          `trunk:${x},${y1} ${x},${junction}`,
-          ...rects.map((r) => `${x},${junction - 12} ${x},${junction} ${centerX(r)},${junction} ${centerX(r)},${r.top - base.top - 4}`),
-        ];
-      };
-      const tNode = el.querySelector('[data-node="t"]');
-      const enzymes = el.querySelector<HTMLElement>('.mc-pathway-enzymes');
-      if (tNode && enzymes) {
-        enzymes.style.transform = '';
-        const imgs = [...enzymes.querySelectorAll('.mc-pathway-enzyme img')].map((i) => i.getBoundingClientRect());
-        if (imgs.length === 2) {
-          const mid = (centerX(imgs[0]) + centerX(imgs[1])) / 2;
-          const containerLeft = enzymes.getBoundingClientRect().left - base.left;
-          const ar = enzymes.querySelector<HTMLElement>('.mc-pathway-ar');
-          if (ar) ar.style.left = `${mid - containerLeft - ar.offsetWidth / 2}px`;
-          enzymes.style.transform = `translateX(${centerX(tNode.getBoundingClientRect()) + 8 - mid}px)`;
-          const er = enzymes.querySelector<HTMLElement>('.mc-pathway-er');
-          const e2 = el.querySelector('[data-node="e2"]');
-          const e2blood = el.querySelector('[data-node="e2blood"]');
-          if (er && e2 && e2blood) {
-            const box = enzymes.getBoundingClientRect();
-            const e2Rect = e2.getBoundingClientRect();
-            er.style.left = `${centerX(e2blood.getBoundingClientRect()) + base.left + 48 - box.left}px`;
-            er.style.top = `${e2Rect.top + e2Rect.height / 2 - box.top - er.offsetHeight / 2}px`;
-          }
-        }
-      }
-      const extra: Line[] = [];
-      const trunkNode = el.querySelector('[data-node="t"]');
-      const arNode = el.querySelector('[data-node="ar"]');
-      const dhtNode = el.querySelector('[data-node="dht"]');
-      if (trunkNode && arNode) {
-        const x = centerX(trunkNode.getBoundingClientRect()) + 8;
-        const arRect = arNode.getBoundingClientRect();
-        const firstEnzyme = el.querySelector('[data-node="srd5a"] img');
-        const junction = (firstEnzyme?.getBoundingClientRect().top ?? arRect.top) - base.top - 28;
-        extra.push(`trunk:${x},${junction} ${x},${arRect.top - base.top - 4}`);
-        extra.push(`${x},${arRect.top - base.top - 12} ${x},${arRect.top - base.top - 4}`);
-        if (dhtNode) {
-          const d = dhtNode.getBoundingClientRect();
-          const dBottom = (dhtNode.querySelector('.mc-pathway-caption') ?? dhtNode).getBoundingClientRect().bottom - base.top + 5;
-          const midY = arRect.top + arRect.height / 2 - base.top;
-          const fromLeft = centerX(d) < centerX(arRect);
-          const arEdge = fromLeft ? arRect.left - base.left - 4 : arRect.right - base.left + 4;
-          extra.push(`${centerX(d)},${dBottom} ${centerX(d)},${midY} ${arEdge},${midY}`);
-        }
-      }
+      const centerX: CenterX = (r) => r.left + r.width / 2 - base.left;
+      positionEnzymes(el, base, centerX);
       const bandsBox = el.querySelector('.mc-pathway-bands')?.getBoundingClientRect();
       if (bandsBox) setVeil({ w: bandsBox.right - base.left, h: bandsBox.bottom - base.top });
-      setAssociations(
-        Object.entries(ASSOCIATIONS).flatMap(([badge, targets]) => {
-          const badgeEl = el.querySelector(`[data-badge="${badge}"]`);
-          if (!badgeEl) return [];
-          const br = badgeEl.getBoundingClientRect();
-          const bx = br.left - base.left;
-          const by = br.top + 20 - base.top;
-          const rings = targets.flatMap((target) => {
-            const node = el.querySelector(`[data-node="${target}"]`);
-            if (!node) return [];
-            const r = (node.querySelector('img, svg, .mc-pathway-bubble') ?? node).getBoundingClientRect();
-            return [{ cx: r.left + r.width / 2 - base.left, cy: r.top + r.height / 2 - base.top, r: Math.max(r.width, r.height) / 2 + 6 }];
-          });
-          if (rings.length === 0) return [];
-          const lane = Math.min(...rings.map((g) => g.cy - g.r)) - 16;
-          const rightmost = Math.max(...rings.map((g) => g.cx));
-          const leftmost = Math.min(...rings.map((g) => g.cx));
-          const turn = Math.max(rightmost + 24, bx - 24);
-          const paths = [
-            roundedPath(`${bx},${by} ${turn},${by} ${turn},${lane} ${leftmost},${lane}`, 12),
-            ...rings.map((g) => `M${g.cx},${lane} L${g.cx},${g.cy - g.r}`),
-          ];
-          return [{ badge, paths, rings }];
-        }),
-      );
+      setAssociations(buildAssociations(el, base));
       setLines([
-        ...extra,
-        ...fork('t', ['aromatase', 'srd5a']),
-        ...PATHWAYS.flatMap(([from, to, shape]) => {
-          const a = el.querySelector(`[data-node="${from}"]`);
-          const b = el.querySelector(`[data-node="${to}"]`);
-          if (!a || !b) return [];
-          const ra = (a.classList.contains('mc-pathway-enzyme') ? (a.querySelector('img') ?? a) : a).getBoundingClientRect();
-          const rb = b.getBoundingClientRect();
-          const bottomOf = (node: Element) => (node.querySelector('.mc-pathway-caption') ?? node).getBoundingClientRect().bottom - base.top + 5;
-          const down = rb.top >= ra.top;
-          const x2 = centerX(rb) - (shape === 'elbow' ? 8 : 0);
-          const y2 = down ? rb.top - base.top - 4 : bottomOf(b);
-          if (shape === 'elbow') {
-            const midY = ra.top + ra.height / 2 - base.top;
-            const inset = a.classList.contains('mc-pathway-slot') ? 18 : -4;
-            const x1 = x2 >= centerX(ra) ? ra.right - base.left - inset : ra.left - base.left + inset;
-            return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
-          }
-          if (shape === 'drop') {
-            const x = centerX(ra) + 8;
-            const midY = rb.top + rb.height / 2 - base.top;
-            const edge = x < centerX(rb) ? rb.left - base.left - 4 : rb.right - base.left + 4;
-            return [`${x},${bottomOf(a)} ${x},${midY} ${edge},${midY}`];
-          }
-          return [`${centerX(ra)},${down ? bottomOf(a) : ra.top - base.top - 4} ${x2},${y2}`];
-        }),
+        ...buildExtraLines(el, base, centerX),
+        ...forkLines(el, base, centerX, 't', ['aromatase', 'srd5a']),
+        ...buildPathwayLines(el, base, centerX),
       ]);
     };
     const observer = new ResizeObserver(measure);
@@ -859,6 +902,13 @@ const BADGES: ReadonlyArray<Badge> = [
   },
 ];
 
+/** A badge's reference info while its card is expanded — null while collapsed, since there is nothing to render. */
+function badgeReferenceInfo(expanded: boolean, measure: Measure | undefined, b: Badge, snapshot: Snapshot, unitSystem: 'si' | 'us'): ReferenceInfo | null {
+  if (!expanded) return null;
+  if (!measure) return NO_REFERENCE;
+  return referenceOf(b.measure!, snapshot, unitSystem);
+}
+
 function Badges({
   snapshot,
   unitSystem,
@@ -874,7 +924,7 @@ function Badges({
         const measure = b.unavailable || !b.measure ? undefined : snapshot[b.measure];
         const status = measure?.status ?? 'none';
         const value = measure?.text ?? 'Not available';
-        const info = expanded ? (measure ? referenceOf(b.measure!, snapshot, unitSystem) : NO_REFERENCE) : null;
+        const info = badgeReferenceInfo(expanded, measure, b, snapshot, unitSystem);
         return (
           <div
             key={b.id}
@@ -914,10 +964,17 @@ function Badges({
   );
 }
 
+/** Visually hides the fieldset's legend without removing it from the accessibility tree. */
+const SR_ONLY_STYLE: CSSProperties = {
+  position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0,
+};
+
 function DateStepper({ dates, index, onChange }: Readonly<{ dates: readonly string[]; index: number; onChange: (index: number) => void }>) {
   const date = dates[index];
   return (
-    <div className="mc-pathway-stepper" role="group" aria-label="Measurement date">
+    <fieldset className="mc-pathway-stepper" style={{ margin: 0, padding: 0, minWidth: 0 }}>
+      <legend style={SR_ONLY_STYLE}>Measurement date</legend>
       <button type="button" aria-label="Previous date" disabled={index <= 0} onClick={() => onChange(index - 1)}>
         ‹
       </button>
@@ -925,7 +982,7 @@ function DateStepper({ dates, index, onChange }: Readonly<{ dates: readonly stri
       <button type="button" aria-label="Next date" disabled={index >= dates.length - 1} onClick={() => onChange(index + 1)}>
         ›
       </button>
-    </div>
+    </fieldset>
   );
 }
 
@@ -954,23 +1011,26 @@ export function HormonalPathwaysView({
     [allResults, resultsByDate, date, unitSystem, assumeAlbumin]
   );
 
-  const placeCard = (chip: Element) => {
+  const placeCard = useCallback((chip: Element) => {
     const layout = bandsRef.current;
     if (!layout) return null;
     const a = chip.getBoundingClientRect();
     const box = layout.getBoundingClientRect();
     const left = Math.min(Math.max(a.left + a.width / 2 - box.left - CARD_WIDTH / 2, 0), Math.max(box.width - CARD_WIDTH, 0));
     return { left, top: a.bottom - box.top + 6 };
-  };
+  }, []);
 
-  const toggleCaption = (id: CaptionId, chip: HTMLElement) => {
-    if (open === id) {
-      setOpen(null);
-      return;
-    }
-    setCardAt(placeCard(chip));
-    setOpen(id);
-  };
+  const toggleCaption = useCallback(
+    (id: CaptionId, chip: HTMLElement) => {
+      if (open === id) {
+        setOpen(null);
+        return;
+      }
+      setCardAt(placeCard(chip));
+      setOpen(id);
+    },
+    [open, placeCard]
+  );
 
   useEffect(() => {
     if (open === null) return;
@@ -993,10 +1053,10 @@ export function HormonalPathwaysView({
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', onResize);
     };
-  }, [open]);
+  }, [open, placeCard]);
 
   const badgeOpen = isCaptionId(open) ? null : open;
-  const state: PathwayState = { open, snapshot, toggleCaption };
+  const state = useMemo<PathwayState>(() => ({ open, snapshot, toggleCaption }), [open, snapshot, toggleCaption]);
   return (
     <div>
       <PageHeader
