@@ -16,6 +16,7 @@ const MONTH_COL_WIDTH = 32;
 const YEAR_EDGE = `1px solid ${COLOR.borderMuted}`;
 const BAR_FILL = `color-mix(in srgb, ${COLOR.brandTeal} 38%, ${COLOR.surface})`;
 const BAR_INSET = 3;
+const BAR_HEIGHT = 16;
 // Same right-edge cut used by the mobile results-table reveal (index.css's `.mc-col-cut`), reused here so a
 // frozen pane reads the same way everywhere in the app.
 const STICKY_EDGE_SHADOW = '2px 0 5px rgba(0, 0, 0, 0.14)';
@@ -102,8 +103,12 @@ function MonthBar({ joinsPrevious, joinsNext }: Readonly<{ joinsPrevious: boolea
       aria-hidden="true"
       style={{
         position: 'absolute',
-        top: 9,
-        bottom: 9,
+        // `top`/`bottom: 0` with `margin: auto 0` centers the bar in the cell's actual height -- whatever the
+        // row ends up needing -- rather than assuming a row height to derive a fixed inset from.
+        top: 0,
+        bottom: 0,
+        margin: 'auto 0',
+        height: BAR_HEIGHT,
         left: joinsPrevious ? 0 : BAR_INSET,
         right: joinsNext ? 0 : BAR_INSET,
         background: BAR_FILL,
@@ -314,19 +319,21 @@ export function MedicationsView({
                             >
                               {row.brand}
                             </span>
-                            {row.compounds.length > 0 && (
-                              <span
-                                style={{
-                                  display: 'block',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  fontSize: 11,
-                                  color: COLOR.textMuted,
-                                }}
-                              >
-                                {compoundsLine(row)}
-                              </span>
-                            )}
+                            {/* Always rendered, even with nothing to show: a reserved second line keeps every
+                                row's Medication cell -- and so every row -- the same height, whether or not
+                                this medication has compounds. */}
+                            <span
+                              style={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: 11,
+                                color: COLOR.textMuted,
+                              }}
+                            >
+                              {row.compounds.length > 0 ? compoundsLine(row) : ' '}
+                            </span>
                           </>
                         )}
                       </td>
