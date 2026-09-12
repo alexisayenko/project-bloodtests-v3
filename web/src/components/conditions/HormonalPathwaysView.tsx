@@ -657,7 +657,7 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
       const enzymes = el.querySelector<HTMLElement>('.mc-pathway-enzymes');
       if (tNode && enzymes) {
         enzymes.style.transform = '';
-        const imgs = [...enzymes.querySelectorAll('img')].map((i) => i.getBoundingClientRect());
+        const imgs = [...enzymes.querySelectorAll('.mc-pathway-enzyme img')].map((i) => i.getBoundingClientRect());
         if (imgs.length === 2) {
           const mid = (centerX(imgs[0]) + centerX(imgs[1])) / 2;
           const containerLeft = enzymes.getBoundingClientRect().left - base.left;
