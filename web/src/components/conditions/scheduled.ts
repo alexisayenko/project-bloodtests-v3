@@ -41,15 +41,10 @@ function isStr(value: unknown): value is string {
   return typeof value === 'string';
 }
 
-/** How many of a table's rows are scheduled, for the header's tri-state box. */
-export type SelectionState = 'none' | 'some' | 'all';
-
 /** One visit's Scheduled column wiring, handed to every table that renders it. */
 export type RowScheduling = {
   scheduled: ScheduledVisit;
   onToggle: (loincs: string[]) => void;
-  /** Select-all over exactly the observation rows the table is showing. */
-  onToggleAll: (rows: string[][], on: boolean) => void;
   onSetMonth: (month: string | undefined) => void;
   onRemove: () => void;
 };
@@ -224,11 +219,6 @@ export function setSelectedLab(scheduled: ScheduledVisits, visitId: string, labI
   return updateVisit(scheduled, visitId, (visit) => ({ ...visit, selectedLabId: isLabId(labId) ? labId : undefined }));
 }
 
-export function selectionState(flags: readonly boolean[]): SelectionState {
-  if (flags.every((f) => !f)) return 'none';
-  return flags.every(Boolean) ? 'all' : 'some';
-}
-
 /** The picker's choices: this month and the next `count`, plus a stored month that has since fallen outside that window. */
 export function monthChoices(today: Date, count: number, selected?: string): string[] {
   const months: string[] = [];
@@ -251,10 +241,6 @@ export function useScheduled() {
     []
   );
   const onToggleIndex = useCallback((visitId: string, key: string) => setScheduledVisits((s) => toggleIndex(s, visitId, key)), []);
-  const onToggleAllRows = useCallback(
-    (visitId: string, rows: string[][], on: boolean) => setScheduledVisits((s) => setRowsScheduled(s, visitId, rows, on)),
-    []
-  );
   const onSetMonth = useCallback(
     (visitId: string, month: string | undefined) => setScheduledVisits((s) => setScheduleMonth(s, visitId, month)),
     []
@@ -271,7 +257,6 @@ export function useScheduled() {
     scheduledVisits,
     onToggleRow,
     onToggleIndex,
-    onToggleAllRows,
     onSetMonth,
     onSelectLab,
     onAddVisit,

@@ -305,16 +305,11 @@ only, named through `aria-label`: a small month select (`MonthSelect`,
 since fallen outside that window) scoped to that one visit — the same
 component backs the "Planned for" pill on the Scheduled Visits page, so
 editing the month there or here calls the same `onSetMonth(visitId, month)`
-`useScheduled` exposes and never touches the visit's scheduled rows — a
-select-all box over the observation
-rows only — index rows follow their inputs — tri-state through native
-`indeterminate` and disabled when no observation row is shown, and a remove
-button (`onRemove`) that drops the whole visit, unscheduling everything it
-had. A visit's month labels its own schedule, not a partition of it —
-switching months leaves every checked row in that visit checked — and
-select-all scopes to the rows the table is actually rendering, so All
-Observations' panel and text filters narrow it, still only within that one
-visit's column. Global state in localStorage `bloodtests_scheduled_v1` is a
+`useScheduled` exposes and never touches the visit's scheduled rows — and a
+remove button (`onRemove`) that drops the whole visit, unscheduling
+everything it had. A visit's month labels its own schedule, not a partition
+of it — switching months leaves every checked row in that visit checked.
+Global state in localStorage `bloodtests_scheduled_v1` is a
 list of independent visits, `{visits: ScheduledVisit[]}`, each
 `{id, loincs, indices, month?, selectedLabId?}` (`id` from the same
 `newRowId()` helper as medications/results rows) — logic in `scheduled.ts`,

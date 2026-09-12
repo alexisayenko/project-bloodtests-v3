@@ -55,7 +55,6 @@ export function MedicalConditionsPage() {
     scheduledVisits,
     onToggleRow,
     onToggleIndex,
-    onToggleAllRows,
     onSetMonth,
     onSelectLab,
     onAddVisit,
@@ -205,7 +204,6 @@ export function MedicalConditionsPage() {
   const rowSchedulings: RowScheduling[] = scheduledVisits.visits.map((visit) => ({
     scheduled: visit,
     onToggle: (loincs: string[]) => onToggleRow(visit.id, loincs),
-    onToggleAll: (rows: string[][], on: boolean) => onToggleAllRows(visit.id, rows, on),
     onSetMonth: (month: string | undefined) => onSetMonth(visit.id, month),
     onRemove: () => onRemoveVisit(visit.id),
   }));

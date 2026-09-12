@@ -11,7 +11,6 @@ import {
   monthChoices,
   removeVisit,
   saveScheduled,
-  selectionState,
   setRowsScheduled,
   setScheduleMonth,
   setSelectedLab,
@@ -350,27 +349,5 @@ describe('select-all over the observation rows on screen', () => {
     const on = setRowsScheduled(two, V1, [['2093-3']], true);
     expect(isRowScheduled(visitOf(on, V1), ['2093-3'])).toBe(true);
     expect(isRowScheduled(visitOf(on, 'v2'), ['2093-3'])).toBe(false);
-  });
-});
-
-describe('selectionState', () => {
-  it('reads none, some and all off the visible rows', () => {
-    const visible = [['2093-3'], ['2085-9']];
-    const flags = (s: ScheduledVisits) => visible.map((loincs) => isRowScheduled(visitOf(s), loincs));
-    expect(selectionState(flags(withV1()))).toBe('none');
-    expect(selectionState(flags(toggleRow(withV1(), V1, ['2093-3'])))).toBe('some');
-    expect(selectionState(flags(setRowsScheduled(withV1(), V1, visible, true)))).toBe('all');
-  });
-
-  it('reads an empty table as none rather than all', () => {
-    expect(selectionState([])).toBe('none');
-  });
-
-  it('reads the raw flags the same way at every size', () => {
-    expect(selectionState([false])).toBe('none');
-    expect(selectionState([true])).toBe('all');
-    expect(selectionState([false, false, false])).toBe('none');
-    expect(selectionState([false, true, false])).toBe('some');
-    expect(selectionState([true, true, true])).toBe('all');
   });
 });

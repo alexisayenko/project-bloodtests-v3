@@ -21,7 +21,6 @@ import {
   indexInputLoincs,
   isIndexScheduled,
   isRowScheduled,
-  selectionState,
   type IndexScheduling,
   type RowScheduling,
 } from './scheduled';
@@ -37,9 +36,9 @@ const DATE_COL_WIDTH = 96;
 // row alignment for free).
 const GAP_COL_WIDTH = 16;
 // Fits the header's widest row: the month pill at its longest option (91px),
-// the gaps, the select-all box, the remove button and the cell padding. The
-// body cells stay a single glyph.
-const SCHEDULED_COL_WIDTH = 152;
+// the gaps, the remove button and the cell padding. The body cells stay a
+// single glyph.
+const SCHEDULED_COL_WIDTH = 130;
 // Just wide enough for the "add a visit" button, at the end of the Scheduled block.
 const ADD_COL_WIDTH = 40;
 
@@ -565,25 +564,14 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
   const rowSchedulings = scheduling ?? [];
   const indexSchedulings = indexScheduling ?? [];
   const visitCount = rowSchedulings.length || indexSchedulings.length;
-  // Select-all answers for the observation section only; indices follow their inputs.
-  const observationLoincs = showScheduling ? rows.map(testLoincs) : [];
 
   const schedules = showScheduling
-    ? rowSchedulings.map((rs) => {
-        const flags = observationLoincs.map((loincs) => isRowScheduled(rs.scheduled, loincs));
-        return {
-          visitId: rs.scheduled.id,
-          label: tableLabel,
-          month: rs.scheduled.month,
-          onSetMonth: rs.onSetMonth,
-          state: selectionState(flags),
-          disabled: observationLoincs.length === 0,
-          onToggleAll: (on: boolean) => {
-            if (observationLoincs.length > 0) rs.onToggleAll(observationLoincs, on);
-          },
-          onRemove: rs.onRemove,
-        };
-      })
+    ? rowSchedulings.map((rs) => ({
+        visitId: rs.scheduled.id,
+        month: rs.scheduled.month,
+        onSetMonth: rs.onSetMonth,
+        onRemove: rs.onRemove,
+      }))
     : undefined;
 
   const table = (

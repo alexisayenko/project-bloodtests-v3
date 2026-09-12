@@ -1,6 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { monthChoices, type SelectionState } from './scheduled';
+import { monthChoices } from './scheduled';
 import { formatMonthFullYear } from '../../data/months';
 import { COLOR } from '../../styles/tokens';
 
@@ -34,43 +33,21 @@ export function MonthSelect({ ariaLabel, month, onSetMonth }: Readonly<MonthSele
 }
 
 export type ScheduleHeaderProps = {
-  /** The table this header sits on, for the select-all box's accessible name. */
-  label: string;
   month: string | undefined;
   onSetMonth: (month: string | undefined) => void;
-  state: SelectionState;
-  /** Set when the table shows no observation rows, leaving select-all nothing to act on. */
-  disabled?: boolean;
-  onToggleAll: (on: boolean) => void;
   /** Drops this whole visit -- every row and index it had scheduled. */
   onRemove: () => void;
 };
 
 /**
- * One scheduled visit's column header: its target month, a tri-state
- * select-all over the observation rows the table is currently showing -- index
- * rows are left to follow their inputs -- and a remove button for the visit
- * itself. The select and the box carry no visible text, so they name
- * themselves through aria-label.
+ * One scheduled visit's column header: its target month and a remove button
+ * for the visit itself. The select carries no visible text, so it names
+ * itself through aria-label.
  */
-export function ScheduleHeader({ label, month, onSetMonth, state, disabled, onToggleAll, onRemove }: Readonly<ScheduleHeaderProps>) {
-  const box = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (box.current) box.current.indeterminate = state === 'some';
-  }, [state]);
-
+export function ScheduleHeader({ month, onSetMonth, onRemove }: Readonly<ScheduleHeaderProps>) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
       <MonthSelect ariaLabel="Month this visit is planned for" month={month} onSetMonth={onSetMonth} />
-      <input
-        ref={box}
-        type="checkbox"
-        checked={state === 'all'}
-        disabled={disabled}
-        onChange={(e) => onToggleAll(e.currentTarget.checked)}
-        aria-label={`Schedule every observation shown in ${label}`}
-        style={{ width: 15, height: 15, margin: 0, accentColor: COLOR.primary, cursor: disabled ? 'not-allowed' : 'pointer' }}
-      />
       <button
         type="button"
         onClick={onRemove}
