@@ -87,7 +87,7 @@ describe('quoteSchedule', () => {
     expect(quoteSchedule(schedule, esculab).total).toBe(ownTotal(esculab));
     expect(quoteSchedule(schedule, medis).total).toBe(ownTotal(medis));
     expect(quoteSchedule(schedule, synevo).total).toBe(ownTotal(synevo));
-    expect(quoteSchedule(schedule, esculab).total).toBe(1198);
+    expect(quoteSchedule(schedule, esculab).total).toBe(1196.5);
     expect(quoteSchedule(schedule, medis).total).toBe(1164);
     expect(quoteSchedule(schedule, synevo).total).toBe(1420);
   });
@@ -97,7 +97,7 @@ describe('quoteSchedule', () => {
     expect(quoteSchedule(schedule, LABORATORY_BY_ID.medis!).total).toBe(1744);
     expect(quoteSchedule(schedule, LABORATORY_BY_ID.synevo!).total).toBe(2210);
     const esculab = quoteSchedule(schedule, LABORATORY_BY_ID.esculab!);
-    expect(esculab.total).toBe(1837);
+    expect(esculab.total).toBe(1835.5);
     expect(esculab.unpriced).toEqual([]);
   });
 

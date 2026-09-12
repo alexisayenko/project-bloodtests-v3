@@ -10,7 +10,13 @@
       { "label": "ALP", "price": 171, "covers": ["6768-6"] },
       { "label": "ALT", "price": 171, "covers": ["1742-6"] },
       { "label": "AST", "price": 171, "covers": ["1920-8"] },
-      { "label": "Creatinine", "price": 185, "covers": ["2160-0"] },
+      {
+        "label": "Creatinine",
+        "price": 184.5,
+        "covers": ["2160-0"],
+        "innerId": "F0009",
+        "url": "https://esculab.com/kreatynin-crej"
+      },
       { "label": "Cystatin C", "price": 685, "covers": ["33863-2"] },
       {
         "label": "FBC",
@@ -23,7 +29,13 @@
         ],
         "note": "A bundle, taken to be the catalog's whole fbc group. Whether Esculab's FBC includes the differential has not been recorded."
       },
-      { "label": "HDL-C", "price": 167, "covers": ["2085-9"] },
+      {
+        "label": "HDL-C",
+        "price": 166.5,
+        "covers": ["2085-9"],
+        "innerId": "F2000",
+        "url": "https://esculab.com/lipoproteyidy-vysokoyi-schilnosti-lpvshch-hdlc"
+      },
       {
         "label": "LDL-C",
         "price": 162,
@@ -31,10 +43,28 @@
         "note": "The label names no method. The catalog holds only the calculated code; a separately priced LDL-C may be a direct assay."
       },
       { "label": "TBIL", "price": 171, "covers": ["1975-2"] },
-      { "label": "TC", "price": 167, "covers": ["2093-3"] },
-      { "label": "TRIG", "price": 185, "covers": ["2571-8"] },
+      {
+        "label": "TC",
+        "price": 166.5,
+        "covers": ["2093-3"],
+        "innerId": "F2002",
+        "url": "https://esculab.com/holesteryn-zahalnyy-chol"
+      },
+      {
+        "label": "TRIG",
+        "price": 184.5,
+        "covers": ["2571-8"],
+        "innerId": "F2001",
+        "url": "https://esculab.com/tryhlitcerydy-trigl"
+      },
       { "label": "Urea", "price": 180, "covers": ["3091-6"] },
-      { "label": "Vitamin D", "price": 625, "covers": ["62292-8"] },
+      {
+        "label": "Vitamin D",
+        "price": 625.5,
+        "covers": ["62292-8"],
+        "innerId": "A1003",
+        "url": "https://esculab.com/zahalnyy-vitamin-d-vitd-total-25hidroksyvitamin-"
+      },
       {
         "label": "Альбумін (ALB)",
         "price": 153,
