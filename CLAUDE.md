@@ -202,7 +202,8 @@ dot-colored by status. A status switched off hides its chips in every card; an
 Indices section left empty is dropped, and a card left with nothing stays in
 place with "No markers match". Compact view is the grid's one stored
 preference — `compactPanels` in `bloodtests_view_settings_v1`, beside
-`unitSystem` and `sampleLimit`, owned by the shell and carried through Clear
+`unitSystem`, `sampleLimit` and Medications' own `medsCurrentYearOnly`,
+owned by the shell and carried through Clear
 all data and the backup's `settings.json` — and shows each chip's `shortName`
 instead of its `friendlyName`, drops the Observations / Indices labels and the
 panel link, and narrows the columns (`.mc-panels-grid--compact`). Cardiovascular Risk carries both calculated LDL-C estimates —
@@ -299,9 +300,13 @@ visit, unscheduling it leaves them, and toggling an observation re-derives
 that visit's own indices (scheduled iff all its inputs are, within that
 visit) — the same cascade in both views, and never cross-wired into another
 visit's column. Each visit's column header (`ScheduleHeader.tsx`) is controls
-only, named through `aria-label`: a small month select (`.mc-field-sm`; this
-month and the next 23, plus a stored month that has since fallen outside
-that window) scoped to that one visit, a select-all box over the observation
+only, named through `aria-label`: a small month select (`MonthSelect`,
+`.mc-field-sm`; this month and the next 23, plus a stored month that has
+since fallen outside that window) scoped to that one visit — the same
+component backs the "Planned for" pill on the Scheduled Visits page, so
+editing the month there or here calls the same `onSetMonth(visitId, month)`
+`useScheduled` exposes and never touches the visit's scheduled rows — a
+select-all box over the observation
 rows only — index rows follow their inputs — tri-state through native
 `indeterminate` and disabled when no observation row is shown, and a remove
 button (`onRemove`) that drops the whole visit, unscheduling everything it
@@ -518,7 +523,8 @@ the badge to a lane above its targets, stubs down to dashed rings around each
 target; only an opened badge also veils the rest of the diagram, hover
 drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
 errors: one section per scheduled visit, stacked, each under its own "Planned
-for <month>" pill and its own table card — every visit-local scheduled
+for" pill (`MonthSelect`, editable in place rather than static text) and its
+own table card — every visit-local scheduled
 observation, folded to its primary code, as one "Observation" cell —
 `friendlyName`, with the short name in parentheses where it differs, opening
 the analyte popup — beside one price column per laboratory, a bundle priced
@@ -549,9 +555,15 @@ validation errors: a medication table in a card with a Jan–Dec month
 grid per shown year, each taken month a soft bar that joins its neighbours
 chronologically -- December and the next year's January join into one
 continuous bar the same as any other adjacent pair, the year columns being
-a display grouping rather than a break in the run -- its Medication and Notes columns `position: sticky` (reusing the
-mobile results-table reveal's `.mc-col-cut` edge shadow) so only the month
-columns scroll horizontally, edited behind an Edit / Done toggle and kept by
+a display grouping rather than a break in the run -- its Medication column,
+now the only sticky one, carrying the edge shadow the retired Notes column
+used to (reusing the mobile results-table reveal's `.mc-col-cut` treatment)
+so only the month columns scroll horizontally; edited behind an Edit / Done
+toggle, beside a "Show only current year" switch (`medsCurrentYearOnly`, a
+view setting the shell owns and persists in `bloodtests_view_settings_v1`
+beside `unitSystem`/`sampleLimit`/`compactPanels`) that narrows the year
+columns to the current year alone without dropping any other year's stored
+months, and kept by
 `data/medications.ts`'s `useMedications` under its own localStorage key
 `bloodtests_medications_v1`, outside the envelope, export, import and share
 links — task-0018. A `MedicationRow` splits brand from active ingredient: `brand`
@@ -561,9 +573,13 @@ of it), `compounds` is zero or more free-text `{name, dose}` pairs (e.g.
 and `notes` is free-text timing/frequency (e.g. "вечором", "курсами"), no
 longer mixed into a dose field; the Medication cell renders the brand bold with
 a smaller muted line of `"<name> <dose>"` compounds underneath when there are
-any, and an empty `notes` is never stored as a string but shown as a muted
-"1 tablet daily" placeholder so the assumption reads as an assumption rather
-than a blank cell. Edit mode adds a compact repeatable compound editor (name +
+any -- that second line is always rendered, even with nothing to show, so
+every row's Medication cell, and so the row itself, keeps the same height
+whether or not it has compounds. There is no Notes column any more: notes are
+edit-only, entered through a free-text input under the compound editor, and
+view mode shows nothing of them at all -- the retired Notes column, along with
+its muted "1 tablet daily" placeholder for an empty note, is gone. Edit mode
+adds a compact repeatable compound editor (name +
 dose inputs, add/remove per entry) under the brand input. A row saved before
 this split, in the retired `name`/`dosage` shape, is migrated transparently and
 losslessly by `parseMedications` on read — `name` to `brand`, `dosage` to
@@ -787,7 +803,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (851 tests across 37 files — 850 passing, 1 skipped — as run on 2026-09-12: index
+Vitest suites in `web/test/` (851 tests across 37 files — 850 passing, 1 skipped — as run on 2026-09-13: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC

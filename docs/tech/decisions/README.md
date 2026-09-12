@@ -31,6 +31,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0013](adr-0013-u-and-iu-fold-by-loinc-property.md) | `U` and `IU` are one unit only where the analyte's LOINC property says so | accepted · 2026-09-09 |
 | [ADR-0014](adr-0014-pathway-wiring-is-mermaid-generated-to-json.md) | Pathway wiring is written in Mermaid and generated to JSON | accepted · 2026-09-11 |
 | [ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md) | Opt-in "dedicated server" storage, authenticated by a bearer token, not OAuth | accepted · 2026-09-12 |
+| [ADR-0016](adr-0016-scheduling-is-a-collection-of-independent-visits.md) | Scheduling is a collection of independent visits, not one global schedule | accepted · 2026-09-13 |
 
 ## Where each one bites
 
@@ -75,6 +76,11 @@ Each record opens with `# ADR-NNNN: <title>` and a
   server storage mode beside the unchanged local-only default, bearer-token
   authenticated, syncing the existing backup-bundle shape; supersedes the
   auth model in [task-0025](../../tasks/task-0025.md).
+- **Scheduling** — 0016: a list of independent `ScheduledVisit` entries
+  rather than one global schedule object, implemented in
+  `web/src/components/conditions/scheduled.ts` and rendered as one
+  Scheduled column per visit in the results tables and one stacked section
+  per visit on `#plan` (`PlanVisitView.tsx`).
 
 ## Adding one
 
