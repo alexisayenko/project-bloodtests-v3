@@ -791,18 +791,25 @@ const BADGES: ReadonlyArray<Badge> = [
     caveats: 'Peaks in the morning; SHBG changes it without changing free T.',
   },
   {
-    id: 'measured-ft', name: 'Measured FT', measure: 'FT',
+    id: 'bio-t', name: 'Bioavailable Testosterone', measure: 'biot',
+    meaning: 'The androgen pool tissues can actually draw on — free plus the share loosely held by albumin, as opposed to what sits inertly locked to SHBG.',
+    low: 'Less testosterone reaching tissues.',
+    high: 'More reaching tissues.',
+    caveats: 'Calculated; reference bands depend on sex and age.',
+  },
+  {
+    id: 'measured-ft', name: 'Free Testosterone', measure: 'FT',
     meaning: 'The direct immunoassay reading of unbound testosterone, reported by the lab rather than derived from total T, SHBG and albumin — the same free-T fraction as cFT below, measured instead of calculated.',
     low: 'Less unbound testosterone by this assay’s reading.',
     high: 'More unbound testosterone by this assay’s reading.',
     caveats: 'Direct free-T immunoassays are lab-specific and systematically under-read, so two assays can disagree several-fold with each other and with cFT; see cFT for why the calculated value is trusted when they disagree.',
   },
   {
-    id: 'free-t', name: 'Free Testosterone', measure: 'cft',
+    id: 'free-t', name: 'cFT (Vermeulen)', measure: 'cft',
     meaning: 'The unbound share (about 1–3% of total) that can actually enter cells — the androgen signal tissues have available to use.',
     low: 'Less testosterone available to tissues.',
     high: 'More available to tissues.',
-    caveats: 'Calculated via the Vermeulen equation (cFT). Direct free-T immunoassays are unreliable; the calculation is preferred.',
+    caveats: 'Direct free-T immunoassays are unreliable; this calculated value is preferred. Against equilibrium dialysis it runs a constant ~19% high in men (33% in women), unrelated to the patient’s own SHBG, T or albumin.',
   },
   {
     id: 'cft-ly-handelsman', name: 'cFT (Ly & Handelsman)', unavailable: true,
@@ -824,13 +831,6 @@ const BADGES: ReadonlyArray<Badge> = [
     low: 'Not shown — no formula is implemented.',
     high: 'Not shown — no formula is implemented.',
     caveats: 'Zakharov et al.’s (2015) full text and equations are published only behind Elsevier’s paywall — unreadable via PMC, its DOI, or the authors’ institutional pages — so no value can be computed here. Independently of that, Fiers et al. (2018) tested this model against direct equilibrium-dialysis measurement and found it ran roughly twofold high (median ratio ~2.05), despite Zakharov’s own validation reporting good agreement — so even a readable copy would carry a reported accuracy problem.',
-  },
-  {
-    id: 'bio-t', name: 'Bioavailable Testosterone', measure: 'biot',
-    meaning: 'The androgen pool tissues can actually draw on — free plus the share loosely held by albumin, as opposed to what sits inertly locked to SHBG.',
-    low: 'Less testosterone reaching tissues.',
-    high: 'More reaching tissues.',
-    caveats: 'Calculated; reference bands depend on sex and age.',
   },
   {
     id: 'tlh', name: 'T/LH', measure: 'tlh',
