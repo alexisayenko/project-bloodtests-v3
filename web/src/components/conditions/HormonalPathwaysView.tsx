@@ -772,7 +772,7 @@ const BADGES: ReadonlyArray<Badge> = [
     caveats: 'Peaks in the morning; SHBG changes it without changing free T.',
   },
   {
-    id: 'free-t', name: 'Free Testosterone', measure: 'cft',
+    id: 'free-t', name: 'cFT', measure: 'cft',
     meaning: 'The unbound share (about 1–3%) that can enter cells. Calculated from total T, SHBG and albumin (Vermeulen).',
     low: 'Less testosterone available to tissues.',
     high: 'More available to tissues.',
