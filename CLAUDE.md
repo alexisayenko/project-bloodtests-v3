@@ -533,7 +533,10 @@ mobile results-table reveal's `.mc-col-cut` edge shadow) so only the month
 columns scroll horizontally, edited behind an Edit / Done toggle and kept by
 `data/medications.ts`'s `useMedications` under its own localStorage key
 `bloodtests_medications_v1`, outside the envelope, export, import and share
-links — task-0018), Reference Book (Indices and derived
+links — task-0018; its shape is described, documentation-only, by
+`medications-1.schema.json`, the same way the interchange envelope schema
+is, with no change to `medications.ts`'s own lenient parser as the real
+gatekeeper), Reference Book (Indices and derived
 measurements: a page
 per computed index with formula, v2's full clinical prose and cited
 sources with verbatim quotes; Organism-wide aspects: HP Axis page with v2's

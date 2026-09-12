@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blood.isayenko.net/schema/medications-1.schema.json",
+  "title": "Medications",
+  "description": "The medication history, schema 1: web/src/data/medications.ts's Medications type, stored under localStorage key bloodtests_medications_v1 and exported unchanged as medications.json inside an Account backup zip. Published for documentation only, the same way the interchange envelope schema is — it does NOT gate the app's own import path. medications.json is purely user-generated at runtime (never committed, never touched by CI, unlike analyses.json/laboratories.json/pathway-reference-ranges.json), and its real gatekeeper stays the hand-written, deliberately lenient parser in medications.ts (isMedicationsShape + parseMedications): a malformed row or month is dropped rather than failing the whole import, and this schema must never be wired into that path to enforce strictly instead. The objects are CLOSED, as in the app's other schemas, so this document only describes shapes the app itself produces.",
+  "type": "object",
+  "required": ["years", "rows"],
+  "additionalProperties": false,
+  "properties": {
+    "years": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/year" },
+      "description": "Required. Every calendar year the table shows a column for. Never empty in practice: withYears() always folds in the current year (plus any year a row carries a marked month for), and there is no way to remove a year from the set, only to prepend an earlier one (addPastYear)."
+    },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/medicationRow" },
+      "description": "Required. One row per medication. May be empty (the initial state before a row is added)."
+    }
+  },
+  "$defs": {
+    "year": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 9999,
+      "description": "A four-digit calendar year, as isYear() in medications.ts checks it."
+    },
+    "monthKey": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+      "description": "An ISO YYYY-MM month key, as isMonthKey() in months.ts checks it. Read off the string itself rather than through a Date, so no locale or zone can move it."
+    },
+    "medicationRow": {
+      "type": "object",
+      "title": "MedicationRow",
+      "required": ["id", "name", "dosage", "months"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required. Non-empty; a UUID in practice (newRowId()), but only non-emptiness is enforced, matching what parseRow actually checks."
+        },
+        "name": {
+          "type": "string",
+          "description": "Required. The medication's name. Empty is out of scope for a finished row — dropUnnamed() removes unnamed rows on every backup export (medications.json is always built by parseMedications, which applies dropUnnamed as its last step) and whenever the Medications view leaves edit mode — but the raw value saved to localStorage on every keystroke is not itself filtered, so a row can transiently sit there with an empty name while it is mid-edit."
+        },
+        "dosage": {
+          "type": "string",
+          "description": "Required, but may be empty — a row can have a name with no dosage recorded yet."
+        },
+        "months": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/monthKey" },
+          "description": "Required. The months this medication was taken, deduplicated and kept sorted ascending by parseRow/toggleMonth. May be empty (a row with no month marked yet)."
+        }
+      }
+    }
+  }
+}
