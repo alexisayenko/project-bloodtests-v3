@@ -376,14 +376,8 @@
         "note": "The label names no specimen, so it stands for serum or plasma and for whole blood alike."
       },
       { "label": "HDL-Cholesterol", "price": 10, "covers": ["2085-9"] },
-      { "label": "Insulin, Fasting", "price": 25, "covers": ["20448-7"] },
-      {
-        "label": "LDL-Cholesterol",
-        "price": 10,
-        "covers": ["13457-7"],
-        "note": "The label names no method. The catalog holds only the calculated code; a separately priced LDL-C may be a direct assay."
-      },
-      { "label": "SHBG", "price": 50, "covers": ["2942-1"] },
+      { "label": "Insulin, Fasting", "price": 50, "covers": ["20448-7"] },
+      { "label": "SHBG", "price": 35, "covers": ["2942-1"] },
       { "label": "Thyroid-stimulating hormone (TSH)", "price": 25, "covers": ["11580-8"] },
       { "label": "Total Cholesterol", "price": 10, "covers": ["2093-3"] },
       { "label": "Triglycerides", "price": 10, "covers": ["2571-8"] },
