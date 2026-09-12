@@ -12,7 +12,9 @@
       { "label": "Apo A1", "price": 288, "covers": ["1869-7"] },
       { "label": "Apo B", "price": 288, "covers": ["1884-6"] },
       { "label": "AST", "price": 171, "covers": ["1920-8"] },
+      { "label": "Creatinine", "price": 185, "covers": ["2160-0"] },
       { "label": "CRP", "price": 185, "covers": ["1988-5"] },
+      { "label": "Cystatin C", "price": 685, "covers": ["33863-2"] },
       {
         "label": "FBC",
         "price": 328,
