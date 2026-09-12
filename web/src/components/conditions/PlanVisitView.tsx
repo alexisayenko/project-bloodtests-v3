@@ -1,14 +1,22 @@
+import { useState } from 'react';
 import type { ScheduledVisit } from './scheduled';
 import { MonthSelect } from './ScheduleHeader';
+import { TabBar } from './TabBar';
 import { LABORATORIES, formatPrice, quoteSchedule, type LabQuote, type Laboratory } from '../../data/labPricing';
 import { planCells, planRows, planRowLabel, type PlanCell } from '../../data/visitPlan';
 import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
+import { formatMonthFullYear } from '../../data/months';
 import type { Observation } from './markers';
 import { pressable } from './ui';
 import { CalendarCheck, Coins, CheckSquare } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
+
+/** A tab's label: the visit's own target month, or the same "No month" copy its own MonthSelect shows for that state. */
+function visitTabLabel(visit: ScheduledVisit): string {
+  return visit.month ? formatMonthFullYear(visit.month) : 'No month';
+}
 
 const GAP_COL_WIDTH = 16;
 const LAB_COL_WIDTH = 120;
@@ -243,7 +251,7 @@ function VisitPlanCard({
   );
 }
 
-/** What each scheduled visit's draw costs at each laboratory, row by row and in total -- one section per visit. */
+/** What each scheduled visit's draw costs at each laboratory, row by row and in total -- one visit shown at a time, picked by tab. */
 export function PlanVisitView({
   visits,
   onOpenPopup,
@@ -255,6 +263,14 @@ export function PlanVisitView({
   onSelectLab: (visitId: string, labId: string | undefined) => void;
   onSetMonth: (visitId: string, month: string | undefined) => void;
 }>) {
+  // Page-navigation state, not a stored preference -- and visits are added/removed
+  // dynamically, so a stale id is expected and simply falls back below rather than
+  // being treated as an error.
+  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const activeIndex = visits.findIndex((v) => v.id === selectedId);
+  const activeVisit = activeIndex >= 0 ? visits[activeIndex] : visits[0];
+  const activeVisitIndex = activeIndex >= 0 ? activeIndex : 0;
+
   return (
     <>
       <PageHeader
@@ -271,22 +287,29 @@ export function PlanVisitView({
           { icon: CheckSquare, line1: 'One-click test', line2: 'selection' },
         ]}
       />
-      {visits.length === 0 ? (
+      {visits.length === 0 || !activeVisit ? (
         <EmptyState>
           Nothing is scheduled yet — tick rows in the Scheduled column of Monitoring Panels or All Observations, or add a
           visit there with the + button next to it.
         </EmptyState>
       ) : (
-        visits.map((visit, i) => (
+        <>
+          {visits.length > 1 && (
+            <TabBar
+              tabs={visits.map((visit) => ({ id: visit.id, label: visitTabLabel(visit) }))}
+              active={activeVisit.id}
+              onChange={setSelectedId}
+            />
+          )}
           <VisitPlanCard
-            key={visit.id}
-            visit={visit}
-            index={i}
+            key={activeVisit.id}
+            visit={activeVisit}
+            index={activeVisitIndex}
             onOpenPopup={onOpenPopup}
-            onSelectLab={(labId) => onSelectLab(visit.id, labId)}
-            onSetMonth={(month) => onSetMonth(visit.id, month)}
+            onSelectLab={(labId) => onSelectLab(activeVisit.id, labId)}
+            onSetMonth={(month) => onSetMonth(activeVisit.id, month)}
           />
-        ))
+        </>
       )}
     </>
   );

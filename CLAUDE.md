@@ -522,9 +522,15 @@ or open it draws its association lines, hidden at rest: one purple bus from
 the badge to a lane above its targets, stubs down to dashed rings around each
 target; only an opened badge also veils the rest of the diagram, hover
 drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
-errors: one section per scheduled visit, stacked, each under its own "Planned
-for" pill (`MonthSelect`, editable in place rather than static text) and its
-own table card — every visit-local scheduled
+errors: one tab per scheduled visit (`TabBar`, the same in-page tab strip
+Panel Detail and All Observations use, labeled by that visit's month via
+`formatMonthFullYear` or "No month" when unset) showing exactly the active
+visit's section — never more than one stacked at a time — under its own
+"Planned for" pill (`MonthSelect`, editable in place rather than static text)
+and its own table card, defaulting to the first visit and falling back
+automatically if the active one is removed; a single visit renders its
+section directly with no tab strip, and zero visits keep the plain empty
+state. Every visit-local scheduled
 observation, folded to its primary code, as one "Observation" cell —
 `friendlyName`, with the short name in parentheses where it differs, opening
 the analyte popup — beside one price column per laboratory, a bundle priced
