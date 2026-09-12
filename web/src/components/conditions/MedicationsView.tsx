@@ -7,11 +7,7 @@ import { PageHeader } from './PageHeader';
 import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, SwitchToggle, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
-/** Shown in the Notes column in place of a truly blank cell -- the assumed default for a medication with no timing note. */
-const NOTES_PLACEHOLDER = '1 tablet daily';
-
 const NAME_COL_WIDTH = 260;
-const DOSAGE_COL_WIDTH = 170;
 const MONTH_COL_WIDTH = 32;
 const YEAR_EDGE = `1px solid ${COLOR.borderMuted}`;
 const BAR_FILL = `color-mix(in srgb, ${COLOR.brandTeal} 38%, ${COLOR.surface})`;
@@ -22,8 +18,7 @@ const BAR_HEIGHT = 16;
 const STICKY_EDGE_SHADOW = '2px 0 5px rgba(0, 0, 0, 0.14)';
 
 const th = { ...CARD_TABLE_TH, verticalAlign: 'bottom' } as const;
-const nameTh = { ...th, position: 'sticky', left: 0, zIndex: 1 } as const;
-const dosageTh = { ...th, position: 'sticky', left: NAME_COL_WIDTH, zIndex: 1, boxShadow: STICKY_EDGE_SHADOW } as const;
+const nameTh = { ...th, position: 'sticky', left: 0, zIndex: 1, boxShadow: STICKY_EDGE_SHADOW } as const;
 const yearTh = {
   ...th,
   textAlign: 'center',
@@ -36,17 +31,7 @@ const td = { ...CARD_TABLE_TD, padding: '6px 12px' } as const;
 const lastTd = { ...td, borderBottom: 'none' } as const;
 
 function nameCellStyle<T extends object>(cell: T) {
-  return { ...cell, position: 'sticky', left: 0, zIndex: 1, background: COLOR.surfaceCard } as const;
-}
-function dosageCellStyle<T extends object>(cell: T) {
-  return {
-    ...cell,
-    position: 'sticky',
-    left: NAME_COL_WIDTH,
-    zIndex: 1,
-    background: COLOR.surfaceCard,
-    boxShadow: STICKY_EDGE_SHADOW,
-  } as const;
+  return { ...cell, position: 'sticky', left: 0, zIndex: 1, background: COLOR.surfaceCard, boxShadow: STICKY_EDGE_SHADOW } as const;
 }
 const input = { ...FIELD_INPUT, width: '100%', boxSizing: 'border-box', padding: '4px 8px' } as const;
 const compoundInput = { ...input, padding: '3px 6px', fontSize: 12 } as const;
@@ -211,21 +196,17 @@ export function MedicationsView({
                 borderCollapse: 'separate',
                 borderSpacing: 0,
                 tableLayout: 'fixed',
-                width: NAME_COL_WIDTH + DOSAGE_COL_WIDTH + MONTH_COL_WIDTH * 12 * years.length,
+                width: NAME_COL_WIDTH + MONTH_COL_WIDTH * 12 * years.length,
               }}
             >
               <colgroup>
                 <col style={{ width: NAME_COL_WIDTH }} />
-                <col style={{ width: DOSAGE_COL_WIDTH }} />
                 {years.flatMap((year) => MONTH_LABELS.map((m) => <col key={`${year}-${m}`} style={{ width: MONTH_COL_WIDTH }} />))}
               </colgroup>
               <thead>
                 <tr>
                   <th rowSpan={2} scope="col" style={nameTh}>
                     Medication
-                  </th>
-                  <th rowSpan={2} scope="col" style={dosageTh}>
-                    Notes
                   </th>
                   {years.map((year) => (
                     <th key={year} colSpan={12} scope="colgroup" style={yearTh}>
@@ -311,6 +292,13 @@ export function MedicationsView({
                                 + Compound
                               </Button>
                             </div>
+                            <input
+                              aria-label={`Notes for ${row.brand.trim() || 'unnamed medication'}`}
+                              placeholder="Notes (timing, frequency, ...)"
+                              value={row.notes}
+                              onChange={(e) => onUpdateRow(row.id, { notes: e.target.value })}
+                              style={compoundInput}
+                            />
                           </div>
                         ) : (
                           <>
@@ -335,32 +323,6 @@ export function MedicationsView({
                               {row.compounds.length > 0 ? compoundsLine(row) : ' '}
                             </span>
                           </>
-                        )}
-                      </td>
-                      <td style={dosageCellStyle(cell)}>
-                        {editing ? (
-                          <input
-                            aria-label={`Notes for ${row.brand.trim() || 'unnamed medication'}`}
-                            value={row.notes}
-                            onChange={(e) => onUpdateRow(row.id, { notes: e.target.value })}
-                            style={input}
-                          />
-                        ) : row.notes.trim() !== '' ? (
-                          <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', color: COLOR.textSecondary }}>
-                            {row.notes}
-                          </span>
-                        ) : (
-                          <span
-                            style={{
-                              display: 'block',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              color: COLOR.textMuted,
-                              fontStyle: 'italic',
-                            }}
-                          >
-                            {NOTES_PLACEHOLDER}
-                          </span>
                         )}
                       </td>
                       {years.flatMap((year) =>
