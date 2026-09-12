@@ -33,6 +33,22 @@ function emptyVisit(id: string): ScheduledVisit {
   return { id, loincs: [], indices: [] };
 }
 
+/**
+ * Chronological order by target month (ISO `YYYY-MM`, so a plain string
+ * compare works) -- a visit with no month yet sorts last. The one ordering
+ * every consumer of `ScheduledVisits.visits` renders in, so the `#plan` tabs
+ * and a results table's Scheduled columns never disagree on which visit
+ * comes first.
+ */
+export function sortVisitsByMonth(visits: readonly ScheduledVisit[]): ScheduledVisit[] {
+  return [...visits].sort((a, b) => {
+    if (a.month === b.month) return 0;
+    if (a.month === undefined) return 1;
+    if (b.month === undefined) return -1;
+    return a.month < b.month ? -1 : 1;
+  });
+}
+
 function isLabId(value: unknown): value is string {
   return typeof value === 'string' && LABORATORIES.some((lab) => lab.id === value);
 }

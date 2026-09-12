@@ -21,7 +21,7 @@ import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
-import { useScheduled, type IndexScheduling, type RowScheduling } from './scheduled';
+import { useScheduled, sortVisitsByMonth, type IndexScheduling, type RowScheduling } from './scheduled';
 import { clearAllData, restoreBackup, type BackupContents } from '../../data/backupRestore';
 import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
@@ -61,6 +61,9 @@ export function MedicalConditionsPage() {
     onRemoveVisit,
     onReload: reloadScheduled,
   } = useScheduled();
+  // Chronological order, once, for every consumer -- the `#plan` tabs and a
+  // results table's Scheduled columns must never disagree on visit order.
+  const sortedVisits = useMemo(() => sortVisitsByMonth(scheduledVisits.visits), [scheduledVisits.visits]);
 
   useEffect(() => {
     saveViewSettings({ unitSystem, sampleLimit, compactPanels, medsCurrentYearOnly });
@@ -201,13 +204,13 @@ export function MedicalConditionsPage() {
   // One RowScheduling/IndexScheduling per visit, in the same order, so a
   // results table renders one Scheduled column per visit and the tables never
   // cross-wire a toggle into the wrong visit's column.
-  const rowSchedulings: RowScheduling[] = scheduledVisits.visits.map((visit) => ({
+  const rowSchedulings: RowScheduling[] = sortedVisits.map((visit) => ({
     scheduled: visit,
     onToggle: (loincs: string[]) => onToggleRow(visit.id, loincs),
     onSetMonth: (month: string | undefined) => onSetMonth(visit.id, month),
     onRemove: () => onRemoveVisit(visit.id),
   }));
-  const indexSchedulings: IndexScheduling[] = scheduledVisits.visits.map((visit) => ({
+  const indexSchedulings: IndexScheduling[] = sortedVisits.map((visit) => ({
     scheduled: visit,
     onToggle: (key: string) => onToggleIndex(visit.id, key),
     onSetMonth: (month: string | undefined) => onSetMonth(visit.id, month),
@@ -307,7 +310,7 @@ export function MedicalConditionsPage() {
       case 'account':
         return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':
-        return <PlanVisitView visits={scheduledVisits.visits} onOpenPopup={openPopup} onSelectLab={onSelectLab} onSetMonth={onSetMonth} />;
+        return <PlanVisitView visits={sortedVisits} onOpenPopup={openPopup} onSelectLab={onSelectLab} onSetMonth={onSetMonth} />;
       case 'reference':
         return (
           <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} onOpenPopup={openPopup} />
