@@ -51,6 +51,16 @@ export function ProfileView({
       />
 
       <div>
+        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Want a demo first?</h2>
+        <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
+          Add 15 sample lab reports from four labs and 5 medications — the reports merge with whatever is already
+          loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'} currently), medications you already list keep
+          their entries, and a sample schedule is set only if nothing is scheduled yet.
+        </div>
+        <Button onClick={() => generateTestDataThen(loadGenerated, [onStoredStateChanged, onGenerated])}>Generate Test Data</Button>
+      </div>
+
+      <div style={SECTION_DIVIDER}>
         <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Import your diagnostic reports database.</h2>
         <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
           Import it — it replaces whatever is currently loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'}{' '}
@@ -68,16 +78,6 @@ export function ProfileView({
           Create one starting from adding your first diagnostic report.
         </div>
         <Button onClick={goToReports}>Go to Diagnostic Reports</Button>
-      </div>
-
-      <div style={SECTION_DIVIDER}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Want a demo first?</h2>
-        <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 12 }}>
-          Add 15 sample lab reports from four labs and 5 medications — the reports merge with whatever is already
-          loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'} currently), medications you already list keep
-          their entries, and a sample schedule is set only if nothing is scheduled yet.
-        </div>
-        <Button onClick={() => generateTestDataThen(loadGenerated, [onStoredStateChanged, onGenerated])}>Generate Test Data</Button>
       </div>
     </>
   );
