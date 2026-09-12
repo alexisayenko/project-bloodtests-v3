@@ -16,7 +16,7 @@ import { ALIAS_TO_PRIMARY } from '../src/data/analyteCatalog';
 import { LABORATORIES, LABORATORY_BY_ID, quoteSchedule } from '../src/data/labPricing';
 import { MEDICATIONS_KEY, loadMedications, type Medications } from '../src/data/medications';
 import { buildConditions, panelRowLoincs } from '../src/components/conditions/markers';
-import { EMPTY_SCHEDULED, SCHEDULED_KEY, loadScheduled, type Scheduled } from '../src/components/conditions/scheduled';
+import { EMPTY_SCHEDULED_VISITS, SCHEDULED_KEY, addVisit, loadScheduled, type ScheduledVisits } from '../src/components/conditions/scheduled';
 import { MONITORING_PANELS, PANELS } from './dataFiles';
 import type { DiagnosticReport, Result } from '../src/types';
 
@@ -127,24 +127,25 @@ describe('withTestMedications', () => {
 });
 
 describe('withTestSchedule', () => {
-  it('seeds an empty schedule for next month, priced unevenly across the labs', () => {
-    const seeded = withTestSchedule({ ...EMPTY_SCHEDULED }, TODAY);
-    expect(seeded.month).toBe('2026-10');
-    expect(seeded.loincs).toEqual(expect.arrayContaining(TEST_SCHEDULE_LOINCS));
-    expect(seeded.indices).toEqual(expect.arrayContaining(['homair', 'tyg', 'tchdl']));
-    const esculab = quoteSchedule(seeded.loincs, LABORATORY_BY_ID.esculab!);
+  const newId = () => 'demo-visit';
+
+  it('seeds one demo visit for next month, priced unevenly across the labs', () => {
+    const seeded = withTestSchedule(EMPTY_SCHEDULED_VISITS, TODAY, newId);
+    expect(seeded.visits).toHaveLength(1);
+    const visit = seeded.visits[0]!;
+    expect(visit.id).toBe('demo-visit');
+    expect(visit.month).toBe('2026-10');
+    expect(visit.loincs).toEqual(expect.arrayContaining(TEST_SCHEDULE_LOINCS));
+    expect(visit.indices).toEqual(expect.arrayContaining(['homair', 'tyg', 'tchdl']));
+    const esculab = quoteSchedule(visit.loincs, LABORATORY_BY_ID.esculab!);
     expect(esculab.unpriced).toEqual([]);
     expect(esculab.charged.filter((line) => line.label === 'FBC')).toHaveLength(1);
-    expect(quoteSchedule(seeded.loincs, LABORATORY_BY_ID.synevo!).unpriced).toEqual(['11580-8']);
+    expect(quoteSchedule(visit.loincs, LABORATORY_BY_ID.synevo!).unpriced).toEqual(['11580-8']);
   });
 
-  it('keeps a month already chosen', () => {
-    expect(withTestSchedule({ ...EMPTY_SCHEDULED, month: '2027-03' }, TODAY).month).toBe('2027-03');
-  });
-
-  it('returns a non-empty schedule untouched', () => {
-    const scheduled: Scheduled = { loincs: ['1742-6'], indices: [] };
-    expect(withTestSchedule(scheduled, TODAY)).toBe(scheduled);
+  it('returns a non-empty visit list untouched', () => {
+    const scheduled: ScheduledVisits = addVisit(EMPTY_SCHEDULED_VISITS, 'existing');
+    expect(withTestSchedule(scheduled, TODAY, newId)).toBe(scheduled);
   });
 });
 
@@ -172,7 +173,9 @@ describe('applyTestData', () => {
     applyTestData(merge, TODAY);
     expect(sessions).toHaveLength(15);
     expect(loadMedications(2026).rows).toHaveLength(5);
-    expect(loadScheduled().loincs).toEqual(expect.arrayContaining(TEST_SCHEDULE_LOINCS));
+    const scheduled = loadScheduled();
+    expect(scheduled.visits).toHaveLength(1);
+    expect(scheduled.visits[0]!.loincs).toEqual(expect.arrayContaining(TEST_SCHEDULE_LOINCS));
   });
 
   it('never rewrites a non-empty schedule or a medication list that already has every name', () => {
@@ -189,7 +192,7 @@ describe('applyTestData', () => {
   it('runs the follow-up steps, in order, only once reports, medications and schedule are all written', () => {
     const seen: string[] = [];
     const snapshot = (label: string) => () =>
-      seen.push(`${label}:${sessions.length}:${loadMedications(2026).rows.length}:${loadScheduled().loincs.length > 0}`);
+      seen.push(`${label}:${sessions.length}:${loadMedications(2026).rows.length}:${loadScheduled().visits.length > 0}`);
     generateTestDataThen(merge, [snapshot('reload'), snapshot('navigate')], TODAY);
     expect(seen).toEqual(['reload:15:5:true', 'navigate:15:5:true']);
   });

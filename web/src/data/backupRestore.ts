@@ -5,7 +5,7 @@ import { isAcceptedSchemaVersion } from './envelopeSchema';
 import { isMedicationsShape, parseMedications, saveMedications, type Medications } from './medications';
 import { parseUploadedResults, UploadParseError } from './parseUpload';
 import { clearSharedMeta } from './sharedMeta';
-import { isScheduledShape, parseScheduled, saveScheduled, type Scheduled } from '../components/conditions/scheduled';
+import { isScheduledShape, parseScheduled, saveScheduled, type ScheduledVisits } from '../components/conditions/scheduled';
 import { saveViewSettings, VIEW_SETTINGS_KEY, type ViewSettings } from '../components/conditions/ui';
 
 export class BackupImportError extends Error {}
@@ -13,7 +13,7 @@ export class BackupImportError extends Error {}
 export type BackupContents = {
   reports?: { text: string; count: number; meta: EnvelopeMeta };
   medications?: Medications;
-  scheduled?: Scheduled;
+  scheduled?: ScheduledVisits;
   settings?: Record<string, unknown>;
   hasLaboratoryPrices: boolean;
 };
@@ -161,8 +161,9 @@ function restoreMedications(medications: BackupContents['medications']): string 
 function restoreScheduled(scheduled: BackupContents['scheduled']): string {
   if (!scheduled) return 'Scheduled visits: not in the backup, left empty.';
   saveScheduled(scheduled);
-  const { loincs, indices } = scheduled;
-  return `Scheduled visits: ${count(loincs.length, 'observation', 'observations')} and ${count(indices.length, 'index', 'indices')} restored.`;
+  const loincs = scheduled.visits.reduce((n, v) => n + v.loincs.length, 0);
+  const indices = scheduled.visits.reduce((n, v) => n + v.indices.length, 0);
+  return `Scheduled visits: ${count(scheduled.visits.length, 'visit', 'visits')} with ${count(loincs, 'observation', 'observations')} and ${count(indices, 'index', 'indices')} restored.`;
 }
 
 function restoreSetting(key: string, value: unknown): void {

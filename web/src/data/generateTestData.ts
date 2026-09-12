@@ -6,11 +6,12 @@ import { newRowId } from './ids';
 import { loadMedications, saveMedications, type Medications } from './medications';
 import { monthKey, monthKeyOf } from './months';
 import {
+  addVisit,
   loadScheduled,
   saveScheduled,
   setRowsScheduled,
   setScheduleMonth,
-  type Scheduled,
+  type ScheduledVisits,
 } from '../components/conditions/scheduled';
 
 /** How a lab prints one test: code, name, unit and reference range, with null for an open end. */
@@ -386,13 +387,14 @@ export function withTestMedications(meds: Medications, today: Date, newId: () =>
 // among these three labs), and the inputs of a few indices.
 export const TEST_SCHEDULE_LOINCS = ['718-7', '6690-2', '2345-7', '20448-7', '4548-4', '2093-3', '2085-9', '2571-8', '11580-8'];
 
-/** A demo schedule for next month, only where nothing is scheduled yet; any other schedule is returned untouched. */
-export function withTestSchedule(scheduled: Scheduled, today: Date): Scheduled {
-  if (scheduled.loincs.length > 0 || scheduled.indices.length > 0) return scheduled;
-  const seeded = setRowsScheduled(scheduled, TEST_SCHEDULE_LOINCS.map((loinc) => [loinc]), true);
-  if (scheduled.month) return seeded;
+/** A demo visit for next month, seeded only where nothing is scheduled yet; any existing visit is returned untouched. */
+export function withTestSchedule(scheduled: ScheduledVisits, today: Date, newId: () => string = newRowId): ScheduledVisits {
+  if (scheduled.visits.length > 0) return scheduled;
+  const withVisit = addVisit(scheduled, newId());
+  const visitId = withVisit.visits[0]!.id;
+  const seeded = setRowsScheduled(withVisit, visitId, TEST_SCHEDULE_LOINCS.map((loinc) => [loinc]), true);
   const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  return setScheduleMonth(seeded, monthKeyOf(next));
+  return setScheduleMonth(seeded, visitId, monthKeyOf(next));
 }
 
 /** What Generate Test Data does: merges the reports, then seeds medications and a schedule without overwriting either. */

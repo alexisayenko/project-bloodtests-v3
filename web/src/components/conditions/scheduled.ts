@@ -3,14 +3,15 @@ import { MARKER_LOINC } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { isMonthKey, monthKeyOf } from '../../data/months';
 import { LABORATORIES } from '../../data/labPricing';
+import { newRowId } from '../../data/ids';
 import { LOINC_TO_MARKER } from './markers';
 
 // Which observations (by LOINC) and computed indices (by key) are marked for
-// the next draw -- one global list across every panel, persisted so it
-// survives a refresh.
+// a draw -- one list per scheduled visit, each with its own target month and
+// laboratory, persisted together so they survive a refresh.
 export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
-// `month` (ISO YYYY-MM) LABELS the one global schedule -- "these are the tests
-// I plan to order for March 2027". It does not partition it: changing the month
+// `month` (ISO YYYY-MM) LABELS a visit's schedule -- "these are the tests I
+// plan to order for March 2027". It does not partition it: changing the month
 // leaves every checked row checked. Stored as YYYY-MM because it is a calendar
 // month, not an instant: it sorts lexicographically, needs no timezone, and is
 // what an <input type="month"> would have produced anyway.
@@ -21,64 +22,108 @@ export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
 // product names. It does not collide with the retired `lab` key's name, so an
 // old backup's stray `lab` value stays correctly ignored rather than being
 // picked up as a selection.
-export type Scheduled = { loincs: string[]; indices: string[]; month?: string; selectedLabId?: string };
-export const EMPTY_SCHEDULED: Scheduled = { loincs: [], indices: [] };
+export type ScheduledVisit = { id: string; loincs: string[]; indices: string[]; month?: string; selectedLabId?: string };
+// The stored shape: a list of independent visits. Before this existed, storage
+// held exactly one such object with no `id` and no wrapping list -- see the
+// migration in parseScheduled.
+export type ScheduledVisits = { visits: ScheduledVisit[] };
+export const EMPTY_SCHEDULED_VISITS: ScheduledVisits = { visits: [] };
+
+function emptyVisit(id: string): ScheduledVisit {
+  return { id, loincs: [], indices: [] };
+}
 
 function isLabId(value: unknown): value is string {
   return typeof value === 'string' && LABORATORIES.some((lab) => lab.id === value);
 }
 
+function isStr(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
 /** How many of a table's rows are scheduled, for the header's tri-state box. */
 export type SelectionState = 'none' | 'some' | 'all';
 
-/** The Scheduled column's wiring, handed to every table that renders one. */
+/** One visit's Scheduled column wiring, handed to every table that renders it. */
 export type RowScheduling = {
-  scheduled: Scheduled;
+  scheduled: ScheduledVisit;
   onToggle: (loincs: string[]) => void;
   /** Select-all over exactly the observation rows the table is showing. */
   onToggleAll: (rows: string[][], on: boolean) => void;
   onSetMonth: (month: string | undefined) => void;
+  onRemove: () => void;
 };
 export type IndexScheduling = {
-  scheduled: Scheduled;
+  scheduled: ScheduledVisit;
   onToggle: (key: string) => void;
   onSetMonth: (month: string | undefined) => void;
+  onRemove: () => void;
 };
 
-export function loadScheduled(): Scheduled {
+/** Fields shared by the pre-redesign single-schedule shape and one stored visit. */
+type StoredFields = { loincs: string[]; indices: string[]; month?: string; selectedLabId?: string };
+
+function parseStoredFields(value: Record<string, unknown>): StoredFields {
+  return {
+    loincs: Array.isArray(value.loincs) ? value.loincs.filter(isStr) : [],
+    indices: Array.isArray(value.indices) ? value.indices.filter(isStr) : [],
+    month: isMonthKey(value.month) ? value.month : undefined,
+    selectedLabId: isLabId(value.selectedLabId) ? value.selectedLabId : undefined,
+  };
+}
+
+function isEmptyFields(fields: StoredFields): boolean {
+  return fields.loincs.length === 0 && fields.indices.length === 0 && fields.month === undefined && fields.selectedLabId === undefined;
+}
+
+function parseVisit(value: unknown): ScheduledVisit | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const v = value as Record<string, unknown>;
+  if (typeof v.id !== 'string' || v.id === '') return undefined;
+  return { id: v.id, ...parseStoredFields(v) };
+}
+
+export function loadScheduled(): ScheduledVisits {
   try {
     return parseScheduled(localStorage.getItem(SCHEDULED_KEY));
   } catch {
-    return { ...EMPTY_SCHEDULED };
+    return { ...EMPTY_SCHEDULED_VISITS };
   }
 }
 
-/** Whether a payload from outside (a backup) has the stored shape at all, before parseScheduled forgives its entries. */
+/** Whether a payload from outside (a backup) has the stored shape at all, before parseScheduled forgives its entries -- either the current visits list or the pre-redesign single schedule. */
 export function isScheduledShape(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false;
-  const scheduled = value as Record<string, unknown>;
-  return Array.isArray(scheduled.loincs) && Array.isArray(scheduled.indices);
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.visits)) return true;
+  return Array.isArray(v.loincs) && Array.isArray(v.indices);
 }
 
-/** A stored schedule read back; anything missing or malformed reads as empty. */
-export function parseScheduled(raw: string | null): Scheduled {
+/**
+ * A stored schedule read back; anything missing or malformed reads as empty.
+ * A payload from before multiple visits existed -- one schedule object with no
+ * `visits` array -- migrates transparently into a list of exactly one visit,
+ * carrying its loincs/indices/month/selectedLabId over as-is under a fresh id;
+ * an old payload that was itself fully empty migrates to an empty list rather
+ * than manufacturing a pointless visit.
+ */
+export function parseScheduled(raw: string | null): ScheduledVisits {
   try {
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<Scheduled>;
-      return {
-        loincs: Array.isArray(parsed.loincs) ? parsed.loincs.filter((x): x is string => typeof x === 'string') : [],
-        indices: Array.isArray(parsed.indices) ? parsed.indices.filter((x): x is string => typeof x === 'string') : [],
-        month: isMonthKey(parsed.month) ? parsed.month : undefined,
-        selectedLabId: isLabId(parsed.selectedLabId) ? parsed.selectedLabId : undefined,
-      };
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (Array.isArray(parsed.visits)) {
+        return { visits: parsed.visits.map(parseVisit).filter((v): v is ScheduledVisit => !!v) };
+      }
+      const legacy = parseStoredFields(parsed);
+      return isEmptyFields(legacy) ? { visits: [] } : { visits: [{ id: newRowId(), ...legacy }] };
     }
   } catch {
     // corrupt/incompatible local storage -- ignore and start fresh
   }
-  return { ...EMPTY_SCHEDULED };
+  return { ...EMPTY_SCHEDULED_VISITS };
 }
 
-export function saveScheduled(scheduled: Scheduled): void {
+export function saveScheduled(scheduled: ScheduledVisits): void {
   try {
     localStorage.setItem(SCHEDULED_KEY, JSON.stringify(scheduled));
   } catch {
@@ -106,13 +151,13 @@ export function indexInputLoincs(key: string): string[] {
   return Array.from(new Set(def?.inputKeys.flatMap((inputKey) => MARKER_LOINC[inputKey] ?? []) ?? []));
 }
 
-/** Whether a row answering for any of `loincs` is scheduled. */
-export function isRowScheduled(scheduled: Scheduled, loincs: string[]): boolean {
-  return loincs.some((loinc) => scheduled.loincs.includes(loinc));
+/** Whether a row answering for any of `loincs` is scheduled in this visit. */
+export function isRowScheduled(visit: ScheduledVisit, loincs: string[]): boolean {
+  return loincs.some((loinc) => visit.loincs.includes(loinc));
 }
 
-export function isIndexScheduled(scheduled: Scheduled, key: string): boolean {
-  return scheduled.indices.includes(key);
+export function isIndexScheduled(visit: ScheduledVisit, key: string): boolean {
+  return visit.indices.includes(key);
 }
 
 function union(a: string[], b: string[]): string[] {
@@ -128,41 +173,55 @@ function deriveIndices(loincs: string[]): string[] {
   ).map((def) => def.key);
 }
 
-/** Toggling an observation re-derives every index from its inputs. */
-export function toggleRow(scheduled: Scheduled, loincs: string[]): Scheduled {
-  const all = withSiblings(loincs);
-  const next = isRowScheduled(scheduled, all)
-    ? scheduled.loincs.filter((loinc) => !all.includes(loinc))
-    : union(scheduled.loincs, all);
-  return { ...scheduled, loincs: next, indices: deriveIndices(next) };
+function updateVisit(scheduled: ScheduledVisits, visitId: string, fn: (visit: ScheduledVisit) => ScheduledVisit): ScheduledVisits {
+  return { visits: scheduled.visits.map((v) => (v.id === visitId ? fn(v) : v)) };
 }
 
-/** Scheduling an index also schedules its inputs; unscheduling leaves them alone. */
-export function toggleIndex(scheduled: Scheduled, key: string): Scheduled {
-  if (isIndexScheduled(scheduled, key)) {
-    return { ...scheduled, indices: scheduled.indices.filter((k) => k !== key) };
-  }
-  return {
-    ...scheduled,
-    loincs: union(scheduled.loincs, indexInputLoincs(key)),
-    indices: [...scheduled.indices, key],
-  };
+/** Adds a fresh, empty visit -- no month, no rows -- to the end of the list. */
+export function addVisit(scheduled: ScheduledVisits, id: string): ScheduledVisits {
+  return { visits: [...scheduled.visits, emptyVisit(id)] };
 }
 
-/** Select-all over the observation rows on screen: one row's rule applied to all of them at once. */
-export function setRowsScheduled(scheduled: Scheduled, rows: string[][], on: boolean): Scheduled {
-  const all = withSiblings(rows.flat());
-  const next = on ? union(scheduled.loincs, all) : scheduled.loincs.filter((loinc) => !all.includes(loinc));
-  return { ...scheduled, loincs: next, indices: deriveIndices(next) };
+/** Drops a visit entirely, unscheduling everything it had. The others are untouched. */
+export function removeVisit(scheduled: ScheduledVisits, visitId: string): ScheduledVisits {
+  return { visits: scheduled.visits.filter((v) => v.id !== visitId) };
 }
 
-export function setScheduleMonth(scheduled: Scheduled, month: string | undefined): Scheduled {
-  return { ...scheduled, month: isMonthKey(month) ? month : undefined };
+/** Toggling an observation re-derives that visit's indices from its inputs; the other visits are untouched. */
+export function toggleRow(scheduled: ScheduledVisits, visitId: string, loincs: string[]): ScheduledVisits {
+  return updateVisit(scheduled, visitId, (visit) => {
+    const all = withSiblings(loincs);
+    const next = isRowScheduled(visit, all) ? visit.loincs.filter((loinc) => !all.includes(loinc)) : union(visit.loincs, all);
+    return { ...visit, loincs: next, indices: deriveIndices(next) };
+  });
+}
+
+/** Scheduling an index also schedules its inputs, in the same visit; unscheduling leaves them alone. */
+export function toggleIndex(scheduled: ScheduledVisits, visitId: string, key: string): ScheduledVisits {
+  return updateVisit(scheduled, visitId, (visit) => {
+    if (isIndexScheduled(visit, key)) {
+      return { ...visit, indices: visit.indices.filter((k) => k !== key) };
+    }
+    return { ...visit, loincs: union(visit.loincs, indexInputLoincs(key)), indices: [...visit.indices, key] };
+  });
+}
+
+/** Select-all over the observation rows on screen, for one visit: one row's rule applied to all of them at once. */
+export function setRowsScheduled(scheduled: ScheduledVisits, visitId: string, rows: string[][], on: boolean): ScheduledVisits {
+  return updateVisit(scheduled, visitId, (visit) => {
+    const all = withSiblings(rows.flat());
+    const next = on ? union(visit.loincs, all) : visit.loincs.filter((loinc) => !all.includes(loinc));
+    return { ...visit, loincs: next, indices: deriveIndices(next) };
+  });
+}
+
+export function setScheduleMonth(scheduled: ScheduledVisits, visitId: string, month: string | undefined): ScheduledVisits {
+  return updateVisit(scheduled, visitId, (visit) => ({ ...visit, month: isMonthKey(month) ? month : undefined }));
 }
 
 /** The one laboratory the owner is actually going to for this visit, or undefined to fall back to generic names. */
-export function setSelectedLab(scheduled: Scheduled, labId: string | undefined): Scheduled {
-  return { ...scheduled, selectedLabId: isLabId(labId) ? labId : undefined };
+export function setSelectedLab(scheduled: ScheduledVisits, visitId: string, labId: string | undefined): ScheduledVisits {
+  return updateVisit(scheduled, visitId, (visit) => ({ ...visit, selectedLabId: isLabId(labId) ? labId : undefined }));
 }
 
 export function selectionState(flags: readonly boolean[]): SelectionState {
@@ -181,21 +240,42 @@ export function monthChoices(today: Date, count: number, selected?: string): str
 }
 
 export function useScheduled() {
-  const [scheduled, setScheduled] = useState<Scheduled>(loadScheduled);
+  const [scheduledVisits, setScheduledVisits] = useState<ScheduledVisits>(loadScheduled);
 
   useEffect(() => {
-    saveScheduled(scheduled);
-  }, [scheduled]);
+    saveScheduled(scheduledVisits);
+  }, [scheduledVisits]);
 
-  const onToggleRow = useCallback((loincs: string[]) => setScheduled((s) => toggleRow(s, loincs)), []);
-  const onToggleIndex = useCallback((key: string) => setScheduled((s) => toggleIndex(s, key)), []);
-  const onToggleAllRows = useCallback(
-    (rows: string[][], on: boolean) => setScheduled((s) => setRowsScheduled(s, rows, on)),
+  const onToggleRow = useCallback(
+    (visitId: string, loincs: string[]) => setScheduledVisits((s) => toggleRow(s, visitId, loincs)),
     []
   );
-  const onSetMonth = useCallback((month: string | undefined) => setScheduled((s) => setScheduleMonth(s, month)), []);
-  const onSelectLab = useCallback((labId: string | undefined) => setScheduled((s) => setSelectedLab(s, labId)), []);
-  const onReload = useCallback(() => setScheduled(loadScheduled()), []);
+  const onToggleIndex = useCallback((visitId: string, key: string) => setScheduledVisits((s) => toggleIndex(s, visitId, key)), []);
+  const onToggleAllRows = useCallback(
+    (visitId: string, rows: string[][], on: boolean) => setScheduledVisits((s) => setRowsScheduled(s, visitId, rows, on)),
+    []
+  );
+  const onSetMonth = useCallback(
+    (visitId: string, month: string | undefined) => setScheduledVisits((s) => setScheduleMonth(s, visitId, month)),
+    []
+  );
+  const onSelectLab = useCallback(
+    (visitId: string, labId: string | undefined) => setScheduledVisits((s) => setSelectedLab(s, visitId, labId)),
+    []
+  );
+  const onAddVisit = useCallback(() => setScheduledVisits((s) => addVisit(s, newRowId())), []);
+  const onRemoveVisit = useCallback((visitId: string) => setScheduledVisits((s) => removeVisit(s, visitId)), []);
+  const onReload = useCallback(() => setScheduledVisits(loadScheduled()), []);
 
-  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onSelectLab, onReload };
+  return {
+    scheduledVisits,
+    onToggleRow,
+    onToggleIndex,
+    onToggleAllRows,
+    onSetMonth,
+    onSelectLab,
+    onAddVisit,
+    onRemoveVisit,
+    onReload,
+  };
 }

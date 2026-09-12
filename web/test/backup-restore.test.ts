@@ -19,9 +19,11 @@ const MEDICATIONS = {
   years: [2025, 2026],
   rows: [{ id: 'm1', brand: 'Vitamin D', compounds: [], notes: '2000 IU', months: ['2026-01'] }],
 };
-const SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
+const SCHEDULED = { visits: [{ id: 'v1', loincs: ['2093-3'], indices: ['homair'], month: '2026-10' }] };
 // Stored while the schedule still carried a laboratory: it must restore all the same, without it.
-const STORED_SCHEDULED = { ...SCHEDULED, lab: 'esculab' };
+const STORED_SCHEDULED = { visits: [{ ...SCHEDULED.visits[0], lab: 'esculab' }] };
+// Stored before multiple visits existed: the pre-redesign single-schedule shape, migrated on restore into one visit.
+const LEGACY_STORED_SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
 const SETTINGS = {
   [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all', compactPanels: true, medsCurrentYearOnly: false }),
   'exploreSel:Lipids': JSON.stringify(['ldl', 'hdl']),
@@ -112,7 +114,7 @@ describe('restoreBackup', () => {
     expect(loadEnvelopeMeta().subject).toBe('Alex');
     expect(store.has(SHARED_META_KEY)).toBe(false);
     expect(lines).toContain('Lab reports: 1 report restored.');
-    expect(lines).toContain('Scheduled visits: 1 observation and 1 index restored.');
+    expect(lines).toContain('Scheduled visits: 1 visit with 1 observation and 1 index restored.');
     expect(lines).toContain('Laboratory prices: not restored; the prices that ship with the app are used.');
   });
 
@@ -156,7 +158,7 @@ describe('restoreBackup', () => {
     expect(lines).toContain('Lab reports: 0 reports restored.');
   });
 
-  it('restores an older backup whose schedule still carries a laboratory, and stores it without one', async () => {
+  it('restores a backup whose visit still carries a laboratory, and stores it without one', async () => {
     seed();
     const files = { ...(await exportZip()), 'scheduled-visits.json': JSON.stringify(STORED_SCHEDULED) };
 
@@ -164,6 +166,18 @@ describe('restoreBackup', () => {
 
     expect(loadScheduled()).toEqual(SCHEDULED);
     expect(JSON.parse(store.get(SCHEDULED_KEY)!)).toEqual(SCHEDULED);
+  });
+
+  it('restores a pre-redesign backup (one schedule, no visits list) by migrating it into a single visit', async () => {
+    seed();
+    const files = { ...(await exportZip()), 'scheduled-visits.json': JSON.stringify(LEGACY_STORED_SCHEDULED) };
+
+    await importFiles(files);
+
+    const loaded = loadScheduled();
+    expect(loaded.visits).toHaveLength(1);
+    expect(loaded.visits[0]).toMatchObject({ loincs: ['2093-3'], indices: ['homair'], month: '2026-10' });
+    expect(typeof loaded.visits[0]!.id).toBe('string');
   });
 });
 

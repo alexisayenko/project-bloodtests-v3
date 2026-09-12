@@ -63,10 +63,10 @@ describe('buildBackupFiles', () => {
       years: [2025, 2026],
       rows: [{ id: 'm1', brand: 'Vitamin D', compounds: [], notes: '2000 IU', months: ['2026-01'] }],
     };
-    const scheduled = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
+    const scheduled = { visits: [{ id: 'v1', loincs: ['2093-3'], indices: ['homair'], month: '2026-10' }] };
     const storage = fakeStorage({
       bloodtests_medications_v1: JSON.stringify(medications),
-      bloodtests_scheduled_v1: JSON.stringify({ ...scheduled, lab: 'esculab' }),
+      bloodtests_scheduled_v1: JSON.stringify(scheduled),
       bloodtests_view_settings_v1: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all' }),
       'exploreSel:Lipids': JSON.stringify(['ldl', 'hdl']),
       'hpgAutoscale:all': '1',
@@ -103,7 +103,7 @@ describe('buildBackupFiles', () => {
     expect(Object.keys(unzipped).sort()).toEqual([...FILES].sort());
     expect((unzipped['lab-reports.json'] as { diagnosticReports: unknown[] }).diagnosticReports).toEqual([]);
     expect(unzipped['medications.json']).toEqual({ years: [2026], rows: [] });
-    expect(unzipped['scheduled-visits.json']).toEqual({ loincs: [], indices: [] });
+    expect(unzipped['scheduled-visits.json']).toEqual({ visits: [] });
     expect(unzipped['settings.json']).toEqual({});
   });
 });
