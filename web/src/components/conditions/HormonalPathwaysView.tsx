@@ -445,24 +445,10 @@ function Exchange() {
   );
 }
 
-interface HormoneImage {
-  src: string;
-  credit?: { href: string; label: string; text: string };
-  note?: string;
-}
-
-function Hormone({ id, slot, image }: Readonly<{ id: CaptionId; slot?: boolean; image?: HormoneImage }>) {
+function Hormone({ id, slot }: Readonly<{ id: CaptionId; slot?: boolean }>) {
   return (
     <div className={slot ? 'mc-pathway-anchor mc-pathway-node mc-pathway-slot' : 'mc-pathway-anchor mc-pathway-node'} data-node={id}>
-      {image ? (
-        <div className="mc-pathway-structure-wrap">
-          <img className="mc-pathway-structure-img" src={image.src} alt="" width={56} height={56} />
-          {image.credit && <StructureCredit href={image.credit.href} label={image.credit.label} credit={image.credit.text} />}
-          {image.note && <div className="mc-pathway-note">{image.note}</div>}
-        </div>
-      ) : (
-        <HormoneIcon size={39} />
-      )}
+      <HormoneIcon size={39} />
       <Caption id={id} />
     </div>
   );
@@ -485,20 +471,6 @@ function TestesDiagram() {
       <Cells label="Sertoli Cells" node="sertoli" />
       <Cells label="Leydig Cells" node="leydig" />
     </div>
-  );
-}
-
-const LH_CREDIT =
-  'Structure: RCSB PDB entry 7FII, from Structures of full-length glycoprotein hormone receptor signalling complexes, Nature (2021). ' +
-  "LH receptor (LHCGR) bound to chorionic gonadotropin (hCG) — hCG's close structural similarity to LH makes it the standard proxy " +
-  'used to solve this receptor complex.';
-
-/** A small, always-visible source credit for a real PDB structure image — label shown inline, full citation in the title tooltip. */
-function StructureCredit({ href, label, credit }: Readonly<{ href: string; label: string; credit: string }>) {
-  return (
-    <a className="mc-pathway-credit" href={href} target="_blank" rel="noreferrer" title={credit}>
-      {label}
-    </a>
   );
 }
 
@@ -557,16 +529,8 @@ const ALBUMIN_CARRIER: DockedCarrier = { protein: 'alb', bound: 'alb-t', boundSi
 function CardioDiagram() {
   return (
     <div className="mc-pathway-row mc-pathway-row-start">
-      <Hormone id="fsh" slot image={{ src: '/pathways/fsh.png' }} />
-      <Hormone
-        id="lh"
-        slot
-        image={{
-          src: '/pathways/lh.png',
-          credit: { href: 'https://www.rcsb.org/structure/7FII', label: 'PDB 7FII', text: LH_CREDIT },
-          note: "Bound to hCG, LH's structural proxy",
-        }}
-      />
+      <Hormone id="fsh" slot />
+      <Hormone id="lh" slot />
       <div className="mc-pathway-group">
         <Carrier carrier={SHBG_CARRIER} />
         <Exchange />

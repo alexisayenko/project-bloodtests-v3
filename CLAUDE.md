@@ -475,18 +475,25 @@ The pathway arrows are an SVG overlay measured from the DOM and re-measured by
 a `ResizeObserver` — FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
 enzymes and down to the androgen receptors, enzymes → products,
 DHT → androgen receptors, E2 → blood E2 → estrogen receptors — thin pale
-strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon` (T, E2
-and blood E2 — the signals with no real structure image), `CarrierIcon` and
-`ReceptorIcon` SVGs, plus `web/public/pathways/leydig-cells.png` (Sertoli and
-Leydig cells, cropped from a mockup with a transparent background); FSH, LH,
-aromatase and 5α-reductase instead show real PDB structure images, framed as
-white tiles (sips can't do transparency) — a deliberate style break from the
-abstract icons elsewhere: aromatase (PDB 3EQM, public domain), 5α-reductase
-(PDB 7C83, CC BY-SA 4.0, credited via a visible inline credit line), FSH (PDB
-1XWD, CC0), and LH (PDB 7FII, a hormone-receptor-Gs complex whose bound
-hormone is actually chorionic gonadotropin, hCG — LH's structural proxy since
-it shares the same receptor, stated as an honest caveat on the page rather
-than hidden). A column of ten badges on the right, in order — Total
+strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon` (T, E2,
+blood E2, FSH and LH — every signal drawn as the same schematic rather than a
+real structure) and `CarrierIcon` (SHBG and Albumin), plus
+`web/public/pathways/leydig-cells.png` (Sertoli and Leydig cells, cropped from
+a mockup with a transparent background) and two shared custom-artwork icons —
+`enzyme-icon.png` (a bead-ring graphic) for both aromatase and 5α-reductase,
+`receptor-icon.png` (a Y-shaped graphic) for both the androgen and estrogen
+receptor nodes — a deliberate style choice (task-0024), not an accuracy
+correction. The page no longer renders any real protein structure: FSH, LH,
+aromatase and 5α-reductase all carried real PDB images and citations (FSH
+1XWD, LH 7FII — a hormone-receptor-Gs complex whose bound hormone is actually
+chorionic gonadotropin, hCG, LH's structural proxy since it shares the same
+receptor — aromatase 3EQM, 5α-reductase 7C83 with a visible CC BY-SA 4.0
+credit line) until task-0024 replaced them in two passes — first aromatase and
+5α-reductase, then FSH and LH — retiring `ReceptorIcon`, the SVG the receptor
+nodes used before, along with them. FSH's real structure (PDB 1XWD) lives on
+only in the unrelated Reference Book FSH page (`#reference/fsh`, under
+`web/public/reference/fsh/`, untouched by this).
+A column of ten badges on the right, in order — Total
 Testosterone, Bioavailable Testosterone, Free Testosterone (the measured
 value, LOINC `2991-8`), cFT (Vermeulen) (the calculated value, formerly plain
 "Free Testosterone"), cFT (Ly & Handelsman), cFT (Sartorius) and cFT
