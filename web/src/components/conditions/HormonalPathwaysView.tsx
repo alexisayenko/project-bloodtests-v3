@@ -283,8 +283,9 @@ function referenceOf(measureKey: MeasureKey, snapshot: Snapshot, unitSystem: 'si
 }
 
 function Cites({ scope, cites }: Readonly<{ scope: string; cites: readonly number[] }>) {
+  if (cites.length === 0) return null;
   return (
-    <>
+    <span className="mc-pathway-cites">
       {cites.map((n) => (
         <a
           key={n}
@@ -298,7 +299,7 @@ function Cites({ scope, cites }: Readonly<{ scope: string; cites: readonly numbe
           [{n}]
         </a>
       ))}
-    </>
+    </span>
   );
 }
 
@@ -783,7 +784,7 @@ const BADGES: ReadonlyArray<Badge> = [
     meaning: 'The unbound share (about 1–3% of total) that can actually enter cells — the androgen signal tissues have available to use.',
     low: 'Less testosterone available to tissues.',
     high: 'More available to tissues.',
-    caveats: 'Direct free-T immunoassays are unreliable; the calculation is preferred.',
+    caveats: 'Calculated via the Vermeulen equation (cFT). Direct free-T immunoassays are unreliable; the calculation is preferred.',
   },
   {
     id: 'bio-t', name: 'Bioavailable Testosterone', measure: 'biot',
