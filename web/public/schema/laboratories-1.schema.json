@@ -54,7 +54,7 @@
     "priceLine": {
       "type": "object",
       "title": "PriceLine",
-      "description": "One product the laboratory sells, under its own label, and every catalog code it can satisfy. A plain test covers one code; a bundle covers many and is paid once however many of them are scheduled; a label that does not pick one code covers every code it could mean. A mass/molar pair is listed by its mass primary: costing folds aliases on both sides.",
+      "description": "One product the laboratory sells, under its own label, and every catalog code it can satisfy. A plain test covers one code; a bundle covers many and is paid once however many of them are scheduled; a label that does not pick one code covers every code it could mean. A mass/molar pair is listed by its mass primary: costing folds aliases on both sides. `label` is already the laboratory's own name for the product (as given, not normalized) — there is no separate field for that.",
       "required": ["label", "price", "covers"],
       "additionalProperties": false,
       "properties": {
@@ -80,7 +80,17 @@
           "pattern": "^[a-z0-9-]+$",
           "description": "Optional. The laboratory group in panels.json this bundle is. A JSON file cannot reference another, so `covers` still lists the codes, and the conformance suite holds them equal to that group's."
         },
-        "note": { "type": "string", "minLength": 1 }
+        "note": { "type": "string", "minLength": 1 },
+        "innerId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. The laboratory's own internal product/SKU code for this analysis, distinct from the LOINC codes in `covers`."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional. Link to this specific analysis's page on the laboratory's own website."
+        }
       }
     }
   }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
 import { ANALYSES, LABORATORY_FILE, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS, PATHWAY_RANGE_FILE } from './dataFiles';
 import {
   PATHWAY_RANGE_MARKERS,
@@ -32,6 +33,7 @@ function loadSchema(name: string): object {
 }
 
 const ajv = new Ajv2020({ allErrors: true });
+addFormats(ajv);
 ajv.addSchema(loadSchema('analytes-1.schema.json'));
 ajv.addSchema(loadSchema('molar-masses-1.schema.json'));
 ajv.addSchema(loadSchema('laboratories-1.schema.json'));

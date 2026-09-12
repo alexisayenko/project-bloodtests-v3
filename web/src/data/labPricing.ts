@@ -1,7 +1,15 @@
 import laboratories from '../../public/data/laboratories.json';
 import { ALIAS_TO_PRIMARY } from './analyteCatalog';
 
-export type PriceLine = { label: string; price: number; covers: string[]; panelId?: string; note?: string };
+export type PriceLine = {
+  label: string;
+  price: number;
+  covers: string[];
+  panelId?: string;
+  note?: string;
+  innerId?: string;
+  url?: string;
+};
 export type Laboratory = {
   id: string;
   name: string;
