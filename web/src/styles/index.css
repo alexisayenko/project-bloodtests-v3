@@ -459,6 +459,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-chip:hover { border-color: var(--accent-line); box-shadow: var(--shadow-pop); }
 .mc-pathway-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .mc-pathway-chip-open { border-color: var(--accent); }
+.mc-pathway-chip-open:hover { border-color: var(--accent); }
 .mc-pathway-chip-head { display: inline-flex; align-items: center; gap: 5px; }
 .mc-pathway-chip .mc-pathway-dot { width: 6px; height: 6px; }
 .mc-pathway-pop {
@@ -525,6 +526,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   position: relative; z-index: 5; width: 150%; margin-left: -50%;
   box-shadow: var(--shadow-pop);
 }
+.mc-pathway-badge-open:hover { border-color: var(--accent); }
 .mc-pathway-badge-body {
   display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding-top: 8px;
   border-top: 1px solid var(--border-subtle); font-size: 12px; line-height: 1.4; color: var(--text-secondary);
