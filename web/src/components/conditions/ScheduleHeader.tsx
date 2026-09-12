@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import { monthChoices, type SelectionState } from './scheduled';
 import { formatMonthFullYear } from '../../data/months';
 import { COLOR } from '../../styles/tokens';
@@ -16,24 +17,27 @@ export type ScheduleHeaderProps = {
   /** Set when the table shows no observation rows, leaving select-all nothing to act on. */
   disabled?: boolean;
   onToggleAll: (on: boolean) => void;
+  /** Drops this whole visit -- every row and index it had scheduled. */
+  onRemove: () => void;
 };
 
 /**
- * The Scheduled column's header: the schedule's target month plus a tri-state
+ * One scheduled visit's column header: its target month, a tri-state
  * select-all over the observation rows the table is currently showing -- index
- * rows are left to follow their inputs. The select and the box carry no visible
- * text, so they name themselves through aria-label.
+ * rows are left to follow their inputs -- and a remove button for the visit
+ * itself. The select and the box carry no visible text, so they name
+ * themselves through aria-label.
  */
-export function ScheduleHeader({ label, month, onSetMonth, state, disabled, onToggleAll }: Readonly<ScheduleHeaderProps>) {
+export function ScheduleHeader({ label, month, onSetMonth, state, disabled, onToggleAll, onRemove }: Readonly<ScheduleHeaderProps>) {
   const box = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (box.current) box.current.indeterminate = state === 'some';
   }, [state]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
       <select
-        aria-label="Month these tests are planned for"
+        aria-label="Month this visit is planned for"
         value={month ?? NO_MONTH}
         onChange={(e) => onSetMonth(e.currentTarget.value || undefined)}
         className="mc-field mc-field-select mc-field-sm"
@@ -54,6 +58,26 @@ export function ScheduleHeader({ label, month, onSetMonth, state, disabled, onTo
         aria-label={`Schedule every observation shown in ${label}`}
         style={{ width: 15, height: 15, margin: 0, accentColor: COLOR.primary, cursor: disabled ? 'not-allowed' : 'pointer' }}
       />
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Remove this scheduled visit"
+        title="Remove this scheduled visit"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 16,
+          height: 16,
+          padding: 0,
+          border: 'none',
+          background: 'none',
+          color: COLOR.textMuted,
+          cursor: 'pointer',
+        }}
+      >
+        <X size={13} strokeWidth={2} aria-hidden="true" />
+      </button>
     </div>
   );
 }

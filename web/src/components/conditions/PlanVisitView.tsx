@@ -1,4 +1,4 @@
-import type { Scheduled } from './scheduled';
+import type { ScheduledVisit } from './scheduled';
 import { formatMonthFullYear } from '../../data/months';
 import { LABORATORIES, formatPrice, quoteSchedule, type LabQuote, type Laboratory } from '../../data/labPricing';
 import { planCells, planRows, planRowLabel, type PlanCell } from '../../data/visitPlan';
@@ -66,46 +66,34 @@ function TotalCell({ lab, quote, cheapest }: Readonly<{ lab: Laboratory; quote: 
   );
 }
 
-const LAB_RADIO_GROUP = 'plan-visit-lab';
-
 /** Stop a click/keypress on a nested control (a lab's own link) from also firing the row's popup handler. */
 function stopBubble(e: { stopPropagation: () => void }): void {
   e.stopPropagation();
 }
 
-/** What the scheduled draw costs at each laboratory, row by row and in total. */
-export function PlanVisitView({
-  scheduled,
+/** One visit's own card: its target month, its rows, its per-lab prices and its own laboratory radio group. */
+function VisitPlanCard({
+  visit,
+  index,
   onOpenPopup,
   onSelectLab,
 }: Readonly<{
-  scheduled: Scheduled;
+  visit: ScheduledVisit;
+  /** Distinguishes this visit's radio-button group from every other visit's, so picking a lab in one never touches another. */
+  index: number;
   onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onSelectLab: (labId: string | undefined) => void;
 }>) {
-  const rows = planRows(scheduled.loincs);
+  const rows = planRows(visit.loincs);
   const cells = LABORATORIES.map((lab) => planCells(rows, lab));
-  const quotes = LABORATORIES.map((lab) => quoteSchedule(scheduled.loincs, lab));
+  const quotes = LABORATORIES.map((lab) => quoteSchedule(visit.loincs, lab));
   const cheapest = cheapestLabIds(quotes);
-  const selectedLabIndex = LABORATORIES.findIndex((lab) => lab.id === scheduled.selectedLabId);
+  const selectedLabIndex = LABORATORIES.findIndex((lab) => lab.id === visit.selectedLabId);
+  const labRadioGroup = `plan-visit-lab-${index}`;
 
   return (
-    <>
-      <PageHeader
-        overline="Laboratory Draw Planner"
-        titlePrimary="Scheduled"
-        titleAccent="Visits"
-        description={[
-          'Plan upcoming diagnostic appointments and calculate expected laboratory prices.',
-          'Select markers across panels to generate a complete ordering checklist.',
-        ]}
-        pillars={[
-          { icon: CalendarCheck, line1: 'Target month', line2: 'draw planning' },
-          { icon: Coins, line1: 'Transparent pricing', line2: 'by laboratory' },
-          { icon: CheckSquare, line1: 'One-click test', line2: 'selection' },
-        ]}
-      />
-      <div style={{ marginBottom: SPACE[4] }}>
+    <section style={{ marginBottom: SPACE[6] }}>
+      <div style={{ marginBottom: SPACE[3] }}>
         <span
           style={{
             display: 'inline-flex',
@@ -122,13 +110,13 @@ export function PlanVisitView({
           <CalendarCheck size={14} color={COLOR.accent} strokeWidth={2} aria-hidden="true" />
           <span>Planned for</span>{' '}
           <strong style={{ color: COLOR.navy, fontWeight: 600 }}>
-            {scheduled.month ? formatMonthFullYear(scheduled.month) : 'No month selected'}
+            {visit.month ? formatMonthFullYear(visit.month) : 'No month selected'}
           </strong>
         </span>
       </div>
       {rows.length === 0 ? (
         <EmptyState>
-          Nothing is scheduled yet — tick rows in the Scheduled column of Monitoring Panels or All Observations.
+          Nothing is scheduled for this visit yet — tick rows in its Scheduled column of Monitoring Panels or All Observations.
         </EmptyState>
       ) : (
         <Card style={{ ...TABLE_CARD, width: 'fit-content', maxWidth: '100%' }}>
@@ -165,8 +153,8 @@ export function PlanVisitView({
                         {lab.name}
                         <input
                           type="radio"
-                          name={LAB_RADIO_GROUP}
-                          checked={scheduled.selectedLabId === lab.id}
+                          name={labRadioGroup}
+                          checked={visit.selectedLabId === lab.id}
                           onChange={() => onSelectLab(lab.id)}
                           title={`Show ${lab.name}'s own test names for this visit`}
                           style={{ width: 13, height: 13, margin: 0, accentColor: COLOR.primary, cursor: 'pointer' }}
@@ -250,6 +238,52 @@ export function PlanVisitView({
             </table>
           </div>
         </Card>
+      )}
+    </section>
+  );
+}
+
+/** What each scheduled visit's draw costs at each laboratory, row by row and in total -- one section per visit. */
+export function PlanVisitView({
+  visits,
+  onOpenPopup,
+  onSelectLab,
+}: Readonly<{
+  visits: ScheduledVisit[];
+  onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
+  onSelectLab: (visitId: string, labId: string | undefined) => void;
+}>) {
+  return (
+    <>
+      <PageHeader
+        overline="Laboratory Draw Planner"
+        titlePrimary="Scheduled"
+        titleAccent="Visits"
+        description={[
+          'Plan upcoming diagnostic appointments and calculate expected laboratory prices.',
+          'Select markers across panels to generate a complete ordering checklist.',
+        ]}
+        pillars={[
+          { icon: CalendarCheck, line1: 'Target month', line2: 'draw planning' },
+          { icon: Coins, line1: 'Transparent pricing', line2: 'by laboratory' },
+          { icon: CheckSquare, line1: 'One-click test', line2: 'selection' },
+        ]}
+      />
+      {visits.length === 0 ? (
+        <EmptyState>
+          Nothing is scheduled yet — tick rows in the Scheduled column of Monitoring Panels or All Observations, or add a
+          visit there with the + button next to it.
+        </EmptyState>
+      ) : (
+        visits.map((visit, i) => (
+          <VisitPlanCard
+            key={visit.id}
+            visit={visit}
+            index={i}
+            onOpenPopup={onOpenPopup}
+            onSelectLab={(labId) => onSelectLab(visit.id, labId)}
+          />
+        ))
       )}
     </>
   );

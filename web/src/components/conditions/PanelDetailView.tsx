@@ -59,6 +59,7 @@ export function PanelDetailView({
   onOpenIndexResultPopup,
   scheduling,
   indexScheduling,
+  onAddVisit,
   onBack,
 }: Readonly<{
   name: string;
@@ -74,8 +75,9 @@ export function PanelDetailView({
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
-  scheduling: RowScheduling;
-  indexScheduling: IndexScheduling;
+  scheduling: RowScheduling[];
+  indexScheduling: IndexScheduling[];
+  onAddVisit: () => void;
   onBack: () => void;
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
@@ -159,6 +161,7 @@ export function PanelDetailView({
                   onOpenIndexPopup={onOpenIndexPopup}
                   onOpenIndexResultPopup={onOpenIndexResultPopup}
                   indexScheduling={indexScheduling}
+                  onAddVisit={onAddVisit}
                   inputsOf={inputsOf}
                   usedBy={usedBy}
                 />

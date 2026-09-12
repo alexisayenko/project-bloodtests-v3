@@ -21,7 +21,7 @@ import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
-import { useScheduled } from './scheduled';
+import { useScheduled, type IndexScheduling, type RowScheduling } from './scheduled';
 import { clearAllData, restoreBackup, type BackupContents } from '../../data/backupRestore';
 import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
@@ -51,7 +51,17 @@ export function MedicalConditionsPage() {
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
-  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onSelectLab, onReload: reloadScheduled } = useScheduled();
+  const {
+    scheduledVisits,
+    onToggleRow,
+    onToggleIndex,
+    onToggleAllRows,
+    onSetMonth,
+    onSelectLab,
+    onAddVisit,
+    onRemoveVisit,
+    onReload: reloadScheduled,
+  } = useScheduled();
 
   useEffect(() => {
     saveViewSettings({ unitSystem, sampleLimit, compactPanels, medsCurrentYearOnly });
@@ -189,8 +199,22 @@ export function MedicalConditionsPage() {
   };
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit };
-  const rowScheduling = { scheduled, onToggle: onToggleRow, onToggleAll: onToggleAllRows, onSetMonth };
-  const indexScheduling = { scheduled, onToggle: onToggleIndex, onSetMonth };
+  // One RowScheduling/IndexScheduling per visit, in the same order, so a
+  // results table renders one Scheduled column per visit and the tables never
+  // cross-wire a toggle into the wrong visit's column.
+  const rowSchedulings: RowScheduling[] = scheduledVisits.visits.map((visit) => ({
+    scheduled: visit,
+    onToggle: (loincs: string[]) => onToggleRow(visit.id, loincs),
+    onToggleAll: (rows: string[][], on: boolean) => onToggleAllRows(visit.id, rows, on),
+    onSetMonth: (month: string | undefined) => onSetMonth(visit.id, month),
+    onRemove: () => onRemoveVisit(visit.id),
+  }));
+  const indexSchedulings: IndexScheduling[] = scheduledVisits.visits.map((visit) => ({
+    scheduled: visit,
+    onToggle: (key: string) => onToggleIndex(visit.id, key),
+    onSetMonth: (month: string | undefined) => onSetMonth(visit.id, month),
+    onRemove: () => onRemoveVisit(visit.id),
+  }));
 
   const panelsGrid = (
     <PanelsGridView
@@ -241,8 +265,9 @@ export function MedicalConditionsPage() {
             onOpenResultPopup={openResultPopup}
             onOpenIndexResultPopup={openIndexResultPopup}
             resultsByDate={resultsByDate}
-            scheduling={rowScheduling}
-            indexScheduling={indexScheduling}
+            scheduling={rowSchedulings}
+            indexScheduling={indexSchedulings}
+            onAddVisit={onAddVisit}
             tab={route.tab ?? DEFAULT_OBSERVATIONS_TAB}
             onTabChange={(tab) => navigate(allObservationsRoute(tab))}
           />
@@ -284,7 +309,7 @@ export function MedicalConditionsPage() {
       case 'account':
         return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':
-        return <PlanVisitView scheduled={scheduled} onOpenPopup={openPopup} onSelectLab={onSelectLab} />;
+        return <PlanVisitView visits={scheduledVisits.visits} onOpenPopup={openPopup} onSelectLab={onSelectLab} />;
       case 'reference':
         return (
           <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} onOpenPopup={openPopup} />
@@ -306,8 +331,9 @@ export function MedicalConditionsPage() {
             onSelectCell={onSelectCell}
             onOpenResultPopup={openResultPopup}
             onOpenIndexResultPopup={openIndexResultPopup}
-            scheduling={rowScheduling}
-            indexScheduling={indexScheduling}
+            scheduling={rowSchedulings}
+            indexScheduling={indexSchedulings}
+            onAddVisit={onAddVisit}
             onBack={() => navigate({ view: 'panels' })}
           />
         );

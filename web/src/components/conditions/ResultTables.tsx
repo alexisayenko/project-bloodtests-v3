@@ -32,14 +32,16 @@ import { CARD_TABLE_TD, CARD_TABLE_TH, TABLE_CARD } from '../primitives/styles';
 import { Card } from '../primitives/Card';
 
 const DATE_COL_WIDTH = 96;
-// The Scheduled column sits after an empty spacer column so it reads as a
+// The Scheduled columns sit after an empty spacer column so they read as a
 // separate block from the date grid while staying in the same table (exact
 // row alignment for free).
 const GAP_COL_WIDTH = 16;
 // Fits the header's widest row: the month pill at its longest option (91px),
-// the 8px gap, the select-all box and the cell padding. The body cells stay a
-// single glyph.
-const SCHEDULED_COL_WIDTH = 132;
+// the gaps, the select-all box, the remove button and the cell padding. The
+// body cells stay a single glyph.
+const SCHEDULED_COL_WIDTH = 152;
+// Just wide enough for the "add a visit" button, at the end of the Scheduled block.
+const ADD_COL_WIDTH = 40;
 
 const HAIRLINE = `1px solid ${COLOR.borderSubtle}`;
 
@@ -66,6 +68,7 @@ const scheduledTd = {
   fontWeight: 600,
   userSelect: 'none',
 } as const;
+const addTh = { ...th, textAlign: 'center', padding: '6px 4px' } as const;
 
 const STATUS_TEXT = { ok: COLOR.statusOkText, warn: COLOR.statusWarnText, bad: COLOR.statusBadText } as const;
 
@@ -98,21 +101,27 @@ function StatusValue({ tone, bg, children }: Readonly<{ tone: keyof typeof STATU
  * trailing auto column comes out empty and the header band and hairlines end
  * where the columns do; past the available width the card caps and scrolls.
  */
-function gridWidth(dateCount: number, scheduling: boolean): number {
-  return LABEL_COL_WIDTH + dateCount * DATE_COL_WIDTH + (scheduling ? GAP_COL_WIDTH + SCHEDULED_COL_WIDTH : 0);
+function gridWidth(dateCount: number, visitCount: number, showScheduling: boolean): number {
+  const scheduleWidth = showScheduling ? GAP_COL_WIDTH + visitCount * SCHEDULED_COL_WIDTH + ADD_COL_WIDTH : 0;
+  return LABEL_COL_WIDTH + dateCount * DATE_COL_WIDTH + scheduleWidth;
 }
 
-function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling: boolean }>) {
+function ColGroup({
+  dates, visitCount, showScheduling,
+}: Readonly<{ dates: string[]; visitCount: number; showScheduling: boolean }>) {
   return (
     <colgroup>
       <col style={{ width: LABEL_COL_WIDTH }} />
       {dates.map((date) => (
         <col key={date} style={{ width: DATE_COL_WIDTH }} />
       ))}
-      {scheduling && (
+      {showScheduling && (
         <>
           <col style={{ width: GAP_COL_WIDTH }} />
-          <col style={{ width: SCHEDULED_COL_WIDTH }} />
+          {Array.from({ length: visitCount }, (_, i) => (
+            <col key={i} style={{ width: SCHEDULED_COL_WIDTH }} />
+          ))}
+          <col style={{ width: ADD_COL_WIDTH }} />
         </>
       )}
       {/* Trailing auto column soaks up the leftover width so the grid keeps its px widths. */}
@@ -122,8 +131,8 @@ function ColGroup({ dates, scheduling }: Readonly<{ dates: string[]; scheduling:
 }
 
 function TableHead({
-  label, dates, schedule,
-}: Readonly<{ label: string; dates: string[]; schedule?: ScheduleHeaderProps }>) {
+  label, dates, schedules, onAddVisit,
+}: Readonly<{ label: string; dates: string[]; schedules?: (ScheduleHeaderProps & { visitId: string })[]; onAddVisit?: () => void }>) {
   return (
     <thead>
       <tr>
@@ -133,13 +142,36 @@ function TableHead({
             {formatMonthYear(date)}
           </th>
         ))}
-        {schedule && (
+        {onAddVisit && (
           <>
             <th style={gapTh} />
             {/* The header holds only controls, so aria-label supplies the column
                 name that the removed caption used to give it. */}
-            <th style={scheduledTh} aria-label="Scheduled">
-              <ScheduleHeader {...schedule} />
+            {schedules!.map((schedule) => (
+              <th key={schedule.visitId} style={scheduledTh} aria-label="Scheduled visit">
+                <ScheduleHeader {...schedule} />
+              </th>
+            ))}
+            <th style={addTh}>
+              <button
+                type="button"
+                onClick={onAddVisit}
+                aria-label="Add a scheduled visit"
+                title="Add a scheduled visit"
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 999,
+                  border: `1px solid ${COLOR.borderSubtle}`,
+                  background: COLOR.surface,
+                  color: COLOR.primary,
+                  fontSize: 15,
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                }}
+              >
+                +
+              </button>
             </th>
           </>
         )}
@@ -151,22 +183,24 @@ function TableHead({
 /** Single-click toggle marking a row for the next draw -- no arming step, unlike the value cells. */
 function ScheduledCell({ checked, label, onToggle }: Readonly<{ checked: boolean; label: string; onToggle: () => void }>) {
   return (
-    <>
-      <td style={gapCell} />
-      <td style={{ ...scheduledTd, position: 'relative' }} title={checked ? 'Scheduled -- click to unschedule' : 'Click to schedule'}>
-        <label style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={onToggle}
-            aria-label={`Schedule ${label}`}
-            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-          />
-          {checked ? '✓' : ''}
-        </label>
-      </td>
-    </>
+    <td style={{ ...scheduledTd, position: 'relative' }} title={checked ? 'Scheduled -- click to unschedule' : 'Click to schedule'}>
+      <label style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          aria-label={`Schedule ${label}`}
+          style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+        />
+        {checked ? '✓' : ''}
+      </label>
+    </td>
   );
+}
+
+/** The gap-column-plus-add-column pair every scheduling row ends with, so the trailing add column stays blank but present. */
+function ScheduleRowEnd() {
+  return <td style={gapCell} />;
 }
 
 /** The selected row on the other side of an index/input relation, by name and every LOINC it answers for. */
@@ -275,17 +309,16 @@ function ObservationCells({
  * exactly the grid's real columns -- never the trailing auto column, which no
  * other row fills -- and keeps the Scheduled column's side rules unbroken.
  */
-function SectionDividerRow({ label, dateCount, scheduling }: Readonly<{ label: string; dateCount: number; scheduling: boolean }>) {
+function SectionDividerRow({
+  label, dateCount, visitCount, showScheduling,
+}: Readonly<{ label: string; dateCount: number; visitCount: number; showScheduling: boolean }>) {
+  // gap column + one per visit + the add column.
+  const scheduleColSpan = visitCount + 2;
   return (
     <tr>
       <th scope="rowgroup" style={th}>{label}</th>
       {dateCount > 0 && <td colSpan={dateCount} style={th} />}
-      {scheduling && (
-        <>
-          <td style={gapTh} />
-          <td style={scheduledTh} />
-        </>
-      )}
+      {showScheduling && <td colSpan={scheduleColSpan} style={gapTh} />}
     </tr>
   );
 }
@@ -303,6 +336,7 @@ function ObservationRow({
   onOpenResultPopup,
   preferRaw,
   scheduling,
+  showScheduling,
   inputsOf,
 }: Readonly<{
   test: Observation;
@@ -316,7 +350,10 @@ function ObservationRow({
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   preferRaw?: boolean;
-  scheduling?: RowScheduling;
+  /** One entry per scheduled visit, in the same order as the header's columns. */
+  scheduling?: readonly RowScheduling[];
+  /** Whether this table renders a Scheduled block at all (so the trailing add column still gets its blank cell with zero visits). */
+  showScheduling?: boolean;
   inputsOf?: Relation;
 }>) {
   const rowLoincs = testLoincs(test);
@@ -344,12 +381,19 @@ function ObservationRow({
         onOpenResultPopup={onOpenResultPopup}
         preferRaw={preferRaw}
       />
-      {scheduling && (
-        <ScheduledCell
-          checked={isRowScheduled(scheduling.scheduled, rowLoincs)}
-          label={test.shortName}
-          onToggle={() => scheduling.onToggle(rowLoincs)}
-        />
+      {showScheduling && (
+        <>
+          <td style={gapCell} />
+          {(scheduling ?? []).map((s) => (
+            <ScheduledCell
+              key={s.scheduled.id}
+              checked={isRowScheduled(s.scheduled, rowLoincs)}
+              label={test.shortName}
+              onToggle={() => s.onToggle(rowLoincs)}
+            />
+          ))}
+          <ScheduleRowEnd />
+        </>
       )}
     </tr>
   );
@@ -366,6 +410,7 @@ function IndexDefRow({
   onSelectCell,
   onOpenIndexResultPopup,
   scheduling,
+  showScheduling,
   usedBy,
 }: Readonly<{
   def: IndexDef;
@@ -377,7 +422,9 @@ function IndexDefRow({
   onOpenPopup?: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
   onSelectCell: (key: string, date: string) => void;
   onOpenIndexResultPopup?: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
-  scheduling?: IndexScheduling;
+  /** One entry per scheduled visit, in the same order as the header's columns. */
+  scheduling?: readonly IndexScheduling[];
+  showScheduling?: boolean;
   usedBy?: Relation;
 }>) {
   const profile = { sex: loadEnvelopeMeta().sex };
@@ -426,12 +473,19 @@ function IndexDefRow({
           </td>
         );
       })}
-      {scheduling && (
-        <ScheduledCell
-          checked={isIndexScheduled(scheduling.scheduled, def.key)}
-          label={def.shortName}
-          onToggle={() => scheduling.onToggle(def.key)}
-        />
+      {showScheduling && (
+        <>
+          <td style={gapCell} />
+          {(scheduling ?? []).map((s) => (
+            <ScheduledCell
+              key={s.scheduled.id}
+              checked={isIndexScheduled(s.scheduled, def.key)}
+              label={def.shortName}
+              onToggle={() => s.onToggle(def.key)}
+            />
+          ))}
+          <ScheduleRowEnd />
+        </>
       )}
     </tr>
   );
@@ -458,9 +512,17 @@ export type ResultsTableProps = {
   onOpenIndexResultPopup?: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
   /** Show the lab's raw string (qualifiers like "<0.1") when no unit conversion applies. */
   preferRaw?: boolean;
-  /** When set, appends the Scheduled toggle column. */
-  scheduling?: RowScheduling;
-  indexScheduling?: IndexScheduling;
+  /**
+   * One entry per scheduled visit -- in the same order, and naming the same
+   * visits, as `indexScheduling` -- rendered as one Scheduled column each,
+   * plus an "add a visit" column at the end. Passing `onAddVisit` is what
+   * turns the Scheduled block on at all; an empty `scheduling` array with
+   * `onAddVisit` set is a valid, if sparse, table -- no visit columns, just
+   * the add control.
+   */
+  scheduling?: RowScheduling[];
+  indexScheduling?: IndexScheduling[];
+  onAddVisit?: () => void;
   /** The selected computed index: rows answering for any of its input `loincs` get a mark before their name. */
   inputsOf?: Relation;
   usedBy?: Relation;
@@ -487,6 +549,7 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
     preferRaw,
     scheduling,
     indexScheduling,
+    onAddVisit,
     inputsOf,
     usedBy,
   } = props;
@@ -498,26 +561,35 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
   const builtRows = rows.map((test) => ({ test, ...buildRowCells(test, visibleDates, allResults, unitSystem) }));
   const builtIndexRows = indices.map((test) => ({ test, ...buildRowCells(test, visibleDates, allResults, unitSystem) }));
 
-  const hasScheduling = Boolean(scheduling || indexScheduling);
+  const showScheduling = Boolean(onAddVisit);
+  const rowSchedulings = scheduling ?? [];
+  const indexSchedulings = indexScheduling ?? [];
+  const visitCount = rowSchedulings.length || indexSchedulings.length;
   // Select-all answers for the observation section only; indices follow their inputs.
-  const observationLoincs = scheduling ? rows.map(testLoincs) : [];
-  const observationFlags = scheduling ? observationLoincs.map((loincs) => isRowScheduled(scheduling.scheduled, loincs)) : [];
+  const observationLoincs = showScheduling ? rows.map(testLoincs) : [];
 
-  const schedule = hasScheduling && {
-    label: tableLabel,
-    month: (scheduling ?? indexScheduling)?.scheduled.month,
-    onSetMonth: (scheduling ?? indexScheduling)?.onSetMonth ?? (() => {}),
-    state: selectionState(observationFlags),
-    disabled: observationLoincs.length === 0,
-    onToggleAll: (on: boolean) => {
-      if (scheduling && observationLoincs.length > 0) scheduling.onToggleAll(observationLoincs, on);
-    },
-  };
+  const schedules = showScheduling
+    ? rowSchedulings.map((rs) => {
+        const flags = observationLoincs.map((loincs) => isRowScheduled(rs.scheduled, loincs));
+        return {
+          visitId: rs.scheduled.id,
+          label: tableLabel,
+          month: rs.scheduled.month,
+          onSetMonth: rs.onSetMonth,
+          state: selectionState(flags),
+          disabled: observationLoincs.length === 0,
+          onToggleAll: (on: boolean) => {
+            if (observationLoincs.length > 0) rs.onToggleAll(observationLoincs, on);
+          },
+          onRemove: rs.onRemove,
+        };
+      })
+    : undefined;
 
   const table = (
     <TableScroller
-      colgroup={<ColGroup dates={visibleDates} scheduling={hasScheduling} />}
-      head={<TableHead label={tableLabel} dates={visibleDates} schedule={schedule || undefined} />}
+      colgroup={<ColGroup dates={visibleDates} visitCount={visitCount} showScheduling={showScheduling} />}
+      head={<TableHead label={tableLabel} dates={visibleDates} schedules={schedules} onAddVisit={onAddVisit} />}
     >
       <tbody>
         {builtRows.map(({ test, cells, rowUnit, showCellUnits }) => (
@@ -534,12 +606,19 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
             onSelectCell={onSelectCell}
             onOpenResultPopup={onOpenResultPopup}
             preferRaw={preferRaw}
-            scheduling={scheduling}
+            scheduling={rowSchedulings}
+            showScheduling={showScheduling}
             inputsOf={inputsOf}
           />
         ))}
         {hasObs && hasIndices && (
-          <SectionDividerRow key="__indices_divider__" label="Indices" dateCount={visibleDates.length} scheduling={hasScheduling} />
+          <SectionDividerRow
+            key="__indices_divider__"
+            label="Indices"
+            dateCount={visibleDates.length}
+            visitCount={visitCount}
+            showScheduling={showScheduling}
+          />
         )}
         {builtIndexRows.map(({ test, cells, rowUnit, showCellUnits }) => (
           <ObservationRow
@@ -555,7 +634,8 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
             onSelectCell={onSelectCell}
             onOpenResultPopup={onOpenResultPopup}
             preferRaw={preferRaw}
-            scheduling={scheduling}
+            scheduling={rowSchedulings}
+            showScheduling={showScheduling}
             inputsOf={inputsOf}
           />
         ))}
@@ -571,7 +651,8 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
             onOpenPopup={onOpenIndexPopup}
             onSelectCell={onSelectCell}
             onOpenIndexResultPopup={onOpenIndexResultPopup}
-            scheduling={indexScheduling}
+            scheduling={indexSchedulings}
+            showScheduling={showScheduling}
             usedBy={usedBy}
           />
         ))}
@@ -580,7 +661,10 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
   );
 
   return (
-    <Card className="mc-results-card" style={{ ...TABLE_CARD, width: `min(100%, ${gridWidth(visibleDates.length, hasScheduling) + 2}px)` }}>
+    <Card
+      className="mc-results-card"
+      style={{ ...TABLE_CARD, width: `min(100%, ${gridWidth(visibleDates.length, visitCount, showScheduling) + 2}px)` }}
+    >
       {table}
     </Card>
   );

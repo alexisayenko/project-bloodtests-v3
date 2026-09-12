@@ -89,6 +89,7 @@ export function AllObservationsView({
   resultsByDate,
   scheduling,
   indexScheduling,
+  onAddVisit,
   tab,
   onTabChange,
 }: Readonly<{
@@ -118,9 +119,10 @@ export function AllObservationsView({
    * buildExploreModel's doc comment).
    */
   resultsByDate: Record<string, Record<string, Result>>;
-  /** Shared with Panel Detail, so a row toggled in either view is the same row. */
-  scheduling: RowScheduling;
-  indexScheduling: IndexScheduling;
+  /** Shared with Panel Detail, so a row toggled in either view is the same row. One entry per scheduled visit. */
+  scheduling: RowScheduling[];
+  indexScheduling: IndexScheduling[];
+  onAddVisit: () => void;
   /** Owned by the route (`#all/<tab>`), so a tab is linkable and back/forward returns to it. */
   tab: ObservationsTab;
   onTabChange: (tab: ObservationsTab) => void;
@@ -194,6 +196,7 @@ export function AllObservationsView({
                 onOpenIndexResultPopup={onOpenIndexResultPopup}
                 scheduling={scheduling}
                 indexScheduling={indexScheduling}
+                onAddVisit={onAddVisit}
                 preferRaw
               />
             )}
