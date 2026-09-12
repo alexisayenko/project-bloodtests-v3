@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { MARKER_LOINC } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { isMonthKey, monthKeyOf } from '../../data/months';
+import { LABORATORIES } from '../../data/labPricing';
 import { LOINC_TO_MARKER } from './markers';
 
 // Which observations (by LOINC) and computed indices (by key) are marked for
@@ -15,8 +16,17 @@ export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
 // what an <input type="month"> would have produced anyway.
 // Stored schedules and backups may still carry a `lab` key from when the
 // schedule was costed at one laboratory; it is ignored like any unknown field.
-export type Scheduled = { loincs: string[]; indices: string[]; month?: string };
+// `selectedLabId` is a distinct, newer field -- the one laboratory the owner is
+// actually going to for this visit, used to swap row labels to that lab's own
+// product names. It does not collide with the retired `lab` key's name, so an
+// old backup's stray `lab` value stays correctly ignored rather than being
+// picked up as a selection.
+export type Scheduled = { loincs: string[]; indices: string[]; month?: string; selectedLabId?: string };
 export const EMPTY_SCHEDULED: Scheduled = { loincs: [], indices: [] };
+
+function isLabId(value: unknown): value is string {
+  return typeof value === 'string' && LABORATORIES.some((lab) => lab.id === value);
+}
 
 /** How many of a table's rows are scheduled, for the header's tri-state box. */
 export type SelectionState = 'none' | 'some' | 'all';
@@ -59,6 +69,7 @@ export function parseScheduled(raw: string | null): Scheduled {
         loincs: Array.isArray(parsed.loincs) ? parsed.loincs.filter((x): x is string => typeof x === 'string') : [],
         indices: Array.isArray(parsed.indices) ? parsed.indices.filter((x): x is string => typeof x === 'string') : [],
         month: isMonthKey(parsed.month) ? parsed.month : undefined,
+        selectedLabId: isLabId(parsed.selectedLabId) ? parsed.selectedLabId : undefined,
       };
     }
   } catch {
@@ -149,6 +160,11 @@ export function setScheduleMonth(scheduled: Scheduled, month: string | undefined
   return { ...scheduled, month: isMonthKey(month) ? month : undefined };
 }
 
+/** The one laboratory the owner is actually going to for this visit, or undefined to fall back to generic names. */
+export function setSelectedLab(scheduled: Scheduled, labId: string | undefined): Scheduled {
+  return { ...scheduled, selectedLabId: isLabId(labId) ? labId : undefined };
+}
+
 export function selectionState(flags: readonly boolean[]): SelectionState {
   if (flags.every((f) => !f)) return 'none';
   return flags.every(Boolean) ? 'all' : 'some';
@@ -178,7 +194,8 @@ export function useScheduled() {
     []
   );
   const onSetMonth = useCallback((month: string | undefined) => setScheduled((s) => setScheduleMonth(s, month)), []);
+  const onSelectLab = useCallback((labId: string | undefined) => setScheduled((s) => setSelectedLab(s, labId)), []);
   const onReload = useCallback(() => setScheduled(loadScheduled()), []);
 
-  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onReload };
+  return { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onSelectLab, onReload };
 }

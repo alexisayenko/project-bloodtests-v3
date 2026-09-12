@@ -31,3 +31,19 @@ export function planCells(rows: readonly string[], lab: Laboratory): PlanCell[] 
     return { kind: 'priced', line };
   });
 }
+
+/** What a row's Observation cell should display for one laboratory. */
+export type PlanRowLabel = { text: string; url?: string; isFallback: boolean };
+
+/**
+ * With no laboratory selected (`cell` undefined) a row shows the app's own
+ * generic name. Once one is selected, a row it prices shows that laboratory's
+ * own product name (linked when the price line carries a `url`); a row it
+ * does not price falls back to the generic name, flagged so that fallback
+ * reads as "not this lab's own name" rather than as the lab's own choice.
+ */
+export function planRowLabel(cell: PlanCell | undefined, genericLabel: string): PlanRowLabel {
+  if (!cell) return { text: genericLabel, isFallback: false };
+  if (cell.kind === 'unpriced') return { text: genericLabel, isFallback: true };
+  return { text: cell.line.label, url: cell.line.url, isFallback: false };
+}

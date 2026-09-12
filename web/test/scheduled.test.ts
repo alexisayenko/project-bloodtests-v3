@@ -11,12 +11,14 @@ import {
   selectionState,
   setRowsScheduled,
   setScheduleMonth,
+  setSelectedLab,
   toggleIndex,
   toggleRow,
 } from '../src/components/conditions/scheduled';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../src/data/analyteCatalog';
 import { testLoincs } from '../src/components/conditions/markers';
+import { LABORATORIES } from '../src/data/labPricing';
 
 describe('toggleRow', () => {
   it('schedules and unschedules a plain LOINC', () => {
@@ -207,6 +209,51 @@ describe('a stored laboratory, which nothing sets any more', () => {
     store.set(SCHEDULED_KEY, '{"loincs":["2093-3"],"indices":[],"month":"2027-03","lab":"esculab"}');
     saveScheduled(loadScheduled());
     expect(store.get(SCHEDULED_KEY)).toBe('{"loincs":["2093-3"],"indices":[],"month":"2027-03"}');
+  });
+
+  // `lab` is the retired, now-unused key; `selectedLabId` is the new one. A
+  // stray `lab` left by an old backup must never be picked up as a selection,
+  // even though both name a laboratory id.
+  it('does not read a legacy lab key as the new selectedLabId', () => {
+    store.set(SCHEDULED_KEY, '{"loincs":[],"indices":[],"lab":"esculab"}');
+    expect(loadScheduled().selectedLabId).toBeUndefined();
+  });
+});
+
+describe('the selected laboratory', () => {
+  const store = new Map<string, string>();
+  const realLabId = LABORATORIES[0]!.id;
+
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, String(v)),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('round-trips through storage like month does', () => {
+    saveScheduled({ loincs: [], indices: [], selectedLabId: realLabId });
+    expect(loadScheduled()).toEqual({ loincs: [], indices: [], selectedLabId: realLabId });
+  });
+
+  it('writes no selectedLabId key when none is set', () => {
+    saveScheduled({ loincs: ['2093-3'], indices: [] });
+    expect(store.get(SCHEDULED_KEY)).toBe('{"loincs":["2093-3"],"indices":[]}');
+  });
+
+  it('ignores a stored id that names no known laboratory', () => {
+    store.set(SCHEDULED_KEY, `{"loincs":[],"indices":[],"selectedLabId":"no-such-lab"}`);
+    expect(loadScheduled().selectedLabId).toBeUndefined();
+    expect(setSelectedLab(EMPTY_SCHEDULED, 'no-such-lab').selectedLabId).toBeUndefined();
+    expect(setSelectedLab(EMPTY_SCHEDULED, undefined).selectedLabId).toBeUndefined();
+  });
+
+  it('sets and clears through setSelectedLab', () => {
+    const picked = setSelectedLab(EMPTY_SCHEDULED, realLabId);
+    expect(picked.selectedLabId).toBe(realLabId);
+    expect(setSelectedLab(picked, undefined).selectedLabId).toBeUndefined();
   });
 });
 

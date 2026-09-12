@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { quoteSchedule, type Laboratory } from '../src/data/labPricing';
-import { planCells, planRows, type PlanCell } from '../src/data/visitPlan';
+import { planCells, planRowLabel, planRows, type PlanCell } from '../src/data/visitPlan';
 
 const lab: Laboratory = {
   id: 'test-lab',
@@ -49,5 +49,34 @@ describe('planRows', () => {
   it('orders rows by LOINC name', () => {
     expect(planRows(['2093-3', '2085-9'])).toEqual(['2093-3', '2085-9']);
     expect(planRows(['2085-9', '2093-3'])).toEqual(['2093-3', '2085-9']);
+  });
+});
+
+describe('planRowLabel', () => {
+  const genericLabel = 'Total Cholesterol (TC)';
+
+  it('shows the generic name when no laboratory is selected', () => {
+    expect(planRowLabel(undefined, genericLabel)).toEqual({ text: genericLabel, isFallback: false });
+  });
+
+  it("shows the laboratory's own name and link when it prices the row", () => {
+    const [cell] = planCells(['2093-3'], { ...lab, prices: [{ label: 'TC', price: 167, covers: ['2093-3'], url: 'https://lab.example/tc' }] });
+    expect(planRowLabel(cell!, genericLabel)).toEqual({ text: 'TC', url: 'https://lab.example/tc', isFallback: false });
+  });
+
+  it("shows the laboratory's own name with no link when the price line carries none", () => {
+    const [cell] = planCells(['2093-3'], lab);
+    expect(planRowLabel(cell!, genericLabel)).toEqual({ text: 'TC', url: undefined, isFallback: false });
+  });
+
+  it('shows the same name for a bundled row, taken from the bundle line', () => {
+    const rows = ['718-7', '6690-2'];
+    const [, bundled] = planCells(rows, lab);
+    expect(planRowLabel(bundled!, genericLabel)).toEqual({ text: 'FBC', url: undefined, isFallback: false });
+  });
+
+  it('falls back to the generic name, flagged, when the selected laboratory does not price the row', () => {
+    const [cell] = planCells(['1742-6'], lab);
+    expect(planRowLabel(cell!, genericLabel)).toEqual({ text: genericLabel, isFallback: true });
   });
 });

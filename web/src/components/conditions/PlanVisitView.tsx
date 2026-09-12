@@ -1,7 +1,7 @@
 import type { Scheduled } from './scheduled';
 import { formatMonthFullYear } from '../../data/months';
 import { LABORATORIES, formatPrice, quoteSchedule, type LabQuote, type Laboratory } from '../../data/labPricing';
-import { planCells, planRows, type PlanCell } from '../../data/visitPlan';
+import { planCells, planRows, planRowLabel, type PlanCell } from '../../data/visitPlan';
 import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
 import type { Observation } from './markers';
 import { pressable } from './ui';
@@ -66,18 +66,28 @@ function TotalCell({ lab, quote, cheapest }: Readonly<{ lab: Laboratory; quote: 
   );
 }
 
+const LAB_RADIO_GROUP = 'plan-visit-lab';
+
+/** Stop a click/keypress on a nested control (a lab's own link) from also firing the row's popup handler. */
+function stopBubble(e: { stopPropagation: () => void }): void {
+  e.stopPropagation();
+}
+
 /** What the scheduled draw costs at each laboratory, row by row and in total. */
 export function PlanVisitView({
   scheduled,
   onOpenPopup,
+  onSelectLab,
 }: Readonly<{
   scheduled: Scheduled;
   onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
+  onSelectLab: (labId: string | undefined) => void;
 }>) {
   const rows = planRows(scheduled.loincs);
   const cells = LABORATORIES.map((lab) => planCells(rows, lab));
   const quotes = LABORATORIES.map((lab) => quoteSchedule(scheduled.loincs, lab));
   const cheapest = cheapestLabIds(quotes);
+  const selectedLabIndex = LABORATORIES.findIndex((lab) => lab.id === scheduled.selectedLabId);
 
   return (
     <>
@@ -126,11 +136,42 @@ export function PlanVisitView({
             <table style={{ ...TABLE, fontSize: 14 }}>
               <thead>
                 <tr>
-                  <th style={th}>Observation</th>
+                  <th style={th}>
+                    Observation
+                    {selectedLabIndex >= 0 && (
+                      <button
+                        type="button"
+                        onClick={() => onSelectLab(undefined)}
+                        style={{
+                          marginLeft: 8,
+                          fontSize: 11,
+                          fontWeight: 400,
+                          color: COLOR.textMuted,
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        Show generic names
+                      </button>
+                    )}
+                  </th>
                   <th style={gapTh} />
                   {LABORATORIES.map((lab) => (
                     <th key={lab.id} style={labTh} title={`Prices as of ${lab.pricesAsOf}`}>
-                      {lab.name}
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontWeight: 'inherit' }}>
+                        {lab.name}
+                        <input
+                          type="radio"
+                          name={LAB_RADIO_GROUP}
+                          checked={scheduled.selectedLabId === lab.id}
+                          onChange={() => onSelectLab(lab.id)}
+                          title={`Show ${lab.name}'s own test names for this visit`}
+                          style={{ width: 13, height: 13, margin: 0, accentColor: COLOR.primary, cursor: 'pointer' }}
+                        />
+                      </label>
                     </th>
                   ))}
                 </tr>
@@ -152,6 +193,9 @@ export function PlanVisitView({
                     also: ALSO_REFS[code],
                   };
 
+                  const selectedCell = selectedLabIndex >= 0 ? cells[selectedLabIndex]![i] : undefined;
+                  const rowLabel = planRowLabel(selectedCell, label);
+
                   return (
                     <tr key={code}>
                       <td
@@ -166,7 +210,24 @@ export function PlanVisitView({
                           color: COLOR.navy,
                         }}
                       >
-                        {label}
+                        {rowLabel.url ? (
+                          <a
+                            href={rowLabel.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={stopBubble}
+                            onKeyDown={stopBubble}
+                            style={{ color: 'inherit' }}
+                          >
+                            {rowLabel.text}
+                          </a>
+                        ) : rowLabel.isFallback ? (
+                          <span title="Not priced under its own name at this laboratory — showing the app's generic name" style={{ fontStyle: 'italic' }}>
+                            {rowLabel.text}
+                          </span>
+                        ) : (
+                          rowLabel.text
+                        )}
                       </td>
                       <td style={gapCell} />
                       {LABORATORIES.map((lab, l) => (

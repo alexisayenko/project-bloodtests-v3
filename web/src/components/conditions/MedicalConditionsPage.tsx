@@ -50,7 +50,7 @@ export function MedicalConditionsPage() {
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
-  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onReload: reloadScheduled } = useScheduled();
+  const { scheduled, onToggleRow, onToggleIndex, onToggleAllRows, onSetMonth, onSelectLab, onReload: reloadScheduled } = useScheduled();
 
   useEffect(() => {
     saveViewSettings({ unitSystem, sampleLimit, compactPanels });
@@ -284,7 +284,7 @@ export function MedicalConditionsPage() {
       case 'account':
         return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':
-        return <PlanVisitView scheduled={scheduled} onOpenPopup={openPopup} />;
+        return <PlanVisitView scheduled={scheduled} onOpenPopup={openPopup} onSelectLab={onSelectLab} />;
       case 'reference':
         return (
           <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} onOpenPopup={openPopup} />
