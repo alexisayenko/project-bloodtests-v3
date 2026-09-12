@@ -30,6 +30,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0012](adr-0012-envelope-version-is-a-major-minor-string.md) | The envelope version is a `"major.minor"` string | accepted · 2026-09-09 |
 | [ADR-0013](adr-0013-u-and-iu-fold-by-loinc-property.md) | `U` and `IU` are one unit only where the analyte's LOINC property says so | accepted · 2026-09-09 |
 | [ADR-0014](adr-0014-pathway-wiring-is-mermaid-generated-to-json.md) | Pathway wiring is written in Mermaid and generated to JSON | accepted · 2026-09-11 |
+| [ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md) | Opt-in "dedicated server" storage, authenticated by a bearer token, not OAuth | accepted · 2026-09-12 |
 
 ## Where each one bites
 
@@ -70,6 +71,10 @@ Each record opens with `# ADR-NNNN: <title>` and a
   to `web/public/data/pathways.json`, the same single-source rule as
   0010; see the [pathway](../../product/concepts/pathway.md) concept and
   [task-0024](../../tasks/task-0024.md).
+- **Sync / storage backend** — 0015, still unbuilt: an opt-in dedicated
+  server storage mode beside the unchanged local-only default, bearer-token
+  authenticated, syncing the existing backup-bundle shape; supersedes the
+  auth model in [task-0025](../../tasks/task-0025.md).
 
 ## Adding one
 
