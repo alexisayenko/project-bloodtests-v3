@@ -91,21 +91,53 @@ re-argued here:**
   Supabase Auth (GoTrue), same underlying need, different vendor.
 
 **Specifics settled in conversation with Alex since this ADR was first
-accepted — filling in the same decision, not reopening it:**
+accepted — filling in the same decision, not reopening it.** This is not
+one flat "everyone logs in and uses Firestore" model — it is three usage
+tiers, and login and storage-mode are two separate axes, not one choice:
 
+- **Tier 1 — no login at all.** The app stays fully usable with zero
+  auth, exactly as it is today: demo/test data generation (Get Started's
+  "Want a demo first?" flow) and manual JSON import both keep working
+  unchanged, with data in today's existing global, unscoped localStorage
+  — the same keys, the same shape, no namespacing. This is the
+  zero-friction, no-signup path, and it must not regress: nothing about
+  adding Firebase login puts a login wall in front of the app. Tier 1
+  has no auth layer at all, so the "storage mode is a per-user choice"
+  point below does not apply to it.
+- **Tier 2 — logged in (Firebase Auth: Google or Apple), local storage
+  mode.** For when multiple real people share one browser/device and
+  need their own separate local data without clobbering each other.
+  Logging in does not by itself move anyone's data to Firestore — it
+  namespaces the existing local storage by the logged-in person's
+  Firebase UID instead, e.g. today's global `bloodtests_upload_v1`
+  becomes a per-UID key. Flagged explicitly as a real refactor, not a
+  small change: every current localStorage call site in the app reads
+  and writes today's global keys, and each one needs to become
+  UID-aware.
+- **Tier 3 — logged in, cloud storage mode.** Opt-in upload to
+  Firestore, syncing that person's own data across their own devices —
+  the Firestore-native-JSON, one-document-per-person, `request.auth.uid`
+  -gated design below.
+- **Storage mode is a separate, per-logged-in-user setting, not
+  something login itself decides.** A logged-in user explicitly chooses
+  local (tier 2) or cloud (tier 3); logging in does not imply cloud
+  sync. This is ADR-0015's original "local stays the default, opt-in
+  server mode" principle, carried forward for the two logged-in tiers
+  specifically, now sitting under a real per-person auth layer instead
+  of anonymous localStorage.
 - **Auth providers**: both Google Sign-In and Sign in with Apple. Alex
   already holds a paid Apple Developer account for an unrelated shipped
   app, so the usual $99/year objection to adding Apple sign-in doesn't
   apply here — the marginal cost is just the Firebase Auth configuration
   work (a Services ID and a private key), not a new yearly fee.
-- **Data storage shape**: no zip file. Firestore stores the Account
-  backup-bundle content (lab-reports, medications, scheduled-visits,
-  settings) natively as JSON fields on a document, skipping the
-  zip/unzip step the local Account-backup export uses today
+- **Data storage shape (tier 3)**: no zip file. Firestore stores the
+  Account backup-bundle content (lab-reports, medications,
+  scheduled-visits, settings) natively as JSON fields on a document,
+  skipping the zip/unzip step the local Account-backup export uses today
   (`data/backupArchive.ts` / `data/backupRestore.ts`). Firestore's 1 MiB
   per-document size ceiling is a known constraint — currently
   comfortable for this payload, but worth remembering as it grows.
-- **Per-user data model**: one Firestore document per person,
+- **Per-user data model (tier 3)**: one Firestore document per person,
   access-controlled by Firebase Auth — each person's security rules
   grant access only to their own document (`allow read, write: if
   request.auth.uid == <doc's owner uid>`). No shared or admin
@@ -115,6 +147,28 @@ accepted — filling in the same decision, not reopening it:**
   needed. A caregiver/admin-style single-login-sees-both-profiles model
   was explicitly considered and rejected in favor of this simpler, fully
   separate-accounts approach.
+- **localStorage is not encrypted.** This applies to tiers 1 and 2
+  alike, and is a correction, not new information: localStorage is
+  plaintext on disk, protected only by OS file permissions and
+  same-origin policy — readable by anyone with access to the device or
+  browser profile, or via an XSS bug. This is the same property today's
+  app already has; namespacing keys by Firebase UID in tier 2 changes
+  who a key belongs to, not whether its contents are readable at rest.
+  Stating it plainly here so it isn't implied to mean "secure" going
+  forward.
+- **Existing privacy copy becomes an overclaim once cloud sync exists as
+  an option.** The footer's "Your data stays in this browser" line
+  (`web/src/components/conditions/TopBar.tsx`) and Get Started's privacy
+  pitch, "All processing occurs locally in your browser — client-side
+  persistence, zero server transmission..."
+  (`web/src/components/conditions/ProfileView.tsx`), both stay true for
+  tiers 1 and 2, but stop being true for anyone who opts into tier 3.
+  The plan is to replace the blanket claim with a small, honest,
+  currently-accurate-per-user indicator — e.g. "Local" / "Synced to
+  cloud" — reflecting each person's actual current choice, rather than
+  one static sentence for everyone. This is a UI/copy change to make
+  during implementation; recorded here as intent only, not worded
+  further now.
 
 **Out of scope for this ADR and this repo:** whether Alex's other two
 projects (`project-travel`, `project-wardrobe`, both currently on

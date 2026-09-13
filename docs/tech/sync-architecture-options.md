@@ -145,17 +145,21 @@ Consequences and "What would force revisiting") comes back into focus.
 
 Distinct from all of the above: [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md)
 now carries the concrete, settled design for the near-term build, so it
-is the single source of truth rather than restated here. In short —
-real per-user Firebase Auth (Google Sign-In and Sign in with Apple),
-one Firestore document per person keyed to that person's own Firebase
-Auth uid and access-controlled by security rules, and switching between
-people done by the plain sign-out/sign-in flow on the same
-device/browser, not a profile picker standing in for authentication.
-An earlier draft of this section described a different near-term plan —
-no Google/Apple sign-in, a bare profile picker with no auth boundary —
-which is now superseded and no longer accurate; read ADR-0018's Decision
-section for what actually replaced it, including the storage-shape and
-per-document details.
+is the single source of truth rather than restated here. In short — the
+app stays fully usable with no login at all (today's unchanged, global,
+unscoped localStorage); a logged-in person (real per-person Firebase
+Auth, Google Sign-In and Sign in with Apple) then separately chooses
+local storage (their own UID-namespaced slice of that same localStorage,
+for shared devices) or cloud storage (one Firestore document per person
+keyed to their Firebase Auth uid and access-controlled by security
+rules); and switching between logged-in people is the plain
+sign-out/sign-in flow on the same device/browser, not a profile picker
+standing in for authentication. An earlier draft of this section
+described a different near-term plan — no Google/Apple sign-in, a bare
+profile picker with no auth boundary — which is now superseded and no
+longer accurate; read ADR-0018's Decision and "Specifics settled"
+sections for what actually replaced it, including the three usage tiers
+and the storage-shape and per-document details.
 
 This remains a narrower scope than the fuller designs in sections 1–2
 above (no end-to-end encryption, still the plaintext-in-a-trusted-backend
