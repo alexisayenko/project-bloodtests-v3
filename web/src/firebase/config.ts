@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBShF4qjrJ_K9nRf_yu-QApowkTrfnxOfE',
-  authDomain: 'bloodtests-v3.firebaseapp.com',
+  authDomain: 'paneloom.firebaseapp.com',
   projectId: 'bloodtests-v3',
   storageBucket: 'bloodtests-v3.firebasestorage.app',
   messagingSenderId: '173265870142',

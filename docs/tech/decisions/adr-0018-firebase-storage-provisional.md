@@ -247,3 +247,19 @@ not started.
   namespacing by uid, no Firestore reads/writes, no storage-mode
   picker, no migration flow, and no change to the TopBar's "your data
   stays in this browser" copy — all still to come.
+- 2026-09-13: Custom auth domain. The Google consent screen's "to
+  continue to bloodtests-v3.firebaseapp.com" line was a giveaway of the
+  underlying project — a project ID is immutable once created, but a
+  second Firebase Hosting site named `paneloom` (`paneloom.web.app` /
+  `paneloom.firebaseapp.com`, a name that happened to be free) can carry
+  the auth handler pages instead. Created via the Firebase CLI
+  (`firebase hosting:sites:create paneloom`) with a one-file placeholder
+  deploy to activate its `/__/auth/handler` route; `authDomain` in
+  `web/src/firebase/config.ts` now points there, `paneloom.firebaseapp.com`
+  is in Firebase Auth's authorized domains, and Apple's Services ID
+  (`org.isayenko.paneloom.web`) carries the matching domain/return-URL
+  pair alongside the old `bloodtests-v3.firebaseapp.com` ones (left in
+  place rather than removed, since nothing depends on tidying them up).
+  This required enabling Firebase Hosting after all, for exactly this
+  one narrow purpose — the actual app still deploys via Cloudflare
+  Workers, and this Hosting site serves nothing else.
