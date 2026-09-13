@@ -143,29 +143,22 @@ Consequences and "What would force revisiting") comes back into focus.
 
 ## 3. What's actually being built right now, for contrast
 
-Distinct from all of the above, and decided after this whole
-discussion: Alex asked for a deliberately narrower, faster near-term
-plan rather than any of the fuller designs in sections 1–2.
+Distinct from all of the above: [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md)
+now carries the concrete, settled design for the near-term build, so it
+is the single source of truth rather than restated here. In short —
+real per-user Firebase Auth (Google Sign-In and Sign in with Apple),
+one Firestore document per person keyed to that person's own Firebase
+Auth uid and access-controlled by security rules, and switching between
+people done by the plain sign-out/sign-in flow on the same
+device/browser, not a profile picker standing in for authentication.
+An earlier draft of this section described a different near-term plan —
+no Google/Apple sign-in, a bare profile picker with no auth boundary —
+which is now superseded and no longer accurate; read ADR-0018's Decision
+section for what actually replaced it, including the storage-shape and
+per-document details.
 
-- **Centralized storage**, Firebase Firestore, per ADR-0018.
-- **One document per profile** (Alex, his mother) rather than per-user
-  accounts.
-- **A simple in-app profile picker** to switch which profile's data is
-  being read and written.
-- **Explicitly not** Google Sign-In or any real per-person
-  authentication — the profile picker is a UI convenience, not an auth
-  boundary.
-- **Explicitly not** end-to-end encrypted — this is the plaintext-in-
-  a-trusted-backend model section 2 reframes, not the zero-knowledge
-  one.
-- **Explicitly drops** ADR-0015's local-storage-stays-default /
-  opt-in-server-mode toggle. There is no "local" vs "dedicated server"
-  choice in this near-term plan — storage is simply centralized.
-
-This is a narrower scope than any of ADR-0015 through ADR-0018 actually
-specify, and it has not yet been written up as its own ADR or task
-ticket — this document is not that record. When the implementation
-work is scoped, it belongs in a new ADR (recording the profile-picker
-model as a further departure from ADR-0015's shape) or a task ticket
-under `docs/tasks/`, whichever this project's normal process reaches
-for first. Until then, this paragraph is the only pointer to it.
+This remains a narrower scope than the fuller designs in sections 1–2
+above (no end-to-end encryption, still the plaintext-in-a-trusted-backend
+model section 2 reframes), and it has not yet been written up as a task
+ticket. When the implementation work is scoped, it belongs under
+`docs/tasks/`.

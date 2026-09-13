@@ -87,8 +87,34 @@ re-argued here:**
 - The synced payload stays the existing Account backup-bundle shape
   (`data/backupArchive.ts` / `data/backupRestore.ts`).
 - Real accounts and a real login flow are still the goal — Firebase Auth
-  (Google Sign-In) fills the role ADR-0017 gave Supabase Auth (GoTrue),
-  same underlying need, different vendor.
+  (Google Sign-In and Sign in with Apple) fills the role ADR-0017 gave
+  Supabase Auth (GoTrue), same underlying need, different vendor.
+
+**Specifics settled in conversation with Alex since this ADR was first
+accepted — filling in the same decision, not reopening it:**
+
+- **Auth providers**: both Google Sign-In and Sign in with Apple. Alex
+  already holds a paid Apple Developer account for an unrelated shipped
+  app, so the usual $99/year objection to adding Apple sign-in doesn't
+  apply here — the marginal cost is just the Firebase Auth configuration
+  work (a Services ID and a private key), not a new yearly fee.
+- **Data storage shape**: no zip file. Firestore stores the Account
+  backup-bundle content (lab-reports, medications, scheduled-visits,
+  settings) natively as JSON fields on a document, skipping the
+  zip/unzip step the local Account-backup export uses today
+  (`data/backupArchive.ts` / `data/backupRestore.ts`). Firestore's 1 MiB
+  per-document size ceiling is a known constraint — currently
+  comfortable for this payload, but worth remembering as it grows.
+- **Per-user data model**: one Firestore document per person,
+  access-controlled by Firebase Auth — each person's security rules
+  grant access only to their own document (`allow read, write: if
+  request.auth.uid == <doc's owner uid>`). No shared or admin
+  cross-access between, say, Alex's and his mother's data.
+- **"Switching users" UX**: the plain, standard flow — sign out, then
+  sign back in as the other person on the same device/browser when
+  needed. A caregiver/admin-style single-login-sees-both-profiles model
+  was explicitly considered and rejected in favor of this simpler, fully
+  separate-accounts approach.
 
 **Out of scope for this ADR and this repo:** whether Alex's other two
 projects (`project-travel`, `project-wardrobe`, both currently on
