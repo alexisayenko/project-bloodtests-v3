@@ -288,3 +288,25 @@ not started.
   is lost by that wipe — by the time sign-out is possible, the data is
   already durable in Firestore. Not yet implemented: this is a design
   decision recorded ahead of the code that will carry it out.
+- 2026-09-14: Two-tier cutover implemented. `web/src/firebase/firestore.ts`
+  adds `pullCloudFiles`/`pushCloudFiles`, reading and writing one document
+  at `users/{uid}` with the backup-bundle's parts as native camelCase
+  fields (`manifest`, `labReports`, `medications`, `scheduledVisits`,
+  `settings` — `laboratory-prices.json` is never synced, same as local
+  restore already treats it: the shipped registry wins). `AccountAuthCard`
+  (`AccountView.tsx`) now runs the actual cutover instead of just calling
+  Firebase Auth: sign-in pulls the cloud document if one exists for that
+  UID (cloud wins, restored through the existing `onImportAll` — the same
+  path Import-all-data already used) or, if none exists yet, pushes
+  today's local data up as the first cloud copy; sign-out pushes current
+  local state up *before* anything else, and only once that succeeds does
+  it call `signOutUser()` and then `onClearAll()` to wipe the local
+  copy — so the "already durable in Firestore" claim above actually holds,
+  rather than assuming a push happened at some earlier point that was
+  never specified. A failed push blocks the rest of the sign-out sequence
+  rather than wiping local data it couldn't save. No storage-mode picker,
+  no ongoing sync beyond these two boundary moments, per the ADR. Not yet
+  done: the TopBar's "Your data stays in this browser" line and Get
+  Started's local-processing pitch are still static and now genuinely
+  wrong for anyone signed in — swapping them for an auth-state-driven
+  indicator is the next piece, not this one.

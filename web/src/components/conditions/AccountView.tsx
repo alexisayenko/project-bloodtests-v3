@@ -7,34 +7,78 @@ import { Database, Download, HardDriveDownload, LogIn, SlidersHorizontal, Trash2
 import { PageHeader } from './PageHeader';
 import { Button, Card, CardDescription, CardHeader, CardTitle, DangerCard, FIELD_INPUT, FileButton, IconBadge, buttonStyle } from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
+import type { UserCredential } from 'firebase/auth';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { signInWithApple, signInWithGoogle, signOutUser } from '../../firebase/auth';
+import { pullCloudFiles, pushCloudFiles } from '../../firebase/firestore';
 
 const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
 
-/** Firebase sign-in/out. Optional, future cloud sync only — does not touch local data yet (ADR-0018). */
-function AccountAuthCard() {
+async function currentLocalFiles(sessions: DiagnosticReport[]): Promise<Record<string, string>> {
+  return buildBackupFiles({
+    sessions,
+    meta: loadEnvelopeMeta(),
+    storage: localStorage,
+    app: { commit: __BUILD_COMMIT__, builtAt: __BUILD_TIME__ },
+    now: new Date(),
+  });
+}
+
+/** Firebase sign-in/out with the ADR-0018 one-time cutover: sign-in resolves cloud-vs-local (cloud wins if a document exists,
+ * otherwise today's local data becomes the first cloud copy), sign-out pushes latest local state up, then wipes it. */
+function AccountAuthCard({
+  sessions,
+  onImportAll,
+  onClearAll,
+}: Readonly<{
+  sessions: DiagnosticReport[];
+  onImportAll: (backup: BackupContents) => Promise<string[]>;
+  onClearAll: () => void;
+}>) {
   const { user, loading } = useAuthUser();
   const [error, setError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [justSignedOut, setJustSignedOut] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  async function run(task: () => Promise<unknown>) {
+  function flashNotice(message: string) {
+    setNotice(message);
+    setTimeout(() => setNotice(null), 4000);
+  }
+
+  async function syncAfterSignIn(uid: string) {
+    const cloudFiles = await pullCloudFiles(uid);
+    if (cloudFiles) {
+      await onImportAll(readBackup(cloudFiles));
+      flashNotice('✓ Synced from cloud.');
+    } else {
+      await pushCloudFiles(uid, await currentLocalFiles(sessions));
+      flashNotice('✓ Backed up to cloud.');
+    }
+  }
+
+  async function handleSignIn(signIn: () => Promise<UserCredential>) {
     setError(null);
+    setSigningIn(true);
     try {
-      await task();
+      const credential = await signIn();
+      await syncAfterSignIn(credential.user.uid);
     } catch {
       setError('Something went wrong. Please try again.');
+    } finally {
+      setSigningIn(false);
     }
   }
 
   async function handleSignOut() {
+    if (!user) return;
     setError(null);
     setSigningOut(true);
     try {
+      await pushCloudFiles(user.uid, await currentLocalFiles(sessions));
       await signOutUser();
-      setJustSignedOut(true);
-      setTimeout(() => setJustSignedOut(false), 4000);
+      onClearAll();
+      flashNotice('✓ Signed out.');
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -47,11 +91,7 @@ function AccountAuthCard() {
       <CardHeader
         icon={<IconBadge icon={user ? UserCircle : LogIn} size={36} />}
         title="Account"
-        description={
-          user
-            ? 'Signed in for future cloud sync. Local data is unaffected.'
-            : 'Optional, for future cloud sync. Signing in does not change anything about your local data yet.'
-        }
+        description={user ? 'Signed in. Your data is synced to the cloud.' : 'Sign in to sync your data to the cloud.'}
       />
       <div style={{ marginTop: SPACE[4], paddingTop: SPACE[4], borderTop: `1px solid ${COLOR.borderSubtle}` }}>
         {loading ? (
@@ -65,17 +105,15 @@ function AccountAuthCard() {
           </div>
         ) : (
           <div style={{ display: 'flex', gap: SPACE[3], flexWrap: 'wrap' }}>
-            <Button variant="secondary" onClick={() => run(signInWithGoogle)}>
-              Sign in with Google
+            <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithGoogle)}>
+              {signingIn ? 'Signing in…' : 'Sign in with Google'}
             </Button>
-            <Button variant="secondary" onClick={() => run(signInWithApple)}>
-              Sign in with Apple
+            <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithApple)}>
+              {signingIn ? 'Signing in…' : 'Sign in with Apple'}
             </Button>
           </div>
         )}
-        {justSignedOut && (
-          <div style={{ color: COLOR.statusOkText, fontSize: 13, marginTop: SPACE[3] }}>✓ Signed out.</div>
-        )}
+        {notice && <div style={{ color: COLOR.statusOkText, fontSize: 13, marginTop: SPACE[3] }}>{notice}</div>}
         {error && <div style={{ color: COLOR.statusBadText, fontSize: 13, marginTop: SPACE[3] }}>{error}</div>}
       </div>
     </Card>
@@ -379,7 +417,7 @@ export function AccountView({
           { icon: SlidersHorizontal, line1: 'Instant restore', line2: 'at any time' },
         ]}
       />
-      <AccountAuthCard />
+      <AccountAuthCard sessions={sessions} onImportAll={onImportAll} onClearAll={onClearAll} />
       <DatabaseDetailsCard />
       <div style={ACTION_GRID}>
         <Card style={ACTION_CARD}>

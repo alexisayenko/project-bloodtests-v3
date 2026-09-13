@@ -263,10 +263,12 @@ scheduled. Format and round-trip gaps are listed separately, under
   chart tabs are `React.lazy`-split (`LabExploreView` ≈ 78 kB,
   `PanelChartsView` ≈ 14 kB) and Account's backup loads `fflate` on click
   (≈ 32 kB), which once took the entry chunk from ~698 kB to ~616 kB raw;
-  it has grown back since with every section added and measures ~958 kB
-  raw (~287 kB gzipped) as of 2026-09-13 — the `firebase` SDK (Auth only
-  so far, ADR-0018) accounts for most of the latest jump, from ~763 kB
-  — still over Vite's "larger than 500 kB" advisory.
+  it has grown back since with every section added and measures ~1391 kB
+  raw (~415 kB gzipped) as of 2026-09-14 — the `firebase` SDK (Auth and
+  now Firestore too, ADR-0018) accounts for most of the latest jump, from
+  ~763 kB before Auth to ~958 kB with Auth alone to this — still over
+  Vite's "larger than 500 kB" advisory, and worth a closer look once the
+  sync feature is done growing: Firestore alone is a large chunk of this.
   Its largest single piece is `analyteCatalog.ts` importing
   `analyses.json` (~305 kB on disk) statically, so the catalog is bundled
   rather than fetched. It is an advisory, not an

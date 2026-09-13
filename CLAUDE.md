@@ -630,11 +630,27 @@ first Reference Book page to embed a raster image) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
 while validation errors exist) opens with an auth card (`AccountAuthCard`,
-ADR-0018, first slice): Google/Apple sign-in via `firebase/auth`
-(`web/src/firebase/{config,auth}.ts`, `useAuthUser` hook) and, once signed in,
-the display name/email and a Sign out button — purely identity for now, no
-localStorage namespacing, no Firestore reads/writes, no storage-mode picker,
-and no change to anything else in the app based on auth state. Then a
+ADR-0018's two-tier model — no login stays local, signing in switches
+storage mode directly, no separate picker): Google/Apple sign-in via
+`firebase/auth` (`web/src/firebase/{config,auth}.ts`, `useAuthUser` hook)
+runs a one-time cutover through `web/src/firebase/firestore.ts`'s
+`pullCloudFiles`/`pushCloudFiles`, one document per person at `users/{uid}`
+holding the Account backup-bundle's parts as native fields (`manifest`,
+`labReports`, `medications`, `scheduledVisits`, `settings` — never
+`laboratory-prices.json`, same as local restore, the shipped registry
+wins) gated by `request.auth.uid`-scoped security rules: signing in pulls
+and restores an existing document for that UID through the same
+`onImportAll` Import-all-data uses (cloud wins, local discarded) or, if
+none exists yet, pushes today's local data up as the account's first
+cloud copy; signing out pushes current local state up first and only
+once that succeeds calls `signOutUser()` then `onClearAll()` to wipe the
+local copy, so a shared browser shows the next person a clean slate
+rather than whoever signed out before them, and a failed push blocks the
+rest of sign-out rather than wiping data it couldn't save. No ongoing
+sync beyond those two moments, and no storage-mode picker — signing in
+and out is the whole interface. The TopBar's "Your data stays in this
+browser" line and Get Started's local-processing pitch are still static
+and not yet wired to auth state (task still open). Then a
 "Database details" card — subject
 / sex / birth year / notes plus a read-only `generatedAt` stamped on each
 export, persisted under localStorage key `bloodtests_envelope_meta_v1` and
