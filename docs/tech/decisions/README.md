@@ -32,7 +32,8 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0014](adr-0014-pathway-wiring-is-mermaid-generated-to-json.md) | Pathway wiring is written in Mermaid and generated to JSON | accepted · 2026-09-11 |
 | [ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md) | Opt-in "dedicated server" storage, authenticated by a bearer token, not OAuth | accepted · 2026-09-12 · superseded by 0017 |
 | [ADR-0016](adr-0016-scheduling-is-a-collection-of-independent-visits.md) | Scheduling is a collection of independent visits, not one global schedule | accepted · 2026-09-13 |
-| [ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) | Supabase (self-hosted, then managed cloud) replaces the bearer-token server; real accounts/OAuth return | accepted · 2026-09-13 · supersedes 0015 |
+| [ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) | Supabase (self-hosted, then managed cloud) replaces the bearer-token server; real accounts/OAuth return | accepted · 2026-09-13 · supersedes 0015 · superseded by 0018 |
+| [ADR-0018](adr-0018-firebase-storage-provisional.md) | Firebase (Auth + Firestore) replaces the Supabase plan, provisionally | accepted · 2026-09-13 · supersedes 0017 |
 
 ## Where each one bites
 
@@ -81,8 +82,13 @@ Each record opens with `# ADR-NNNN: <title>` and a
   0017, which replaces the bespoke server with Supabase (self-hosted on
   Alex's own machine for the proof-of-concept, then managed Supabase
   Cloud once there are real users) and brings real accounts back via
-  Supabase Auth, likely Google OAuth. The storage-mode shape and the
-  one-time-cutover migration model carry over from 0015 unchanged.
+  Supabase Auth, likely Google OAuth — 0017 in turn is superseded by
+  0018, which drops Supabase entirely, before either phase was built,
+  for Firebase (Firebase Auth for Google Sign-In, Firestore for the
+  synced data), an explicitly provisional choice made for
+  speed-to-working-setup and zero ops rather than a settled long-term
+  pick. The storage-mode shape and the one-time-cutover migration model
+  carry over from 0015 unchanged.
 - **Scheduling** — 0016: a list of independent `ScheduledVisit` entries
   rather than one global schedule object, implemented in
   `web/src/components/conditions/scheduled.ts` and rendered as one

@@ -1,7 +1,9 @@
 # ADR-0017: Supabase replaces the bespoke bearer-token server — self-hosted first, managed cloud once there are real users
 
 Status: accepted · 2026-09-13 · supersedes
-[ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md)
+[ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md) ·
+superseded by
+[ADR-0018](adr-0018-firebase-storage-provisional.md)
 
 ADR-0015's storage-mode shape stands: an opt-in "Dedicated server" mode
 beside the unchanged local-only default, syncing the existing
@@ -12,7 +14,12 @@ pasted Bearer API token with "no OAuth, no identity provider, and no
 login flow of any kind," is replaced by Supabase — which brings real
 accounts back, via Supabase Auth (GoTrue), likely Google OAuth. This is
 a reversal of ADR-0015's central auth stance, not a refinement of it,
-and is stated as such rather than glossed over.
+and is stated as such rather than glossed over. In turn, this plan
+itself did not survive contact with implementation: ADR-0018 drops
+Supabase (self-hosted or cloud) in favor of Firebase, before either of
+this record's phases was built, on setup-speed and ops-burden grounds —
+explicitly provisional, not a further reversal of the auth stance,
+which stays "real accounts, real login."
 
 ## Context
 
