@@ -317,3 +317,23 @@ not started.
   the overclaim the "Specifics settled" section above flagged: the app no
   longer states a blanket privacy claim that stops being true for anyone
   signed in.
+- 2026-09-14: Real, recovered data loss from Safari, root-caused to
+  Firestore transport reliability, not the cutover logic. Alex signed in
+  from Safari on a device whose local storage had no reports; the
+  existing `users/{uid}` document (real data, pushed minutes earlier from
+  elsewhere) was overwritten with an empty one, because `pullCloudFiles`
+  came back as "no document" for a document that demonstrably existed.
+  Alex had a manual zip backup of the real data, so nothing was actually
+  lost, but the mechanism is a real bug, not user error: Safari has
+  documented reliability problems with Firestore's default streaming
+  transport that can surface as reads misbehaving rather than throwing.
+  Fix: `web/src/firebase/firestore.ts` now calls `initializeFirestore`
+  with `experimentalAutoDetectLongPolling: true` instead of plain
+  `getFirestore` — Firebase's own documented mitigation for exactly this
+  class of cross-browser flakiness. Recovery note recorded for next time
+  this comes up: because "cloud wins" on sign-in, restoring a zip locally
+  and then signing in would just re-pull the bad document over the
+  restore — the cloud document has to be deleted (or otherwise made to
+  not "exist" to `pullCloudFiles`) *before* importing the backup and
+  signing in, so sign-in takes the empty-cloud push branch instead of the
+  cloud-wins pull branch.

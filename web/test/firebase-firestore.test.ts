@@ -7,7 +7,7 @@ const getDoc = vi.fn();
 const setDoc = vi.fn();
 
 vi.mock('firebase/firestore', () => ({
-  getFirestore: () => ({}),
+  initializeFirestore: () => ({}),
   doc: (...args: unknown[]) => doc(...args),
   getDoc: (...args: unknown[]) => getDoc(...args),
   setDoc: (...args: unknown[]) => setDoc(...args),

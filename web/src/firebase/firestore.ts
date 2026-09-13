@@ -1,7 +1,11 @@
-import { doc, getDoc, getFirestore, setDoc, type DocumentData } from 'firebase/firestore';
+import { doc, getDoc, initializeFirestore, setDoc, type DocumentData } from 'firebase/firestore';
 import { firebaseApp } from './config';
 
-export const db = getFirestore(firebaseApp);
+// Safari (and some restrictive networks) can fail Firestore's default
+// streaming transport in ways that surface as a read silently behaving as
+// "document not found" rather than throwing -- auto-detecting long-polling
+// is Firebase's own documented fix for this class of cross-browser flakiness.
+export const db = initializeFirestore(firebaseApp, { experimentalAutoDetectLongPolling: true });
 
 // Maps a backup-bundle filename to the Firestore field it lives in on
 // `users/{uid}`. laboratory-prices.json is deliberately absent: the shipped
