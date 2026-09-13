@@ -91,9 +91,10 @@ re-argued here:**
   Supabase Auth (GoTrue), same underlying need, different vendor.
 
 **Specifics settled in conversation with Alex since this ADR was first
-accepted — filling in the same decision, not reopening it.** This is not
-one flat "everyone logs in and uses Firestore" model — it is three usage
-tiers, and login and storage-mode are two separate axes, not one choice:
+accepted — filling in the same decision, not reopening it.** Originally
+specced as three usage tiers with login and storage-mode as separate
+axes (see the 2026-09-14 entry in Implementation progress for that
+earlier design and why it was simplified); as of 2026-09-14 it is two:
 
 - **Tier 1 — no login at all.** The app stays fully usable with zero
   auth, exactly as it is today: demo/test data generation (Get Started's
@@ -101,43 +102,48 @@ tiers, and login and storage-mode are two separate axes, not one choice:
   unchanged, with data in today's existing global, unscoped localStorage
   — the same keys, the same shape, no namespacing. This is the
   zero-friction, no-signup path, and it must not regress: nothing about
-  adding Firebase login puts a login wall in front of the app. Tier 1
-  has no auth layer at all, so the "storage mode is a per-user choice"
-  point below does not apply to it.
-- **Tier 2 — logged in (Firebase Auth: Google or Apple), local storage
-  mode.** For when multiple real people share one browser/device and
-  need their own separate local data without clobbering each other.
-  Logging in does not by itself move anyone's data to Firestore — it
-  namespaces the existing local storage by the logged-in person's
-  Firebase UID instead, e.g. today's global `bloodtests_upload_v1`
-  becomes a per-UID key. Flagged explicitly as a real refactor, not a
-  small change: every current localStorage call site in the app reads
-  and writes today's global keys, and each one needs to become
-  UID-aware.
-- **Tier 3 — logged in, cloud storage mode.** Opt-in upload to
-  Firestore, syncing that person's own data across their own devices —
-  the Firestore-native-JSON, one-document-per-person, `request.auth.uid`
-  -gated design below.
-- **Storage mode is a separate, per-logged-in-user setting, not
-  something login itself decides.** A logged-in user explicitly chooses
-  local (tier 2) or cloud (tier 3); logging in does not imply cloud
-  sync. This is ADR-0015's original "local stays the default, opt-in
-  server mode" principle, carried forward for the two logged-in tiers
-  specifically, now sitting under a real per-person auth layer instead
-  of anonymous localStorage.
+  adding Firebase login puts a login wall in front of the app.
+- **Tier 2 — logged in (Firebase Auth: Google or Apple) means cloud
+  storage.** There is no separate "logged in but still local" mode and
+  no storage-mode picker: signing in *is* the switch. Firestore backs
+  the data, but Firestore's offline persistence (an on-device cache
+  Firestore itself manages) keeps reads and writes feeling local and
+  instant rather than round-tripping to the network on every action —
+  so tier 2 does not trade away the offline-first feel, even though the
+  source of truth is now remote.
+- **Sign-in resolution, once per sign-in, not an ongoing sync:** if a
+  Firestore document already exists for that Firebase UID (signing in
+  on a second device, or an account someone else already set up — e.g.
+  Natalga's), it wins outright — pulled down, whatever was in local
+  storage on this device is discarded, no merge. If no document exists
+  yet for that UID, today's local data is pushed up once, becoming the
+  initial document. This is ADR-0015's original cutover shape (pull if
+  populated, push if empty), now triggered automatically by sign-in
+  rather than by a separate "switch to server storage" action. The
+  local-storage wipe on either branch must only happen after the
+  Firestore read or write is confirmed to have succeeded, so a failed
+  push or a dropped connection can't destroy the only copy of the data.
+- **Sign-out wipes the local working copy.** Chosen deliberately over
+  leaving it behind, for the shared-device case this app explicitly
+  supports (Alex and Natalga on the same browser): the next person to
+  open the app after a sign-out sees a clean, empty local-only state,
+  not the previous person's last-synced data. Nothing is lost by this —
+  by the time sign-out is possible, that data is already durable in
+  Firestore under its owner's UID; wiping the local cache only removes
+  the on-device copy, not the data itself.
 - **Auth providers**: both Google Sign-In and Sign in with Apple. Alex
   already holds a paid Apple Developer account for an unrelated shipped
   app, so the usual $99/year objection to adding Apple sign-in doesn't
   apply here — the marginal cost is just the Firebase Auth configuration
   work (a Services ID and a private key), not a new yearly fee.
-- **Data storage shape (tier 3)**: no zip file. Firestore stores the
+- **Data storage shape (tier 2)**: no zip file. Firestore stores the
   Account backup-bundle content (lab-reports, medications,
   scheduled-visits, settings) natively as JSON fields on a document,
   skipping the zip/unzip step the local Account-backup export uses today
   (`data/backupArchive.ts` / `data/backupRestore.ts`). Firestore's 1 MiB
   per-document size ceiling is a known constraint — currently
   comfortable for this payload, but worth remembering as it grows.
-- **Per-user data model (tier 3)**: one Firestore document per person,
+- **Per-user data model (tier 2)**: one Firestore document per person,
   access-controlled by Firebase Auth — each person's security rules
   grant access only to their own document (`allow read, write: if
   request.auth.uid == <doc's owner uid>`). No shared or admin
@@ -147,28 +153,28 @@ tiers, and login and storage-mode are two separate axes, not one choice:
   needed. A caregiver/admin-style single-login-sees-both-profiles model
   was explicitly considered and rejected in favor of this simpler, fully
   separate-accounts approach.
-- **localStorage is not encrypted.** This applies to tiers 1 and 2
-  alike, and is a correction, not new information: localStorage is
-  plaintext on disk, protected only by OS file permissions and
-  same-origin policy — readable by anyone with access to the device or
-  browser profile, or via an XSS bug. This is the same property today's
-  app already has; namespacing keys by Firebase UID in tier 2 changes
-  who a key belongs to, not whether its contents are readable at rest.
-  Stating it plainly here so it isn't implied to mean "secure" going
-  forward.
+- **localStorage is not encrypted.** True of tier 1's data, and equally
+  true of tier 2's on-device Firestore cache — this is a correction, not
+  new information: browser storage is plaintext on disk, protected only
+  by OS file permissions and same-origin policy, readable by anyone with
+  access to the device or browser profile, or via an XSS bug. Moving the
+  source of truth to Firestore in tier 2 doesn't change that its local
+  cache sits in the same kind of unencrypted on-device storage tier 1
+  always has. Stating it plainly here so it isn't implied to mean
+  "secure" going forward.
 - **Existing privacy copy becomes an overclaim once cloud sync exists as
   an option.** The footer's "Your data stays in this browser" line
   (`web/src/components/conditions/TopBar.tsx`) and Get Started's privacy
   pitch, "All processing occurs locally in your browser — client-side
   persistence, zero server transmission..."
   (`web/src/components/conditions/ProfileView.tsx`), both stay true for
-  tiers 1 and 2, but stop being true for anyone who opts into tier 3.
-  The plan is to replace the blanket claim with a small, honest,
-  currently-accurate-per-user indicator — e.g. "Local" / "Synced to
-  cloud" — reflecting each person's actual current choice, rather than
-  one static sentence for everyone. This is a UI/copy change to make
-  during implementation; recorded here as intent only, not worded
-  further now.
+  tier 1, but stop being true the moment someone signs in (tier 2). With
+  the two-tier model this now tracks a single boolean (signed in or
+  not) rather than a per-user setting: the plan is to replace the
+  blanket claim with a small, honest indicator driven directly off auth
+  state — e.g. "Local" when signed out, "Synced to cloud" when signed
+  in. This is a UI/copy change to make during implementation; recorded
+  here as intent only, not worded further now.
 
 **Out of scope for this ADR and this repo:** whether Alex's other two
 projects (`project-travel`, `project-wardrobe`, both currently on
@@ -263,3 +269,22 @@ not started.
   This required enabling Firebase Hosting after all, for exactly this
   one narrow purpose — the actual app still deploys via Cloudflare
   Workers, and this Hosting site serves nothing else.
+- 2026-09-14: Simplified from three tiers to two. The original design
+  (above, in Decision) gave logged-in users a separate local/cloud
+  storage-mode choice — tier 2 (logged in, still local) existed mainly
+  to let two people share one browser without clobbering each other's
+  data. Reconsidered as unneeded complexity: signing in now switches
+  storage mode directly, with no picker. The old tier 2 is dropped
+  entirely; what was tier 3 is renumbered tier 2. Two policy questions
+  this raised were settled explicitly: sign-in conflict resolution is
+  cloud-wins (an existing Firestore document for that UID is pulled
+  down and local is discarded; an empty one gets today's local data
+  pushed up as its first version — the local wipe on either branch
+  gated on that Firestore call actually succeeding, so a failed
+  read/write can't take the only copy with it), and sign-out wipes the
+  local working copy rather than leaving it behind, so a shared device
+  (Alex and Natalga on the same browser) shows a clean slate to
+  whoever's next rather than the previous person's synced data. Nothing
+  is lost by that wipe — by the time sign-out is possible, the data is
+  already durable in Firestore. Not yet implemented: this is a design
+  decision recorded ahead of the code that will carry it out.

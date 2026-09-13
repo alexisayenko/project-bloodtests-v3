@@ -158,7 +158,7 @@ standing in for authentication. An earlier draft of this section
 described a different near-term plan — no Google/Apple sign-in, a bare
 profile picker with no auth boundary — which is now superseded and no
 longer accurate; read ADR-0018's Decision and "Specifics settled"
-sections for what actually replaced it, including the three usage tiers
+sections for what actually replaced it, including the usage tiers
 and the storage-shape and per-document details.
 
 This remains a narrower scope than the fuller designs in sections 1–2
