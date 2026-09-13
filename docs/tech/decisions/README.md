@@ -30,8 +30,9 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0012](adr-0012-envelope-version-is-a-major-minor-string.md) | The envelope version is a `"major.minor"` string | accepted · 2026-09-09 |
 | [ADR-0013](adr-0013-u-and-iu-fold-by-loinc-property.md) | `U` and `IU` are one unit only where the analyte's LOINC property says so | accepted · 2026-09-09 |
 | [ADR-0014](adr-0014-pathway-wiring-is-mermaid-generated-to-json.md) | Pathway wiring is written in Mermaid and generated to JSON | accepted · 2026-09-11 |
-| [ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md) | Opt-in "dedicated server" storage, authenticated by a bearer token, not OAuth | accepted · 2026-09-12 |
+| [ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md) | Opt-in "dedicated server" storage, authenticated by a bearer token, not OAuth | accepted · 2026-09-12 · superseded by 0017 |
 | [ADR-0016](adr-0016-scheduling-is-a-collection-of-independent-visits.md) | Scheduling is a collection of independent visits, not one global schedule | accepted · 2026-09-13 |
+| [ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) | Supabase (self-hosted, then managed cloud) replaces the bearer-token server; real accounts/OAuth return | accepted · 2026-09-13 · supersedes 0015 |
 
 ## Where each one bites
 
@@ -73,9 +74,15 @@ Each record opens with `# ADR-NNNN: <title>` and a
   0010; see the [pathway](../../product/concepts/pathway.md) concept and
   [task-0024](../../tasks/task-0024.md).
 - **Sync / storage backend** — 0015, still unbuilt: an opt-in dedicated
-  server storage mode beside the unchanged local-only default, bearer-token
-  authenticated, syncing the existing backup-bundle shape; supersedes the
-  auth model in [task-0025](../../tasks/task-0025.md).
+  server storage mode beside the unchanged local-only default, syncing
+  the existing backup-bundle shape; its bearer-token auth model
+  superseded the auth model in
+  [task-0025](../../tasks/task-0025.md), and is itself superseded by
+  0017, which replaces the bespoke server with Supabase (self-hosted on
+  Alex's own machine for the proof-of-concept, then managed Supabase
+  Cloud once there are real users) and brings real accounts back via
+  Supabase Auth, likely Google OAuth. The storage-mode shape and the
+  one-time-cutover migration model carry over from 0015 unchanged.
 - **Scheduling** — 0016: a list of independent `ScheduledVisit` entries
   rather than one global schedule object, implemented in
   `web/src/components/conditions/scheduled.ts` and rendered as one

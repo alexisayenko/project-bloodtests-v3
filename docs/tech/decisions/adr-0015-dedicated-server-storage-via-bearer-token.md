@@ -1,6 +1,15 @@
 # ADR-0015: An opt-in "dedicated server" storage mode, authenticated by a bearer token, not OAuth
 
-Status: accepted · 2026-09-12
+Status: accepted · 2026-09-12 · superseded by
+[ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md)
+
+The storage-mode shape here stands: an opt-in "Dedicated server" mode
+beside an unchanged local-only default, syncing the existing backup
+bundle, one-time cutover, no ongoing two-way sync. What is superseded is
+the server itself and its auth: the bespoke Bearer-token Node service
+below is replaced by Supabase (self-hosted first, then managed cloud),
+which brings real accounts and OAuth back — the opposite of this
+record's "no OAuth, no login flow of any kind" stance.
 
 ## Context
 
