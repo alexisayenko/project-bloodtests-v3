@@ -355,3 +355,12 @@ not started.
   still resolve last-write-wins, unchanged, since that's the ADR's
   accepted no-conflict-resolution stance and not what caused either
   incident.
+- 2026-09-14: Recovery confirmed in production. With the fix above
+  deployed, Alex signed out from Chrome — the browser that had held the
+  real data locally the whole time, untouched by either incident — which
+  pushed it up, and the `users/{uid}` document again shows the real
+  `subject: "Nataliya"`, `sex: "female"`, `birthYear: 1948` and a
+  populated `diagnosticReports`, verified directly in the Firestore
+  console. Both incidents are closed: nothing was permanently lost (Alex
+  had an independent zip backup throughout), and the sign-out guard is
+  now live, so this same shared-device pattern can't repeat it.
