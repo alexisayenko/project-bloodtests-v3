@@ -263,15 +263,16 @@ scheduled. Format and round-trip gaps are listed separately, under
   chart tabs are `React.lazy`-split (`LabExploreView` ≈ 78 kB,
   `PanelChartsView` ≈ 14 kB) and Account's backup loads `fflate` on click
   (≈ 32 kB), which once took the entry chunk from ~698 kB to ~616 kB raw;
-  it has grown back since with every section added and measures ~763 kB
-  raw (~227 kB gzipped) as of 2026-09-11, still over Vite's "larger than
-  500 kB" advisory.
+  it has grown back since with every section added and measures ~958 kB
+  raw (~287 kB gzipped) as of 2026-09-13 — the `firebase` SDK (Auth only
+  so far, ADR-0018) accounts for most of the latest jump, from ~763 kB
+  — still over Vite's "larger than 500 kB" advisory.
   Its largest single piece is `analyteCatalog.ts` importing
   `analyses.json` (~305 kB on disk) statically, so the catalog is bundled
   rather than fetched. It is an advisory, not an
   error, and a catalog that cannot arrive late is a fair trade on a
   single-page app — but the warning is real and the remaining fix (a
-  dynamic `import()` of the catalog, or a raised
+  dynamic `import()` of the catalog and/or the firebase SDK, or a raised
   `chunkSizeWarningLimit`) has not been taken, so a genuinely new size
   regression would hide inside it.
 

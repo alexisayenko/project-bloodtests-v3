@@ -629,7 +629,13 @@ FSH's real structure (PDB 1XWD) and a glycosylation figure (Lispi et al.
 first Reference Book page to embed a raster image) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
-while validation errors exist) opens with a "Database details" card — subject
+while validation errors exist) opens with an auth card (`AccountAuthCard`,
+ADR-0018, first slice): Google/Apple sign-in via `firebase/auth`
+(`web/src/firebase/{config,auth}.ts`, `useAuthUser` hook) and, once signed in,
+the display name/email and a Sign out button — purely identity for now, no
+localStorage namespacing, no Firestore reads/writes, no storage-mode picker,
+and no change to anything else in the app based on auth state. Then a
+"Database details" card — subject
 / sex / birth year / notes plus a read-only `generatedAt` stamped on each
 export, persisted under localStorage key `bloodtests_envelope_meta_v1` and
 written into the export envelope with empty fields omitted — always expanded,

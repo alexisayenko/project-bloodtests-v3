@@ -225,3 +225,25 @@ not started.
 - Alex actually doing the "check what fits me better" comparison this
   ADR anticipates, and preferring Supabase, a self-hosted option, or
   something else once there is a working feature to compare against.
+
+## Implementation progress
+
+- 2026-09-13: Firebase console set up — project `bloodtests-v3`
+  (Gemini-in-Firebase and Google Analytics both declined; Firebase
+  Hosting not enabled, since the app deploys via Cloudflare Workers).
+  Google and Apple sign-in providers are both enabled (Apple via a
+  dedicated Services ID/App ID/key, `org.isayenko.paneloom`, kept
+  separate from the unrelated wardrobe/Lapel identifiers already on the
+  Apple Developer account). Firestore is created (Standard edition,
+  `eur3` multi-region, chosen for latency over the `nam5` default —
+  irreversible once set) with `request.auth.uid`-scoped security rules
+  published, gating `users/{userId}` per ADR's per-person-document
+  model — no data written yet.
+- 2026-09-13: First application-code slice landed — `firebase` SDK
+  installed, `web/src/firebase/{config,auth}.ts`, a `useAuthUser` hook,
+  and a sign-in/sign-out card on the Account page (Google + Apple
+  buttons; shows display name/email and a Sign out button once signed
+  in). This slice is deliberately narrow: no localStorage
+  namespacing by uid, no Firestore reads/writes, no storage-mode
+  picker, no migration flow, and no change to the TopBar's "your data
+  stays in this browser" copy — all still to come.

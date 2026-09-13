@@ -3,12 +3,65 @@ import type { DiagnosticReport } from '../../types';
 import { backupFilename, buildBackupFiles, zipBackupFiles } from '../../data/backupArchive';
 import { BackupImportError, readBackup, unzipBackup, type BackupContents } from '../../data/backupRestore';
 import { loadEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from '../../data/envelopeMeta';
-import { Database, Download, HardDriveDownload, SlidersHorizontal, Trash2, Upload, type LucideIcon } from 'lucide-react';
+import { Database, Download, HardDriveDownload, LogIn, SlidersHorizontal, Trash2, Upload, UserCircle, type LucideIcon } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { Button, Card, CardDescription, CardHeader, CardTitle, DangerCard, FIELD_INPUT, FileButton, IconBadge, buttonStyle } from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
+import { useAuthUser } from '../../hooks/useAuthUser';
+import { signInWithApple, signInWithGoogle, signOutUser } from '../../firebase/auth';
 
 const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
+
+/** Firebase sign-in/out. Optional, future cloud sync only — does not touch local data yet (ADR-0018). */
+function AccountAuthCard() {
+  const { user, loading } = useAuthUser();
+  const [error, setError] = useState<string | null>(null);
+
+  async function run(task: () => Promise<unknown>) {
+    setError(null);
+    try {
+      await task();
+    } catch {
+      setError('Something went wrong. Please try again.');
+    }
+  }
+
+  return (
+    <Card style={{ maxWidth: 960, marginBottom: SPACE[5] }}>
+      <CardHeader
+        icon={<IconBadge icon={user ? UserCircle : LogIn} size={36} />}
+        title="Account"
+        description={
+          user
+            ? 'Signed in for future cloud sync. Local data is unaffected.'
+            : 'Optional, for future cloud sync. Signing in does not change anything about your local data yet.'
+        }
+      />
+      <div style={{ marginTop: SPACE[4], paddingTop: SPACE[4], borderTop: `1px solid ${COLOR.borderSubtle}` }}>
+        {loading ? (
+          <span style={{ fontSize: 13, color: COLOR.textMuted }}>Loading…</span>
+        ) : user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
+            <span style={{ fontSize: 13, color: COLOR.textSecondary }}>{user.displayName ?? user.email}</span>
+            <Button variant="secondary" onClick={() => run(signOutUser)}>
+              Sign out
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: SPACE[3], flexWrap: 'wrap' }}>
+            <Button variant="secondary" onClick={() => run(signInWithGoogle)}>
+              Sign in with Google
+            </Button>
+            <Button variant="secondary" onClick={() => run(signInWithApple)}>
+              Sign in with Apple
+            </Button>
+          </div>
+        )}
+        {error && <div style={{ color: COLOR.statusBadText, fontSize: 13, marginTop: SPACE[3] }}>{error}</div>}
+      </div>
+    </Card>
+  );
+}
 
 /** "Database details": subject/sex/birth-year/notes written into every export. Always expanded here — no collapse toggle. */
 function DatabaseDetailsCard() {
@@ -307,6 +360,7 @@ export function AccountView({
           { icon: SlidersHorizontal, line1: 'Instant restore', line2: 'at any time' },
         ]}
       />
+      <AccountAuthCard />
       <DatabaseDetailsCard />
       <div style={ACTION_GRID}>
         <Card style={ACTION_CARD}>
