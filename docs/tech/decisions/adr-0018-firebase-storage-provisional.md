@@ -337,3 +337,21 @@ not started.
   not "exist" to `pullCloudFiles`) *before* importing the backup and
   signing in, so sign-in takes the empty-cloud push branch instead of the
   cloud-wins pull branch.
+- 2026-09-14: A second, distinct overwrite — this one from sign-out, not
+  sign-in, and not a transport bug. After the recovery above, Safari
+  (still signed in from the original incident, still with empty local
+  storage — nothing had ever been imported into that browser) was signed
+  out then back in as a test. Sign-out unconditionally pushed Safari's
+  empty local state, overwriting the just-recovered real document again;
+  sign-in then faithfully pulled that same now-empty document back down.
+  No flakiness involved — this is exactly what the code as written would
+  always do from any browser whose local storage doesn't hold the
+  account's data. Fix: `handleSignOut` (`AccountView.tsx`) now pulls the
+  cloud document before pushing, and skips the push — signing out and
+  wiping local as normal, just without touching Firestore — when local
+  data is empty (`isEmptyBackup`: no reports, no medication rows, no
+  scheduled visits) while the cloud document is not. An empty local
+  state can no longer erase a populated cloud one; two non-empty states
+  still resolve last-write-wins, unchanged, since that's the ADR's
+  accepted no-conflict-resolution stance and not what caused either
+  incident.

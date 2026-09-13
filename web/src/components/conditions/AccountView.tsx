@@ -24,8 +24,16 @@ async function currentLocalFiles(sessions: DiagnosticReport[]): Promise<Record<s
   });
 }
 
+// A browser that never received the cloud's data (never signed in with it locally, or never
+// imported it) still has empty local storage. Pushing that on sign-out would silently replace a
+// populated cloud document with nothing -- so an empty local backup never overwrites one.
+function isEmptyBackup(backup: BackupContents): boolean {
+  return !backup.reports?.count && !backup.medications?.rows.length && !backup.scheduled?.visits.length;
+}
+
 /** Firebase sign-in/out with the ADR-0018 one-time cutover: sign-in resolves cloud-vs-local (cloud wins if a document exists,
- * otherwise today's local data becomes the first cloud copy), sign-out pushes latest local state up, then wipes it. */
+ * otherwise today's local data becomes the first cloud copy), sign-out pushes latest local state up then wipes it -- unless
+ * local is empty and the cloud document isn't, in which case the push is skipped so signing out never erases real cloud data. */
 function AccountAuthCard({
   sessions,
   onImportAll,
@@ -75,7 +83,13 @@ function AccountAuthCard({
     setError(null);
     setSigningOut(true);
     try {
-      await pushCloudFiles(user.uid, await currentLocalFiles(sessions));
+      const localFiles = await currentLocalFiles(sessions);
+      const cloudFiles = await pullCloudFiles(user.uid);
+      const localIsEmpty = isEmptyBackup(readBackup(localFiles));
+      const cloudHasData = cloudFiles !== null && !isEmptyBackup(readBackup(cloudFiles));
+      if (!(localIsEmpty && cloudHasData)) {
+        await pushCloudFiles(user.uid, localFiles);
+      }
       await signOutUser();
       onClearAll();
       flashNotice('✓ Signed out.');
