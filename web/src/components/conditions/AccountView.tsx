@@ -16,6 +16,8 @@ const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'r
 function AccountAuthCard() {
   const { user, loading } = useAuthUser();
   const [error, setError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [justSignedOut, setJustSignedOut] = useState(false);
 
   async function run(task: () => Promise<unknown>) {
     setError(null);
@@ -23,6 +25,20 @@ function AccountAuthCard() {
       await task();
     } catch {
       setError('Something went wrong. Please try again.');
+    }
+  }
+
+  async function handleSignOut() {
+    setError(null);
+    setSigningOut(true);
+    try {
+      await signOutUser();
+      setJustSignedOut(true);
+      setTimeout(() => setJustSignedOut(false), 4000);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSigningOut(false);
     }
   }
 
@@ -43,8 +59,8 @@ function AccountAuthCard() {
         ) : user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
             <span style={{ fontSize: 13, color: COLOR.textSecondary }}>{user.displayName ?? user.email}</span>
-            <Button variant="secondary" onClick={() => run(signOutUser)}>
-              Sign out
+            <Button variant="secondary" disabled={signingOut} onClick={handleSignOut}>
+              {signingOut ? 'Signing out…' : 'Sign out'}
             </Button>
           </div>
         ) : (
@@ -56,6 +72,9 @@ function AccountAuthCard() {
               Sign in with Apple
             </Button>
           </div>
+        )}
+        {justSignedOut && (
+          <div style={{ color: COLOR.statusOkText, fontSize: 13, marginTop: SPACE[3] }}>✓ Signed out.</div>
         )}
         {error && <div style={{ color: COLOR.statusBadText, fontSize: 13, marginTop: SPACE[3] }}>{error}</div>}
       </div>
