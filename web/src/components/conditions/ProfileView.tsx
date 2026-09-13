@@ -1,9 +1,10 @@
 import type { DiagnosticReport } from '../../types';
 import { generateTestDataThen } from '../../data/generateTestData';
-import { Shield, Upload, Sparkles } from 'lucide-react';
+import { CloudCheck, Shield, Upload, Sparkles } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { Button, FileButton } from '../primitives';
 import { COLOR } from '../../styles/tokens';
+import { useAuthUser } from '../../hooks/useAuthUser';
 
 const SECTION_DIVIDER = {
   borderTop: `1px solid ${COLOR.borderSubtle}`,
@@ -33,6 +34,8 @@ export function ProfileView({
   /** Runs once generation has finished, to show the result. */
   onGenerated: () => void;
 }>) {
+  const { user } = useAuthUser();
+
   return (
     <>
       <PageHeader
@@ -41,10 +44,14 @@ export function ProfileView({
         titleAccent="Started"
         description={[
           'A LOINC-coded blood-test monitoring tool. Upload a lab-results export and it is organized into monitoring panels by condition and organ system.',
-          'All processing occurs locally in your browser — client-side persistence, zero server transmission, and evidence-graded reference ranges.',
+          user
+            ? "You're signed in — your data syncs to your account and follows you to your other devices."
+            : 'All processing occurs locally in your browser — client-side persistence, zero server transmission, and evidence-graded reference ranges.',
         ]}
         pillars={[
-          { icon: Shield, line1: '100% private', line2: 'client-side only' },
+          user
+            ? { icon: CloudCheck, line1: 'Synced to', line2: 'your account' }
+            : { icon: Shield, line1: '100% private', line2: 'client-side only' },
           { icon: Upload, line1: 'JSON import,', line2: 'PDFs via a chatbot' },
           { icon: Sparkles, line1: 'Evidence-graded', line2: 'clinical indices' },
         ]}

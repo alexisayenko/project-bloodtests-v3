@@ -305,8 +305,15 @@ not started.
   rather than assuming a push happened at some earlier point that was
   never specified. A failed push blocks the rest of the sign-out sequence
   rather than wiping local data it couldn't save. No storage-mode picker,
-  no ongoing sync beyond these two boundary moments, per the ADR. Not yet
-  done: the TopBar's "Your data stays in this browser" line and Get
-  Started's local-processing pitch are still static and now genuinely
-  wrong for anyone signed in — swapping them for an auth-state-driven
-  indicator is the next piece, not this one.
+  no ongoing sync beyond these two boundary moments, per the ADR.
+- 2026-09-14: Privacy copy now tracks auth state. `TopBar.tsx` and
+  `ProfileView.tsx`'s Get Started pitch both read `useAuthUser` directly
+  — signed out, both keep their original wording exactly ("Your data
+  stays in this browser," "100% private / client-side only," "All
+  processing occurs locally..."); signed in, `TopBar` swaps its lock icon
+  and line for a `CloudCheck` icon and "Synced to your account," and Get
+  Started swaps its "100% private" pillar for "Synced to your account"
+  and its second description line for one naming the sync. This closes
+  the overclaim the "Specifics settled" section above flagged: the app no
+  longer states a blanket privacy claim that stops being true for anyone
+  signed in.

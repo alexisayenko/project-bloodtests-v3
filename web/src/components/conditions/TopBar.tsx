@@ -1,9 +1,12 @@
-import { Lock } from 'lucide-react';
+import { CloudCheck, Lock } from 'lucide-react';
 import { type Route } from './routing';
 import { pressable } from './ui';
 import { COLOR } from '../../styles/tokens';
+import { useAuthUser } from '../../hooks/useAuthUser';
 
 export function TopBar({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
+  const { user } = useAuthUser();
+
   return (
     <header className="mc-topbar">
       <div
@@ -15,8 +18,17 @@ export function TopBar({ navigate }: Readonly<{ navigate: (r: Route) => void }>)
         <span style={{ fontSize: 19, fontWeight: 700, color: COLOR.text, letterSpacing: -0.2 }}>Paneloom</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: COLOR.textSecondary }}>
-        <Lock size={14} strokeWidth={2} aria-hidden="true" />
-        Your data stays in this browser
+        {user ? (
+          <>
+            <CloudCheck size={14} strokeWidth={2} aria-hidden="true" />
+            Synced to your account
+          </>
+        ) : (
+          <>
+            <Lock size={14} strokeWidth={2} aria-hidden="true" />
+            Your data stays in this browser
+          </>
+        )}
       </div>
     </header>
   );

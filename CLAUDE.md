@@ -329,7 +329,9 @@ that uses it; the gutter is reserved on every row so names never shift
 (All Observations indents names by the same 13px, no marks there).
 From 768px up the nav is an app shell (`AppShell.tsx`): a white top bar
 (`TopBar.tsx` — mark and wordmark linking to Monitoring Panels, a lock and
-"Your data stays in this browser") over a left sidebar (`SideNav.tsx`) listing
+"Your data stays in this browser" when signed out, a cloud-check icon and
+"Synced to your account" when signed in via `useAuthUser`) over a left
+sidebar (`SideNav.tsx`) listing
 all nine `NAV_ITEMS` with a line icon each — `lucide-react`'s, except the two
 drawn in `customIcons.tsx` to the same stroke and size, `PillIcon` (a split
 capsule, also the Medications header's pillar and the Pancreatic Function card's
@@ -648,9 +650,10 @@ local copy, so a shared browser shows the next person a clean slate
 rather than whoever signed out before them, and a failed push blocks the
 rest of sign-out rather than wiping data it couldn't save. No ongoing
 sync beyond those two moments, and no storage-mode picker — signing in
-and out is the whole interface. The TopBar's "Your data stays in this
-browser" line and Get Started's local-processing pitch are still static
-and not yet wired to auth state (task still open). Then a
+and out is the whole interface. The TopBar and Get Started's pitch
+(`ProfileView.tsx`) both read `useAuthUser` too, swapping their
+local-only copy and "100% private" pillar for a "Synced to your
+account" line and pillar while signed in. Then a
 "Database details" card — subject
 / sex / birth year / notes plus a read-only `generatedAt` stamped on each
 export, persisted under localStorage key `bloodtests_envelope_meta_v1` and
