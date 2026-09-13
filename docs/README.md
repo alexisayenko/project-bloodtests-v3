@@ -179,7 +179,8 @@ docs/
 │   ├── decisions/                      # entry: decisions/README.md
 │   │   └── adr-NNNN-<slug>.md          # one file per decision
 │   ├── interchange-format.md           # lab-data file envelope (spec)
-│   └── molar-masses.md                 # mass↔molar reference data
+│   ├── molar-masses.md                 # mass↔molar reference data
+│   └── sync-architecture-options.md    # sync/multi-user design-space survey (not an ADR)
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
 │   ├── performance-guide.md            # end-to-end UX performance

@@ -23,6 +23,13 @@ Product / business / UX live in their own sections.
   (thirteen records, `adr-NNNN-<slug>.md`, numbered independently of
   v2), with a per-ADR row and a note on which doc each decision
   governs. The index is the single list — don't duplicate it here.
+- [`sync-architecture-options.md`](sync-architecture-options.md) — a
+  reference doc, not an ADR: the fuller cross-device sync / multi-user
+  design-space survey from the same conversation that produced
+  ADR-0015 → ADR-0017 → ADR-0018, including options never written up
+  in an ADR (end-to-end encryption as an alternative framing) and the
+  narrower near-term plan (Firebase, per-profile documents, a profile
+  picker, no auth) actually being built instead.
 
 ## Reference data
 
