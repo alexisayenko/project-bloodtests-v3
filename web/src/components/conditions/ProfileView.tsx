@@ -64,7 +64,7 @@ export function ProfileView({
           loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'} currently), medications you already list keep
           their entries, and a sample schedule is set only if nothing is scheduled yet.
         </div>
-        <Button onClick={() => generateTestDataThen(loadGenerated, [onStoredStateChanged, onGenerated])}>Generate Test Data</Button>
+        <Button variant="primary" onClick={() => generateTestDataThen(loadGenerated, [onStoredStateChanged, onGenerated])}>Generate Test Data</Button>
       </div>
 
       <div style={SECTION_DIVIDER}>
@@ -73,7 +73,7 @@ export function ProfileView({
           Import it — it replaces whatever is currently loaded ({sessionCount} report{sessionCount === 1 ? '' : 's'}{' '}
           currently).
         </div>
-        <FileButton variant="primary" accept=".json,application/json" onFile={uploadFile}>
+        <FileButton variant="secondary" accept=".json,application/json" onFile={uploadFile}>
           Import JSON
         </FileButton>
         {uploadError && <div style={{ color: COLOR.statusBadText, fontSize: 14, marginTop: 12 }}>{uploadError}</div>}
