@@ -104,8 +104,10 @@ assets `binding`) sits in front of the static assets and 301-redirects
 any request to `blood.isayenko.net` onto the same path and query on
 `paneloom.com`, everything else falling through to `env.ASSETS.fetch()`
 unchanged. Deploy runs from CI: the `deploy` job in
-`.github/workflows/ci.yml` publishes on every push to `main` once the
-quality gates pass. Because a CI checkout has no `web/public/d/*.json`,
+`.github/workflows/ci.yml` publishes on every push to `main`, starting at
+once alongside `test` and `sonar` rather than waiting on either — a push
+is live in about a minute, with only its own `npm run build`'s `tsc -b`
+able to stop it. Because a CI checkout has no `web/public/d/*.json`,
 an automated deploy carries NO share-link payloads and every existing
 `/?data=<guid>` link 404s until someone re-runs `wrangler deploy` by hand
 with the files copied in — accepted for now; the intended fix is serving
@@ -898,7 +900,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (851 tests across 37 files — 850 passing, 1 skipped — as run on 2026-09-13: index
+Vitest suites in `web/test/` (861 tests across 40 files — 860 passing, 1 skipped — as run on 2026-09-14: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
 bands, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
@@ -936,7 +938,13 @@ gates on nothing at all: the `deploy` job carries no `needs:` and starts at
 once beside `test` and `sonar`, so a push is live in about a minute and lint
 and the tests report *after* the code is already serving — a red suite means
 rolling forward rather than a blocked deploy, with `npm run build`'s `tsc -b`
-the only check that can still stop it. Coverage metric is scoped to the testable logic —
+the only check that can still stop it. A `lighthouse` job runs after `deploy`
+(the one job it `needs`, unlike `sonar`/`test`, which run alongside) so it
+audits the code that is actually live, targeting `paneloom.com` directly
+since there is no staging environment; it is deliberately non-blocking —
+`treosh/lighthouse-ci-action` uploads to temporary public storage
+(`temporaryPublicStorage: true`) and runs under `continue-on-error: true`,
+so a Lighthouse failure or flake never shows red. Coverage metric is scoped to the testable logic —
 `sonar.coverage.exclusions` skips the React view layer. Dependabot:
 weekly npm (minor+patch grouped) and github-actions bumps.
 

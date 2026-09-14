@@ -206,9 +206,12 @@ finished is the UCUM parser itself, [task-0008](../tasks/task-0008.md).
 
 ## Deploy
 
-The app ships as a Cloudflare Worker serving static assets
-(`web/wrangler.jsonc`: worker `bloodtests`, `assets.directory` `./dist`,
-custom domains `blood.isayenko.net` and `paneloom.com`). Deploys are automated: the `deploy`
+The app ships as a Cloudflare Worker (`web/wrangler.jsonc`: worker
+`bloodtests`, `main` `./worker/index.ts`, `assets.directory` `./dist`,
+custom domains `blood.isayenko.net` and `paneloom.com`) — a small script
+(`web/worker/index.ts`) 301-redirects any `blood.isayenko.net` request onto
+the same path and query on `paneloom.com`, everything else falling through
+to `env.ASSETS.fetch()` unchanged. Deploys are automated: the `deploy`
 job in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs
 on every push to `main` and deliberately gates on nothing — it carries no
 `needs:` and starts at once beside the `test` and `sonar` jobs, so a push is
