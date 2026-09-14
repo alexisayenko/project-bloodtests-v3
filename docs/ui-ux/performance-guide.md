@@ -45,7 +45,10 @@ under [Diagnostic](#diagnostic-per-layer-when-end-to-end-fails).
 ### Web
 
 - [Lighthouse](https://developer.chrome.com/docs/lighthouse) —
-  run before each release; record the score.
+  runs automatically in CI after every deploy to `main` (desktop
+  preset only, mobile deferred to task-0020's mobile shell);
+  Accessibility and Best Practices are gated (fail the build below
+  0.9), Performance and SEO are recorded but don't block.
 - Chrome DevTools Performance panel — flame charts when
   investigating a regression.
 - [WebPageTest](https://www.webpagetest.org/) — cross-region
@@ -79,7 +82,8 @@ product. Always close the loop back to the user-felt metric.
 
 ## Cadence
 
-- Run web Lighthouse + mobile build profiling **before each
+- Web Lighthouse runs automatically in CI after every deploy to
+  `main` — no manual step; run mobile build profiling **before each
   release**.
 - Record numbers in a release note or milestone entry; flag
   regressions vs the prior baseline in the same place.

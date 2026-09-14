@@ -53,10 +53,10 @@ owns identity / spirit; the style guide operationalizes it.
     `logo-woven-knot.png` as four rotated copies of one arm and stub,
     with no embedded raster.
 - **Domain**: `paneloom.com`, registered 2026-09-09 — the official,
-  primary production URL. `blood.isayenko.net` also currently routes to
-  the same app (a second custom-domain route in `web/wrangler.jsonc`;
-  its long-term fate is a separate, still-open decision);
-  `www.paneloom.com` does not resolve. `paneloom.app` / `.net` were
+  primary production URL. `blood.isayenko.net` is retired and
+  301-redirects there (`web/worker/index.ts`, still a second
+  custom-domain route in `web/wrangler.jsonc`, but only to catch and
+  forward the old host); `www.paneloom.com` does not resolve. `paneloom.app` / `.net` were
   unregistered on 2026-09-08; only `.com` is in
   [`budget.md`](../business/budget.md).
 - **Wordmark / logo**: horizontal lockup, mark left of the wordmark,

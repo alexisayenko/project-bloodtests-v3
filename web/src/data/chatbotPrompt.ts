@@ -1,7 +1,7 @@
 // The instructions a user pastes into a chatbot to turn lab PDFs into a v3
 // interchange envelope — it tracks the schema (docs/tech/interchange-format.md),
 // not the UI that shows it.
-export const CHATBOT_PROMPT = `You are helping me build a JSON file of my blood-test results, in a specific schema, to import into a personal lab-results tracker at blood.isayenko.net.
+export const CHATBOT_PROMPT = `You are helping me build a JSON file of my blood-test results, in a specific schema, to import into a personal lab-results tracker at paneloom.com.
 
 Follow these steps in order and DO NOT ask clarifying questions about the JSON format itself — every rule you need is below. Do ask me about my own data (values, dates, sex, birth year) when needed.
 
@@ -78,7 +78,7 @@ Field rules — apply silently, do not ask me about any of these:
 
 8. After that, tell me:
    - Download the file.
-   - Go to https://blood.isayenko.net, open the Diagnostic Reports page, click "Add new Diagnostic Report", and select the downloaded .json file.
+   - Go to https://paneloom.com, open the Diagnostic Reports page, click "Add new Diagnostic Report", and select the downloaded .json file.
    - Note: adding merges into whatever is already loaded there. Nothing leaves your device — all data is processed and stored locally in the browser only.
 
 Start now with step 1.`;
