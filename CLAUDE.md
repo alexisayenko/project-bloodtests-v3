@@ -181,8 +181,15 @@ scale, radii, shadows and spacing — and `web/src/styles/tokens.ts` (`COLOR`,
 `Overline` / `DangerCard`, `SectionTitle` / `EmptyState`, `StatusDot` /
 `StatusChip` / `StatusToggle`, `SwitchToggle`, `SegmentedControl`, plus
 `styles.ts`'s table, card-table and field styles and `tones.ts`'s `TONE_DOT` /
-`TONE_LABEL` — catalogued in `docs/ui-ux/style-guide.md`. On a narrow screen both of a results table's headers are
-retrievable rather than resident: `TableScroller.tsx` wraps every results
+`TONE_LABEL` — catalogued in `docs/ui-ux/style-guide.md`. A results table's
+marker-name column is frozen on every screen size — the real first column,
+held by `position: sticky` at the left edge, so it cannot drift out of line
+with the rows, picking up an edge shadow (`.mc-col-cut`, driven by
+`TableScroller.tsx`'s own scroll tracking) once the table is actually scrolled
+under it, the same treatment Medications' own Medication column uses. On a
+narrow screen the date header row is also retrievable rather than resident,
+and the frozen column additionally collapses to a 5px sliver behind a pull:
+`TableScroller.tsx` wraps every results
 table (`ResultTables.tsx`'s one `ResultsTable`) and, on mobile only — `useIsMobile`
 (`web/src/hooks/useIsMobile.ts`) reading the stylesheet's own `max-width: 767px`
 as `MOBILE_QUERY`, so the JS-mounted overlays exist exactly where the CSS
@@ -190,9 +197,9 @@ placing them applies — parks the marker-name column and the date header row at
 a 5px sliver each, opened by a pull (`usePullReveal.ts`: follows the finger,
 commits past 40% of the remaining travel, springs back otherwise, and takes a
 sub-6px gesture as a tap on the sliver) and, for the dates, by a thumb-sized
-"Dates" chip, which is the control people are meant to find. The column is the
-real first column held by `position: sticky` at a negative offset, so it cannot
-drift out of line with the rows; the header has to be a copy — vertical sticky
+"Dates" chip, which is the control people are meant to find. On mobile the
+column's sliver is a negative offset on that same sticky `left`, so it still
+cannot drift out of line with the rows; the header has to be a copy — vertical sticky
 would resolve against the scrolling box rather than the page — and is kept
 aligned by rendering the same `colgroup` and `thead` (over `ui.ts`'s shared
 `RESULT_TABLE` and `LABEL_COL_WIDTH`) in a fixed box of the same width with the

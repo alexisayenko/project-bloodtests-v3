@@ -151,6 +151,21 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 /* Results table surface: the card's own border closes the last row. */
 .mc-results-card tbody tr:last-child > * { border-bottom-color: transparent !important; }
 
+/* A results table's marker-name column is frozen on every screen size, the
+   same way Medications' own Medication column is: the real first column,
+   held by `position: sticky` at the left edge, so it can never drift out of
+   line with the rows -- and an edge shadow (`.mc-col-cut`, driven by
+   TableScroller's own scroll tracking) once the table is actually scrolled
+   under it. Below, the mobile media query overrides only `left`, swapping
+   the fixed 0 for the pull-reveal's negative offset. */
+.mc-table-wrap th:first-child,
+.mc-table-wrap tbody td:first-child {
+  position: sticky; left: 0; z-index: 1; background-color: var(--surface);
+}
+.mc-table-wrap tbody tr[data-selected] td:first-child { background-color: var(--accent-soft); }
+.mc-table-wrap.mc-col-cut th:first-child,
+.mc-table-wrap.mc-col-cut tbody td:first-child { box-shadow: 2px 0 5px rgba(0, 0, 0, 0.14); }
+
 /* Panel Detail header: back chevron, the panel's icon disc, title and description. */
 .mc-detail-head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
 .mc-detail-back {
@@ -353,18 +368,16 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   }
   .mc-nav-hidden { transform: translateY(-100%); }
 
-  /* A results table's marker-name column is the real first column, parked by
-     sticky at a negative offset so only --mc-col-left of it shows. It can
-     never fall out of line with the rows because it IS the rows' own cells. */
+  /* On mobile the frozen column (above) parks at a negative offset instead of
+     the fixed 0, so only --mc-col-left of it shows -- the pull-reveal sliver.
+     It can never fall out of line with the rows because it IS the rows' own
+     cells. */
   .mc-table-wrap th:first-child,
   .mc-table-wrap tbody td:first-child {
-    position: sticky; left: var(--mc-col-left, 0px); z-index: 1; background-color: var(--surface);
+    left: var(--mc-col-left, 0px);
   }
-  .mc-table-wrap tbody tr[data-selected] td:first-child { background-color: var(--accent-soft); }
   .mc-table-wrap.mc-col-animated th:first-child,
   .mc-table-wrap.mc-col-animated tbody td:first-child { transition: left 0.18s ease; }
-  .mc-table-wrap.mc-col-cut th:first-child,
-  .mc-table-wrap.mc-col-cut tbody td:first-child { box-shadow: 2px 0 5px rgba(0, 0, 0, 0.14); }
 
   /* The date header row: a copy of the same colgroup and thead in a box of the
      same width, clipped to the revealed height and offset by the table's own

@@ -27,19 +27,25 @@ function navOffset(): number {
 }
 
 /**
- * The horizontally scrolling box around a results table, plus -- on mobile only
- * -- the pull-to-reveal handles for the two things that scroll out of it: the
- * date header row (off the top, with the page) and the marker-name column (off
- * the left, with this box). Neither is pinned; each leaves a SLIVER you drag or
- * tap open, and collapses again on the next scroll or a tap elsewhere.
+ * The horizontally scrolling box around a results table. The marker-name
+ * column is frozen on every screen size -- the real first column, held by
+ * `position: sticky` at the left edge, so it can never drift out of line
+ * with the rows -- picking up an edge shadow (`mc-col-cut`, from this
+ * component's own scroll tracking) once the table is actually scrolled
+ * under it, the same treatment Medications' sticky column uses.
  *
- * The column reveal is the real first column, held by `position: sticky` at a
- * negative offset, so it can never drift out of line with the rows. The header
- * reveal has to be a copy -- vertical sticky would resolve against this
- * scrolling box rather than the page -- and it is kept aligned by rendering the
- * SAME colgroup and thead inside a box of the same width, with the horizontal
- * scroll mirrored onto it. It also gets the floating "Dates" chip, which is the
- * control people are actually expected to find; the pull is the shortcut.
+ * On mobile only, this also renders the pull-to-reveal handles for the two
+ * things narrow screens still can't just leave on screen: the date header
+ * row (off the top, with the page) and the frozen column itself, parked at a
+ * SLIVER instead of shown in full. Neither is pinned open; each is dragged or
+ * tapped open and collapses again on the next scroll or a tap elsewhere.
+ *
+ * The header reveal has to be a copy -- vertical sticky would resolve against
+ * this scrolling box rather than the page -- and it is kept aligned by
+ * rendering the SAME colgroup and thead inside a box of the same width, with
+ * the horizontal scroll mirrored onto it. It also gets the floating "Dates"
+ * chip, which is the control people are actually expected to find; the pull
+ * is the shortcut.
  */
 export function TableScroller({
   colgroup,
@@ -104,14 +110,18 @@ export function TableScroller({
     };
   }, [isMobile]);
 
+  // Tracks horizontal scroll on every screen size -- desktop included -- since
+  // `scrollLeft` alone is what drives the frozen column's edge shadow
+  // (`mc-col-cut`, below). The pull-reveal collapse it also triggers only
+  // matters on mobile, where the column can be dragged open in the first place.
   useEffect(() => {
     const wrap = wrapRef.current;
-    if (!isMobile || !wrap) return;
+    if (!wrap) return;
     const onScroll = () => {
       setScrollLeft(wrap.scrollLeft);
       // Only the column reveal lives on this axis; a header left open follows
       // the scroll instead, which is how you read across to a far date.
-      if (!live.current.column.dragging) live.current.column.collapse();
+      if (isMobile && !live.current.column.dragging) live.current.column.collapse();
     };
     wrap.addEventListener('scroll', onScroll, { passive: true });
     return () => wrap.removeEventListener('scroll', onScroll);
