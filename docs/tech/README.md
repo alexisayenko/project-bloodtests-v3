@@ -26,10 +26,11 @@ Product / business / UX live in their own sections.
 - [`sync-architecture-options.md`](sync-architecture-options.md) — a
   reference doc, not an ADR: the fuller cross-device sync / multi-user
   design-space survey from the same conversation that produced
-  ADR-0015 → ADR-0017 → ADR-0018, including options never written up
-  in an ADR (end-to-end encryption as an alternative framing) and the
-  narrower near-term plan (Firebase, per-profile documents, a profile
-  picker, no auth) actually being built instead.
+  ADR-0015 → ADR-0017 → ADR-0018 (→ ADR-0019, after that conversation),
+  including options never written up in an ADR (end-to-end encryption as
+  an alternative framing) and the narrower near-term plan actually built
+  instead — now self-hosted Supabase per ADR-0019, not the Firebase plan
+  this document originally contrasted it against.
 
 ## Reference data
 
@@ -263,18 +264,23 @@ scheduled. Format and round-trip gaps are listed separately, under
   chart tabs are `React.lazy`-split (`LabExploreView` ≈ 78 kB,
   `PanelChartsView` ≈ 14 kB) and Account's backup loads `fflate` on click
   (≈ 32 kB), which once took the entry chunk from ~698 kB to ~616 kB raw;
-  it has grown back since with every section added and measures ~1391 kB
-  raw (~415 kB gzipped) as of 2026-09-14 — the `firebase` SDK (Auth and
-  now Firestore too, ADR-0018) accounts for most of the latest jump, from
-  ~763 kB before Auth to ~958 kB with Auth alone to this — still over
-  Vite's "larger than 500 kB" advisory, and worth a closer look once the
-  sync feature is done growing: Firestore alone is a large chunk of this.
-  Its largest single piece is `analyteCatalog.ts` importing
+  it had grown back with every section added and measured ~1391 kB
+  raw (~415 kB gzipped) as of 2026-09-13 — the `firebase` SDK (Auth and
+  then Firestore too, ADR-0018) accounted for most of that jump, from
+  ~763 kB before Auth to ~958 kB with Auth alone to that figure — still over
+  Vite's "larger than 500 kB" advisory. ADR-0019 (2026-09-14) then replaced
+  Firebase with `@supabase/supabase-js` for cloud sync, so that
+  Firebase-SDK weight is gone from the entry chunk, though the `firebase`
+  package itself is still a dependency (its code is simply unused, per
+  ADR-0019 — see CLAUDE.md's Account section) and `@supabase/supabase-js`
+  adds its own weight in its place; the bundle has not been re-measured
+  since the migration, so the figures above predate it.
+  Its largest single piece regardless is `analyteCatalog.ts` importing
   `analyses.json` (~305 kB on disk) statically, so the catalog is bundled
   rather than fetched. It is an advisory, not an
   error, and a catalog that cannot arrive late is a fair trade on a
   single-page app — but the warning is real and the remaining fix (a
-  dynamic `import()` of the catalog and/or the firebase SDK, or a raised
+  dynamic `import()` of the catalog and/or the Supabase SDK, or a raised
   `chunkSizeWarningLimit`) has not been taken, so a genuinely new size
   regression would hide inside it.
 

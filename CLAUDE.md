@@ -330,7 +330,7 @@ that uses it; the gutter is reserved on every row so names never shift
 From 768px up the nav is an app shell (`AppShell.tsx`): a white top bar
 (`TopBar.tsx` — mark and wordmark linking to Monitoring Panels, a lock and
 "Your data stays in this browser" when signed out, a cloud-check icon and
-"Synced to your account" when signed in via `useAuthUser`) over a left
+"Synced to your account" when signed in via `useSupabaseAuthUser`) over a left
 sidebar (`SideNav.tsx`) listing
 all nine `NAV_ITEMS` with a line icon each — `lucide-react`'s, except the two
 drawn in `customIcons.tsx` to the same stroke and size, `PillIcon` (a split
@@ -632,28 +632,69 @@ first Reference Book page to embed a raster image) — each
 its own URL hash so
 browser back/forward works. Account (`#account`, last in the nav and reachable
 while validation errors exist) opens with an auth card (`AccountAuthCard`,
-ADR-0018's two-tier model — no login stays local, signing in switches
-storage mode directly, no separate picker): Google/Apple sign-in via
-`firebase/auth` (`web/src/firebase/{config,auth}.ts`, `useAuthUser` hook)
-runs a one-time cutover through `web/src/firebase/firestore.ts`'s
-`pullCloudFiles`/`pushCloudFiles`, one document per person at `users/{uid}`
-holding the Account backup-bundle's parts as native fields (`manifest`,
-`labReports`, `medications`, `scheduledVisits`, `settings` — never
-`laboratory-prices.json`, same as local restore, the shipped registry
-wins) gated by `request.auth.uid`-scoped security rules: signing in pulls
-and restores an existing document for that UID through the same
-`onImportAll` Import-all-data uses (cloud wins, local discarded) or, if
-none exists yet, pushes today's local data up as the account's first
-cloud copy; signing out pushes current local state up first and only
-once that succeeds calls `signOutUser()` then `onClearAll()` to wipe the
-local copy, so a shared browser shows the next person a clean slate
-rather than whoever signed out before them, and a failed push blocks the
-rest of sign-out rather than wiping data it couldn't save. No ongoing
-sync beyond those two moments, and no storage-mode picker — signing in
+ADR-0018's two-tier policy model — no login stays local, signing in switches
+storage mode directly, no separate picker — now running over ADR-0019's
+self-hosted Supabase backend instead of Firebase, the policy itself
+unchanged): a second, independent Supabase instance (self-hosted, not
+Supabase Cloud — own Postgres, GoTrue auth, PostgREST and an Envoy gateway
+behind a Supavisor pooler, with Realtime/Storage/imgproxy/Edge
+Functions/Studio all deliberately dropped, this app having no use for
+them) reached at `https://api.paneloom.com` via `@supabase/supabase-js` —
+the same "no backend" shape the rest of the app already has (Tech stack's
+opening claim holds in the sense that nothing runs server-side in this
+app's own deploy; the client talks straight to Supabase's REST/Auth API
+over HTTPS, the same relationship it already had with Firebase).
+Google/Apple sign-in via `web/src/supabase/auth.ts`'s
+`signInWithGoogle()`/`signInWithApple()` (both `supabase.auth.signInWithOAuth`
+with `redirectTo: window.location.href`) and `signOutUser()`, config in
+`web/src/supabase/config.ts` hardcoding the project URL and anon key (the
+same convention `firebase/config.ts`'s hardcoded `apiKey` used — both
+designed for public client exposure, RLS/Firebase-rules being the real
+access boundary, not secrecy) and set to PKCE flow specifically, not
+Supabase's default implicit flow: this app's router already owns the URL
+hash (`#account`, `#reports`, …), which collides with the implicit flow's
+`#access_token=…` redirect fragment — a real bug hit during live testing
+(a double-hash URL neither the router nor Supabase's own session parser
+could read) — fixed by `flowType: 'pkce'`, which returns the session via a
+`?code=` query param instead. `web/src/supabase/sync.ts`'s
+`pullCloudFiles`/`pushCloudFiles` run the same one-time cutover Firestore's
+equivalent did, against one `public.user_backups` row per person (`id`
+uuid primary key referencing `auth.users(id)` on delete cascade,
+`manifest`/`lab_reports`/`medications`/`scheduled_visits`/`settings` jsonb
+columns — never `laboratory-prices.json`, same as local restore, the
+shipped registry wins — plus `updated_at`; migration source
+`supabase/migrations/0001_init.sql`, not applied by any app code, run by
+hand against the instance, the same pattern `project-travel`'s own repo
+already uses for its own separate Supabase instance) gated by four RLS
+policies all scoped to `auth.uid() = id`, the same per-person boundary
+Firestore's `users/{uid}` document had, relational instead of a NoSQL doc:
+signing in pulls and restores an existing row for that UID through the
+same `onImportAll` Import-all-data uses (cloud wins, local discarded) or,
+if none exists yet, pushes today's local data up as the account's first
+cloud copy; signing out pushes current local state up first and only once
+that succeeds calls `signOutUser()` then `onClearAll()` to wipe the local
+copy, so a shared browser shows the next person a clean slate rather than
+whoever signed out before them, and a failed push blocks the rest of
+sign-out rather than wiping data it couldn't save — the ADR-0018 policy,
+carried over unchanged. Supabase's OAuth is redirect-based rather than
+Firebase's popup-based `signInWithPopup`, which resolved synchronously so
+the click handler could trigger sync directly; here the whole page
+navigates away to the provider and back, so `AccountAuthCard` instead wires
+the cutover to a `supabase.auth.onAuthStateChange` listener, running it
+specifically on the `SIGNED_IN` event — never on `INITIAL_SESSION`, which
+fires for an already-authenticated returning visit and must not re-trigger
+sync — which is what keeps it "once per fresh sign-in" under the new
+redirect-based flow. `web/src/hooks/useSupabaseAuthUser.ts` exposes the
+same `{user, loading}` shape the old `useAuthUser` did, via
+`supabase.auth.getSession()` plus `onAuthStateChange`. No ongoing sync
+beyond the two cutover moments, and no storage-mode picker — signing in
 and out is the whole interface. The TopBar and Get Started's pitch
-(`ProfileView.tsx`) both read `useAuthUser` too, swapping their
+(`ProfileView.tsx`) both read `useSupabaseAuthUser` too, swapping their
 local-only copy and "100% private" pillar for a "Synced to your
-account" line and pillar while signed in. Then a
+account" line and pillar while signed in. Firebase's own code
+(`web/src/firebase/*`) is untouched and still in the repo — simply no
+longer used by `AccountView`/`TopBar`/`ProfileView` as of ADR-0019; whether
+and when it gets removed is undecided. Then a
 "Database details" card — subject
 / sex / birth year / notes plus a read-only `generatedAt` stamped on each
 export, persisted under localStorage key `bloodtests_envelope_meta_v1` and

@@ -1,7 +1,9 @@
 # ADR-0018: Firebase (Auth + Firestore) replaces the Supabase plan, provisionally
 
 Status: accepted · 2026-09-13 · supersedes
-[ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md)
+[ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) ·
+superseded by
+[ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md)
 
 The storage-mode shape still stands, unchanged from ADR-0015 through
 ADR-0017: an opt-in "Dedicated server" mode beside the unchanged
@@ -17,7 +19,14 @@ login button were already the plan, and stay the plan. What changes is
 the vendor and the deployment shape, and — stated plainly rather than
 dressed up as more settled than it is — this choice is itself explicitly
 provisional, in Alex's own words: "let's do maybe firebase now, so
-later I'll check what fits me better."
+later I'll check what fits me better." That check happened the next day:
+[ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) drops
+Firebase for a self-hosted Supabase instance, closing out this ADR's
+Firebase chapter exactly along the lines this ADR's own "What would force
+revisiting" anticipated. The two-tier sign-in policy below (cloud wins on
+sign-in; sign-out pushes then wipes local, unless local is empty and
+cloud isn't) carries forward into ADR-0019 unchanged — only the vendor
+and the sign-in plumbing around it changed.
 
 ## Context
 
@@ -364,3 +373,16 @@ not started.
   console. Both incidents are closed: nothing was permanently lost (Alex
   had an independent zip backup throughout), and the sign-out guard is
   now live, so this same shared-device pattern can't repeat it.
+- 2026-09-14: Superseded by
+  [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md). The
+  "check what fits me better" comparison this ADR flagged as provisional
+  from the start happened, and landed on a self-hosted Supabase instance
+  instead of Firebase — Firebase Auth and Firestore are replaced by
+  Supabase Auth (Google + Apple, over PKCE) and a `public.user_backups`
+  table under row-level security, with the same two-tier sign-in policy
+  (cloud wins on sign-in; sign-out pushes then wipes local unless local
+  is empty and cloud isn't) carried over unchanged. Firebase's own code
+  (`web/src/firebase/*`) is left in the repo, untouched and unused, rather
+  than deleted as part of this migration. This closes out this ADR's
+  implementation history; see ADR-0019 for the migration itself and its
+  own Implementation progress.

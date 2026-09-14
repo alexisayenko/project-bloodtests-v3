@@ -6,18 +6,23 @@ conversation about eventual cross-device sync / multi-user support
 covered far more ground than what actually got decided
 ([ADR-0015](decisions/adr-0015-dedicated-server-storage-via-bearer-token.md)
 → [ADR-0017](decisions/adr-0017-supabase-storage-self-hosted-then-cloud.md)
-→ [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md)), and
+→ [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md) →
+[ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md),
+the last of these from a follow-up conversation the next day), and
 some of that ground — most importantly, end-to-end encryption as an
 alternative framing of the whole problem — isn't captured in any ADR.
 Where a topic is already recorded there, this document points at it
-rather than restating it. Read those three ADRs first; this document
-assumes them.
+rather than restating it. Read those four ADRs first; this document
+assumes them, and — written before ADR-0019 existed — still frames
+Firebase as the current pick in a few places below; ADR-0019 is what
+actually shipped.
 
 ## 1. The options compared, and why each was ruled out or deferred
 
 The ADR chain above records the backend/auth choice actually made and
-superseded twice (bespoke Bearer-token server → self-hosted-then-cloud
-Supabase → Firebase, current and explicitly provisional). Before and
+superseded three times (bespoke Bearer-token server →
+self-hosted-then-cloud Supabase → Firebase, explicitly provisional →
+self-hosted Supabase again, ADR-0019, current). Before and
 around that chain, a wider set of options was raised. The ones ADR-0015
 already documents in full are only summarized here to keep one place as
 the source of truth:
@@ -58,10 +63,12 @@ the source of truth:
   built, on setup-speed and ops-burden grounds, plus managed Supabase's
   free tier pausing an inactive project — a real risk for this app's
   irregular usage pattern.
-- **Firebase.** ADR-0018's current, explicitly provisional decision —
-  Firebase Auth (Google Sign-In) + Firestore. Chosen for setup speed and
-  no inactivity pause, not because it won an evaluation on long-term
-  merits.
+- **Firebase.** ADR-0018's explicitly provisional decision — Firebase
+  Auth (Google Sign-In) + Firestore. Chosen for setup speed and no
+  inactivity pause, not because it won an evaluation on long-term merits.
+  Superseded by ADR-0019 the next day, once that provisional status was
+  actually revisited: self-hosted Supabase, on Alex's own infrastructure,
+  is the current pick.
 
 One more thread was raised and deliberately left open rather than
 decided either way: whether `project-travel` and `project-wardrobe`
@@ -143,23 +150,26 @@ Consequences and "What would force revisiting") comes back into focus.
 
 ## 3. What's actually being built right now, for contrast
 
-Distinct from all of the above: [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md)
-now carries the concrete, settled design for the near-term build, so it
-is the single source of truth rather than restated here. In short — the
-app stays fully usable with no login at all (today's unchanged, global,
-unscoped localStorage); a logged-in person (real per-person Firebase
-Auth, Google Sign-In and Sign in with Apple) then separately chooses
-local storage (their own UID-namespaced slice of that same localStorage,
-for shared devices) or cloud storage (one Firestore document per person
-keyed to their Firebase Auth uid and access-controlled by security
-rules); and switching between logged-in people is the plain
-sign-out/sign-in flow on the same device/browser, not a profile picker
-standing in for authentication. An earlier draft of this section
-described a different near-term plan — no Google/Apple sign-in, a bare
-profile picker with no auth boundary — which is now superseded and no
-longer accurate; read ADR-0018's Decision and "Specifics settled"
-sections for what actually replaced it, including the usage tiers
-and the storage-shape and per-document details.
+Distinct from all of the above: [ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)
+(carrying forward [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md)'s
+policy unchanged) now carries the concrete, settled design for the
+near-term build, so it is the single source of truth rather than restated
+here. In short — the app stays fully usable with no login at all (today's
+unchanged, global, unscoped localStorage); a logged-in person (real
+per-person Supabase Auth, Google Sign-In and Sign in with Apple, against a
+self-hosted Supabase instance) then separately chooses local storage
+(their own UID-namespaced slice of that same localStorage, for shared
+devices) or cloud storage (one `user_backups` row per person keyed to
+their Supabase Auth uid and access-controlled by row-level security);
+and switching between logged-in people is the plain sign-out/sign-in flow
+on the same device/browser, not a profile picker standing in for
+authentication. This section originally described Firebase (ADR-0018)
+here, and before that a different near-term plan still — no Google/Apple
+sign-in, a bare profile picker with no auth boundary — both now
+superseded and no longer accurate; read ADR-0019's Decision section, and
+ADR-0018's "Specifics settled" section for the policy it still carries
+unchanged, for what actually replaced them, including the usage tiers
+and the storage-shape and per-account details.
 
 This remains a narrower scope than the fuller designs in sections 1–2
 above (no end-to-end encryption, still the plaintext-in-a-trusted-backend

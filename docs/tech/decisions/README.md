@@ -33,7 +33,8 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md) | Opt-in "dedicated server" storage, authenticated by a bearer token, not OAuth | accepted · 2026-09-12 · superseded by 0017 |
 | [ADR-0016](adr-0016-scheduling-is-a-collection-of-independent-visits.md) | Scheduling is a collection of independent visits, not one global schedule | accepted · 2026-09-13 |
 | [ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) | Supabase (self-hosted, then managed cloud) replaces the bearer-token server; real accounts/OAuth return | accepted · 2026-09-13 · supersedes 0015 · superseded by 0018 |
-| [ADR-0018](adr-0018-firebase-storage-provisional.md) | Firebase (Auth + Firestore) replaces the Supabase plan, provisionally | accepted · 2026-09-13 · supersedes 0017 |
+| [ADR-0018](adr-0018-firebase-storage-provisional.md) | Firebase (Auth + Firestore) replaces the Supabase plan, provisionally | accepted · 2026-09-13 · supersedes 0017 · superseded by 0019 |
+| [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) | Self-hosted Supabase replaces Firebase for cloud sync | accepted · 2026-09-14 · supersedes 0018 |
 
 ## Where each one bites
 
@@ -74,9 +75,9 @@ Each record opens with `# ADR-NNNN: <title>` and a
   to `web/public/data/pathways.json`, the same single-source rule as
   0010; see the [pathway](../../product/concepts/pathway.md) concept and
   [task-0024](../../tasks/task-0024.md).
-- **Sync / storage backend** — 0015, still unbuilt: an opt-in dedicated
-  server storage mode beside the unchanged local-only default, syncing
-  the existing backup-bundle shape; its bearer-token auth model
+- **Sync / storage backend** — 0015: an opt-in dedicated server storage
+  mode beside the unchanged local-only default, syncing the existing
+  backup-bundle shape; its bearer-token auth model
   superseded the auth model in
   [task-0025](../../tasks/task-0025.md), and is itself superseded by
   0017, which replaces the bespoke server with Supabase (self-hosted on
@@ -87,8 +88,18 @@ Each record opens with `# ADR-NNNN: <title>` and a
   for Firebase (Firebase Auth for Google Sign-In, Firestore for the
   synced data), an explicitly provisional choice made for
   speed-to-working-setup and zero ops rather than a settled long-term
-  pick. The storage-mode shape and the one-time-cutover migration model
-  carry over from 0015 unchanged.
+  pick. 0018 is itself superseded by 0019, which does the "check what
+  fits me better" comparison 0018 anticipated and lands on self-hosted
+  Supabase — a second, independent instance kept apart from any other
+  project's Supabase — with Supabase Auth (Google/Apple, PKCE flow) and
+  a `public.user_backups` table under RLS standing in for Firestore's
+  per-person document; implemented, with Firebase's own code left in the
+  repo unused rather than deleted. The storage-mode shape and the
+  one-time-cutover migration model carry over from 0015 unchanged, and
+  0018's own two-tier sign-in policy (cloud wins; sign-out pushes then
+  wipes local, unless local is empty and cloud isn't) carries over from
+  0018 into 0019 unchanged too — only the backend and the sign-in
+  plumbing around it changed.
 - **Scheduling** — 0016: a list of independent `ScheduledVisit` entries
   rather than one global schedule object, implemented in
   `web/src/components/conditions/scheduled.ts` and rendered as one
