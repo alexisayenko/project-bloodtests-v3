@@ -52,6 +52,28 @@ export function latestEntryByLoinc(
   return map;
 }
 
+/**
+ * The newest entry across any of the given LOINCs recorded strictly before
+ * `beforeDate` -- the date-bounded sibling of `getLatest`/`latestEntryByLoinc`,
+ * for a fallback that should prefer the patient's own prior measurement (e.g.
+ * albumin on an earlier draw) over a same-date reading or a fixed constant.
+ */
+export function latestEntryBefore(
+  entries: readonly ResultEntry[],
+  loincs: readonly string[],
+  beforeDate: string,
+  { numericOnly }: LatestEntryOptions = DEFAULT_LATEST_ENTRY_OPTIONS,
+): ResultEntry | null {
+  let current: ResultEntry | null = null;
+  for (const entry of entries) {
+    if (entry.date >= beforeDate) continue;
+    if (!loincs.includes(entry.loinc)) continue;
+    if (entry.result.value == null && (numericOnly || !entry.result.rawValue)) continue;
+    if (!current || entry.date > current.date) current = entry;
+  }
+  return current;
+}
+
 export function getStatus(latestByLoinc: LatestByLoinc, loincs: string[]): Status {
   const current = getLatest(latestByLoinc, loincs);
   if (!current) return 'never';

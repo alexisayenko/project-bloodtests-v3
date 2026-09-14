@@ -17,6 +17,7 @@ import {
   indexBands,
   indexZone,
   markersForIndex,
+  type IndexDef,
   type SubjectProfile,
 } from '../../data/computedIndices';
 import { DEFAULT_ALBUMIN_GDL, INDEX_DEFS, testosteronePools } from '../../data/indexDefs';
@@ -27,7 +28,7 @@ import type { Result } from '../../types';
 import { fmtNum, isOutOfRange } from '../../utils/format';
 import { panelDates, type Observation } from './markers';
 import { displayedResult, formatFullDate } from './ui';
-import { hasReference, type ResultEntry } from './resultsLookup';
+import { hasReference, latestEntryBefore, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
 import {
   BrainPituitaryIcon,
@@ -118,12 +119,56 @@ function labRangeOf(key: MarkerKey, result: Result, unitSystem: 'si' | 'us'): La
   return { low: low?.value ?? undefined, high: high?.value ?? undefined, unit: (low ?? high)?.unit ?? result.unit };
 }
 
+/**
+ * What to use for albumin when the selected draw has no reading of its own:
+ * `none` computes without it, `prior` prefers the patient's own most recent
+ * earlier measurement, `default` falls back to the fixed ISSAM-calculator
+ * constant (`DEFAULT_ALBUMIN_GDL`).
+ */
+const ALBUMIN_FALLBACKS = ['none', 'prior', 'default'] as const;
+type AlbuminFallback = (typeof ALBUMIN_FALLBACKS)[number];
+
+function albuminFallbackLabel(fallback: AlbuminFallback, unitSystem: 'si' | 'us'): string {
+  switch (fallback) {
+    case 'none':
+      return "Don't use a fallback";
+    case 'prior':
+      return 'Use the previously measured albumin';
+    case 'default':
+      return `Use ${unitSystem === 'si' ? `${fmtNum(DEFAULT_ALBUMIN_GDL * 10)} g/L` : `${fmtNum(DEFAULT_ALBUMIN_GDL)} g/dL`}`;
+  }
+}
+
+/**
+ * Albumin in g/dL for the selected draw: a same-draw reading always wins;
+ * otherwise the fallback picks between no albumin, the newest strictly-prior
+ * reading (converted the same way a same-draw one is, via `markersForIndex`),
+ * or the fixed constant. `prior` with nothing to find yields no albumin --
+ * the fallbacks are exclusive choices, not a cascade.
+ */
+function resolveAlbumin(
+  allResults: readonly ResultEntry[],
+  resultsByDate: Record<string, Record<string, Result>>,
+  date: string | undefined,
+  biot: IndexDef | undefined,
+  sameDraw: number | undefined,
+  fallback: AlbuminFallback
+): number | undefined {
+  if (sameDraw != null) return sameDraw;
+  if (fallback === 'default') return DEFAULT_ALBUMIN_GDL;
+  if (fallback === 'prior' && date && biot) {
+    const prior = latestEntryBefore(allResults, MARKER_CODES.ALB, date, { numericOnly: true });
+    if (prior) return markersForIndex(biot, resultsByDate[prior.date] ?? {})['ALB'];
+  }
+  return undefined;
+}
+
 function snapshotOf(
   allResults: readonly ResultEntry[],
   resultsByDate: Record<string, Record<string, Result>>,
   date: string | undefined,
   unitSystem: 'si' | 'us',
-  assumeAlbumin: boolean
+  albuminFallback: AlbuminFallback
 ): Snapshot {
   const onDate = date ? allResults.filter((e) => e.date === date && e.result.value != null) : [];
   const resultsByLoinc = (date && resultsByDate[date]) || {};
@@ -144,7 +189,7 @@ function snapshotOf(
 
   const biot = defOf('biot');
   const inputs = biot ? markersForIndex(biot, resultsByLoinc) : {};
-  const albumin = inputs['ALB'] ?? (assumeAlbumin ? DEFAULT_ALBUMIN_GDL : undefined);
+  const albumin = resolveAlbumin(allResults, resultsByDate, date, biot, inputs['ALB'], albuminFallback);
 
   const index = (key: IndexKey): Measure => {
     const def = defOf(key);
@@ -1003,12 +1048,12 @@ export function HormonalPathwaysView({
   const [cardAt, setCardAt] = useState<{ left: number; top: number } | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
-  const [assumeAlbumin, setAssumeAlbumin] = useState(true);
+  const [albuminFallback, setAlbuminFallback] = useState<AlbuminFallback>('default');
   const dates = useMemo(() => panelDates(PANEL_NAME, panelTests, allResults).reverse(), [panelTests, allResults]);
   const date = picked && dates.includes(picked) ? picked : dates.at(-1);
   const snapshot = useMemo(
-    () => snapshotOf(allResults, resultsByDate, date, unitSystem, assumeAlbumin),
-    [allResults, resultsByDate, date, unitSystem, assumeAlbumin]
+    () => snapshotOf(allResults, resultsByDate, date, unitSystem, albuminFallback),
+    [allResults, resultsByDate, date, unitSystem, albuminFallback]
   );
 
   const placeCard = useCallback((chip: Element) => {
@@ -1068,8 +1113,17 @@ export function HormonalPathwaysView({
       <div className="mc-pathway-toolbar">
         <DateStepper dates={dates} index={date ? dates.indexOf(date) : -1} onChange={(i) => setPicked(dates[i] ?? null)} />
         <label className="mc-pathway-check">
-          <input type="checkbox" checked={assumeAlbumin} onChange={(e) => setAssumeAlbumin(e.target.checked)} />
-          Use albumin {unitSystem === 'si' ? `${fmtNum(DEFAULT_ALBUMIN_GDL * 10)} g/L` : `${fmtNum(DEFAULT_ALBUMIN_GDL)} g/dL`} when not measured
+          Albumin when not measured this draw
+          <select
+            className="mc-field mc-field-select mc-field-sm"
+            aria-label="Albumin fallback when not measured this draw"
+            value={albuminFallback}
+            onChange={(e) => setAlbuminFallback(e.currentTarget.value as AlbuminFallback)}
+          >
+            {ALBUMIN_FALLBACKS.map((fallback) => (
+              <option key={fallback} value={fallback}>{albuminFallbackLabel(fallback, unitSystem)}</option>
+            ))}
+          </select>
         </label>
       </div>
       <PathwayContext.Provider value={state}>

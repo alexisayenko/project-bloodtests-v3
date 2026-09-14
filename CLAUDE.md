@@ -466,9 +466,18 @@ that panel's results-table dates — `markers.ts`'s `panelDates`, shared with
 `PanelDetailView` — defaulting to the latest, the readings shown in SI/US;
 Free T, Bio-T, T/LH, DHT/T and T/E2 come from `computeIndex` over
 `INDEX_DEFS`, and the SHBG-bound and albumin-bound pools from `indexDefs.ts`'s
-`testosteronePools`. A "Use albumin 43 g/L (4.3 g/dL) when not measured"
-checkbox, on by default, feeds the exported `DEFAULT_ALBUMIN_GDL` to Free T,
-Bio-T and the pools; unchecked, they need a measured albumin. Node captions are
+`testosteronePools`. A single select in `HormonalPathwaysView.tsx` — not a
+checkbox — offers three mutually-exclusive fallbacks for a selected date with
+no same-draw albumin reading: "Don't use a fallback" (no albumin, as the old
+unchecked state), "Use the previously measured albumin" (the newest reading
+strictly before the selected date, found through a new `latestEntryBefore`
+helper in `resultsLookup.ts`, the date-bounded sibling of
+`latestEntryByLoinc`), and "Use 43 g/L (4.3 g/dL)" (the old checked-default
+state, still the default selection) — feeding `DEFAULT_ALBUMIN_GDL` or the
+resolved prior reading to Free T, Bio-T and the pools exactly as before; a
+same-draw reading always wins over the select regardless of which option is
+chosen, and the choice lives in plain component `useState`, unpersisted like
+the checkbox's state before it. Node captions are
 compact chips with a status dot and a short face (SHBG-T, Albumin-T) whose
 floating card gives the full title (SHBG-bound Testosterone); chips and badges
 expand in place, one open at a time, closed by Escape or an outside click, and
