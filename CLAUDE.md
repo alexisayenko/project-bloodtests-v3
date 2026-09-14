@@ -619,14 +619,17 @@ chronologically -- December and the next year's January join into one
 continuous bar the same as any other adjacent pair, the year columns being
 a display grouping rather than a break in the run -- its Medication column,
 now the only sticky one, carrying the edge shadow the retired Notes column
-used to (reusing the mobile results-table reveal's `.mc-col-cut` treatment)
+used to (reusing the results-table reveal's `.mc-col-cut` treatment)
 so only the month columns scroll horizontally; edited behind an Edit / Done
 toggle, the grid always rendering every stored year's columns while
 `MedicationsView.tsx` scrolls the table's own horizontally-scrolling
 container (`scrollRef`, a one-time mount `useEffect`) so the current year's
 first month column lands right after the sticky Medication column —
-computed from the current year's index among the ascending `years` array —
-leaving earlier years scrolled out of view behind that column and later
+computed from the current year's index among the ascending `years` array,
+with the container's own `paddingRight` padded out when needed so that target
+stays reachable rather than silently clamped short by the browser, as it
+otherwise is for the common case of the current year being last — leaving
+earlier years scrolled out of view behind that column and later
 years reachable by scrolling right, with nothing stopping a visitor from
 scrolling back left afterward (`medsCurrentYearOnly` is gone from
 `StoredViewSettings` and `bloodtests_view_settings_v1`, dropped from

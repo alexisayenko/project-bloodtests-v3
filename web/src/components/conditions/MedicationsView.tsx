@@ -150,7 +150,19 @@ export function MedicationsView() {
     const currentYear = new Date().getFullYear();
     const yearIndex = years.indexOf(currentYear);
     if (yearIndex <= 0) return;
-    el.scrollLeft = NAME_COL_WIDTH + yearIndex * MONTH_COL_WIDTH * 12;
+    // Month columns already flow after the sticky Medication column in the table's own
+    // content, so scrollLeft is measured from the start of the year columns, not from the
+    // table's left edge -- adding NAME_COL_WIDTH here double-counted it and overshot into
+    // the target year itself instead of landing on its January.
+    const target = yearIndex * MONTH_COL_WIDTH * 12;
+    // When the current year is the last one (the common case), the table may not have
+    // enough width to its right to fill the container once scrolled this far, so the
+    // browser silently clamps scrollLeft short -- which is what actually produced the
+    // under-shoot, leaving the previous year's tail months in view. Pad the container so
+    // the full target is reachable instead of merely the content that happens to exist.
+    const shortfall = target - (el.scrollWidth - el.clientWidth);
+    if (shortfall > 0) el.style.paddingRight = `${shortfall}px`;
+    el.scrollLeft = target;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial scroll position only, deliberately not re-run on data changes
   }, []);
 
