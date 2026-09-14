@@ -97,8 +97,13 @@ payloads are real health data and are gitignored (`web/public/d/*.json`)
 because this repo is public, so a deploy needs them copied in locally
 first. `web/public/_headers` serves `/d/*` as
 `noindex`/`private`, and `robots.txt` disallows `/d/`. Deploys as
-a Cloudflare Worker (static assets) to `blood.isayenko.net` via
-`web/wrangler.jsonc`. Deploy runs from CI: the `deploy` job in
+a Cloudflare Worker (static assets) to `paneloom.com`, its production
+URL, via `web/wrangler.jsonc`: a small Worker script
+(`web/worker/index.ts`, wired in via `wrangler.jsonc`'s `main` and the
+assets `binding`) sits in front of the static assets and 301-redirects
+any request to `blood.isayenko.net` onto the same path and query on
+`paneloom.com`, everything else falling through to `env.ASSETS.fetch()`
+unchanged. Deploy runs from CI: the `deploy` job in
 `.github/workflows/ci.yml` publishes on every push to `main` once the
 quality gates pass. Because a CI checkout has no `web/public/d/*.json`,
 an automated deploy carries NO share-link payloads and every existing
