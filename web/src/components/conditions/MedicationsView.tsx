@@ -44,7 +44,7 @@ function monthEdge(monthIndex: number) {
   return monthIndex === 0 ? YEAR_EDGE : 'none';
 }
 
-function monthTh(monthIndex: number) {
+function monthTh(monthIndex: number, isLastColumn = false) {
   return {
     ...th,
     textAlign: 'center',
@@ -53,6 +53,10 @@ function monthTh(monthIndex: number) {
     fontWeight: 500,
     letterSpacing: '0.04em',
     borderLeft: monthEdge(monthIndex),
+    // Closes the table's right edge with the same line used at every other year boundary --
+    // otherwise only the left side of each year block is ever drawn, and the last column's
+    // right edge is left visually open.
+    borderRight: isLastColumn ? YEAR_EDGE : 'none',
   } as const;
 }
 
@@ -71,13 +75,14 @@ const monthCheckbox = {
   cursor: 'pointer',
 } as const;
 
-function monthTd(monthIndex: number, last: boolean) {
+function monthTd(monthIndex: number, last: boolean, isLastColumn = false) {
   return {
     position: 'relative',
     padding: 0,
     height: 34,
     borderBottom: last ? 'none' : `1px solid ${COLOR.borderSubtle}`,
     borderLeft: monthEdge(monthIndex),
+    borderRight: isLastColumn ? YEAR_EDGE : 'none',
   } as const;
 }
 
@@ -230,16 +235,21 @@ export function MedicationsView() {
                   <th rowSpan={2} scope="col" style={nameTh}>
                     Medication
                   </th>
-                  {years.map((year) => (
-                    <th key={year} colSpan={12} scope="colgroup" style={yearTh}>
+                  {years.map((year, yi) => (
+                    <th
+                      key={year}
+                      colSpan={12}
+                      scope="colgroup"
+                      style={yi === years.length - 1 ? { ...yearTh, borderRight: YEAR_EDGE } : yearTh}
+                    >
                       {year}
                     </th>
                   ))}
                 </tr>
                 <tr>
-                  {years.flatMap((year) =>
+                  {years.flatMap((year, yi) =>
                     MONTH_LABELS.map((m, i) => (
-                      <th key={`${year}-${m}`} scope="col" style={monthTh(i)}>
+                      <th key={`${year}-${m}`} scope="col" style={monthTh(i, yi === years.length - 1 && i === 11)}>
                         {m}
                       </th>
                     ))
@@ -347,21 +357,22 @@ export function MedicationsView() {
                           </>
                         )}
                       </td>
-                      {years.flatMap((year) =>
+                      {years.flatMap((year, yi) =>
                         MONTH_LABELS.map((_label, i) => {
                           const key = monthKey(year, i);
                           const marked = row.months.includes(key);
                           const bar = marked && <MonthBar joinsPrevious={isMarked(year, i - 1)} joinsNext={isMarked(year, i + 1)} />;
+                          const isLastColumn = yi === years.length - 1 && i === 11;
                           if (!editing) {
                             return (
-                              <td key={key} style={monthTd(i, last)} title={marked ? monthLabel(row, year, i) : undefined}>
+                              <td key={key} style={monthTd(i, last, isLastColumn)} title={marked ? monthLabel(row, year, i) : undefined}>
                                 {bar}
                               </td>
                             );
                           }
                           const toggle = () => onToggleMonth(row.id, key);
                           return (
-                            <td key={key} style={monthTd(i, last)}>
+                            <td key={key} style={monthTd(i, last, isLastColumn)}>
                               {bar}
                               <input
                                 type="checkbox"
