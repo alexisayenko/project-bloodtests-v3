@@ -4,7 +4,7 @@ LOINC-coded blood-test monitoring app. Three-step workflow: generate lab-results
 
 ## Overview
 
-React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker, served from `paneloom.com` and `blood.isayenko.net`. All data stays local — nothing leaves your device except through optional share links and the explicit-opt-in "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov.
+React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker to `paneloom.com`, its production URL (`blood.isayenko.net` also currently routes to the same app). All data stays local — nothing leaves your device except through optional share links and the explicit-opt-in "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov.
 
 **Workflow:**
 

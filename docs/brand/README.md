@@ -1,9 +1,8 @@
 # Brand
 
-Taking shape. A working name, Paneloom, and a chosen mark: the woven
-knot, redrawn as SVG on 2026-09-10. The name is still not locked. The
-direction is flat and geometric in navy and teal, deliberately not
-looking like a laboratory.
+Taking shape. The name, Paneloom, is locked, and a chosen mark: the
+woven knot, redrawn as SVG on 2026-09-10. The direction is flat and
+geometric in navy and teal, deliberately not looking like a laboratory.
 
 Folder-specific applications (favicon, web splash, social cards,
 app icons, store screenshots) are derived from the mark and
@@ -31,10 +30,11 @@ owns identity / spirit; the style guide operationalizes it.
 
 ## Current state
 
-- **Name**: working — **Paneloom**. Panel + loom: the monitoring panels
+- **Name**: **locked — Paneloom**. Panel + loom: the monitoring panels
   the product is organized around, and the weaving of readings from
   different laboratories, units and years into one comparable series.
-  Not locked; see "Names considered" below.
+  See "Names considered" below for the process that led here, kept for
+  the record.
 - **Visual direction**: flat, geometric, calm. Clinical without being
   cold — no red, no droplets, nothing that reads as a laboratory or a
   diagnosis.
@@ -52,11 +52,13 @@ owns identity / spirit; the style guide operationalizes it.
     [`paneloom-mark.svg`](paneloom-mark.svg), hand-drawn from
     `logo-woven-knot.png` as four rotated copies of one arm and stub,
     with no embedded raster.
-- **Domain**: `paneloom.com`, registered 2026-09-09. The app is served
-  from both `paneloom.com` and `blood.isayenko.net` (two custom-domain
-  routes in `web/wrangler.jsonc`); `www.paneloom.com` does not resolve.
-  `paneloom.app` / `.net` were unregistered on 2026-09-08; only `.com`
-  is in [`budget.md`](../business/budget.md).
+- **Domain**: `paneloom.com`, registered 2026-09-09 — the official,
+  primary production URL. `blood.isayenko.net` also currently routes to
+  the same app (a second custom-domain route in `web/wrangler.jsonc`;
+  its long-term fate is a separate, still-open decision);
+  `www.paneloom.com` does not resolve. `paneloom.app` / `.net` were
+  unregistered on 2026-09-08; only `.com` is in
+  [`budget.md`](../business/budget.md).
 - **Wordmark / logo**: horizontal lockup, mark left of the wordmark,
   "Paneloom" in navy with "loom" sometimes carried in teal. Tagline
   used in the landing concept: *Track today. See tomorrow.*
@@ -110,7 +112,8 @@ Per-folder applications live with their code.
 
 ## Names considered
 
-Optional. Useful when the name is still in motion.
+Historical record of the process — the name is now locked as
+Paneloom, kept below for how the decision was reached.
 
 | Name | Verdict |
 | --- | --- |
@@ -154,5 +157,4 @@ parses come from, and hyphenation does not dodge that.
 
 ## Open questions
 
-- [TODO: open decisions about mark, typeface, name lock-in,
-  domains.]
+- [TODO: open decisions about mark, typeface.]
