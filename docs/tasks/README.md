@@ -46,6 +46,19 @@ the index.
 | [task-0026](task-0026.md) | Show a date's full date and lab name on results-table header click | to do |
 | [task-0027](task-0027.md) | Build the panel Trends tab (analyte focus, timeline, lab-mapping audit) | to do |
 | [task-0028](task-0028.md) | Add an Edit Panels mode -- hide/show, custom panels, drag-and-drop reorder | to do |
+| [task-0029](task-0029.md) | Add an edit mode to Scheduled Visits (date, observations) and show the month as a label when not editing | to do |
+| [task-0030](task-0030.md) | Add a laboratory price browser screen (all labs, all tests, not scoped to a visit) | to do |
+| [task-0031](task-0031.md) | Fix Import all data not refreshing Database details on screen after restore | to do |
+| [task-0032](task-0032.md) | Display the signed-in account's name/email in the top bar | to do |
+| [task-0033](task-0033.md) | Preview a report's content on the Diagnostic Reports list page, without leaving it to edit | to do |
+| [task-0034](task-0034.md) | Specify the Thyroid (HPT) and Adrenal (HPA) Hormonal Pathways axes | to do |
+| [task-0035](task-0035.md) | Let clicking the Hormonal Pathways date open a dropdown of report dates (D MMM YYYY) | to do |
+| [task-0036](task-0036.md) | Reorganize the Reference Book into visual subsections | to do |
+| [task-0037](task-0037.md) | Hide Get Started for signed-in users | to do |
+| [task-0038](task-0038.md) | Reconcile lab-reported observations with their app-computed index twins | to do |
+| [task-0039](task-0039.md) | Decide on Observations/Indices naming (or an alternative split) | to do |
+| [task-0040](task-0040.md) | Design the mobile app shell (nav pattern, layout mockups) | to do |
+| [task-0041](task-0041.md) | Add a collapsible FBC group to reduce marker-row noise (FBC only, not a generic mechanism) | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
