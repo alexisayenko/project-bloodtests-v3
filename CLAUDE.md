@@ -202,7 +202,7 @@ dot-colored by status. A status switched off hides its chips in every card; an
 Indices section left empty is dropped, and a card left with nothing stays in
 place with "No markers match". Compact view is the grid's one stored
 preference — `compactPanels` in `bloodtests_view_settings_v1`, beside
-`unitSystem`, `sampleLimit` and Medications' own `medsCurrentYearOnly`,
+`unitSystem` and `sampleLimit`,
 owned by the shell and carried through Clear
 all data and the backup's `settings.json` — and shows each chip's `shortName`
 instead of its `friendlyName`, drops the Observations / Indices labels and the
@@ -579,11 +579,17 @@ a display grouping rather than a break in the run -- its Medication column,
 now the only sticky one, carrying the edge shadow the retired Notes column
 used to (reusing the mobile results-table reveal's `.mc-col-cut` treatment)
 so only the month columns scroll horizontally; edited behind an Edit / Done
-toggle, beside a "Show only current year" switch (`medsCurrentYearOnly`, a
-view setting the shell owns and persists in `bloodtests_view_settings_v1`
-beside `unitSystem`/`sampleLimit`/`compactPanels`) that narrows the year
-columns to the current year alone without dropping any other year's stored
-months, and kept by
+toggle, the grid always rendering every stored year's columns while
+`MedicationsView.tsx` scrolls the table's own horizontally-scrolling
+container (`scrollRef`, a one-time mount `useEffect`) so the current year's
+first month column lands right after the sticky Medication column —
+computed from the current year's index among the ascending `years` array —
+leaving earlier years scrolled out of view behind that column and later
+years reachable by scrolling right, with nothing stopping a visitor from
+scrolling back left afterward (`medsCurrentYearOnly` is gone from
+`StoredViewSettings` and `bloodtests_view_settings_v1`, dropped from
+`ui.ts`'s `loadViewSettings`/`saveViewSettings` and so from the exported
+`settings.json` too), and kept by
 `data/medications.ts`'s `useMedications` under its own localStorage key
 `bloodtests_medications_v1`, outside the envelope, export, import and share
 links — task-0018. A `MedicationRow` splits brand from active ingredient: `brand`

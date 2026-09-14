@@ -4,7 +4,7 @@ import { MONTH_LABELS, monthKey } from '../../data/months';
 import { Clock, TrendingUp } from 'lucide-react';
 import { PillIcon } from './customIcons';
 import { PageHeader } from './PageHeader';
-import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, SwitchToggle, TABLE, TABLE_CARD } from '../primitives';
+import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
 const NAME_COL_WIDTH = 260;
@@ -116,10 +116,7 @@ function compoundsLine(row: MedicationRow): string {
   return row.compounds.map((c) => `${c.name} ${c.dose}`.trim()).join(', ');
 }
 
-export function MedicationsView({
-  currentYearOnly,
-  onCurrentYearOnlyChange,
-}: Readonly<{ currentYearOnly: boolean; onCurrentYearOnlyChange: (next: boolean) => void }>) {
+export function MedicationsView() {
   const {
     medications,
     onAddRow,
@@ -135,13 +132,27 @@ export function MedicationsView({
   const [editing, setEditing] = useState(false);
   const [focusId, setFocusId] = useState<string>();
   const nameInputs = useRef(new Map<string, HTMLInputElement>());
-  const { years: allYears, rows } = medications;
-  const currentYear = new Date().getFullYear();
-  const years = currentYearOnly ? allYears.filter((year) => year === currentYear) : allYears;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { years, rows } = medications;
 
   useEffect(() => {
     if (focusId) nameInputs.current.get(focusId)?.focus();
   }, [focusId]);
+
+  // Initial scroll only: bring the current year's columns into view on first
+  // paint, scrolling every earlier year out of sight behind the sticky
+  // Medication column. A manual scroll afterward is left alone -- this never
+  // re-runs, and years/rows are read fresh from the ref's own scroll width,
+  // not tracked as effect dependencies.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const currentYear = new Date().getFullYear();
+    const yearIndex = years.indexOf(currentYear);
+    if (yearIndex <= 0) return;
+    el.scrollLeft = NAME_COL_WIDTH + yearIndex * MONTH_COL_WIDTH * 12;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial scroll position only, deliberately not re-run on data changes
+  }, []);
 
   const toggleEditing = () => {
     if (editing) onDropUnnamed();
@@ -178,13 +189,12 @@ export function MedicationsView({
             </Button>
           </>
         )}
-        <SwitchToggle label="Show only current year" pressed={currentYearOnly} onChange={onCurrentYearOnlyChange} />
       </div>
       {!editing && rows.length === 0 ? (
         <EmptyState>No medications recorded yet — press Edit to add the first one.</EmptyState>
       ) : (
         <Card style={{ ...TABLE_CARD, width: 'fit-content', maxWidth: '100%' }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div ref={scrollRef} style={{ overflowX: 'auto' }}>
             <table
               style={{
                 ...TABLE,

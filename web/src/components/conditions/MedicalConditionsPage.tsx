@@ -52,7 +52,6 @@ export function MedicalConditionsPage() {
   const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(initialSettings.unitSystem);
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
   const [compactPanels, setCompactPanels] = useState(initialSettings.compactPanels);
-  const [medsCurrentYearOnly, setMedsCurrentYearOnly] = useState(initialSettings.medsCurrentYearOnly);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
   // One scheduling state for the whole shell: a row toggled in All Observations
   // is the same row in Panel Detail, so both views read and write this.
@@ -71,8 +70,8 @@ export function MedicalConditionsPage() {
   const sortedVisits = useMemo(() => sortVisitsByMonth(scheduledVisits.visits), [scheduledVisits.visits]);
 
   useEffect(() => {
-    saveViewSettings({ unitSystem, sampleLimit, compactPanels, medsCurrentYearOnly });
-  }, [unitSystem, sampleLimit, compactPanels, medsCurrentYearOnly]);
+    saveViewSettings({ unitSystem, sampleLimit, compactPanels });
+  }, [unitSystem, sampleLimit, compactPanels]);
 
   // A share link's settings seed the controls only for a visitor who has none
   // of their own stored yet; once they pick anything, that choice is theirs.
@@ -206,7 +205,6 @@ export function MedicalConditionsPage() {
     setUnitSystem(stored.unitSystem);
     setSampleLimit(stored.sampleLimit);
     setCompactPanels(stored.compactPanels);
-    setMedsCurrentYearOnly(stored.medsCurrentYearOnly);
   };
 
   const onClearAll = () => {
@@ -329,7 +327,7 @@ export function MedicalConditionsPage() {
           />
         );
       case 'medications':
-        return <MedicationsView currentYearOnly={medsCurrentYearOnly} onCurrentYearOnlyChange={setMedsCurrentYearOnly} />;
+        return <MedicationsView />;
       case 'account':
         return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':

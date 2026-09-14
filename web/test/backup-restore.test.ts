@@ -25,7 +25,7 @@ const STORED_SCHEDULED = { visits: [{ ...SCHEDULED.visits[0], lab: 'esculab' }] 
 // Stored before multiple visits existed: the pre-redesign single-schedule shape, migrated on restore into one visit.
 const LEGACY_STORED_SCHEDULED = { loincs: ['2093-3'], indices: ['homair'], month: '2026-10' };
 const SETTINGS = {
-  [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all', compactPanels: true, medsCurrentYearOnly: false }),
+  [VIEW_SETTINGS_KEY]: JSON.stringify({ unitSystem: 'us', sampleLimit: 'all', compactPanels: true }),
   'exploreSel:Lipids': JSON.stringify(['ldl', 'hdl']),
   'hpgAutoscale:all': '1',
   'exploreEv:all:meds': '0',
