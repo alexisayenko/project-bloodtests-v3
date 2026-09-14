@@ -5,16 +5,44 @@ Fast-path context for Claude Code. Full human-oriented docs:
 
 ## Key principle
 
-> [TODO: one-line principle that governs every product decision]
+> The data is yours, and it says only what the lab actually printed.
 
-[TODO: one paragraph elaborating how this principle applies — what
-decisions are weighed against it, what gets cut when it doesn't
-reinforce the principle.]
+This app is a personal, longitudinal medical record, not a diagnostic
+tool, so every design decision is weighed against two non-negotiables:
+the user's data stays under the user's control (no backend, no
+accounts — results live in the browser, and the only things that ever
+leave it are a deliberately generated share link and an opt-in,
+values-free LOINC name lookup), and nothing the app shows is invented
+or silently altered. A printed value is stored and displayed exactly
+as the lab wrote it; a converted or derived number is always computed
+at display time, kept visibly separate (`canonical`, chart-only
+series), and never written back over the measured value or exported.
+A computed index that would be wrong outside its validity range
+renders as "–" rather than a confident number, and every formula or
+reference range carries a cited primary source. What gets cut when a
+feature doesn't reinforce this: any change that would require a
+server-side account, that would let a converted or normalized number
+masquerade as what was printed, or that would compute a clinical
+figure without a traceable citation.
 
 ## Product
 
-[TODO: one paragraph — what it is, who uses it, mechanic,
-monetization.]
+Paneloom is a browser-only blood-test tracking app: the user uploads
+lab-report JSON (built via a chatbot prompt from PDFs/printouts, or
+hand-written) and the app keeps a longitudinal, cross-laboratory
+history of their results, entirely in `localStorage` with no server or
+account. Results are keyed to LOINC codes so the same analyte reported
+by different labs, in different units and languages, collapses into
+one comparable series; results are organized into condition-based
+Monitoring Panels (Hypogonadism, Insulin Resistance, Cardiovascular
+Risk, etc.) rather than by individual report, and the app computes
+derived indices (HOMA-IR, AIP, calculated free testosterone, LDL-C)
+with cited sources. Current audience is the author and his family; the
+public, open-source repo is built to extend to anyone who gets
+bloodwork done across multiple labs and wants to own the history
+themselves. Monetization: none — a personal, public open-source
+project; `docs/business/README.md` and the brand brief both record it
+as explicitly undecided, not "free" by design choice.
 
 ## Tech stack
 
