@@ -149,3 +149,28 @@ jobs:
           workingDirectory: web
           # Same thing `npm run deploy` runs (`wrangler deploy`), via the action.
           command: deploy
+
+  # Runs after `deploy` (the one job here this needs to wait on) so it audits
+  # the code that is actually live, not whatever `main` happened to build
+  # before the deploy raced ahead of it. Targets production directly --
+  # there's no staging/preview environment in this repo, and a PR never gets
+  # its own deploy, so there is nothing meaningful to audit before `main`.
+  # Deliberately non-blocking: report-only for now, no assertions/budgets
+  # configured, and `continue-on-error` on top so a Lighthouse failure or
+  # flake never shows red on the commit or holds anything up.
+  lighthouse:
+    name: Lighthouse
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # 12.6.2
+        continue-on-error: true
+        with:
+          urls: https://paneloom.com/
+          runs: 3
+          uploadArtifacts: true
+          temporaryPublicStorage: true
