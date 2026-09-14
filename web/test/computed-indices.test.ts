@@ -87,6 +87,7 @@ const GOLD: Record<string, number> = {
   vldl: 30,
   ldlf: 120,
   ldls: 123.397291,
+  ldlmh: 123.684211,
   apobapoa: 0.692308,
   tyg: 8.871365,
   gi: 11.875,
@@ -389,6 +390,46 @@ describe('LDL-C estimates (Friedewald 1972 / Sampson NIH-2 2020)', () => {
   });
 });
 
+describe('LDL-C estimate (Martin-Hopkins 2013)', () => {
+  const ldlmh = INDEX_DEFS.find((d) => d.key === 'ldlmh')!;
+  const m = (TC: number, hdl: number, TRIG: number) => ({ TC, 'HDL-C': hdl, TRIG });
+
+  it('TC 200, HDL 50, TG 150 -> non-HDL 150 (130-159 col) x TG 150 (147-154 row) = factor 5.7 -> 123.684211', () => {
+    // 150 - 150/5.7
+    expect(ldlmh.fn(m(200, 50, 150))).toBeCloseTo(123.684211, 5);
+  });
+
+  it('TC 250, HDL 40, TG 300 -> non-HDL 210 (190-219 col) x TG 300 (293-399 row) = factor 6.5 -> 163.846154', () => {
+    // 210 - 300/6.5
+    expect(ldlmh.fn(m(250, 40, 300))).toBeCloseTo(163.846154, 5);
+  });
+
+  it('TC 320, HDL 100, TG 97 -> non-HDL 220 (>=220 col) x TG 97 (the table\'s one documented dip row) = factor 4.3 -> 197.441860', () => {
+    // 220 - 97/4.3
+    expect(ldlmh.fn(m(320, 100, 97))).toBeCloseTo(197.44186, 5);
+  });
+
+  it('is suppressed below the table\'s TG floor (7 mg/dL) and above its ceiling (13975 mg/dL)', () => {
+    expect(ldlmh.fn(m(200, 50, 6))).toBeNull();
+    expect(ldlmh.fn(m(200, 50, 7))).not.toBeNull();
+    expect(ldlmh.fn(m(200, 50, 13975))).not.toBeNull();
+    expect(ldlmh.fn(m(200, 50, 13976))).toBeNull();
+  });
+
+  it('returns null when an input is missing', () => {
+    expect(ldlmh.fn({ TC: 200, 'HDL-C': 50 })).toBeNull();
+  });
+
+  it('mmol/L inputs go through the mg/dL conversion before the table lookup', () => {
+    const si = Object.fromEntries([
+      r('2093-3', convertUnit(200, 'TC', 'mg/dL', 'mmol/L')!, 'mmol/L'),
+      r('2085-9', convertUnit(50, 'HDL-C', 'mg/dL', 'mmol/L')!, 'mmol/L'),
+      r('2571-8', convertUnit(150, 'TRIG', 'mg/dL', 'mmol/L')!, 'mmol/L'),
+    ]);
+    expect(ldlmh.fn(markersForIndex(ldlmh, si))!).toBeCloseTo(123.684211, 5);
+  });
+});
+
 describe('molar-coded readings reach the same index as their mass primary', () => {
   // Every reading of RESULTS that has a [Moles/volume] sibling in the catalog,
   // restated under that sibling's LOINC and unit. A history from a lab that
@@ -403,7 +444,7 @@ describe('molar-coded readings reach the same index as their mass primary', () =
     r('20448-7', 8, 'uIU/mL'), // Insulin
   ]);
 
-  const ALIAS_FED = ['ka', 'tchdl', 'ldlhdl', 'aip', 'nonhdl', 'remnant', 'vldl', 'ldlf', 'ldls', 'tyg', 'gi', 'homair', 'homab'];
+  const ALIAS_FED = ['ka', 'tchdl', 'ldlhdl', 'aip', 'nonhdl', 'remnant', 'vldl', 'ldlf', 'ldls', 'ldlmh', 'tyg', 'gi', 'homair', 'homab'];
 
   for (const key of ALIAS_FED) {
     it(`${key} computes the mass-coded value from molar codes alone`, () => {

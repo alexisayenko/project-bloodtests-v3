@@ -1,0 +1,63 @@
+{
+  "unit": "mg/dL",
+  "nonHdlBands": [
+    { "high": 99 },
+    { "low": 100, "high": 129 },
+    { "low": 130, "high": 159 },
+    { "low": 160, "high": 189 },
+    { "low": 190, "high": 219 },
+    { "low": 220 }
+  ],
+  "rows": [
+    { "trigLow": 7, "trigHigh": 49, "factors": [3.5, 3.4, 3.3, 3.3, 3.2, 3.1] },
+    { "trigLow": 50, "trigHigh": 56, "factors": [4.0, 3.9, 3.7, 3.6, 3.6, 3.4] },
+    { "trigLow": 57, "trigHigh": 61, "factors": [4.3, 4.1, 4.0, 3.9, 3.8, 3.6] },
+    { "trigLow": 62, "trigHigh": 66, "factors": [4.5, 4.3, 4.1, 4.0, 3.9, 3.9] },
+    { "trigLow": 67, "trigHigh": 71, "factors": [4.7, 4.4, 4.3, 4.2, 4.1, 3.9] },
+    { "trigLow": 72, "trigHigh": 75, "factors": [4.8, 4.6, 4.4, 4.2, 4.2, 4.1] },
+    { "trigLow": 76, "trigHigh": 79, "factors": [4.9, 4.6, 4.5, 4.3, 4.3, 4.2] },
+    { "trigLow": 80, "trigHigh": 83, "factors": [5.0, 4.8, 4.6, 4.4, 4.3, 4.2] },
+    { "trigLow": 84, "trigHigh": 87, "factors": [5.1, 4.8, 4.6, 4.5, 4.4, 4.3] },
+    { "trigLow": 88, "trigHigh": 92, "factors": [5.2, 4.9, 4.7, 4.6, 4.4, 4.3] },
+    { "trigLow": 93, "trigHigh": 96, "factors": [5.3, 5.0, 4.8, 4.7, 4.5, 4.4] },
+    { "trigLow": 97, "trigHigh": 100, "factors": [5.4, 5.1, 4.8, 4.7, 4.5, 4.3] },
+    { "trigLow": 101, "trigHigh": 105, "factors": [5.5, 5.2, 5.0, 4.7, 4.6, 4.5] },
+    { "trigLow": 106, "trigHigh": 110, "factors": [5.6, 5.3, 5.0, 4.8, 4.6, 4.5] },
+    { "trigLow": 111, "trigHigh": 115, "factors": [5.7, 5.4, 5.1, 4.9, 4.7, 4.5] },
+    { "trigLow": 116, "trigHigh": 120, "factors": [5.8, 5.5, 5.2, 5.0, 4.8, 4.6] },
+    { "trigLow": 121, "trigHigh": 126, "factors": [6.0, 5.5, 5.3, 5.0, 4.8, 4.6] },
+    { "trigLow": 127, "trigHigh": 132, "factors": [6.1, 5.7, 5.3, 5.1, 4.9, 4.7] },
+    { "trigLow": 133, "trigHigh": 138, "factors": [6.2, 5.8, 5.4, 5.2, 5.0, 4.7] },
+    { "trigLow": 139, "trigHigh": 146, "factors": [6.3, 5.9, 5.6, 5.3, 5.0, 4.8] },
+    { "trigLow": 147, "trigHigh": 154, "factors": [6.5, 6.0, 5.7, 5.4, 5.1, 4.8] },
+    { "trigLow": 155, "trigHigh": 163, "factors": [6.7, 6.2, 5.8, 5.4, 5.2, 4.9] },
+    { "trigLow": 164, "trigHigh": 173, "factors": [6.8, 6.3, 5.9, 5.5, 5.3, 5.0] },
+    { "trigLow": 174, "trigHigh": 185, "factors": [7.0, 6.5, 6.0, 5.7, 5.4, 5.1] },
+    { "trigLow": 186, "trigHigh": 201, "factors": [7.3, 6.7, 6.2, 5.8, 5.5, 5.2] },
+    { "trigLow": 202, "trigHigh": 220, "factors": [7.6, 6.9, 6.4, 6.0, 5.6, 5.3] },
+    { "trigLow": 221, "trigHigh": 247, "factors": [8.0, 7.2, 6.6, 6.2, 5.9, 5.4] },
+    { "trigLow": 248, "trigHigh": 292, "factors": [8.5, 7.6, 7.0, 6.5, 6.1, 5.6] },
+    { "trigLow": 293, "trigHigh": 399, "factors": [9.5, 8.3, 7.5, 7.0, 6.5, 5.9] },
+    { "trigLow": 400, "trigHigh": 13975, "factors": [11.9, 10.0, 8.8, 8.1, 7.5, 6.7] }
+  ],
+  "sources": [
+    {
+      "id": "martin-2013-jama",
+      "organization": "JAMA (Martin SS, Blaha MJ, Elshazly MB, Toth PP, Kwiterovich PO, Blumenthal RS, Jones SR)",
+      "title": "Comparison of a Novel Method vs the Friedewald Equation for Estimating Low-Density Lipoprotein Cholesterol Levels From the Standard Lipid Profile",
+      "year": 2013,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24240933/",
+      "doi": "10.1001/jama.2013.280532",
+      "retrieved": "2026-09-15",
+      "quote": "Based on strata of triglyceride and non-high-density lipoprotein cholesterol (HDL-C) levels, a 180-cell table of median TG:VLDL-C values was derived and applied in the validation data set to estimate the novel LDL-C (LDL-CN)."
+    },
+    {
+      "id": "clinicalsci-info-ldl-equations",
+      "organization": "clinicalsci.info",
+      "title": "LDL Cholesterol Calculation Equations",
+      "url": "https://clinicalsci.info/ldl-cholesterol-calculation-equations/",
+      "retrieved": "2026-09-15",
+      "quote": "The Martin equation is similar to the Friedewald equation in that it divides TG by an adjustable factor that may be found in a 180-cell table."
+    }
+  ]
+}

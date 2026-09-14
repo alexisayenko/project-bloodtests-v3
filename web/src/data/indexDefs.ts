@@ -1,4 +1,5 @@
 import { molarPerMass, type IndexDef, type Markers } from './computedIndices';
+import { martinHopkinsFactor } from './martinHopkinsLdl';
 
 /**
  * The clinical definitions the index engine in `computedIndices.ts` runs:
@@ -207,6 +208,28 @@ export const INDEX_DEFS: IndexDef[] = [
       const tg = m['TRIG']!;
       const nonHdl = tc - m['HDL-C']!;
       return tc / 0.948 - m['HDL-C']! / 0.971 - (tg / 8.56 + (tg * nonHdl) / 2140 - (tg * tg) / 16100) - 9.44;
+    },
+  },
+  {
+    key: 'ldlmh', friendlyName: 'LDL-C (Martin-Hopkins)', shortName: 'LDL-C (MH)', panels: ['Cardiovascular Risk'],
+    formula: 'Non-HDL − TG/F (mg/dL)\nF = median TG:VLDL-C ratio, looked up from a\n180-cell table by TG × non-HDL-C strata (Martin et al. 2013)\nNon-HDL = TC − HDL; only within the table\'s covered range',
+    cut: [100, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'TRIG'],
+    inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus', loinc: '96259-7',
+    meaning: 'LDL cholesterol estimated by the 2013 Martin/Hopkins method, from the same three inputs as the Friedewald and Sampson rows above. Instead of Friedewald\'s fixed TG÷5, it looks up an adjustable divisor from a 180-cell table (30 triglyceride strata × 6 non-HDL-C strata, each cell the median TG:VLDL-C ratio measured in over 900,000 direct ultracentrifugation profiles) and subtracts TG/F from non-HDL-C (TC − HDL). Read the three LDL-C rows side by side: where they agree, the estimate is solid; where Martin-Hopkins and Sampson both read higher than Friedewald, Friedewald is under-reporting. The table\'s own strata run mg/dL only, so this index always computes in mg/dL regardless of the display unit toggle, exactly like Friedewald and Sampson. Same caveat on thresholds: there is no universal LDL-C cutoff, targets are risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low). The bands here are the NCEP ATP III descriptive categories (<100 optimal · 100–159 near optimal to borderline · ≥160 high), used for coloring only.',
+    consensus: 'The 2026 ACC/AHA/Multisociety Dyslipidemia Guideline gives a Class 1 (strong), Level B-NR recommendation that either the Martin/Hopkins or the Sampson/NIH equation is preferred over the Friedewald equation for LDL-C — the same recommendation cited under Sampson above, naming this method as an equal first choice. In its own derivation study, Martin-Hopkins matched guideline risk classification against directly measured LDL-C in 91.7% of patients vs 85.4% for Friedewald overall, with the largest gains exactly where Friedewald is weakest: classifying LDL-C below 70 mg/dL in patients with high triglycerides. The table\'s covered triglyceride range (7–13975 mg/dL) is far broader than Friedewald\'s (<400) or Sampson\'s (≤800), so a value outside it is not produced rather than guessed at. No LOINC-standard unit conversion exists for the moles/volume sibling code used elsewhere in this app; the mass/volume code 96259-7 is used here since INDEX_DEFS computes in mg/dL throughout. Needs TC, HDL-C and TG from ONE draw.',
+    evidenceLevel: 'guideline',
+    references: [
+      { organization: "JAMA (Martin SS, Blaha MJ, Elshazly MB, Toth PP, Kwiterovich PO, Blumenthal RS, Jones SR)", document: "Comparison of a Novel Method vs the Friedewald Equation for Estimating Low-Density Lipoprotein Cholesterol Levels From the Standard Lipid Profile", year: 2013, url: "https://pubmed.ncbi.nlm.nih.gov/24240933/", doi: "10.1001/jama.2013.280532", retrieved: '2026-09-15', quote: "Based on strata of triglyceride and non–high-density lipoprotein cholesterol (HDL-C) levels, a 180-cell table of median TG:VLDL-C values was derived and applied in the validation data set to estimate the novel LDL-C (LDL-CN). ... overall concordance in guideline risk classification with LDL-CD was 91.7% ... for LDL-CN vs 85.4% ... for Friedewald LDL-C (LDL-CF) (P < .001). The greatest improvement in concordance occurred in classifying LDL-C lower than 70 mg/dL, especially in patients with high triglyceride levels." },
+      { organization: "American College of Cardiology / American Heart Association Joint Committee on Clinical Practice Guidelines", document: "2026 ACC/AHA/AACVPR/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Dyslipidemia, JACC", year: 2026, url: "https://www.jacc.org/doi/10.1016/j.jacc.2025.11.016", doi: "10.1016/j.jacc.2025.11.016", quote: "Use of either the Martin/Hopkins equation or the Sampson/National Institutes of Health (NIH) equation is preferred over calculation by the Friedewald equation to estimate LDL-C. (1, B-NR)" },
+      { organization: "National Cholesterol Education Program (NCEP) Expert Panel", document: "Third Report (ATP III), JAMA", year: 2001, url: "https://pubmed.ncbi.nlm.nih.gov/11368702/", doi: "10.1001/jama.285.19.2486", quote: "LDL-C descriptive categories (mg/dL): <100 optimal, 100–129 near optimal/above optimal, 130–159 borderline high, 160–189 high, ≥190 very high — the source of the bands used here." },
+    ],
+    // The table has no cell outside TG 7-13975 mg/dL (all non-HDL-C values are
+    // covered), so a factor lookup miss is the only validity-range failure.
+    fn: (m) => {
+      if (!has(m, 'TC', 'HDL-C', 'TRIG')) return null;
+      const nonHdl = m['TC']! - m['HDL-C']!;
+      const factor = martinHopkinsFactor(nonHdl, m['TRIG']!);
+      return factor === undefined ? null : nonHdl - m['TRIG']! / factor;
     },
   },
   {

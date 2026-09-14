@@ -248,11 +248,17 @@ preference — `compactPanels` in `bloodtests_view_settings_v1`, beside
 owned by the shell and carried through Clear
 all data and the backup's `settings.json` — and shows each chip's `shortName`
 instead of its `friendlyName`, drops the Observations / Indices labels and the
-panel link, and narrows the columns (`.mc-panels-grid--compact`). Cardiovascular Risk carries both calculated LDL-C estimates —
-`ldlf` (Friedewald, LOINC `13457-7`) and `ldls` (Sampson/NIH equation 2, no
-LOINC exists for the method) — each returning null outside its own validity
-range (TG ≥ 400 and > 800 mg/dL) so it renders as `–` rather than a
-confidently wrong number; Martin-Hopkins is deferred to task-0012.
+panel link, and narrows the columns (`.mc-panels-grid--compact`). Cardiovascular Risk carries three calculated LDL-C estimates —
+`ldlf` (Friedewald, LOINC `13457-7`), `ldls` (Sampson/NIH equation 2, no
+LOINC exists for the method) and `ldlmh` (Martin-Hopkins 2013, LOINC
+`96259-7`) — each returning null outside its own validity range (TG ≥ 400,
+> 800, and outside 7–13975 mg/dL respectively) so it renders as `–` rather
+than a confidently wrong number; Martin-Hopkins looks up an adjustable
+divisor from a 180-cell table (30 triglyceride strata × 6 non-HDL-C strata)
+rather than Friedewald's fixed TG÷5, the table itself shipped as reference
+data in `web/public/data/martin-hopkins-ldl-table.json` and validated the
+same way as the app's other reference data (ajv against a schema, in
+`web/test/reference-data.test.ts`).
 Hypogonadism carries `biot` (bioavailable testosterone, nmol/L) beside `cft`,
 both solving the same Vermeulen quadratic (`vermeulenFreeT`, `indexDefs.ts`) —
 bio-T is free T × (1 + Ka·albumin). Albumin is an `optionalInputKeys` input on
@@ -939,9 +945,10 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (861 tests across 40 files — 860 passing, 1 skipped — as run on 2026-09-14: index
+Vitest suites in `web/test/` (885 tests across 40 files — 884 passing, 1 skipped — as run on 2026-09-15: index
 golden-masters ported from v2, bioavailable testosterone and sex-dependent index
-bands, upload parsing — the v3 envelope, and
+bands, calculated free testosterone (Ly & Handelsman) and Martin-Hopkins LDL-C
+golden-masters, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
 cross-check, the NLM lookup's unit selection (pure, no request made), the
 report-detail row helpers, unit normalization (Latin/UCUM stages, dimension check,
@@ -959,7 +966,9 @@ recomputed from its formula, agreeing with a cited source within
 `laboratories-1.schema.json`; pathway reference ranges against
 `pathway-reference-ranges-1.schema.json`, plus every source cited and every
 citation resolving, codes catalogued, molar masses tabulated, and each
-population placing on a catalog unit),
+population placing on a catalog unit; the Martin-Hopkins LDL table against
+`martin-hopkins-ldl-table-1.schema.json`, plus internal consistency of its
+180 cells),
 share-link and shared-meta,
 explore-model, markers, routing,
 scheduling, month keys, ui helpers, build stamp, format utils, lab pricing and the visit

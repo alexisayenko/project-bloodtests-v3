@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blood.isayenko.net/schema/martin-hopkins-ldl-table-1.schema.json",
+  "title": "MartinHopkinsLdlTable",
+  "description": "Reference data, schema 1: web/public/data/martin-hopkins-ldl-table.json. The Martin/Hopkins 180-cell median TG:VLDL-C factor table (Martin SS et al 2013 JAMA 310(19):2061-2068) the `ldlmh` computed index (indexDefs.ts) looks up, keyed by triglyceride strata (rows) and non-HDL-C strata (columns), both mg/dL. App-internal data transcribed from a published source with no outside authors, so the objects are CLOSED, as in analytes-1.schema.json and pathway-reference-ranges-1.schema.json.",
+  "type": "object",
+  "required": ["unit", "nonHdlBands", "rows", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "unit": { "const": "mg/dL" },
+    "nonHdlBands": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/band" },
+      "description": "The 6 non-HDL-C column strata, in table order (<100 ... >=220)."
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 30,
+      "maxItems": 30,
+      "items": { "$ref": "#/$defs/row" },
+      "description": "The 30 triglyceride row strata, in table order (7-49 ... 400-13975), each carrying its 6 non-HDL-C-column factors."
+    },
+    "sources": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/source" } }
+  },
+  "$defs": {
+    "band": {
+      "type": "object",
+      "title": "NonHdlBand",
+      "description": "One non-HDL-C column stratum, mg/dL, inclusive bounds. The first band omits `low` (open below, '<100'); the last omits `high` (open above, '>=220').",
+      "additionalProperties": false,
+      "anyOf": [{ "required": ["low"] }, { "required": ["high"] }],
+      "properties": {
+        "low": { "type": "number", "minimum": 0 },
+        "high": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "row": {
+      "type": "object",
+      "title": "Row",
+      "description": "One triglyceride row stratum, mg/dL, inclusive bounds, with its 6 median TG:VLDL-C factors in nonHdlBands column order.",
+      "required": ["trigLow", "trigHigh", "factors"],
+      "additionalProperties": false,
+      "properties": {
+        "trigLow": { "type": "number", "minimum": 0 },
+        "trigHigh": { "type": "number", "exclusiveMinimum": 0 },
+        "factors": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "title": "Source",
+      "required": ["id", "organization", "title", "url", "retrieved", "quote"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "organization": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "year": { "type": "integer", "minimum": 1900 },
+        "url": { "type": "string", "pattern": "^https://" },
+        "doi": { "type": "string", "minLength": 1 },
+        "retrieved": {
+          "type": "string",
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$",
+          "description": "Required. ISO date the quoted text was retrieved from `url`."
+        },
+        "quote": { "type": "string", "minLength": 1, "description": "Required. The source's own words." }
+      }
+    }
+  }
+}

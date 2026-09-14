@@ -12,3 +12,4 @@ export const MONITORING_PANELS = load<MonitoringPanelDef[]>('monitoring-panels.j
 export const MOLAR_MASS_FILE = load<unknown>('molar-masses.json');
 export const LABORATORY_FILE = load<unknown>('laboratories.json');
 export const PATHWAY_RANGE_FILE = load<unknown>('pathway-reference-ranges.json');
+export const MARTIN_HOPKINS_FILE = load<unknown>('martin-hopkins-ldl-table.json');
