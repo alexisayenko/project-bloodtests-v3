@@ -59,6 +59,15 @@ the index.
 | [task-0039](task-0039.md) | Decide on Observations/Indices naming (or an alternative split) | to do |
 | [task-0040](task-0040.md) | Design the mobile app shell (nav pattern, layout mockups) | to do |
 | [task-0041](task-0041.md) | Add a collapsible FBC group to reduce marker-row noise (FBC only, not a generic mechanism) | to do |
+| [task-0042](task-0042.md) | Make the albumin-fallback choice a persisted global setting, not just a Hormonal Pathways toggle | to do |
+| [task-0043](task-0043.md) | Add a show/hide toggle for the Scheduled block in results tables | to do |
+| [task-0044](task-0044.md) | Add FAI and reliability badges (heuristic/consensus/guideline) to Hormonal Pathways | to do |
+| [task-0045](task-0045.md) | Add issam.ch as a cFT reference link | to do |
+| [task-0046](task-0046.md) | Add cFT (Nanjee-Wheeler) as a fifth calculated free-T variant | to do |
+| [task-0047](task-0047.md) | Add golden tests for cFT formulas cross-checked against issam.ch | to do |
+| [task-0048](task-0048.md) | Add golden tests for LDL-C formulas cross-checked against MSD Manuals' calculator | to do |
+| [task-0049](task-0049.md) | Log the Mazer multi-ligand model (2009) as a future cFT/multi-hormone candidate | to do |
+| [task-0050](task-0050.md) | Add an Experimental/Research Mode toggle for not-yet-clinically-established formulas | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
