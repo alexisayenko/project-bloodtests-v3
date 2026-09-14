@@ -45,6 +45,7 @@ the index.
 | [task-0025](task-0025.md) | Add lightweight authentication and optional server-side sync for two known users | to do |
 | [task-0026](task-0026.md) | Show a date's full date and lab name on results-table header click | to do |
 | [task-0027](task-0027.md) | Build the panel Trends tab (analyte focus, timeline, lab-mapping audit) | to do |
+| [task-0028](task-0028.md) | Add an Edit Panels mode -- hide/show, custom panels, drag-and-drop reorder | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
