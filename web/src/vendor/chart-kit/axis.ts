@@ -25,8 +25,8 @@ export function xAxisValues(self: AxisPlot, splits: number[]): string[] {
     const M = ("0" + (d.getUTCMonth() + 1)).slice(-2);
     const D = ("0" + d.getUTCDate()).slice(-2);
     if (days >= 2920) return "" + Y; // ≥ ~8y
-    if (days >= 600) return Y + "-" + M; // ≥ ~1.6y
-    if (days >= 300) return MON[d.getUTCMonth()]!; // ≥ ~10mo
+    if (days >= 600) return MON[d.getUTCMonth()]! + " " + ("" + Y).slice(-2); // ≥ ~1.6y
+    if (days >= 300) return MON[d.getUTCMonth()]! + " " + ("" + Y).slice(-2); // ≥ ~10mo
     return M + "-" + D;
   });
 }

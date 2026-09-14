@@ -10,8 +10,8 @@ export function isoDate(sec: number): string {
   return new Date(sec * 1000).toISOString().slice(0, 10);
 }
 
-/** Jun 2026 */
+/** Jun 26 */
 export function monthYear(sec: number): string {
   const d = new Date(sec * 1000);
-  return MON[d.getUTCMonth()] + " " + d.getUTCFullYear();
+  return MON[d.getUTCMonth()] + " " + String(d.getUTCFullYear()).slice(-2);
 }
