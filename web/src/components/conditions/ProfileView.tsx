@@ -4,7 +4,7 @@ import { CloudCheck, Shield, Upload, Sparkles } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { Button, FileButton } from '../primitives';
 import { COLOR } from '../../styles/tokens';
-import { useAuthUser } from '../../hooks/useAuthUser';
+import { useSupabaseAuthUser } from '../../hooks/useSupabaseAuthUser';
 
 const SECTION_DIVIDER = {
   borderTop: `1px solid ${COLOR.borderSubtle}`,
@@ -34,7 +34,7 @@ export function ProfileView({
   /** Runs once generation has finished, to show the result. */
   onGenerated: () => void;
 }>) {
-  const { user } = useAuthUser();
+  const { user } = useSupabaseAuthUser();
 
   return (
     <>

@@ -2,10 +2,10 @@ import { CloudCheck, Lock } from 'lucide-react';
 import { type Route } from './routing';
 import { pressable } from './ui';
 import { COLOR } from '../../styles/tokens';
-import { useAuthUser } from '../../hooks/useAuthUser';
+import { useSupabaseAuthUser } from '../../hooks/useSupabaseAuthUser';
 
 export function TopBar({ navigate }: Readonly<{ navigate: (r: Route) => void }>) {
-  const { user } = useAuthUser();
+  const { user } = useSupabaseAuthUser();
 
   return (
     <header className="mc-topbar">

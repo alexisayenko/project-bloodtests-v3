@@ -7,10 +7,9 @@ import { Database, Download, HardDriveDownload, LogIn, SlidersHorizontal, Trash2
 import { PageHeader } from './PageHeader';
 import { Button, Card, CardDescription, CardHeader, CardTitle, DangerCard, FIELD_INPUT, FileButton, IconBadge, buttonStyle } from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
-import type { UserCredential } from 'firebase/auth';
-import { useAuthUser } from '../../hooks/useAuthUser';
-import { signInWithApple, signInWithGoogle, signOutUser } from '../../firebase/auth';
-import { pullCloudFiles, pushCloudFiles } from '../../firebase/firestore';
+import { useSupabaseAuthUser } from '../../hooks/useSupabaseAuthUser';
+import { signInWithApple, signInWithGoogle, signOutUser, supabase } from '../../supabase/auth';
+import { pullCloudFiles, pushCloudFiles } from '../../supabase/sync';
 
 const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
 
@@ -31,9 +30,14 @@ function isEmptyBackup(backup: BackupContents): boolean {
   return !backup.reports?.count && !backup.medications?.rows.length && !backup.scheduled?.visits.length;
 }
 
-/** Firebase sign-in/out with the ADR-0018 one-time cutover: sign-in resolves cloud-vs-local (cloud wins if a document exists,
+/** Supabase sign-in/out with the ADR-0018 one-time cutover: sign-in resolves cloud-vs-local (cloud wins if a document exists,
  * otherwise today's local data becomes the first cloud copy), sign-out pushes latest local state up then wipes it -- unless
- * local is empty and the cloud document isn't, in which case the push is skipped so signing out never erases real cloud data. */
+ * local is empty and the cloud document isn't, in which case the push is skipped so signing out never erases real cloud data.
+ *
+ * Unlike Firebase's popup sign-in (which resolved synchronously with a user credential), Supabase's OAuth sign-in is
+ * redirect-based: the page navigates away to the provider and back, and the session only becomes available once Supabase's
+ * client picks it up on return. The 'SIGNED_IN' auth event (as opposed to 'INITIAL_SESSION', fired for an already-signed-in
+ * returning visit) marks that moment, so cloud sync is wired to it specifically -- once per fresh sign-in, not on every load. */
 function AccountAuthCard({
   sessions,
   onImportAll,
@@ -43,7 +47,7 @@ function AccountAuthCard({
   onImportAll: (backup: BackupContents) => Promise<string[]>;
   onClearAll: () => void;
 }>) {
-  const { user, loading } = useAuthUser();
+  const { user, loading } = useSupabaseAuthUser();
   const [error, setError] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -65,17 +69,27 @@ function AccountAuthCard({
     }
   }
 
-  async function handleSignIn(signIn: () => Promise<UserCredential>) {
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== 'SIGNED_IN' || !session) return;
+      setError(null);
+      syncAfterSignIn(session.user.id).catch(() => setError('Something went wrong. Please try again.'));
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions]);
+
+  async function handleSignIn(signIn: typeof signInWithGoogle) {
     setError(null);
     setSigningIn(true);
-    try {
-      const credential = await signIn();
-      await syncAfterSignIn(credential.user.uid);
-    } catch {
+    const { error: signInError } = await signIn();
+    if (signInError) {
       setError('Something went wrong. Please try again.');
-    } finally {
       setSigningIn(false);
     }
+    // On success the page navigates away to the OAuth provider; nothing more to do here.
   }
 
   async function handleSignOut() {
@@ -84,11 +98,11 @@ function AccountAuthCard({
     setSigningOut(true);
     try {
       const localFiles = await currentLocalFiles(sessions);
-      const cloudFiles = await pullCloudFiles(user.uid);
+      const cloudFiles = await pullCloudFiles(user.id);
       const localIsEmpty = isEmptyBackup(readBackup(localFiles));
       const cloudHasData = cloudFiles !== null && !isEmptyBackup(readBackup(cloudFiles));
       if (!(localIsEmpty && cloudHasData)) {
-        await pushCloudFiles(user.uid, localFiles);
+        await pushCloudFiles(user.id, localFiles);
       }
       await signOutUser();
       onClearAll();
@@ -112,7 +126,7 @@ function AccountAuthCard({
           <span style={{ fontSize: 13, color: COLOR.textMuted }}>Loading…</span>
         ) : user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
-            <span style={{ fontSize: 13, color: COLOR.textSecondary }}>{user.displayName ?? user.email}</span>
+            <span style={{ fontSize: 13, color: COLOR.textSecondary }}>{user.email}</span>
             <Button variant="secondary" disabled={signingOut} onClick={handleSignOut}>
               {signingOut ? 'Signing out…' : 'Sign out'}
             </Button>
