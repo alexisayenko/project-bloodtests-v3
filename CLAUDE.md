@@ -941,10 +941,17 @@ rolling forward rather than a blocked deploy, with `npm run build`'s `tsc -b`
 the only check that can still stop it. A `lighthouse` job runs after `deploy`
 (the one job it `needs`, unlike `sonar`/`test`, which run alongside) so it
 audits the code that is actually live, targeting `paneloom.com` directly
-since there is no staging environment; it is deliberately non-blocking —
-`treosh/lighthouse-ci-action` uploads to temporary public storage
-(`temporaryPublicStorage: true`) and runs under `continue-on-error: true`,
-so a Lighthouse failure or flake never shows red. Coverage metric is scoped to the testable logic —
+since there is no staging environment, with Lighthouse's `desktop` preset
+(`.lighthouserc.json`'s `collect.settings.preset`) rather than its mobile
+default, since the app's real UI investment is desktop-first for now (see
+Tech stack) and mobile still awaits task-0020's shell; `treosh/lighthouse-ci-action` uploads
+to temporary public storage (`temporaryPublicStorage: true`) and, via
+`configPath` pointing at repo-root `.lighthouserc.json` (which also holds the
+audited URL, run count and preset — collection lives in one place), gates
+Accessibility and Best Practices (`minScore: 0.9` each, a buffer below the
+~96/100 baseline) so a real regression fails the job, while Performance and
+SEO stay report-only — Performance is currently well below any reasonable
+gate (~61) and hasn't been fixed yet. Coverage metric is scoped to the testable logic —
 `sonar.coverage.exclusions` skips the React view layer. Dependabot:
 weekly npm (minor+patch grouped) and github-actions bumps.
 

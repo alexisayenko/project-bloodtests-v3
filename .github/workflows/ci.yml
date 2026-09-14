@@ -155,9 +155,22 @@ jobs:
   # before the deploy raced ahead of it. Targets production directly --
   # there's no staging/preview environment in this repo, and a PR never gets
   # its own deploy, so there is nothing meaningful to audit before `main`.
-  # Deliberately non-blocking: report-only for now, no assertions/budgets
-  # configured, and `continue-on-error` on top so a Lighthouse failure or
-  # flake never shows red on the commit or holds anything up.
+  # Audits DESKTOP (`.lighthouserc.json`'s `collect.settings.preset`), not
+  # Lighthouse's mobile default: per CLAUDE.md, this app's real UI investment
+  # has all gone into the desktop/laptop `AppShell` (768px+), while mobile
+  # still runs the old wrapping `NavBar` pending task-0020's mobile shell --
+  # auditing mobile now would score/gate against an interface that's known to
+  # be unfinished, not a real regression signal. Add a mobile audit once
+  # task-0020 ships. Accessibility and Best Practices are gated via
+  # `.lighthouserc.json` (`configPath`, minScore 0.9 -- a buffer below the
+  # ~96/100 baseline that catches a real regression without tripping on
+  # normal lab-run noise): a drop below that fails the job. Performance and
+  # SEO stay report-only -- Performance is currently well below any
+  # reasonable gate (~61) and hasn't been fixed yet, so it isn't asserted on.
+  # Collection (URL, run count, desktop preset) lives entirely in
+  # `.lighthouserc.json`'s `ci.collect` rather than split across this step's
+  # `with:` inputs, since the action passes both to the LHCI CLI and CLI
+  # flags from `with:` would silently win over the same keys in the config.
   lighthouse:
     name: Lighthouse
     needs: deploy
@@ -168,9 +181,7 @@ jobs:
 
       - name: Lighthouse CI
         uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # 12.6.2
-        continue-on-error: true
         with:
-          urls: https://paneloom.com/
-          runs: 3
           uploadArtifacts: true
           temporaryPublicStorage: true
+          configPath: ./.lighthouserc.json
