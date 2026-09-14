@@ -39,6 +39,29 @@ function calculatedFreeTestosterone(totalT_ngdl: number, shbg_nmoll: number, alb
   return (FT / 1e-9 / T_NGDL_TO_NMOLL) * 10; // mol/L -> nmol/L -> ng/dL -> pg/mL
 }
 
+// ---- calculated free testosterone (Ly & Handelsman 2005 empirical
+// regression), no albumin term. Two branches on total T, coefficients as
+// published -- ported verbatim, not re-derived. ----
+
+/** Ly & Handelsman's two-branch regression: T and S in nmol/L, result FT in pmol/L. */
+function lyHandelsmanFreeT_pmolL(T: number, S: number): number {
+  return T >= 5
+    ? -52.65 + 24.4 * T - 0.704 * S - 0.0782 * T * S - 0.0584 * T * T
+    : -6.593 + 19.304 * T + 0.056 * S - 0.0959 * T * S;
+}
+
+/**
+ * Free T in pg/mL (same displayed unit as cFT/Vermeulen), or null when the
+ * regression itself returns a negative value -- not a physiological result,
+ * so no number is shown, the same handling ldlf/ldls give a validity-range
+ * breach.
+ */
+function calculatedFreeTestosteroneLyHandelsman(totalT_nmoll: number, shbg_nmoll: number): number | null {
+  const FT_pmolL = lyHandelsmanFreeT_pmolL(totalT_nmoll, shbg_nmoll);
+  if (FT_pmolL < 0) return null;
+  return (FT_pmolL / 1000 / T_NGDL_TO_NMOLL) * 10; // pmol/L -> nmol/L -> ng/dL -> pg/mL
+}
+
 // Mayo Clinic Laboratories' bioavailable testosterone reference limits (test
 // TTBS), ng/dL: the men's lower limits for ages 20-29 and 60-69, the women's
 // (20-50, non-oophorectomized) upper limits on and off oral estrogen.
@@ -251,7 +274,7 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (has(m, 'GLU', 'Insulin') && m['GLU']! > 3.5 ? (20 * m['Insulin']!) / (m['GLU']! - 3.5) : null),
   },
   {
-    key: 'cft', friendlyName: 'Free testosterone (calculated)', shortName: 'cFT', panels: ['Hypogonadism'],
+    key: 'cft', friendlyName: 'Free testosterone (calculated, Vermeulen)', shortName: 'cFT (V)', panels: ['Hypogonadism'],
     formula: 'free T = (−b + √(b²−4ac)) / 2a\na = N·Ks\nb = N + Ks(SHBG−T)\nc = −T\nN = 1 + Ka·albumin\n(Vermeulen equation, all in mol/L)',
     cut: [100, 65], unit: 'pg/mL', hi: true, inputKeys: ['T', 'SHBG'], optionalInputKeys: ['ALB'],
     inputUnits: { T: 'ng/dL', SHBG: 'nmol/L', ALB: 'g/dL' }, level: 'consensus', loinc: '103227-5',
@@ -270,6 +293,20 @@ export const INDEX_DEFS: IndexDef[] = [
       { organization: "Molecular and Cellular Endocrinology (Zakharov MN, Bhasin S, Travison TG, Xue R, Ulloor J, Vasan RS, Carter E, Wu F, Jasuja R)", document: "A multi-step, dynamic allosteric model of testosterone's binding to sex hormone binding globulin", year: 2015, url: "https://pubmed.ncbi.nlm.nih.gov/25240469/", doi: "10.1016/j.mce.2014.09.001", quote: "We show here that the prevailing model of testosterone's binding to SHBG... is erroneous... FT concentrations in men determined using the new multistep dynamic model with complex allostery did not differ from those measured using equilibrium dialysis. (Independently, Fiers et al. 2018 found this method's cFT ran ~2× high against equilibrium dialysis — see that reference.)" },
     ],
     fn: (m) => (m['T'] != null && m['SHBG'] != null ? calculatedFreeTestosterone(m['T']!, m['SHBG']!, m['ALB']) : null),
+  },
+  {
+    key: 'cftlh', friendlyName: 'Free testosterone (calculated, Ly & Handelsman)', shortName: 'cFT (LH)', panels: ['Hypogonadism'],
+    formula: 'T ≥ 5 nmol/L:\nFT = −52.65 + 24.4T − 0.704S − 0.0782TS − 0.0584T²\nT < 5 nmol/L:\nFT = −6.593 + 19.304T + 0.056S − 0.0959TS\n(T, S nmol/L; FT pmol/L; Ly & Handelsman 2005)',
+    cut: [100, 65], unit: 'pg/mL', hi: true, inputKeys: ['T', 'SHBG'],
+    inputUnits: { T: 'nmol/L', SHBG: 'nmol/L' }, level: 'consensus',
+    meaning: 'Another calculated free testosterone, from a purely empirical regression fit directly to total T and SHBG alone — no albumin term, unlike cFT (Vermeulen) above. Two branches, split on total T at 5 nmol/L, each a bootstrap-fitted polynomial in T and S; the fitted coefficients were previously behind the European Journal of Endocrinology paywall and unreproducible here, so this badge showed "Not available" until they were obtained directly on 2026-09-14. Shown in the same pg/mL scale as cFT (Vermeulen) for direct comparison — reuses the same bands, since both estimate the same quantity. A regression can extrapolate to a negative number outside the sample it was fitted on; that is not a physiological free-T reading, so it renders "–" rather than a confidently wrong value, the same rule LDL-C (Friedewald/Sampson) uses outside their own validity ranges.',
+    consensus: 'Validated by its own authors against >4000 paired TT/SHBG/FT immunoassay samples, and independently tested by Fiers et al. (2018) against direct equilibrium-dialysis free T: cFT-L ran closer to equilibrium dialysis than cFT-Vermeulen (median ratio 1.00, 2.5th-97.5th percentile 0.69-1.42, versus Vermeulen\'s 1.19) — see cFT (Vermeulen)\'s own consensus note for that comparison\'s full context. It is an empirical, assumption-free regression rather than a physical binding model, so it carries no mechanistic interpretation and, unlike Vermeulen\'s equation, does not generalize outside the population it was fit on — a negative result at the extremes is that failure mode, not a bug. No albumin term means it cannot answer whether an abnormal albumin is distorting the estimate, the way cFT (Vermeulen) can.',
+    evidenceLevel: 'consensus',
+    references: [
+      { organization: "European Journal of Endocrinology (Ly LP, Handelsman DJ)", document: "Empirical estimation of free testosterone from testosterone and sex hormone-binding globulin immunoassays", year: 2005, url: "https://pubmed.ncbi.nlm.nih.gov/15757865/", doi: "10.1530/eje.1.01844", retrieved: '2026-09-14', quote: "Dividing the dataset into samples with blood TT above and below 5 nM, using a bootstrap regression modeling approach guided by Akaike Information Criterion for model selection... empirical equations were developed for FT in terms of TT and SHBG. ... these simple, assumption-free empirical FT equations can estimate accurately blood FT from TT and SHBG measured in the same samples." },
+      { organization: "Thorax (Han Y-Y, Yan Q, Yang G, Chen W, Forno E, Celedón JC)", document: "Serum free testosterone and asthma, asthma hospitalizations, and lung function in British adults", year: 2020, url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7938359/", doi: "10.1136/thoraxjnl-2020-214875", retrieved: '2026-09-14', quote: "Because testosterone circulates highly bound to SHBG, free testosterone was estimated using the empirical free testosterone (EFT) formula [Ly & Handelsman 2005] — a published implementation of the equation, applied to 256,419 UK Biobank adults with free testosterone reported in pmol/L (mean 164.9 pmol/L in men, 11.9 pmol/L in women), confirming the equation's published output unit." },
+    ],
+    fn: (m) => (has(m, 'T', 'SHBG') ? calculatedFreeTestosteroneLyHandelsman(m['T']!, m['SHBG']!) : null),
   },
   {
     key: 'biot', friendlyName: 'Bioavailable testosterone', shortName: 'Bio-T', panels: ['Hypogonadism'],

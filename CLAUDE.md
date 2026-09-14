@@ -562,8 +562,9 @@ only in the unrelated Reference Book FSH page (`#reference/fsh`, under
 A column of ten badges on the right, in order — Total
 Testosterone, Bioavailable Testosterone, Free Testosterone (the measured
 value, LOINC `2991-8`), cFT (Vermeulen) (the calculated value, formerly plain
-"Free Testosterone"), cFT (Ly & Handelsman), cFT (Sartorius) and cFT
-(Zakharov) (all three `Badge.unavailable: true` — no formula implemented,
+"Free Testosterone"), cFT (Ly & Handelsman) (a real computed value, its own
+empirical regression on total T and SHBG), cFT (Sartorius) and cFT
+(Zakharov) (both `Badge.unavailable: true` — no formula implemented,
 paywalled coefficients, Zakharov's also independently reported ~2x high by
 Fiers 2018 against equilibrium dialysis — rendering a neutral status dot and
 "Not available" with a caveat naming the reason), T/LH, DHT/T, T/E2 — each

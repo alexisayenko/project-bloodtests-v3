@@ -86,7 +86,7 @@ function withVariants(loinc: string): string[] {
 }
 
 type MarkerKey = 'LH' | 'FSH' | 'T' | 'SHBG' | 'ALB' | 'E2' | 'DHT' | 'FT';
-type IndexKey = 'cft' | 'biot' | 'tlh' | 'dhtt' | 'te2';
+type IndexKey = 'cft' | 'cftlh' | 'biot' | 'tlh' | 'dhtt' | 'te2';
 type MeasureKey = MarkerKey | IndexKey | 'shbgBound' | 'albBound';
 type Snapshot = Record<MeasureKey, Measure>;
 
@@ -104,7 +104,7 @@ const MARKER_CODES: Record<MarkerKey, string[]> = {
   FT: withVariants(FT_LOINC),
 };
 
-const INDEX_KEYS: readonly IndexKey[] = ['cft', 'biot', 'tlh', 'dhtt', 'te2'];
+const INDEX_KEYS: readonly IndexKey[] = ['cft', 'cftlh', 'biot', 'tlh', 'dhtt', 'te2'];
 
 /** The monitoring panel whose results-table dates this page steps through. */
 const PANEL_NAME = 'Hypogonadism';
@@ -240,7 +240,7 @@ interface CaptionSpec {
 const CAPTIONS: Readonly<Record<CaptionId, CaptionSpec>> = {
   fsh: { label: 'FSH', title: 'Follicle-Stimulating Hormone', measure: 'FSH' },
   lh: { label: 'LH', title: 'Luteinizing Hormone', measure: 'LH' },
-  t: { label: 'T', title: 'Free Testosterone (calculated)', measure: 'cft' },
+  t: { label: 'T', title: 'Free Testosterone (calculated, Vermeulen)', measure: 'cft' },
   shbg: { label: 'SHBG', title: 'Sex Hormone-Binding Globulin', measure: 'SHBG' },
   alb: { label: 'Albumin', title: 'Albumin', measure: 'ALB' },
   'shbg-t': {
@@ -904,11 +904,11 @@ const BADGES: ReadonlyArray<Badge> = [
     caveats: 'Direct free-T immunoassays are unreliable; this calculated value is preferred. Against equilibrium dialysis it runs a constant ~19% high in men (33% in women), unrelated to the patient’s own SHBG, T or albumin.',
   },
   {
-    id: 'cft-ly-handelsman', name: 'cFT (Ly & Handelsman)', unavailable: true,
-    meaning: 'Another published equation for calculated free testosterone — an empirical regression fit from total T and SHBG alone, with no albumin term — distinct from the Vermeulen equation (cFT) used above.',
-    low: 'Not shown — no formula is implemented.',
-    high: 'Not shown — no formula is implemented.',
-    caveats: 'Ly & Handelsman’s (2005) fitted regression coefficients are published only behind European Journal of Endocrinology’s paywall and could not be read or verified here, so no value can be computed.',
+    id: 'cft-ly-handelsman', name: 'cFT (Ly & Handelsman)', measure: 'cftlh',
+    meaning: 'Another calculated free testosterone — a purely empirical regression fit from total T and SHBG alone, with no albumin term — distinct from the Vermeulen equation (cFT) used above.',
+    low: 'Less testosterone available to tissues, by this equation’s reading.',
+    high: 'More available to tissues, by this equation’s reading.',
+    caveats: 'An empirical regression, not a physical binding model, so it carries no mechanistic interpretation and can extrapolate to a negative, non-physiological value outside the data it was fit on (shown as “–”, never as a number). Against equilibrium dialysis it ran closer than Vermeulen’s equation in one independent comparison (median ratio 1.00 vs 1.19); see cFT (Vermeulen) for that comparison’s full context.',
   },
   {
     id: 'cft-sartorius', name: 'cFT (Sartorius)', unavailable: true,

@@ -93,6 +93,7 @@ const GOLD: Record<string, number> = {
   homair: 1.874918,
   homab: 90.231958,
   cft: 93.162473,
+  cftlh: 77.989086,
   biot: 7.569375,
   fai: 43.3375,
   tlh: 99.999028,
@@ -173,6 +174,36 @@ describe('calculatedFreeTestosterone via the cft index (Vermeulen golden master)
     const ft = cft.fn(fixture(446, 24.9, 4.3))!;
     const pct = (ft / 10 / 446) * 100;
     expect(pct).toBeCloseTo(2.41, 1);
+  });
+});
+
+describe('cftlh (calculated free testosterone, Ly & Handelsman 2005)', () => {
+  const cftlh = INDEX_DEFS.find((d) => d.key === 'cftlh')!;
+
+  it('T >= 5 nmol/L branch (T=20, SHBG=30 -> FT 343.95 pmol/L -> 99.205842 pg/mL)', () => {
+    expect(cftlh.fn({ T: 20, SHBG: 30 })).toBeCloseTo(99.205842, 5);
+  });
+
+  it('T < 5 nmol/L branch (T=3, SHBG=30 -> FT 44.368 pmol/L -> 12.797107 pg/mL)', () => {
+    expect(cftlh.fn({ T: 3, SHBG: 30 })).toBeCloseTo(12.797107, 5);
+  });
+
+  it('returns null (not a negative number) when the T>=5 regression goes negative (T=5, SHBG=800)', () => {
+    expect(cftlh.fn({ T: 5, SHBG: 800 })).toBeNull();
+  });
+
+  it('returns null (not a negative number) when the T<5 regression goes negative (T=1, SHBG=400)', () => {
+    expect(cftlh.fn({ T: 1, SHBG: 400 })).toBeNull();
+  });
+
+  it('has no albumin input, unlike cft', () => {
+    expect(cftlh.inputKeys).toEqual(['T', 'SHBG']);
+    expect(cftlh.optionalInputKeys ?? []).toEqual([]);
+  });
+
+  it('returns null when T or SHBG is missing', () => {
+    expect(cftlh.fn({ T: 20 })).toBeNull();
+    expect(cftlh.fn({ SHBG: 30 })).toBeNull();
   });
 });
 
