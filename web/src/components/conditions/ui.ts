@@ -34,8 +34,17 @@ export const LABEL_COL_WIDTH = 180;
 // then comes from the colgroup, so tables given the same dates share one grid
 // whatever their content. The mobile header overlay renders the same colgroup
 // inside a box of the same width, which is what keeps it aligned.
+//
+// `border-collapse: collapse` makes browsers paint cell backgrounds/borders
+// through the table's own collapsed-border algorithm instead of normal
+// z-index stacking, so a sticky first column's `.mc-col-cut` box-shadow (index.css)
+// stopped painting over a scrolled-under sibling once the two overlap --
+// the same issue Medications' own sticky column hit and fixed by switching to
+// `separate` (MedicationsView.tsx). Match that here so the frozen column's edge
+// shadow actually looks the same in both places.
 export const RESULT_TABLE = {
-  borderCollapse: 'collapse',
+  borderCollapse: 'separate',
+  borderSpacing: 0,
   fontSize: 13,
   tableLayout: 'fixed',
   width: '100%',
