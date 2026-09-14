@@ -565,15 +565,11 @@ credit line) until task-0024 replaced them in two passes — first aromatase and
 nodes used before, along with them. FSH's real structure (PDB 1XWD) lives on
 only in the unrelated Reference Book FSH page (`#reference/fsh`, under
 `web/public/reference/fsh/`, untouched by this).
-A column of ten badges on the right, in order — Total
+A column of eight badges on the right, in order — Total
 Testosterone, Bioavailable Testosterone, Free Testosterone (the measured
 value, LOINC `2991-8`), cFT (Vermeulen) (the calculated value, formerly plain
 "Free Testosterone"), cFT (Ly & Handelsman) (a real computed value, its own
-empirical regression on total T and SHBG), cFT (Sartorius) and cFT
-(Zakharov) (both `Badge.unavailable: true` — no formula implemented,
-paywalled coefficients, Zakharov's also independently reported ~2x high by
-Fiers 2018 against equilibrium dialysis — rendering a neutral status dot and
-"Not available" with a caveat naming the reason), T/LH, DHT/T, T/E2 — each
+empirical regression on total T and SHBG), T/LH, DHT/T, T/E2 — each
 expands on click, an open badge overlaying 150% width over the canvas and,
 absolutely positioned, over the badges below it in the column rather than
 pushing them down: Reference range now leads, then Meaning (rewritten
