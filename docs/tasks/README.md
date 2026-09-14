@@ -22,7 +22,7 @@ the index.
 | [task-0002](task-0002.md) | Round-trip envelope metadata on import | to do |
 | [task-0003](task-0003.md) | Add the interchange JSON Schema file to the repo | done |
 | [task-0004](task-0004.md) | Use sex and birth year to select sex- and age-banded reference ranges | to do |
-| [task-0005](task-0005.md) | Test the chatbot prompt against every lab format in the history | in progress |
+| [task-0005](task-0005.md) | Test the chatbot prompt against every lab format in the history | to do |
 | [task-0006](task-0006.md) | Match LOINC suggestions against catalog translations | done |
 | [task-0007](task-0007.md) | Derive LOINC from printed name and unit, demote printed codes to evidence | done |
 | [task-0008](task-0008.md) | Adopt UCUM for unit validation and conversion | to do |
@@ -32,7 +32,7 @@ the index.
 | [task-0012](task-0012.md) | Implement the Martin-Hopkins LDL-C estimate | to do |
 | [task-0013](task-0013.md) | Reorganize the results controls area | done |
 | [task-0014](task-0014.md) | Rename the Analysis tab to Results and add a Trends tab | done |
-| [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | in progress |
+| [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | to do |
 | [task-0016](task-0016.md) | Implement FIB-4 for fibrosis-risk staging | to do |
 | [task-0017](task-0017.md) | Audit the computed-index unit fallback for unchecked values | to do |
 | [task-0018](task-0018.md) | Add a Medications history section for tracking what was taken and at what dosage | done |
