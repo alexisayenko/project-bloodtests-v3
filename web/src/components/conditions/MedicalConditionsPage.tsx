@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnosticReports';
@@ -32,6 +32,11 @@ type PopupPayload = {
 }[PopupState['kind']];
 
 const REPORTS_ROUTE: Route = { view: 'reports' };
+
+// The Monitoring Panels grid's scroll position across a visit to Panel Detail
+// and back -- in memory rather than storage, since a full reload is a fresh
+// visit and should start at the top, not resume a scroll from before.
+let savedPanelsScrollY: number | null = null;
 
 // The app shell: owns the route, the flattened results, the shared table
 // settings and the popup, and renders one view component per section.
@@ -119,10 +124,28 @@ export function MedicalConditionsPage() {
   }, []);
 
   const navigate = (next: Route) => {
+    if (route.view === 'panels' && next.view === 'panel') savedPanelsScrollY = window.scrollY;
     window.history.pushState(null, '', routeToHash(next));
     setPopup(null);
     setRoute(next);
   };
+
+  // Restores the grid's scroll position when a transition lands back on
+  // Monitoring Panels from Panel Detail -- keyed off the route itself so it
+  // fires the same way whether Back came from the in-page chevron (a push,
+  // through navigate above) or the browser's own Back button (a pop, straight
+  // to setRoute in the popstate handler below). Deferred a frame so the grid
+  // has already committed and laid out before we scroll it.
+  const prevRouteRef = useRef(route);
+  useEffect(() => {
+    const prev = prevRouteRef.current;
+    prevRouteRef.current = route;
+    if (prev.view === 'panel' && route.view === 'panels' && savedPanelsScrollY != null) {
+      const y = savedPanelsScrollY;
+      savedPanelsScrollY = null;
+      requestAnimationFrame(() => window.scrollTo(0, y));
+    }
+  }, [route]);
 
   useEffect(() => {
     let cancelled = false;

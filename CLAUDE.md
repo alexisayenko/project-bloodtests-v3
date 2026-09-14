@@ -234,7 +234,15 @@ reads its inputs through `MARKER_CANDIDATE_LOINCS`, which expands
 in the formula's unit or declines it, so a molar-coded history computes the
 same indices a mass-coded one does — before that it computed none at all.
 Panel Detail's header is a round back-chevron button (to the grid), the
-panel's icon disc in its tint, and its title over the panel description. Panel Detail and All
+panel's icon disc in its tint, and its title over the panel description.
+Leaving through that chevron or the browser's own Back restores the grid's
+scroll position: an in-memory, unpersisted `savedPanelsScrollY` module
+variable in `MedicalConditionsPage.tsx`, captured in `navigate()` on the
+`panels` → `panel` transition and restored, deferred one
+`requestAnimationFrame` so the grid has laid out, by a `useEffect` keyed on
+the route transitioning back from `panel` to `panels` — the same route state
+whether Back came from `navigate()`'s pushState or the native `popstate` — so
+only a fresh page load still opens at the top. Panel Detail and All
 Observations each carry a "What's in range" tab (in All Observations the tab
 is part of the route — `#all/in-range`, `#all/trends`, bare `#all` for
 Results, an unknown segment falling back to it — and switching tabs pushes
