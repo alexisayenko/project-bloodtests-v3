@@ -208,13 +208,13 @@ export class LabExplore extends HTMLElement {
           `</div>`
         : "") +
       `<div class="axis-caps"><span class="cap-left">${normalized ? esc(this.#lbl("axisPct")) : ""}</span></div>` +
+      // v3 ADDITION (task-0053): an empty anchor a sibling medication-history lane portals
+      // into, so it renders directly above the chart -- this host has no other reason to
+      // know that lane exists.
+      `<div class="med-lane-slot"></div>` +
       `<div class="chart-wrap"></div>` +
       // The ⚠ footnote. Hidden while nothing flagged is plotted; filled by #refreshWarnFoot().
       `<p class="dq-foot" role="note" hidden></p>` +
-      // v3 ADDITION (task-0053): an empty anchor a sibling medication-history lane portals
-      // into, so it renders directly under the chart rather than under the whole picker
-      // section below -- this host has no other reason to know that lane exists.
-      `<div class="med-lane-slot"></div>` +
       `<div class="marker-picker"></div>`;
 
     // selection: persisted → default
