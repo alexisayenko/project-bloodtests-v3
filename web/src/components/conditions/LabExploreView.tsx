@@ -4,8 +4,17 @@ import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
 import { buildExploreModel, type Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
+import type { MedicationRow } from '../../data/medications';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { SegmentedControl } from '../primitives';
+import { MedicationLane } from './MedicationLane';
+import { buildMedicationBars } from './medicationBars';
+import { PALETTE } from '../analytics/palette';
+
+function paletteColor(index: number): string {
+  const [r, g, b] = PALETTE[index % PALETTE.length]!;
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 // lab-explore.ts (vendored from project-bloodtests-v2) exports the class but
 // doesn't register it itself -- guard against double-registration on hot
@@ -23,6 +32,7 @@ export function LabExploreView({
   unitSystem,
   currentPanel,
   resultsByDate,
+  medications,
 }: Readonly<{
   conditions: Condition[];
   allResults: ResultEntry[];
@@ -37,6 +47,8 @@ export function LabExploreView({
    * entirely to keep a view scoped to raw observations only.
    */
   resultsByDate?: Record<string, Record<string, Result>>;
+  /** Medication history for the lane under the chart (task-0053); omit or empty for no lane at all. */
+  medications?: MedicationRow[];
 }>) {
   const ref = useRef<HTMLElement | null>(null);
   const sex = loadEnvelopeMeta().sex;
@@ -83,6 +95,11 @@ export function LabExploreView({
     };
   }, [model]);
 
+  const medicationBars = useMemo(
+    () => (medications?.length ? buildMedicationBars(medications, paletteColor) : []),
+    [medications]
+  );
+
   return (
     <>
       <div className="mc-controls">
@@ -98,6 +115,7 @@ export function LabExploreView({
         </div>
       </div>
       <lab-explore ref={ref} />
+      {medicationBars.length > 0 && <MedicationLane bars={medicationBars} hostRef={ref} />}
     </>
   );
 }

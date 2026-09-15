@@ -22,6 +22,7 @@ import { PanelsGridView } from './PanelsGridView';
 import { DiagnosticReportsView } from './DiagnosticReportsView';
 import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
 import { useScheduled, sortVisitsByMonth, type IndexScheduling, type RowScheduling } from './scheduled';
+import { useMedications } from '../../data/medications';
 import { clearAllData, restoreBackup, type BackupContents } from '../../data/backupRestore';
 import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
@@ -65,6 +66,10 @@ export function MedicalConditionsPage() {
     onRemoveVisit,
     onReload: reloadScheduled,
   } = useScheduled();
+  // Read-only here: the What's-in-range lane (task-0053) just needs the
+  // current rows to draw from -- editing still lives entirely on the
+  // Medications page's own useMedications() instance.
+  const { medications } = useMedications();
   // Chronological order, once, for every consumer -- the `#plan` tabs and a
   // results table's Scheduled columns must never disagree on visit order.
   const sortedVisits = useMemo(() => sortVisitsByMonth(scheduledVisits.visits), [scheduledVisits.visits]);
@@ -292,6 +297,7 @@ export function MedicalConditionsPage() {
             onAddVisit={onAddVisit}
             tab={route.tab ?? DEFAULT_OBSERVATIONS_TAB}
             onTabChange={(tab) => navigate(allObservationsRoute(tab))}
+            medications={medications.rows}
           />
         );
       case 'reports':
@@ -357,6 +363,7 @@ export function MedicalConditionsPage() {
             indexScheduling={indexSchedulings}
             onAddVisit={onAddVisit}
             onBack={() => navigate({ view: 'panels' })}
+            medications={medications.rows}
           />
         );
       default:

@@ -70,6 +70,7 @@ the index.
 | [task-0050](task-0050.md) | Add an Experimental/Research Mode toggle for not-yet-clinically-established formulas | to do |
 | [task-0051](task-0051.md) | Show lab name and trim decimals in the What's-in-range chart tooltip | done |
 | [task-0052](task-0052.md) | Add a normalize toggle to What's-in-range and hoist Unit System above the tab strip | in progress |
+| [task-0053](task-0053.md) | Add medications to the What's-in-range chart | done |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because

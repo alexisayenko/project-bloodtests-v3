@@ -22,6 +22,7 @@ import { ResultsTable } from './ResultTables';
 import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
 import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
+import type { MedicationRow } from '../../data/medications';
 import { EmptyState } from '../primitives';
 import { getPanelMeta } from './panelMeta';
 
@@ -61,6 +62,7 @@ export function PanelDetailView({
   indexScheduling,
   onAddVisit,
   onBack,
+  medications,
 }: Readonly<{
   name: string;
   tests: Observation[];
@@ -79,6 +81,8 @@ export function PanelDetailView({
   indexScheduling: IndexScheduling[];
   onAddVisit: () => void;
   onBack: () => void;
+  /** Medication history for the "What's in range" tab's lane (task-0053). */
+  medications: MedicationRow[];
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
   const meta = getPanelMeta(name);
@@ -179,6 +183,7 @@ export function PanelDetailView({
             unitSystem={controls.unitSystem}
             currentPanel={name}
             resultsByDate={resultsByDate}
+            medications={medications}
           />
         </Suspense>
       )}

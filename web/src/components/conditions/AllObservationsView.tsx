@@ -22,6 +22,7 @@ import type { Condition } from './exploreModel';
 import type { IndexScheduling, RowScheduling } from './scheduled';
 import type { ResultEntry } from './resultsLookup';
 import type { ObservationsTab } from './routing';
+import type { MedicationRow } from '../../data/medications';
 import { List, Search, Layers } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { EmptyState } from '../primitives';
@@ -92,6 +93,7 @@ export function AllObservationsView({
   onAddVisit,
   tab,
   onTabChange,
+  medications,
 }: Readonly<{
   allResults: ResultEntry[];
   conditions: Condition[];
@@ -126,6 +128,8 @@ export function AllObservationsView({
   /** Owned by the route (`#all/<tab>`), so a tab is linkable and back/forward returns to it. */
   tab: ObservationsTab;
   onTabChange: (tab: ObservationsTab) => void;
+  /** Medication history for the "What's in range" tab's lane (task-0053). */
+  medications: MedicationRow[];
 }>) {
   // Deliberately not persisted: a stored filter that hides observations would
   // outlive the session that chose it, with nothing on screen explaining the
@@ -233,6 +237,7 @@ export function AllObservationsView({
             allResults={allResults}
             unitSystem={controls.unitSystem}
             resultsByDate={resultsByDate}
+            medications={medications}
           />
         </Suspense>
       )}
