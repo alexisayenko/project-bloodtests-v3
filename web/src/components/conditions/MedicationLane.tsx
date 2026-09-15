@@ -77,6 +77,13 @@ export function MedicationLane({
       setView((e as CustomEvent<ViewRange>).detail);
       setSlot(findSlot());
       measure();
+      // A rebuild (marker toggle, model swap) fires this event the instant its
+      // NEW uPlot instance is constructed, but uPlot applies that instance's own
+      // DOM sizing (`.u-over`'s rect) a tick later -- so the measurement just
+      // above can read a stale/zero rect. One more pass next frame, once uPlot
+      // has actually settled, catches that case; on pan/zoom (`#u` unchanged)
+      // it just reconfirms the same numbers.
+      requestAnimationFrame(measure);
     };
     host.addEventListener('lab-explore-view', onView);
     setSlot(findSlot());

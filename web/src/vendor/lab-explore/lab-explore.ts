@@ -207,11 +207,12 @@ export class LabExplore extends HTMLElement {
             .join("") +
           `</div>`
         : "") +
-      `<div class="axis-caps"><span class="cap-left">${normalized ? esc(this.#lbl("axisPct")) : ""}</span></div>` +
       // v3 ADDITION (task-0053): an empty anchor a sibling medication-history lane portals
-      // into, so it renders directly above the chart -- this host has no other reason to
-      // know that lane exists.
+      // into, so it renders above the chart -- this host has no other reason to know that
+      // lane exists. Placed before axis-caps so that label stays right against the chart
+      // it describes instead of getting pushed up by the lane.
       `<div class="med-lane-slot"></div>` +
+      `<div class="axis-caps"><span class="cap-left">${normalized ? esc(this.#lbl("axisPct")) : ""}</span></div>` +
       `<div class="chart-wrap"></div>` +
       // The ⚠ footnote. Hidden while nothing flagged is plotted; filled by #refreshWarnFoot().
       `<p class="dq-foot" role="note" hidden></p>` +
@@ -241,7 +242,62 @@ export class LabExplore extends HTMLElement {
     this.#buildPicker();
     this.#wireToolbar();
     this.#refreshBadges();
+    // Rebuilt here, not lazily in #makeChart(), because #render() is the only
+    // place that recreates the toolbar's zoom-in/zoom-out/label elements: a
+    // navigator bound once and kept across a later #render() (e.g. task-0052's
+    // Normalized/Absolute toggle) would still hold onto those NOW-DETACHED
+    // nodes, leaving the zoom buttons dead and the step label permanently
+    // blank in the new toolbar. #makeChart() alone (a marker toggle) reuses
+    // this same toolbar, so it must reuse this same navigator too.
+    this.#makeNav();
     this.#makeChart();
+  }
+
+  #makeNav(): void {
+    const m = this.#model!;
+    const FULL = {
+      min: this.#x.length ? this.#x[0]! : 0,
+      max: this.#x.length ? this.#x[this.#x.length - 1]! : 1,
+    };
+    this.#nav = navigator({
+      steps: m.steps ?? DEFAULT_STEPS,
+      full: FULL,
+      persistKey: this.#key("view"),
+      defaultStepIdx: m.defaultStepIdx ?? 3, // default view: latest 3 years
+      defaultAnchor: "end",
+      overscroll: m.overscroll ?? 0.25, // only 25% empty room past the last point
+      zoomIn: this.#root.querySelector<HTMLButtonElement>('[data-zoom="in"]'),
+      zoomOut: this.#root.querySelector<HTMLButtonElement>('[data-zoom="out"]'),
+      label: this.#root.querySelector<HTMLElement>(".zoom-label"),
+      onApply: (xmin, xmax) => {
+        if (!this.#u) return;
+        this.#u.setScale("x", { min: xmin, max: xmax }); // x instant (pan); y eased via setPct
+        // v3 ADDITION (task-0053): a sibling medication-history lane, rendered outside
+        // this shadow root, mirrors the chart's own visible x-window -- onApply is the
+        // one place that fires for every pan, zoom AND rebuild, so it's the correct spot
+        // to announce it, as a plain DOM CustomEvent on the host rather than new public API.
+        this.dispatchEvent(new CustomEvent("lab-explore-view", { detail: { xmin, xmax } }));
+        if (this.#autoOn()) {
+          // fit the % axis to the visible window
+          let lo = Infinity,
+            hi = -Infinity;
+          for (let si = 1; si < this.#data.length; si++)
+            for (let i = 0; i < this.#x.length; i++) {
+              if (this.#x[i]! < xmin || this.#x[i]! > xmax) continue;
+              const v = this.#data[si]![i];
+              if (v == null) continue;
+              if (v < lo) lo = v;
+              if (v > hi) hi = v;
+            }
+          if (isFinite(lo)) {
+            const p = (hi - lo) * 0.1 || 5;
+            this.#setPct?.(lo - p, hi + p);
+          } else this.#setPct?.(this.#allLo, this.#allHi);
+        } else {
+          this.#setPct?.(this.#allLo, this.#allHi); // eased toward the fixed full range
+        }
+      },
+    });
   }
 
   #colorFor(k: string): string {
@@ -603,52 +659,6 @@ export class LabExplore extends HTMLElement {
       return rows;
     };
 
-    if (!this.#nav) {
-      const FULL = {
-        min: this.#x.length ? this.#x[0]! : 0,
-        max: this.#x.length ? this.#x[this.#x.length - 1]! : 1,
-      };
-      this.#nav = navigator({
-        steps: m.steps ?? DEFAULT_STEPS,
-        full: FULL,
-        persistKey: this.#key("view"),
-        defaultStepIdx: m.defaultStepIdx ?? 3, // default view: latest 3 years
-        defaultAnchor: "end",
-        overscroll: m.overscroll ?? 0.25, // only 25% empty room past the last point
-        zoomIn: this.#root.querySelector<HTMLButtonElement>('[data-zoom="in"]'),
-        zoomOut: this.#root.querySelector<HTMLButtonElement>('[data-zoom="out"]'),
-        label: this.#root.querySelector<HTMLElement>(".zoom-label"),
-        onApply: (xmin, xmax) => {
-          if (!this.#u) return;
-          this.#u.setScale("x", { min: xmin, max: xmax }); // x instant (pan); y eased via setPct
-          // v3 ADDITION (task-0053): a sibling medication-history lane, rendered outside
-          // this shadow root, mirrors the chart's own visible x-window -- onApply is the
-          // one place that fires for every pan, zoom AND rebuild, so it's the correct spot
-          // to announce it, as a plain DOM CustomEvent on the host rather than new public API.
-          this.dispatchEvent(new CustomEvent("lab-explore-view", { detail: { xmin, xmax } }));
-          if (this.#autoOn()) {
-            // fit the % axis to the visible window
-            let lo = Infinity,
-              hi = -Infinity;
-            for (let si = 1; si < this.#data.length; si++)
-              for (let i = 0; i < this.#x.length; i++) {
-                if (this.#x[i]! < xmin || this.#x[i]! > xmax) continue;
-                const v = this.#data[si]![i];
-                if (v == null) continue;
-                if (v < lo) lo = v;
-                if (v > hi) hi = v;
-              }
-            if (isFinite(lo)) {
-              const p = (hi - lo) * 0.1 || 5;
-              this.#setPct?.(lo - p, hi + p);
-            } else this.#setPct?.(this.#allLo, this.#allHi);
-          } else {
-            this.#setPct?.(this.#allLo, this.#allHi); // eased toward the fixed full range
-          }
-        },
-      });
-    }
-
     const series: uPlot.Series[] = [{}];
     this.#used.forEach((mk) => {
       series.push({
@@ -703,8 +713,10 @@ export class LabExplore extends HTMLElement {
     );
     this.#showTip = tooltip(this.#u as never, tipRows, monthYear) as (self: uPlot) => void;
     this.#setPct = smoothScale(this.#u, "pct", { min: this.#allLo, max: this.#allHi });
-    this.#nav.attachPan(this.#u.over);
-    this.#nav.apply();
+    // #makeChart() only ever runs after #render() has called #makeNav(), so
+    // #nav is always set by this point.
+    this.#nav!.attachPan(this.#u.over);
+    this.#nav!.apply();
 
     if (!this.#ro && typeof ResizeObserver !== "undefined") {
       this.#ro = new ResizeObserver(() => {
