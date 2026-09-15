@@ -71,6 +71,7 @@ the index.
 | [task-0051](task-0051.md) | Show lab name and trim decimals in the What's-in-range chart tooltip | done |
 | [task-0052](task-0052.md) | Add a normalize toggle to What's-in-range and hoist Unit System above the tab strip | in progress |
 | [task-0053](task-0053.md) | Add medications to the What's-in-range chart | done |
+| [task-0054](task-0054.md) | Fix Panel Detail's What's-in-range chart showing "No plottable markers" on showcase data | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
