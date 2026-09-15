@@ -55,6 +55,10 @@ const DEFAULT_INTRO =
   "Pick markers below to overlay them, normalized to % of each marker's reference range " +
   "(0–100 % = within normal, shaded). Hover for actual values · drag to scroll · −/+ to zoom.";
 
+const DEFAULT_INTRO_ABSOLUTE =
+  "Pick markers below to overlay them, each plotted at its own actual value on one shared " +
+  "axis (no unit shown on the axis -- hover a point for its own unit). Drag to scroll · −/+ to zoom.";
+
 /** English fallbacks for the chart's chrome; a host page overrides via model.labels. */
 const DEFAULT_LABELS = {
   // v3 DEVIATION from the v2 source: v2 always captions a never-taken chip
@@ -178,12 +182,13 @@ export class LabExplore extends HTMLElement {
     }
 
     const events = m.events ?? [];
+    const normalized = m.normalized !== false;
     this.#root.innerHTML =
       `<style>${UPLOT_CSS}${EXPLORE_STYLES}</style>` +
       // The view's own name. It is the first thing on the labs page — see
       // LabExploreModel.title for why it is a promise and not a label.
       (m.title ? `<h2 class="explore-title">${esc(m.title)}</h2>` : "") +
-      `<p class="muted hpg-note">${m.intro ?? DEFAULT_INTRO}</p>` +
+      `<p class="muted hpg-note">${m.intro ?? (normalized ? DEFAULT_INTRO : DEFAULT_INTRO_ABSOLUTE)}</p>` +
       `<div class="chart-toolbar">` +
       `<div class="zoom-ctrl">` +
       `<button type="button" class="zoom" data-zoom="out" aria-label="Zoom out">−</button>` +
@@ -202,7 +207,7 @@ export class LabExplore extends HTMLElement {
             .join("") +
           `</div>`
         : "") +
-      `<div class="axis-caps"><span class="cap-left">${esc(this.#lbl("axisPct"))}</span></div>` +
+      `<div class="axis-caps"><span class="cap-left">${normalized ? esc(this.#lbl("axisPct")) : ""}</span></div>` +
       `<div class="chart-wrap"></div>` +
       // The ⚠ footnote. Hidden while nothing flagged is plotted; filled by #refreshWarnFoot().
       `<p class="dq-foot" role="note" hidden></p>` +
@@ -490,6 +495,7 @@ export class LabExplore extends HTMLElement {
 
   #buildData(): void {
     const m = this.#model!;
+    const normalized = m.normalized !== false;
     this.#used = this.#sel
       .filter((k) => k in m.markers)
       .map((k) => ({ key: k, ...m.markers[k]! }));
@@ -508,14 +514,21 @@ export class LabExplore extends HTMLElement {
       this.#abs.push(abs);
       this.#labs.push(this.#gdates.map((d) => labMap[d]));
       this.#data.push(
-        abs.map((v) => (v == null ? null : Math.round(((v - mk.refMin) / rng) * 1000) / 10)),
+        normalized
+          ? abs.map((v) => (v == null ? null : Math.round(((v - mk.refMin) / rng) * 1000) / 10))
+          : abs,
       );
     }
     const allN: number[] = [];
     for (let si = 1; si < this.#data.length; si++)
       for (const v of this.#data[si]!) if (v != null) allN.push(v);
-    this.#allLo = Math.min(0, allN.length ? Math.min(...allN) : 0);
-    this.#allHi = Math.max(100, allN.length ? Math.max(...allN) : 100);
+    if (normalized) {
+      this.#allLo = Math.min(0, allN.length ? Math.min(...allN) : 0);
+      this.#allHi = Math.max(100, allN.length ? Math.max(...allN) : 100);
+    } else {
+      this.#allLo = allN.length ? Math.min(...allN) : 0;
+      this.#allHi = allN.length ? Math.max(...allN) : 1;
+    }
     const ap = (this.#allHi - this.#allLo) * 0.06 + 1;
     this.#allLo -= ap;
     this.#allHi += ap;
@@ -527,6 +540,7 @@ export class LabExplore extends HTMLElement {
     // right in a DOM-only environment (SSR, happy-dom) where the plot never draws.
     this.#refreshWarnFoot();
     const m = this.#model!;
+    const normalized = m.normalized !== false;
     const wrap = this.#root.querySelector<HTMLElement>(".chart-wrap")!;
 
     if (!canvasSupported()) {
@@ -574,10 +588,13 @@ export class LabExplore extends HTMLElement {
         // its ⚠, right against the figure it is casting doubt on.
         const w = mk.warn ? `<span class="u-tip-warn" title="⚠">⚠</span> ` : "";
         const labNote = lab ? ` <span class="muted">· ${esc(lab)}</span>` : "";
+        const pctNote = normalized
+          ? ` <span class="muted">(${esc(norm)}%${mk.warn ? " ⚠" : ""})</span>`
+          : "";
         rows +=
           `<div class="u-tip-row"><span class="u-tip-dot" style="background:${this.#colorFor(mk.key)}"></span>` +
-          `${w}${esc(mk.label)}: <b>${fmtVal(a)}${mk.unit ? " " + esc(mk.unit) : ""}</b> ` +
-          `<span class="muted">(${esc(norm)}%${mk.warn ? " ⚠" : ""})</span>${note}${labNote}</div>`;
+          `${w}${esc(mk.label)}: <b>${fmtVal(a)}${mk.unit ? " " + esc(mk.unit) : ""}</b>` +
+          `${pctNote}${note}${labNote}</div>`;
       });
       return rows;
     };
@@ -664,7 +681,11 @@ export class LabExplore extends HTMLElement {
         legend: { show: false },
         cursor: { drag: { x: false, y: false } },
         hooks: {
-          drawClear: [drawBand, drawEvents],
+          // drawBand shades the 0-100% reference band -- only meaningful on the
+          // normalized "pct" scale; absolute mode plots raw, differently-scaled
+          // values on that same axis key, so the band would shade a range with
+          // no shared meaning.
+          drawClear: normalized ? [drawBand, drawEvents] : [drawEvents],
           setCursor: [(self: uPlot) => this.#showTip?.(self)],
         },
       },

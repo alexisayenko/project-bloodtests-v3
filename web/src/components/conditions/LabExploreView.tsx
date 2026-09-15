@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LabExplore } from '../../vendor/lab-explore/lab-explore';
 import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
 import { buildExploreModel, type Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
+import { SegmentedControl } from '../primitives';
 
 // lab-explore.ts (vendored from project-bloodtests-v2) exports the class but
 // doesn't register it itself -- guard against double-registration on hot
@@ -39,6 +40,9 @@ export function LabExploreView({
 }>) {
   const ref = useRef<HTMLElement | null>(null);
   const sex = loadEnvelopeMeta().sex;
+  // Session-only, like the chart's own zoom/panel-picker state -- not a stored
+  // view setting (task-0052's first pass).
+  const [normalized, setNormalized] = useState(true);
   const model = useMemo(() => {
     const built = buildExploreModel(conditions, allResults, unitSystem, currentPanel, resultsByDate, { sex });
     // v3 DEVIATION from the v2 source: v2 mounted exactly one <lab-explore>
@@ -57,6 +61,7 @@ export function LabExploreView({
     const viewId = currentPanel ?? "all";
     return {
       ...built,
+      normalized,
       persist: {
         sel: `exploreSel:${viewId}`,
         view: `hpgChartView:${viewId}`,
@@ -64,7 +69,7 @@ export function LabExploreView({
         evPrefix: `exploreEv:${viewId}:`,
       },
     };
-  }, [conditions, allResults, unitSystem, currentPanel, resultsByDate, sex]);
+  }, [conditions, allResults, unitSystem, currentPanel, resultsByDate, sex, normalized]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,5 +83,21 @@ export function LabExploreView({
     };
   }, [model]);
 
-  return <lab-explore ref={ref} />;
+  return (
+    <>
+      <div className="mc-controls">
+        <div className="mc-control-group">
+          <div className="mc-control-label">Values</div>
+          <SegmentedControl
+            label="Values"
+            options={['normalized', 'absolute'] as const}
+            value={normalized ? 'normalized' : 'absolute'}
+            onChange={(v) => setNormalized(v === 'normalized')}
+            format={(v) => (v === 'normalized' ? 'Normalized values' : 'Absolute numbers')}
+          />
+        </div>
+      </div>
+      <lab-explore ref={ref} />
+    </>
+  );
 }

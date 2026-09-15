@@ -141,6 +141,14 @@ export interface LabExploreModel {
   markers: Record<string, ExploreMarker>;
   /** keys selected when nothing is persisted yet */
   defaultSelection?: string[];
+  /**
+   * false plots each selected marker's own raw value on one shared axis
+   * instead of % of its reference band -- the axis then carries no unit
+   * label (mixed units can't share one), though each point's own unit still
+   * shows in the tooltip. Default true (today's normalized view), unchanged
+   * when omitted.
+   */
+  normalized?: boolean;
   events?: ExploreEvent[];
   /** zoom stops; defaults to 6 m … 10 y like the reference implementation */
   steps?: ExploreZoomStep[];

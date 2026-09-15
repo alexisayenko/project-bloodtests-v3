@@ -69,6 +69,7 @@ the index.
 | [task-0049](task-0049.md) | Log the Mazer multi-ligand model (2009) as a future cFT/multi-hormone candidate | to do |
 | [task-0050](task-0050.md) | Add an Experimental/Research Mode toggle for not-yet-clinically-established formulas | to do |
 | [task-0051](task-0051.md) | Show lab name and trim decimals in the What's-in-range chart tooltip | done |
+| [task-0052](task-0052.md) | Add a normalize toggle to What's-in-range and hoist Unit System above the tab strip | in progress |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
