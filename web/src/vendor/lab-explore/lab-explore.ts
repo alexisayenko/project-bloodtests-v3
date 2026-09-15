@@ -31,6 +31,12 @@ const esc = (s: unknown): string =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!),
   );
 
+/** Tooltip value precision: fewer decimals the larger the magnitude (100 -> 0, 10 -> 1, 1 -> 2, else 3). */
+const fmtVal = (v: number): string => {
+  const dec = Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : Math.abs(v) >= 1 ? 2 : 3;
+  return String(Number(v.toFixed(dec)));
+};
+
 const PALETTE = [
   "#9f2f28", "#2f6f9f", "#1e8449", "#b8860b", "#7d3c98", "#16a085", "#c0392b", "#5d6d7e",
   "#d35400", "#2980b9", "#27ae60", "#8e44ad", "#d4ac0d", "#a93226", "#1abc9c", "#e67e22",
@@ -94,6 +100,7 @@ export class LabExplore extends HTMLElement {
   #u: uPlot | null = null;
   #used: UsedMarker[] = [];
   #abs: (number | null)[][] = [];
+  #labs: (string | undefined)[][] = [];
   #data: (number | null)[][] = [];
   #x: number[] = [];
   #gdates: string[] = [];
@@ -487,13 +494,19 @@ export class LabExplore extends HTMLElement {
       .filter((k) => k in m.markers)
       .map((k) => ({ key: k, ...m.markers[k]! }));
     this.#abs = [];
+    this.#labs = [];
     this.#data = [this.#x];
     for (const mk of this.#used) {
       const map: Record<string, number> = {};
-      for (const p of mk.data) map[p[0]] = p[1];
+      const labMap: Record<string, string> = {};
+      for (const p of mk.data) {
+        map[p[0]] = p[1];
+        if (p[2]) labMap[p[0]] = p[2];
+      }
       const abs = this.#gdates.map((d) => (d in map ? map[d]! : null));
       const rng = mk.refMax - mk.refMin;
       this.#abs.push(abs);
+      this.#labs.push(this.#gdates.map((d) => labMap[d]));
       this.#data.push(
         abs.map((v) => (v == null ? null : Math.round(((v - mk.refMin) / rng) * 1000) / 10)),
       );
@@ -551,6 +564,7 @@ export class LabExplore extends HTMLElement {
         const a = this.#abs[i]![idx];
         if (a == null) return;
         const norm = this.#data[i + 1]![idx];
+        const lab = this.#labs[i]?.[idx];
         const note =
           mk.goodAbove != null && a >= mk.goodAbove
             ? ` <span class="u-tip-ok">✓ ${esc(mk.goodNote || "optimal")}</span>`
@@ -559,10 +573,11 @@ export class LabExplore extends HTMLElement {
         // form it ever takes. So this is exactly where a flagged marker must carry
         // its ⚠, right against the figure it is casting doubt on.
         const w = mk.warn ? `<span class="u-tip-warn" title="⚠">⚠</span> ` : "";
+        const labNote = lab ? ` <span class="muted">· ${esc(lab)}</span>` : "";
         rows +=
           `<div class="u-tip-row"><span class="u-tip-dot" style="background:${this.#colorFor(mk.key)}"></span>` +
-          `${w}${esc(mk.label)}: <b>${esc(a)}${mk.unit ? " " + esc(mk.unit) : ""}</b> ` +
-          `<span class="muted">(${esc(norm)}%${mk.warn ? " ⚠" : ""})</span>${note}</div>`;
+          `${w}${esc(mk.label)}: <b>${fmtVal(a)}${mk.unit ? " " + esc(mk.unit) : ""}</b> ` +
+          `<span class="muted">(${esc(norm)}%${mk.warn ? " ⚠" : ""})</span>${note}${labNote}</div>`;
       });
       return rows;
     };
@@ -627,7 +642,7 @@ export class LabExplore extends HTMLElement {
         value: (_self: uPlot, _rv: number | null, si: number, di: number | null) => {
           if (di == null) return "--";
           const a = this.#abs[si - 1]![di];
-          return a == null ? "--" : a + (this.#used[si - 1]!.unit ? " " + this.#used[si - 1]!.unit : "");
+          return a == null ? "--" : fmtVal(a) + (this.#used[si - 1]!.unit ? " " + this.#used[si - 1]!.unit : "");
         },
       });
     });

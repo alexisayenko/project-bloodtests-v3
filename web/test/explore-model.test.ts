@@ -48,8 +48,8 @@ describe('buildExploreModel — plottable two-sided-range markers', () => {
       refMax: 15,
       panel: 'PanelA',
       data: [
-        ['2024-01-01', 10],
-        ['2024-06-01', 12],
+        ['2024-01-01', 10, 'Lab'],
+        ['2024-06-01', 12, 'Lab'],
       ],
       warn: false,
     });
@@ -142,8 +142,8 @@ describe('buildExploreModel — REF_BAND_OVERRIDES (curated band for a no-refMax
       refMax: 60,
       unit: 'mg/dL',
       data: [
-        ['2024-01-01', 45],
-        ['2024-06-01', 55],
+        ['2024-01-01', 45, 'Lab'],
+        ['2024-06-01', 55, 'Lab'],
       ],
       warn: false,
     });
@@ -160,7 +160,7 @@ describe('buildExploreModel — REF_BAND_OVERRIDES (curated band for a no-refMax
     expect(model.markers[HDL_LOINC]?.unit).toBe('mmol/L');
     expect(model.markers[HDL_LOINC]?.refMin).toBe(toUnit(40, 'HDL-C', 'mg/dL', 'mmol/L'));
     expect(model.markers[HDL_LOINC]?.refMax).toBe(toUnit(60, 'HDL-C', 'mg/dL', 'mmol/L'));
-    expect(model.markers[HDL_LOINC]?.data).toEqual([['2024-01-01', toUnit(50, 'HDL-C', 'mg/dL', 'mmol/L')]]);
+    expect(model.markers[HDL_LOINC]?.data).toEqual([['2024-01-01', toUnit(50, 'HDL-C', 'mg/dL', 'mmol/L'), 'Lab']]);
   });
 
   it('regression: a DIFFERENT no-refMax marker with no configured override still falls back to notTaken/"no upper bound"', () => {
@@ -270,20 +270,20 @@ describe('buildExploreModel — SI/US unit conversion', () => {
     const allResults = [entry('2345-7', '2024-01-01', 90, { unit: 'mg/dL', refMin: 70, refMax: 100 })];
 
     const us = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'us', 'PanelA');
-    expect(us.markers['2345-7']).toMatchObject({ unit: 'mg/dL', refMin: 70, refMax: 100, data: [['2024-01-01', 90]] });
+    expect(us.markers['2345-7']).toMatchObject({ unit: 'mg/dL', refMin: 70, refMax: 100, data: [['2024-01-01', 90, 'Lab']] });
 
     const si = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
     expect(si.markers['2345-7']!.unit).toBe('mmol/L');
     expect(si.markers['2345-7']!.refMin).toBe(toUnit(70, 'GLU', 'mg/dL', 'mmol/L'));
     expect(si.markers['2345-7']!.refMax).toBe(toUnit(100, 'GLU', 'mg/dL', 'mmol/L'));
-    expect(si.markers['2345-7']!.data).toEqual([['2024-01-01', toUnit(90, 'GLU', 'mg/dL', 'mmol/L')]]);
+    expect(si.markers['2345-7']!.data).toEqual([['2024-01-01', toUnit(90, 'GLU', 'mg/dL', 'mmol/L'), 'Lab']]);
   });
 
   it('leaves a marker with no verified conversion factor as-reported', () => {
     const test = obs('718-7', 'Hb'); // real LOINC, no entry in SI_US_UNIT
     const allResults = [entry('718-7', '2024-01-01', 14.2, { unit: 'g/dL', refMin: 13, refMax: 17 })];
     const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
-    expect(model.markers['718-7']).toMatchObject({ unit: 'g/dL', refMin: 13, refMax: 17, data: [['2024-01-01', 14.2]] });
+    expect(model.markers['718-7']).toMatchObject({ unit: 'g/dL', refMin: 13, refMax: 17, data: [['2024-01-01', 14.2, 'Lab']] });
   });
 });
 
@@ -317,7 +317,7 @@ describe('buildExploreModel — mass/molar histories on one scale', () => {
     expect(marker).toMatchObject({ refMin: 1.6, refMax: 2.6 });
     expect(marker.data[0]![0]).toBe('2024-11-01');
     expect(marker.data[0]![1]).toBeCloseTo(expected, 10);
-    expect(marker.data[1]).toEqual(['2025-08-01', 2.12]);
+    expect(marker.data[1]).toEqual(['2025-08-01', 2.12, 'Lab']);
     // Both readings sit inside the band once placed on one scale, which is
     // what the raw 0.74-against-a-mg/dL-band plot got wrong.
     expect(marker.data.every(([, v]) => v >= marker.refMin && v <= marker.refMax)).toBe(true);
@@ -334,7 +334,7 @@ describe('buildExploreModel — mass/molar histories on one scale', () => {
     const marker = model.markers[MG_MASS]!;
     expect(marker.unit).toBe('mmol/L');
     expect(marker.data[0]![1]).toBeCloseTo(2.12 / massPerMolarUnit('magnesium', 'mg/dL', 'mmol/L'), 10);
-    expect(marker.data[1]).toEqual(['2025-08-01', 0.74]);
+    expect(marker.data[1]).toEqual(['2025-08-01', 0.74, 'Lab']);
   });
 
   it('omits a reading whose unit cannot be placed, and names the omission in the picker', () => {
@@ -345,7 +345,7 @@ describe('buildExploreModel — mass/molar histories on one scale', () => {
     ];
     const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
 
-    expect(model.markers['MARK1']).toMatchObject({ unit: 'U/L', data: [['2024-06-01', 30]] });
+    expect(model.markers['MARK1']).toMatchObject({ unit: 'U/L', data: [['2024-06-01', 30, 'Lab']] });
     expect(model.notTaken).toEqual([
       { key: 'MARK1:omitted', label: 'M1', panel: 'PanelA', reason: '1 reading omitted (ng/mL)' },
     ]);

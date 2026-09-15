@@ -32,8 +32,8 @@ export interface ExploreMarker {
   /** at/above this raw value the tooltip adds a ✓ note (e.g. HDL-C ≥ 60) */
   goodAbove?: number | null;
   goodNote?: string | null;
-  /** readings as ["YYYY-MM-DD", value] */
-  data: [string, number][];
+  /** readings as ["YYYY-MM-DD", value, lab?] -- lab is the reading's own diagnostic report's lab name, when known */
+  data: [string, number, string?][];
   /**
    * ⚠ — THE BAND ITSELF IS NOT TRUSTWORTHY. Propagated from the row's
    * `provenance.dataQuality` (unsourced range, or a range authored for the other

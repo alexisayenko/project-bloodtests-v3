@@ -1,7 +1,7 @@
 import type { ExploreMarker, ExploreNotTaken, LabExploreModel } from '../../vendor/lab-explore/explore-types';
 import { computeIndex, convertUnit, indexBands, type IndexDef, type IndexReference, type SubjectProfile } from '../../data/computedIndices';
 import { convertValue, toLatinUnit, toUcum } from '../../data/unitNormalization';
-import { displayedResult } from './ui';
+import { displayedResult, namedLab } from './ui';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { INDEX_LOINCS, LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
@@ -258,7 +258,7 @@ function buildTestMarker(
   band: Extract<RefBand, { kind: 'band' }>,
   unitSystem: 'si' | 'us',
   override: RefBandOverride | undefined
-): { marker: ExploreMarker; data: [string, number][]; omitted: string[] } {
+): { marker: ExploreMarker; data: [string, number, string?][]; omitted: string[] } {
   const { refMinRaw, refMaxRaw, refFromUnit } = band;
   const unitMarker = LOINC_TO_MARKER[loinc];
   // The band is what every reading is normalized against, so its own displayed
@@ -272,12 +272,15 @@ function buildTestMarker(
   const convert = (value: number, from: string | null | undefined): number =>
     placeOnBandScale(value, from, unit, loinc, unitMarker) ?? value;
 
-  const data: [string, number][] = [];
+  const data: [string, number, string?][] = [];
   const omitted: string[] = [];
   for (const [date, e] of byDate) {
     const placed = placeOnBandScale(e.result.value!, e.result.unit, unit, e.loinc, unitMarker);
     if (placed === undefined) omitted.push((e.result.unit ?? '').trim());
-    else data.push([date, placed]);
+    else {
+      const lab = namedLab(e.place);
+      data.push(lab ? [date, placed, lab] : [date, placed]);
+    }
   }
   data.sort((a, b) => a[0].localeCompare(b[0]));
 
