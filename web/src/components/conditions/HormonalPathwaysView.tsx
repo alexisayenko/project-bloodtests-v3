@@ -372,7 +372,7 @@ const CAPTIONS: Readonly<Record<CaptionId, CaptionSpec>> = {
   lh: { label: 'LH', title: 'Luteinizing Hormone', measure: 'LH' },
   t: { label: 'T', title: 'Free Testosterone (calculated, Vermeulen)', measure: 'cft' },
   shbg: { label: 'SHBG', title: 'Sex Hormone-Binding Globulin', measure: 'SHBG' },
-  alb: { label: 'Albumin', title: 'Albumin', measure: 'ALB' },
+  alb: { label: 'Alb', title: 'Albumin', measure: 'ALB' },
   'shbg-t': {
     label: 'SHBG-T', title: 'SHBG-bound Testosterone', measure: 'shbgBound',
     note: 'Not bioavailable: held tightly by SHBG, released slowly.',
