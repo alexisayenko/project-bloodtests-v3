@@ -1497,7 +1497,7 @@ export function ReferenceBookPage({
       <div style={{ color: COLOR.textMuted, fontSize: 14, marginBottom: 24 }}>
         Physiology, evidence standing and cited sources for every value the app calculates — derived measurements, a real
         analyte's concentration arrived at arithmetically, and indices proper, ratios and scores this app computes itself
-        rather than taking from the lab (even one a lab may also print, like TC/HDL).
+        rather than taking from the lab (even one a lab may also print, like TC/HDL-C).
       </div>
       {Array.from(groups.entries()).map(([panel, defs]) => (
         <div key={panel} style={{ marginBottom: 28 }}>

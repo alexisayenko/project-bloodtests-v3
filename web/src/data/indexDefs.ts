@@ -109,8 +109,8 @@ export function testosteronePools(totalT_nmoll: number, shbg_nmoll: number, albu
 export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'ka', friendlyName: 'Atherogenic coefficient', shortName: 'AC', panels: ['Cardiovascular Risk'],
-    formula: '(TC − HDL) / HDL', cut: [3, 4], inputKeys: ['TC', 'HDL-C'], level: 'heuristic',
-    meaning: 'Share of atherogenic cholesterol relative to protective HDL. Higher = more atherogenic blood. Rough guide: <3 good, 3–4 borderline, >4 high.',
+    formula: '(TC − HDL-C) / HDL-C', cut: [3, 4], inputKeys: ['TC', 'HDL-C'], level: 'heuristic',
+    meaning: 'Share of atherogenic cholesterol relative to protective HDL-C. Higher = more atherogenic blood. Rough guide: <3 good, 3–4 borderline, >4 high.',
     consensus: 'Common in post-Soviet labs; in international guidelines superseded by ApoB and direct ratios. Fine as a rough orientation.',
     evidenceLevel: 'heuristic',
     references: [
@@ -119,9 +119,9 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (has(m, 'TC', 'HDL-C') ? (m['TC']! - m['HDL-C']!) / m['HDL-C']! : null),
   },
   {
-    key: 'tchdl', friendlyName: 'TC / HDL ratio', shortName: 'TC/HDL', panels: ['Cardiovascular Risk'],
-    formula: 'TC / HDL', cut: [3.5, 5], inputKeys: ['TC', 'HDL-C'], level: 'consensus', loinc: '9830-1',
-    meaning: 'Total cholesterol per unit of protective HDL. Simple, robust cardiovascular-risk marker. Target usually <3.5–4.',
+    key: 'tchdl', friendlyName: 'TC / HDL-C ratio', shortName: 'TC/HDL-C', panels: ['Cardiovascular Risk'],
+    formula: 'TC / HDL-C', cut: [3.5, 5], inputKeys: ['TC', 'HDL-C'], level: 'consensus', loinc: '9830-1',
+    meaning: 'Total cholesterol per unit of protective HDL-C. Simple, robust cardiovascular-risk marker. Target usually <3.5–4.',
     consensus: 'Well-established CV-risk marker, used in risk calculators (e.g. Framingham). Good evidence base.',
     evidenceLevel: 'consensus',
     references: [
@@ -130,10 +130,10 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (has(m, 'TC', 'HDL-C') ? m['TC']! / m['HDL-C']! : null),
   },
   {
-    key: 'ldlhdl', friendlyName: 'LDL / HDL ratio', shortName: 'LDL/HDL', panels: ['Cardiovascular Risk'],
-    formula: 'LDL / HDL', cut: [2, 3.5], inputKeys: ['LDL-C', 'HDL-C'], level: 'heuristic', loinc: '11054-4',
-    meaning: 'Direct ratio of atherogenic LDL to protective HDL. More LDL-sensitive than TC/HDL. Target <2–3.',
-    consensus: 'Long used and intuitive, but current guidance considers ApoB / non-HDL more accurate.',
+    key: 'ldlhdl', friendlyName: 'LDL-C / HDL-C ratio', shortName: 'LDL-C/HDL-C', panels: ['Cardiovascular Risk'],
+    formula: 'LDL-C / HDL-C', cut: [2, 3.5], inputKeys: ['LDL-C', 'HDL-C'], level: 'heuristic', loinc: '11054-4',
+    meaning: 'Direct ratio of atherogenic LDL-C to protective HDL-C. More LDL-C-sensitive than TC/HDL-C. Target <2–3.',
+    consensus: 'Long used and intuitive, but current guidance considers ApoB / non-HDL-C more accurate.',
     evidenceLevel: 'heuristic',
     references: [
       { organization: "European Society of Cardiology / European Atherosclerosis Society", document: "2019 ESC/EAS Guidelines for the management of dyslipidaemias (Mach F et al.)", year: 2020, url: "https://academic.oup.com/eurheartj/article/41/1/111/5556353", doi: "10.1093/eurheartj/ehz455", quote: "Guidelines set treatment targets for LDL-C, non-HDL-C and ApoB; the LDL/HDL ratio has no formal guideline target, so the cut-points here are orientation only." },
@@ -142,7 +142,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'aip', friendlyName: 'AIP (atherogenic index of plasma)', shortName: 'AIP', panels: ['Insulin Resistance', 'Cardiovascular Risk'],
-    formula: 'log₁₀(TG / HDL), molar', cut: [0.11, 0.21], inputKeys: ['TRIG', 'HDL-C'],
+    formula: 'log₁₀(TG / HDL-C), molar', cut: [0.11, 0.21], inputKeys: ['TRIG', 'HDL-C'],
     inputUnits: { TRIG: 'mmol/L', 'HDL-C': 'mmol/L' }, level: 'heuristic',
     meaning: 'Reflects LDL particle size and insulin resistance. Scale: <0.11 low risk, 0.11–0.21 medium, >0.21 high.',
     consensus: 'A studied statistical surrogate, not a consensus-endorsed clinical test: its own defining paper and the follow-on literature are observational-association studies (correlation with LDL particle size, CAD severity, metabolic syndrome), and no named guideline or consensus statement recommends AIP for clinical risk use. Most useful as orientation with high triglycerides / metabolic syndrome.',
@@ -154,10 +154,10 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'nonhdl', friendlyName: 'Non-HDL cholesterol', shortName: 'Non-HDL-C', panels: ['Cardiovascular Risk'],
-    formula: 'TC − HDL (mg/dL)', cut: [130, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C'],
+    formula: 'TC − HDL-C (mg/dL)', cut: [130, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL' }, level: 'consensus', loinc: '43396-1',
-    meaning: 'All atherogenic cholesterol (LDL + VLDL + remnants). Reflects risk better than LDL alone, especially with high TG. Target <130 mg/dL (high risk <100).',
-    consensus: 'Recommended by ESC/AHA guidelines as a secondary treatment target; more reliable than isolated LDL.',
+    meaning: 'All atherogenic cholesterol (LDL + VLDL + remnants). Reflects risk better than LDL-C alone, especially with high TG. Target <130 mg/dL (high risk <100).',
+    consensus: 'Recommended by ESC/AHA guidelines as a secondary treatment target; more reliable than isolated LDL-C.',
     evidenceLevel: 'guideline',
     references: [
       { organization: "European Society of Cardiology / European Atherosclerosis Society", document: "2019 ESC/EAS Guidelines for the management of dyslipidaemias (Mach F et al.)", year: 2020, url: "https://academic.oup.com/eurheartj/article/41/1/111/5556353", doi: "10.1093/eurheartj/ehz455", quote: "Non-HDL-C is recommended as a secondary treatment target, with goals (e.g. <2.6 mmol/L ≈ 100 mg/dL in high risk) set 30 mg/dL above the corresponding LDL-C goal." },
@@ -167,7 +167,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'remnant', friendlyName: 'Remnant cholesterol', shortName: 'Remnant-C', panels: ['Cardiovascular Risk'],
-    formula: 'TC − HDL − LDL (mg/dL)', cut: [24, 30], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'LDL-C'],
+    formula: 'TC − HDL-C − LDL-C (mg/dL)', cut: [24, 30], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'LDL-C'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', 'LDL-C': 'mg/dL' }, level: 'consensus',
     meaning: 'Cholesterol in triglyceride-rich lipoproteins (VLDL and remnants). Independent CV-risk and vascular-inflammation factor. Target <24 mg/dL (~0.6 mmol/L).',
     consensus: 'Accumulating evidence as a causal driver of atherosclerosis; increasingly used.',
@@ -191,10 +191,10 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'ldlf', friendlyName: 'LDL-C (Friedewald)', shortName: 'LDL-C (F)', panels: ['Cardiovascular Risk'],
-    formula: 'TC − HDL − TG/5 (mg/dL)\nonly when TG < 400 mg/dL', cut: [100, 160], unit: 'mg/dL',
+    formula: 'TC − HDL-C − TG/5 (mg/dL)\nonly when TG < 400 mg/dL', cut: [100, 160], unit: 'mg/dL',
     inputKeys: ['TC', 'HDL-C', 'TRIG'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus', loinc: '13457-7',
-    meaning: 'LDL cholesterol estimated by the 1972 Friedewald equation — the formula most labs have used for half a century, computed here from YOUR TC, HDL and TG so the series stays method-consistent even when labs change formulas between draws. Compare it with the lab-reported LDL-C row: a gap means the lab used a different method, not that your LDL moved. There is no universal LDL-C cutoff — the target is risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low), so pick the line that matches your own risk. The bands here are the NCEP ATP III DESCRIPTIVE categories, not a target: <100 optimal/near optimal · 100–159 near optimal to borderline · ≥160 high (≥190 very high). Beware the units: in mmol/L the last term is TG/2.2, not TG/5 — this index converts every input to mg/dL first, so the /5 always applies to mg/dL.',
+    meaning: 'LDL cholesterol estimated by the 1972 Friedewald equation — the formula most labs have used for half a century, computed here from YOUR TC, HDL-C and TG so the series stays method-consistent even when labs change formulas between draws. Compare it with the lab-reported LDL-C row: a gap means the lab used a different method, not that your LDL moved. There is no universal LDL-C cutoff — the target is risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low), so pick the line that matches your own risk. The bands here are the NCEP ATP III DESCRIPTIVE categories, not a target: <100 optimal/near optimal · 100–159 near optimal to borderline · ≥160 high (≥190 very high). Beware the units: in mmol/L the last term is TG/2.2, not TG/5 — this index converts every input to mg/dL first, so the /5 always applies to mg/dL.',
     consensus: 'The long-standing standard estimate, and still the default in most labs, but it is an approximation with known failure modes: it is invalid above TG 400 mg/dL (no value is produced there), and also invalid with chylomicronemia, type III dysbetalipoproteinemia, or a non-fasting sample. It underestimates most at low LDL-C combined with high TG — exactly the range where a treatment decision is being made — which is why newer equations (Martin-Hopkins, Sampson/NIH) were developed. Needs TC, HDL-C and TG from ONE draw.',
     evidenceLevel: 'consensus',
     references: [
@@ -211,7 +211,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'ldls', friendlyName: 'LDL-C (Sampson)', shortName: 'LDL-C (S)', panels: ['Cardiovascular Risk'],
-    formula: 'TC/0.948 − HDL/0.971\n− (TG/8.56 + TG×nonHDL/2140 − TG²/16100)\n− 9.44 (mg/dL)\nnonHDL = TC − HDL; only when TG ≤ 800 mg/dL',
+    formula: 'TC/0.948 − HDL-C/0.971\n− (TG/8.56 + TG×non-HDL-C/2140 − TG²/16100)\n− 9.44 (mg/dL)\nnon-HDL-C = TC − HDL-C; only when TG ≤ 800 mg/dL',
     cut: [100, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'TRIG'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus',
     meaning: 'LDL cholesterol estimated by the 2020 Sampson (NIH equation 2) formula, from the same three inputs as the Friedewald row above. It was derived against beta-quantification ultracentrifugation to fix exactly where Friedewald fails: it stays valid up to TG 800 mg/dL and is markedly more accurate at low LDL-C with high triglycerides. Read the two side by side — where they agree, the estimate is solid; where Sampson reads higher, Friedewald is under-reporting. Same caveat on thresholds: there is no universal LDL-C cutoff, targets are risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low). The bands here are the NCEP ATP III descriptive categories (<100 optimal · 100–159 near optimal to borderline · ≥160 high), used for coloring only.',
@@ -233,7 +233,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'ldlmh', friendlyName: 'LDL-C (Martin-Hopkins)', shortName: 'LDL-C (MH)', panels: ['Cardiovascular Risk'],
-    formula: 'Non-HDL − TG/F (mg/dL)\nF = median TG:VLDL-C ratio, looked up from a\n180-cell table by TG × non-HDL-C strata (Martin et al. 2013)\nNon-HDL = TC − HDL; only within the table\'s covered range',
+    formula: 'Non-HDL-C − TG/F (mg/dL)\nF = median TG:VLDL-C ratio, looked up from a\n180-cell table by TG × non-HDL-C strata (Martin et al. 2013)\nNon-HDL-C = TC − HDL-C; only within the table\'s covered range',
     cut: [100, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'TRIG'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus', loinc: '96259-7',
     meaning: 'LDL cholesterol estimated by the 2013 Martin/Hopkins method, from the same three inputs as the Friedewald and Sampson rows above. Instead of Friedewald\'s fixed TG÷5, it looks up an adjustable divisor from a 180-cell table (30 triglyceride strata × 6 non-HDL-C strata, each cell the median TG:VLDL-C ratio measured in over 900,000 direct ultracentrifugation profiles) and subtracts TG/F from non-HDL-C (TC − HDL). Read the three LDL-C rows side by side: where they agree, the estimate is solid; where Martin-Hopkins and Sampson both read higher than Friedewald, Friedewald is under-reporting. The table\'s own strata run mg/dL only, so this index always computes in mg/dL regardless of the display unit toggle, exactly like Friedewald and Sampson. Same caveat on thresholds: there is no universal LDL-C cutoff, targets are risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low). The bands here are the NCEP ATP III descriptive categories (<100 optimal · 100–159 near optimal to borderline · ≥160 high), used for coloring only.',

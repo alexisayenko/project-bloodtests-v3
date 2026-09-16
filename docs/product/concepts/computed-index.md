@@ -14,7 +14,7 @@ A ratio or estimate the product derives from one or more observations' results o
 
 ## What it is not
 
-- **Not an observation** -- it has no LOINC of its own in general. A handful (e.g. TC/HDL ratio, transferrin saturation) happen to also be a quantity a lab can independently report under its own LOINC; when that lab-reported value exists, it's shown as a secondary comparison, never as the source of the table value -- the table always shows what the product calculated.
+- **Not an observation** -- it has no LOINC of its own in general. A handful (e.g. TC/HDL-C ratio, transferrin saturation) happen to also be a quantity a lab can independently report under its own LOINC; when that lab-reported value exists, it's shown as a secondary comparison, never as the source of the table value -- the table always shows what the product calculated.
 - **Not stored** -- nothing about a computed index is persisted. It's recalculated from the underlying observations' results every time it's displayed.
 
 ## Two kinds under one heading
@@ -22,7 +22,7 @@ A ratio or estimate the product derives from one or more observations' results o
 The 30 definitions in `INDEX_DEFS` are two different things, shown together under one heading. In the tables that heading is still "Indices"; the Reference Book section names both kinds ("Indices and derived measurements") and its standfirst spells the difference out, but the list underneath stays grouped by panel:
 
 - **Derived measurements** -- a concentration of a real analyte, arrived at arithmetically instead of by assay: `cft` (pg/mL, LOINC 103227-5), `cftlh` (Ly & Handelsman, pg/mL), `biot` (bioavailable testosterone, nmol/L, no LOINC set), `vldl` (mg/dL, 13458-5), `nonhdl` (mg/dL, 43396-1), `ldlf` (mg/dL, 13457-7), `ldls` (mg/dL, no LOINC -- none exists for the Sampson method), `remnant` (mg/dL, no LOINC). A lab could equally have printed each of these as an observation.
-- **Indices proper** -- ratios and scores, not quantities of a substance: HOMA-IR, AIP, TyG, TC/HDL, LDL/HDL, De Ritis, T/LH and the rest. Eight of them carry a `%` unit (`fai`, `tsat`, `dhtt`, `homab`, and the band-less testosterone shares of total `cftpct`, `ftpct`, `cftlhpct`, `biotpct`, `ftpct` the one built from a measured input, free T `2991-8`), so the discriminator is a *concentration* unit, not the presence of a `unit` field at all.
+- **Indices proper** -- ratios and scores, not quantities of a substance: HOMA-IR, AIP, TyG, TC/HDL-C, LDL-C/HDL-C, De Ritis, T/LH and the rest. Eight of them carry a `%` unit (`fai`, `tsat`, `dhtt`, `homab`, and the band-less testosterone shares of total `cftpct`, `ftpct`, `cftlhpct`, `biotpct`, `ftpct` the one built from a measured input, free T `2991-8`), so the discriminator is a *concentration* unit, not the presence of a `unit` field at all.
 
 The distinction has one practical consequence: only a derived measurement can **collide with a lab-reported observation of the same analyte**, because only it names a quantity a lab also measures. Hence `cFT`: Free Testosterone is also measured directly (LOINC `2991-8`, badge `FT`), and the two rows have to be told apart. Nobody's lab prints a HOMA-IR.
 

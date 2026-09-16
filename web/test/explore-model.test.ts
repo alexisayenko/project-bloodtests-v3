@@ -444,7 +444,7 @@ describe('buildExploreModel — computed indices (Panel Detail: currentPanel + r
     const tchdl = INDEX_DEFS.find((d) => d.key === 'tchdl')!;
 
     expect(model.markers[`${INDEX_MARKER_KEY_PREFIX}tchdl`]).toMatchObject({
-      label: 'TC/HDL',
+      label: 'TC/HDL-C',
       panel: CARDIO,
       warn: false,
       ...refBandFor(tchdl),
@@ -470,7 +470,7 @@ describe('buildExploreModel — computed indices (Panel Detail: currentPanel + r
 
     const model = buildExploreModel(conditions, [], 'si', CARDIO, resultsByDate);
     expect(model.markers[`${INDEX_MARKER_KEY_PREFIX}tchdl`]).toBeUndefined();
-    expect(model.notTaken).toContainEqual({ key: `${INDEX_MARKER_KEY_PREFIX}tchdl`, label: 'TC/HDL', panel: CARDIO });
+    expect(model.notTaken).toContainEqual({ key: `${INDEX_MARKER_KEY_PREFIX}tchdl`, label: 'TC/HDL-C', panel: CARDIO });
   });
 });
 
