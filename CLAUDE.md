@@ -515,12 +515,15 @@ the indices), Monitoring Panels
 validation errors exist, like Monitoring Panels: task-0024's first version in
 `HormonalPathwaysView.tsx`, under a `PageHeader` with overline
 "Endocrinology", title "Hormonal Pathways" and "Biochemical pathways of
-hormones" — one canvas of four zones, each captioned by small uppercase text at
-its top left with its description on hover: Brain (a hypothalamus–pituitary
-image, `web/public/pathways/brain-pituitary.png`, generated in ChatGPT by Alex,
-forking arrows to FSH and LH); Blood Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
+hormones" — one canvas of four zones, each captioned by small uppercase text
+turned 90° counter-clockwise in a gutter down its left edge, with its
+description on hover: Brain (a hypothalamus–pituitary image,
+`web/public/pathways/brain-pituitary.png`, generated in ChatGPT by Alex, facing
+left, and centred by a measured transform on T's vertical axis); Blood
+Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
 with albumin-bound T docked, E2); Testes (Sertoli and Leydig cells); Target
-tissues (5α-reductase → DHT, aromatase → E2, androgen and estrogen receptors).
+tissues (5α-reductase → DHT, aromatase → E2, each enzyme centred over its
+product, androgen and estrogen receptors).
 Values are the user's: the shell passes the loaded reports, the Hypogonadism
 panel's observations and its persisted `unitSystem` with its setter, and a
 ‹ date › stepper lists exactly
@@ -545,13 +548,13 @@ unchecked state), "Use the nearest measured albumin" (the numeric reading
 closest in days to the selected date on either side, the selected date itself
 excluded and a tie going to the earlier, found through `nearestEntryTo` in
 `resultsLookup.ts`, the date-anchored sibling of `latestEntryByLoinc`), and
-"Use 43 g/L (4.3 g/dL)" (the old checked-default state, still the default
-selection) — feeding `DEFAULT_ALBUMIN_GDL` or the resolved nearest reading to
+"Use 43 g/L", or "Use 4.3 g/dL" in the US unit system (the old checked-default
+state, still the default selection) — feeding `DEFAULT_ALBUMIN_GDL` or the resolved nearest reading to
 Free T, Bio-T and the pools exactly as before; a
 same-draw reading always wins over the select regardless of which option is
 chosen, and the choice lives in plain component `useState`, unpersisted like
 the checkbox's state before it. Node captions are
-compact chips with a status dot and a short face (SHBG-T, Albumin-T) whose
+compact chips with a status dot and a short face (Alb, SHBG-T, Alb-T) whose
 floating card gives the full title (SHBG-bound Testosterone); chips and badges
 expand in place, one open at a time, closed by Escape or an outside click, and
 nodes carry no analyte-popup wiring. Each shows a reference range judged as
@@ -569,9 +572,13 @@ for the major reference labs that could not be retrieved (open in task-0024);
 Free T, Bio-T and the ratios show `INDEX_DEFS`' male zones and citations, and
 the pools "No reference range (calculated pool)" with a bioavailability note.
 The pathway arrows are an SVG overlay measured from the DOM and re-measured by
-a `ResizeObserver` — the pituitary forking to FSH and LH, FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
+a `ResizeObserver` — the brain forking to FSH and LH from its left side at
+mid-height, FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
 enzymes and down to the androgen receptors, enzymes → products,
-DHT → androgen receptors, E2 → blood E2 → estrogen receptors — thin pale
+DHT → androgen receptors, E2 → blood E2 → estrogen receptors, and estradiol's
+negative feedback, blood E2 up and into the brain's right side at mid-height
+with a "↓" marker at its head (the one feedback arrow drawn so far, solid like
+the rest rather than the spec's dashed) — thin pale
 strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon` (T, E2,
 blood E2, FSH and LH — every signal drawn as the same schematic rather than a
 real structure) and `CarrierIcon` (SHBG and Albumin), plus
@@ -579,8 +586,15 @@ real structure) and `CarrierIcon` (SHBG and Albumin), plus
 a mockup with a transparent background) and two shared custom-artwork icons —
 `enzyme-icon.png` (a bead-ring graphic) for both aromatase and 5α-reductase,
 `receptor-icon.png` (a Y-shaped graphic) for both the androgen and estrogen
-receptor nodes — a deliberate style choice (task-0024), not an accuracy
-correction. The page no longer renders any real protein structure: FSH, LH,
+receptor nodes, both on transparent backgrounds — a deliberate style choice
+(task-0024), not an accuracy correction. Every glyph sits bare, with no tile
+or frame, sized by level of organisation rather than molecular mass (the
+component's `SIZE`): molecular actors — signals, carriers, enzymes, receptors
+and the bound-T bubbles, the T docked inside scaled to fit — 32px, cells 64px,
+the brain 128px; a raster glyph goes through `Glyph`, which crops the PNG to
+its drawn content box so padding in the file never shrinks it, and the enzyme,
+receptor and brain URLs carry a `?v=` query so a replaced file is not served
+stale from cache. The page no longer renders any real protein structure: FSH, LH,
 aromatase and 5α-reductase all carried real PDB images and citations (FSH
 1XWD, LH 7FII — a hormone-receptor-Gs complex whose bound hormone is actually
 chorionic gonadotropin, hCG, LH's structural proxy since it shares the same

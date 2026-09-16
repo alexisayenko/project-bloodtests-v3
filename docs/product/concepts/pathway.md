@@ -4,8 +4,10 @@
 > ([task-0024](../../tasks/task-0024.md),
 > [ADR-0014](../../tech/decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
 > `HormonalPathwaysView.tsx` draws four captioned zones on one canvas —
-> Brain (a hypothalamus–pituitary image, `brain-pituitary.png`, with forked
-> arrows to FSH and LH), Blood Transport, Testes, Target
+> Brain (a hypothalamus–pituitary image, `brain-pituitary.png`, centred on T's
+> vertical axis, with forked arrows to FSH and LH leaving its left side and,
+> as of 2026-09-16, estradiol's feedback from blood E2 entering its right side,
+> marked "↓"), Blood Transport, Testes, Target
 > tissues — with pathway arrows measured from the DOM and, as of 2026-09-16,
 > a testosterone pools donut (SHBG-T, Albumin-T, Free T, with callouts) atop
 > six clickable badges (Total T, Bioavailable T, one merged Free Testosterone
@@ -26,13 +28,18 @@
 > chips with status dots; a chip or badge expands in place to a reference
 > range — the lab's own when printed, else the cited, adult-male ranges of
 > `pathway-reference-ranges.json`, `INDEX_DEFS`' zones for indices, none for
-> the calculated pools. No `pathways.json` or feedback arrows yet. Where the
-> build departs from what follows (zones, not bands; badges in one column;
+> the calculated pools. No `pathways.json` yet — the wiring is hand-coded in
+> the component — and of the feedback arrows only that one E2 → brain arrow.
+> Where the
+> build departs from what follows (zones, not bands, their captions turned 90°
+> counter-clockwise in a left gutter; the E2 feedback drawn solid into the
+> brain as a whole rather than dashed to Kp and LH; badges in one column;
 > association lines hidden at rest; cells and receptors drawn; a date stepper
 > rather than a month stepper; a default albumin; a merged Free Testosterone
 > badge and a pools donut, an expanded badge overlaying rather than pushing down its neighbors, and the
-> enzyme and receptor icons drawn as shared PNG artwork — `enzyme-icon.png`,
-> `receptor-icon.png` — rather than hand-drawn per-role SVG), task-0024's
+> enzyme and receptor icons drawn as shared, transparent PNG artwork —
+> `enzyme-icon.png`, `receptor-icon.png` — rather than hand-drawn per-role
+> SVG), task-0024's
 > status note records it. No protein on the page renders a real structure
 > image any more: FSH and LH briefly did (PDB 1XWD, 7FII), then settled back
 > onto the same `HormoneIcon` schematic as every other signal, and aromatase
@@ -57,7 +64,7 @@ Drawn: bands, signals, carriers, enzymes, badges and lines. **Not drawn**: cells
 
 ### Band
 
-An organ, drawn as a zone of one canvas and named by a small uppercase caption at its top left, its description on hover: Brain (hypothalamus and pituitary), Blood Transport, Testes, Target tissues. Blood Transport is a compartment rather than an organ, drawn as a zone alike. (The spec's five horizontal bands became these four zones in the first build.)
+An organ, drawn as a zone of one canvas and named by a small uppercase caption turned 90° counter-clockwise in a gutter down its left edge, its description on hover: Brain (hypothalamus and pituitary), Blood Transport, Testes, Target tissues. Blood Transport is a compartment rather than an organ, drawn as a zone alike. (The spec's five horizontal bands became these four zones in the first build.)
 
 **Where an arrow acts is data, not drawing.** Each arrow keeps its site as organ → region/tissue → cell → receptor, shown as its hover text — "T acts on Kp neurons in the arcuate nucleus via the androgen receptor":
 

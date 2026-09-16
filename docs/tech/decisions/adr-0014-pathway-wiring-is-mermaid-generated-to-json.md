@@ -10,6 +10,15 @@ Status: accepted · 2026-09-11
 > region/tissue → cell → receptor) moved into the sidecar as data shown on
 > hover. The subset below is the revised one.
 
+> **Status note 2026-09-16: not implemented yet.** The first Hormonal Pathways
+> build (`HormonalPathwaysView.tsx`, task-0024) hard-codes its wiring: a
+> `PATHWAYS` edge list plus a few hand-built line sets (the T trunk and its
+> enzyme fork, estradiol's feedback into the brain), laid out from the DOM.
+> There is no Mermaid source, sidecar, generator, `pathways.json` or schema,
+> and the HP Axis page still renders its own hand-written cascades. The
+> decision stands as the intended shape; until it lands, a wiring change is a
+> component edit, and the view and the HP Axis page can disagree.
+
 ## Context
 
 The planned Hormonal Pathways section ([pathway](../../product/concepts/pathway.md)

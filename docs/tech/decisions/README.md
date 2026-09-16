@@ -81,7 +81,8 @@ Each record opens with `# ADR-NNNN: <title>` and a
   (0003).
 - **Pathways** — 0014, still unbuilt: per-axis Mermaid wiring generated
   to `web/public/data/pathways.json`, the same single-source rule as
-  0010; see the [pathway](../../product/concepts/pathway.md) concept and
+  0010 — the first Hormonal Pathways view hard-codes its wiring in the
+  component meanwhile; see the [pathway](../../product/concepts/pathway.md) concept and
   [task-0024](../../tasks/task-0024.md).
 - **Sync / storage backend** — 0015: an opt-in dedicated server storage
   mode beside the unchanged local-only default, syncing the existing
