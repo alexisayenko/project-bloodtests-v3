@@ -464,8 +464,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [ldlUptake, setLdlUptake] = useState<string | null>(null);
   const [chainArrows, setChainArrows] = useState<string[]>([]);
   const [lplArrow, setLplArrow] = useState<string | null>(null);
-  const [particleBonds, setParticleBonds] = useState<string[]>([]);
-  const [particleOutlines, setParticleOutlines] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
+  const [particleBonds, setParticleBonds] = useState<{ id: string; d: string }[]>([]);
+  const [particleOutlines, setParticleOutlines] = useState<{ id: string; x: number; y: number; w: number; h: number }[]>([]);
   const [synthArrow, setSynthArrow] = useState<string | null>(null);
   const [enterocyteTrigArrow, setEnterocyteTrigArrow] = useState<string | null>(null);
   const [enterocyteApoB48Arrow, setEnterocyteApoB48Arrow] = useState<string | null>(null);
@@ -572,8 +572,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         : null
     );
     // Every particle (VLDL, IDL, LDL, chylomicron, HDL, Lp(a)) gets its own TRIG/Chol bonds to its holder apoprotein and a dashed outline hugging its actual icons.
-    const bonds: string[] = [];
-    const outlines: { x: number; y: number; w: number; h: number }[] = [];
+    const bonds: { id: string; d: string }[] = [];
+    const outlines: { id: string; x: number; y: number; w: number; h: number }[] = [];
     for (const id of ['vldl', 'idl', 'ldl', 'chylomicron', 'hdl', 'lpa', 'vldl-construction']) {
       const trig = el.querySelector(`[data-node="${id}-trig"]`)?.getBoundingClientRect();
       const apo = el.querySelector(`[data-node="${id}-apo"]`)?.getBoundingClientRect();
@@ -593,9 +593,9 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       const left = Math.min(chol.left, apo.left, trig.left, apoCaption?.left ?? Infinity) - base.left;
       const right = Math.max(chol.right, apo.right, apoCaption?.right ?? -Infinity) - base.left;
       const top = Math.min(chol.top, apo.top, trig.top) - base.top;
-      bonds.push(bond);
+      bonds.push({ id, d: bond });
       const pad = 10;
-      outlines.push({ x: left - pad, y: top - pad, w: right - left + pad * 2, h: apo.bottom - base.top + 26 - (top - pad) });
+      outlines.push({ id, x: left - pad, y: top - pad, w: right - left + pad * 2, h: apo.bottom - base.top + 26 - (top - pad) });
     }
     setParticleBonds(bonds);
     setParticleOutlines(outlines);
@@ -771,14 +771,14 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       {enterocyteApoB48Arrow && <path d={enterocyteApoB48Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {trigToChylomicronArrow && <path d={trigToChylomicronArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {apoB48ToChylomicronArrow && <path d={apoB48ToChylomicronArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
-      {particleBonds.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
+      {particleBonds.map((b) => (
+        <path key={b.id} d={b.d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
       ))}
-      {particleOutlines.map((o, i) => (
+      {particleOutlines.map((o) => (
         // A fixed 14px radius would round LDL's own (near-square, 1-TRIG/1-Chol) box into a pill or circle;
         // capping it to at most a third of the box's own shorter side keeps every particle's outline reading
         // as a rounded rectangle, LDL included, whatever its own box shape happens to be.
-        <rect key={i} x={o.x} y={o.y} width={o.w} height={o.h} rx={Math.min(10, o.w / 3, o.h / 3)} fill="none" stroke="var(--lipid-outline)" strokeWidth={1.5} strokeDasharray="4 3" />
+        <rect key={o.id} x={o.x} y={o.y} width={o.w} height={o.h} rx={Math.min(10, o.w / 3, o.h / 3)} fill="none" stroke="var(--lipid-outline)" strokeWidth={1.5} strokeDasharray="4 3" />
       ))}
       <AssociationLayer associations={associations} active={active} focused={focused} veil={veil} />
     </svg>

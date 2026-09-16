@@ -5,7 +5,19 @@ import { BackupImportError, readBackup, unzipBackup, type BackupContents } from 
 import { loadEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from '../../data/envelopeMeta';
 import { Database, Download, HardDriveDownload, LogIn, SlidersHorizontal, Trash2, Upload, UserCircle, type LucideIcon } from 'lucide-react';
 import { PageHeader } from './PageHeader';
-import { Button, Card, CardDescription, CardHeader, CardTitle, DangerCard, FIELD_INPUT, FileButton, IconBadge, buttonStyle } from '../primitives';
+import {
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DangerCard,
+  FIELD_INPUT,
+  FileButton,
+  IconBadge,
+  VISUALLY_HIDDEN,
+  buttonStyle,
+} from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
 import { useSupabaseAuthUser } from '../../hooks/useSupabaseAuthUser';
 import { signInWithApple, signInWithGoogle, signOutUser, supabase } from '../../supabase/auth';
@@ -114,6 +126,31 @@ function AccountAuthCard({
     }
   }
 
+  let authSection: ReactNode;
+  if (loading) {
+    authSection = <span style={{ fontSize: 13, color: COLOR.textMuted }}>Loading…</span>;
+  } else if (user) {
+    authSection = (
+      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
+        <span style={{ fontSize: 13, color: COLOR.textSecondary }}>{user.email}</span>
+        <Button variant="secondary" disabled={signingOut} onClick={handleSignOut}>
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </Button>
+      </div>
+    );
+  } else {
+    authSection = (
+      <div style={{ display: 'flex', gap: SPACE[3], flexWrap: 'wrap' }}>
+        <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithGoogle)}>
+          {signingIn ? 'Signing in…' : 'Sign in with Google'}
+        </Button>
+        <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithApple)}>
+          {signingIn ? 'Signing in…' : 'Sign in with Apple'}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <Card style={{ maxWidth: 960, marginBottom: SPACE[5] }}>
       <CardHeader
@@ -122,25 +159,7 @@ function AccountAuthCard({
         description={user ? 'Signed in. Your data is synced to the cloud.' : 'Sign in to sync your data to the cloud.'}
       />
       <div style={{ marginTop: SPACE[4], paddingTop: SPACE[4], borderTop: `1px solid ${COLOR.borderSubtle}` }}>
-        {loading ? (
-          <span style={{ fontSize: 13, color: COLOR.textMuted }}>Loading…</span>
-        ) : user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
-            <span style={{ fontSize: 13, color: COLOR.textSecondary }}>{user.email}</span>
-            <Button variant="secondary" disabled={signingOut} onClick={handleSignOut}>
-              {signingOut ? 'Signing out…' : 'Sign out'}
-            </Button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', gap: SPACE[3], flexWrap: 'wrap' }}>
-            <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithGoogle)}>
-              {signingIn ? 'Signing in…' : 'Sign in with Google'}
-            </Button>
-            <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithApple)}>
-              {signingIn ? 'Signing in…' : 'Sign in with Apple'}
-            </Button>
-          </div>
-        )}
+        {authSection}
         {notice && <div style={{ color: COLOR.statusOkText, fontSize: 13, marginTop: SPACE[3] }}>{notice}</div>}
         {error && <div style={{ color: COLOR.statusBadText, fontSize: 13, marginTop: SPACE[3] }}>{error}</div>}
       </div>
@@ -308,13 +327,10 @@ function HoldToClearButton({
       style={{ ...buttonStyle('danger', 'md', disabled), position: 'relative', overflow: 'hidden' }}
     >
       <span
-        role="progressbar"
-        aria-label="Hold-to-clear progress"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(progress * 100)}
+        aria-hidden="true"
         style={{ position: 'absolute', inset: 0, width: `${progress * 100}%`, background: COLOR.statusBadBg }}
       />
+      <progress value={Math.round(progress * 100)} max={100} aria-label="Hold-to-clear progress" style={VISUALLY_HIDDEN} />
       <span style={{ position: 'relative' }}>{holding ? holdingLabel : idleLabel}</span>
     </button>
   );

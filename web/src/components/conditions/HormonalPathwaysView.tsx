@@ -143,8 +143,10 @@ function albuminFallbackLabel(fallback: AlbuminFallback, unitSystem: 'si' | 'us'
       return "Don't use a fallback";
     case 'nearest':
       return 'Use the nearest measured albumin';
-    case 'default':
-      return `Use ${unitSystem === 'si' ? `${fmtNum(DEFAULT_ALBUMIN_GDL * 10)} g/L` : `${fmtNum(DEFAULT_ALBUMIN_GDL)} g/dL`}`;
+    case 'default': {
+      const amount = unitSystem === 'si' ? `${fmtNum(DEFAULT_ALBUMIN_GDL * 10)} g/L` : `${fmtNum(DEFAULT_ALBUMIN_GDL)} g/dL`;
+      return `Use ${amount}`;
+    }
   }
 }
 
@@ -651,9 +653,8 @@ function PoolsDonut({ snapshot }: Readonly<{ snapshot: Snapshot }>) {
   const percents = measures.map((m) => m.sharePercent);
   const ready = percents.every((p): p is number => p != null && Number.isFinite(p) && p >= 0) && percents.some((p) => (p ?? 0) > 0);
   const shares = measures.map((m) => (ready ? (m.share ?? DASH) : DASH));
-  const label = ready
-    ? `Testosterone pools: ${POOL_SLICES.map((s, i) => `${s.name} ${shares[i]}`).join(', ')}`
-    : 'Testosterone pools: no data';
+  const poolShareLabels = POOL_SLICES.map((s, i) => `${s.name} ${shares[i]}`);
+  const label = ready ? `Testosterone pools: ${poolShareLabels.join(', ')}` : 'Testosterone pools: no data';
 
   let arcs: ReactNode = <circle cx={DONUT.size / 2} cy={DONUT.size / 2} r={DONUT.radius} fill="none" stroke="var(--pathway-pool-empty)" strokeWidth={DONUT.width} />;
   let callout: ReactNode = null;
@@ -856,6 +857,30 @@ function forkLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX, from: st
   ];
 }
 
+/** The 'elbow' shape's line: a horizontal run at the source's mid-height, then down to the target. */
+function elbowPathwayLine(a: Element, ra: DOMRect, base: DOMRect, centerX: CenterX, x2: number, y2: number): string[] {
+  const midY = ra.top + ra.height / 2 - base.top;
+  const inset = a.classList.contains('mc-pathway-slot') ? 18 : -4;
+  const x1 = x2 >= centerX(ra) ? ra.right - base.left - inset : ra.left - base.left + inset;
+  return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
+}
+
+/** The 'fork' shape's line: branches off the source's own icon rather than its caption baseline. */
+function forkPathwayLine(a: Element, base: DOMRect, centerX: CenterX, x2: number, y2: number): string[] {
+  const glyph = (a.querySelector('.mc-pathway-glyph, svg') ?? a).getBoundingClientRect();
+  const midY = glyph.top + glyph.height / 2 - base.top;
+  const x1 = x2 < centerX(glyph) ? glyph.left - base.left - 4 : glyph.right - base.left + 4;
+  return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
+}
+
+/** The 'drop' shape's line: down from the source, then sideways into the target's mid-height. */
+function dropPathwayLine(ra: DOMRect, rb: DOMRect, base: DOMRect, centerX: CenterX, bottomOfA: number): string[] {
+  const x = centerX(ra) + 8;
+  const midY = rb.top + rb.height / 2 - base.top;
+  const edge = x < centerX(rb) ? rb.left - base.left - 4 : rb.right - base.left + 4;
+  return [`${x},${bottomOfA} ${x},${midY} ${edge},${midY}`];
+}
+
 /** One pathway edge's line, shaped for the geometry the two nodes need. */
 function pathwayLine(
   el: HTMLDivElement,
@@ -874,24 +899,9 @@ function pathwayLine(
   const down = rb.top >= ra.top;
   const x2 = centerX(rb) - (shape === 'elbow' ? 8 : 0);
   const y2 = down ? rb.top - base.top - 4 : bottomOf(b);
-  if (shape === 'elbow') {
-    const midY = ra.top + ra.height / 2 - base.top;
-    const inset = a.classList.contains('mc-pathway-slot') ? 18 : -4;
-    const x1 = x2 >= centerX(ra) ? ra.right - base.left - inset : ra.left - base.left + inset;
-    return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
-  }
-  if (shape === 'fork') {
-    const glyph = (a.querySelector('.mc-pathway-glyph, svg') ?? a).getBoundingClientRect();
-    const midY = glyph.top + glyph.height / 2 - base.top;
-    const x1 = x2 < centerX(glyph) ? glyph.left - base.left - 4 : glyph.right - base.left + 4;
-    return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
-  }
-  if (shape === 'drop') {
-    const x = centerX(ra) + 8;
-    const midY = rb.top + rb.height / 2 - base.top;
-    const edge = x < centerX(rb) ? rb.left - base.left - 4 : rb.right - base.left + 4;
-    return [`${x},${bottomOf(a)} ${x},${midY} ${edge},${midY}`];
-  }
+  if (shape === 'elbow') return elbowPathwayLine(a, ra, base, centerX, x2, y2);
+  if (shape === 'fork') return forkPathwayLine(a, base, centerX, x2, y2);
+  if (shape === 'drop') return dropPathwayLine(ra, rb, base, centerX, bottomOf(a));
   return [`${centerX(ra)},${down ? bottomOf(a) : ra.top - base.top - 4} ${x2},${y2}`];
 }
 
@@ -1268,7 +1278,7 @@ export function HormonalPathwaysView({
         </div>
         <div className="mc-pathway-settings">
           <label className="mc-pathway-check">
-            Albumin when not measured this draw
+            <span>Albumin when not measured this draw</span>
             <select
               className="mc-field mc-field-select mc-field-sm"
               aria-label="Albumin fallback when not measured this draw"
@@ -1281,7 +1291,7 @@ export function HormonalPathwaysView({
             </select>
           </label>
           <label className="mc-pathway-check">
-            Testosterone molar mass
+            <span>Testosterone molar mass</span>
             <select
               className="mc-field mc-field-select mc-field-sm"
               value={tMolarMass}

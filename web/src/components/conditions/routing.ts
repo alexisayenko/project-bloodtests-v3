@@ -54,19 +54,24 @@ export function allObservationsRoute(tab: string): Route {
   return known && known !== DEFAULT_OBSERVATIONS_TAB ? { view: 'all', tab: known } : { view: 'all' };
 }
 
+// The views with no associated data -- their hash is just the view name.
+function simpleRouteHash(view: Route['view']): string | undefined {
+  if (view === 'reports') return '#reports';
+  if (view === 'pathways') return '#pathways';
+  if (view === 'lipids') return '#lipids';
+  if (view === 'profile') return '#profile';
+  if (view === 'medications') return '#medications';
+  if (view === 'plan') return '#plan';
+  if (view === 'account') return '#account';
+  return undefined;
+}
+
 export function routeToHash(route: Route): string {
   if (route.view === 'panel') return `#panels/${encodeURIComponent(route.name)}`;
   if (route.view === 'reference') return route.key ? `#reference/${encodeURIComponent(route.key)}` : '#reference';
   if (route.view === 'all') return route.tab && route.tab !== DEFAULT_OBSERVATIONS_TAB ? `#all/${route.tab}` : '#all';
   if (route.view === 'report') return `#reports/${encodeURIComponent(route.file)}`;
-  if (route.view === 'reports') return '#reports';
-  if (route.view === 'pathways') return '#pathways';
-  if (route.view === 'lipids') return '#lipids';
-  if (route.view === 'profile') return '#profile';
-  if (route.view === 'medications') return '#medications';
-  if (route.view === 'plan') return '#plan';
-  if (route.view === 'account') return '#account';
-  return '#panels';
+  return simpleRouteHash(route.view) ?? '#panels';
 }
 
 export function hashToRoute(hash: string): Route {

@@ -467,6 +467,16 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   display: flex; flex-direction: column; border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card); overflow: hidden; background: var(--surface-band);
   position: relative;
+  --pw-fit-pad: clamp(8px, calc(8px + (100cqi - 720px) * 0.0372), 24px);
+  --pw-fit-slot: clamp(80px, calc(80px + (100cqi - 720px) * 0.0372), 96px);
+  --pw-fit-group-indent: clamp(4px, calc(4px + (100cqi - 720px) * 0.0651), 32px);
+  --pw-fit-group-gap: clamp(6px, calc(6px + (100cqi - 720px) * 0.014), 12px);
+  --pw-fit-exchange: clamp(32px, calc(32px + (100cqi - 720px) * 0.0558), 56px);
+  --pw-fit-enzyme-gap: clamp(176px, calc(176px + (100cqi - 720px) * 0.1023), 220px);
+  --pw-fit-e2-indent: clamp(34px, calc(34px + (100cqi - 720px) * 0.0442), 53px);
+  /* Lipid Transport: gap between the VLDL-IDL-LDL row and Peripheral cells, and between VLDL/IDL/LDL themselves, eased the same way so the row plus Peripheral cells still clears the badge column at a narrower canvas. */
+  --pw-fit-ldl-gap: clamp(16px, calc(16px + (100cqi - 720px) * 0.0372), 32px);
+  --pw-fit-chain-gap: clamp(48px, calc(48px + (100cqi - 720px) * 0.0651), 76px);
 }
 .mc-pathway-band { position: relative; display: flex; padding: 20px 0 0 32px; border-top: 1px solid var(--border-subtle); }
 .mc-pathway-band:nth-of-type(1) { border-top: none; }
@@ -568,19 +578,8 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 @keyframes mc-assoc-in { from { opacity: 0; } to { opacity: 0.85; } }
 .mc-pathway-main { flex: 1; min-width: 0; container-type: inline-size; }
 /* Horizontal spacing eases from its full value on a 1150px canvas to its minimum at 720px, so the diagram
-   tightens beside the badge column; fitBands zooms the bands only for what spacing alone cannot absorb. */
-.mc-pathway-bands {
-  --pw-fit-pad: clamp(8px, calc(8px + (100cqi - 720px) * 0.0372), 24px);
-  --pw-fit-slot: clamp(80px, calc(80px + (100cqi - 720px) * 0.0372), 96px);
-  --pw-fit-group-indent: clamp(4px, calc(4px + (100cqi - 720px) * 0.0651), 32px);
-  --pw-fit-group-gap: clamp(6px, calc(6px + (100cqi - 720px) * 0.014), 12px);
-  --pw-fit-exchange: clamp(32px, calc(32px + (100cqi - 720px) * 0.0558), 56px);
-  --pw-fit-enzyme-gap: clamp(176px, calc(176px + (100cqi - 720px) * 0.1023), 220px);
-  --pw-fit-e2-indent: clamp(34px, calc(34px + (100cqi - 720px) * 0.0442), 53px);
-  /* Lipid Transport: gap between the VLDL-IDL-LDL row and Peripheral cells, and between VLDL/IDL/LDL themselves, eased the same way so the row plus Peripheral cells still clears the badge column at a narrower canvas. */
-  --pw-fit-ldl-gap: clamp(16px, calc(16px + (100cqi - 720px) * 0.0372), 32px);
-  --pw-fit-chain-gap: clamp(48px, calc(48px + (100cqi - 720px) * 0.0651), 76px);
-}
+   tightens beside the badge column; fitBands zooms the bands only for what spacing alone cannot absorb.
+   (--pw-fit-* custom properties live on the .mc-pathway-bands rule above.) */
 .mc-lipid-particles { display: grid; grid-template-columns: repeat(6, auto); justify-content: start; align-items: start; column-gap: 14px; row-gap: 6px; }
 .mc-lipid-synth-chol { position: absolute; left: 234px; top: 108px; transform: translate(calc(-50% + 32px), calc(-50% + 32px)); }
 .mc-lipid-liver-apob { position: absolute; left: 80px; top: 258px; transform: translate(-50%, calc(-50% + 32px)); display: flex; flex-direction: column; align-items: center; }

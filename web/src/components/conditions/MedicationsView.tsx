@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMedications, type MedicationRow } from '../../data/medications';
+import { newRowId } from '../../data/ids';
 import { MONTH_LABELS, monthKey } from '../../data/months';
 import { Clock, TrendingUp } from 'lucide-react';
 import { PillIcon } from './customIcons';
@@ -121,6 +122,33 @@ function compoundsLine(row: MedicationRow): string {
   return row.compounds.map((c) => `${c.name} ${c.dose}`.trim()).join(', ');
 }
 
+/**
+ * `Compound` carries no id of its own, and its name/dose are edited in place, so neither the array
+ * index nor the compound's own fields make a stable React key. `compoundKeys` mints one synthetic
+ * key per compound slot instead: this tops up a row's key array whenever its `compounds` array has
+ * grown past it -- covers initial load, import/restore and adding a compound alike, since every one
+ * of those only ever appends -- while removal (the one case that doesn't) splices the exact removed
+ * slot out in the click handler itself, so a key always tracks the compound it was minted for rather
+ * than a position. Called during render rather than an effect, following React's supported "adjust
+ * state while rendering" pattern, so a freshly added compound's key exists on the very render that
+ * needs it instead of a tick later.
+ */
+function padCompoundKeys(
+  keys: Readonly<Record<string, readonly string[]>>,
+  rows: readonly MedicationRow[]
+): Record<string, readonly string[]> | null {
+  let next: Record<string, readonly string[]> | undefined;
+  for (const row of rows) {
+    const existing = keys[row.id] ?? [];
+    if (existing.length < row.compounds.length) {
+      const padded = [...existing];
+      while (padded.length < row.compounds.length) padded.push(newRowId());
+      next = { ...(next ?? keys), [row.id]: padded };
+    }
+  }
+  return next ?? null;
+}
+
 export function MedicationsView() {
   const {
     medications,
@@ -139,6 +167,14 @@ export function MedicationsView() {
   const nameInputs = useRef(new Map<string, HTMLInputElement>());
   const scrollRef = useRef<HTMLDivElement>(null);
   const { years, rows } = medications;
+
+  const [compoundKeysState, setCompoundKeys] = useState<Record<string, readonly string[]>>({});
+  let compoundKeys = compoundKeysState;
+  const paddedCompoundKeys = padCompoundKeys(compoundKeys, rows);
+  if (paddedCompoundKeys) {
+    compoundKeys = paddedCompoundKeys;
+    setCompoundKeys(paddedCompoundKeys);
+  }
 
   useEffect(() => {
     if (focusId) nameInputs.current.get(focusId)?.focus();
@@ -264,10 +300,13 @@ export function MedicationsView() {
                   // January of the next are adjacent calendar months, so a run marked across that
                   // boundary still joins into one bar instead of resetting at each year's column group.
                   const isMarked = (year: number, monthIndex: number) => {
-                    const rolloverYear = monthIndex < 0 ? year - 1 : monthIndex > 11 ? year + 1 : year;
+                    let rolloverYear = year;
+                    if (monthIndex < 0) rolloverYear = year - 1;
+                    else if (monthIndex > 11) rolloverYear = year + 1;
                     const rolloverMonth = (monthIndex + 12) % 12;
                     return row.months.includes(monthKey(rolloverYear, rolloverMonth));
                   };
+                  const rowCompoundKeys = compoundKeys[row.id] ?? [];
                   return (
                     <tr key={row.id}>
                       <td style={nameCellStyle(cell)}>
@@ -294,7 +333,7 @@ export function MedicationsView() {
                               />
                             </div>
                             {row.compounds.map((compound, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 26 }}>
+                              <div key={rowCompoundKeys[i]} style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 26 }}>
                                 <input
                                   aria-label={`Compound ${i + 1} name`}
                                   placeholder="Compound"
@@ -312,7 +351,10 @@ export function MedicationsView() {
                                 <Button
                                   size="xs"
                                   aria-label={`Remove compound ${i + 1}`}
-                                  onClick={() => onRemoveCompound(row.id, i)}
+                                  onClick={() => {
+                                    setCompoundKeys((prev) => ({ ...prev, [row.id]: (prev[row.id] ?? []).filter((_, idx) => idx !== i) }));
+                                    onRemoveCompound(row.id, i);
+                                  }}
                                   style={removeCompoundButton}
                                 >
                                   ×

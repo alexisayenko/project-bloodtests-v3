@@ -269,7 +269,7 @@ export function PlanVisitView({
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const activeIndex = visits.findIndex((v) => v.id === selectedId);
   const activeVisit = activeIndex >= 0 ? visits[activeIndex] : visits[0];
-  const activeVisitIndex = activeIndex >= 0 ? activeIndex : 0;
+  const activeVisitIndex = Math.max(activeIndex, 0);
 
   return (
     <>
