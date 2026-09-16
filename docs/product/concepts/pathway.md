@@ -1,6 +1,6 @@
 # Pathway
 
-> **Status: first static version built** — specified 2026-09-11
+> **Status: two static axis pages built** (Hormonal Pathways, Lipid Transport) — specified 2026-09-11
 > ([task-0024](../../tasks/task-0024.md),
 > [ADR-0014](../../tech/decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
 > `HormonalPathwaysView.tsx` draws four captioned zones on one canvas —
@@ -49,8 +49,28 @@
 > onto the same `HormoneIcon` schematic as every other signal, and aromatase
 > and 5α-reductase briefly did too (PDB 3EQM, 7C83) before settling onto the
 > shared enzyme icon — task-0024's log has both reversals.
+>
+> **Second axis page, 2026-09-16: Lipid Transport** (`#lipids`,
+> `LipidTransportView.tsx`, [task-0060](../../tasks/task-0060.md)) — its own
+> nav item after Hormonal Pathways rather than an axis tab: the liver with
+> HMG-CoA reductase docked on it over a row of six lipoprotein particles
+> (Chylomicron, VLDL, IDL, LDL, Lp(a), HDL), each a carrier whose Chol, TRIG
+> and apoprotein regions are what chips under it and a badge column ring, on
+> the Cardiovascular Risk panel's dates. Its particles are either Alex's
+> ChatGPT-generated artwork, areas illustrative and labelled so, or glyphs
+> whose areas are computed from the cited `lipoprotein-particles.json`, left
+> empty where unsourced
+> ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)).
+> Only the liver → VLDL arrow of its flows is drawn. **Both pages share one
+> engine**, `pathwayShared.ts` and `PathwayParts.tsx` — reference and source
+> blocks, date stepper, one-open-at-a-time dismissal, the DOM-measured overlay
+> with association lines hidden at rest, re-measured on resize, image load,
+> fonts and each page's own layout key, and the level-of-organisation `SIZE`s —
+> while each page hand-codes its own layout and wiring
+> ([ADR-0021](../../tech/decisions/adr-0021-pathway-pages-share-one-overlay-engine.md)).
+> The rest of this page describes the gonadal axis.
 
-One hormonal axis drawn as its wiring — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
+One axis drawn as its wiring — a hormonal axis, or a transport pathway such as lipid transport — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
 
 A [monitoring panel](monitoring-panel.md) lists markers; a pathway shows how they act on each other, so a reading is seen at the point in the axis where it happens.
 
@@ -126,7 +146,7 @@ A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B
 
 ## Icons
 
-Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). ChatGPT, stock and AI images are inspiration only, never shipped.
+Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). Generated artwork may also ship, as illustration only — the brain image and Lipid Transport's particle artwork are ChatGPT-generated — but any shape whose geometry encodes a quantity is drawn from cited reference data, and labelled artwork never stands in for it ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)).
 
 | Role | Icon |
 | --- | --- |

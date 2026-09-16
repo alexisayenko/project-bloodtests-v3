@@ -18,6 +18,18 @@ Status: accepted · 2026-09-11
 > and the HP Axis page still renders its own hand-written cascades. The
 > decision stands as the intended shape; until it lands, a wiring change is a
 > component edit, and the view and the HP Axis page can disagree.
+>
+> **Status note 2026-09-16 (later): a second page, still hand-coded.** Lipid
+> Transport (`LipidTransportView.tsx`, task-0060) hard-codes its wiring too —
+> one liver → VLDL secretion arrow and each chip's and badge's association
+> targets — and needs constructs this subset rejects (task-0060, "Fit with
+> ADR-0014's subset"). Both pages now draw through one shared layer,
+> `pathwayShared.ts` and `PathwayParts.tsx`
+> ([ADR-0021](adr-0021-pathway-pages-share-one-overlay-engine.md)), which
+> measures lines from the DOM and takes its edges and targets from the page.
+> That does not change this decision: `pathways.json` would replace each page's
+> hand-written lists, not the layer drawing them. Still no Mermaid source,
+> sidecar, generator, `pathways.json` or schema.
 
 ## Context
 

@@ -4,7 +4,7 @@ A ratio or estimate the product derives from one or more observations' results o
 
 ## Identity
 
-- **Formula** -- a fixed function of one or more observations' values (e.g. TC / HDL, or the Vermeulen equation for calculated free testosterone).
+- **Formula** -- a fixed function of one or more observations' values (e.g. TC / HDL-C, or the Vermeulen equation for calculated free testosterone).
 - **Cut-points** -- two thresholds plus a direction (lower-or-higher-is-better) that classify a computed value into one of three zones: ok / warn / bad. An index whose bands differ by sex carries `bandsBySex` (one such pair per sex) instead; `indexBands` / `indexZone` pick the pair for the sex set in Database details, and while sex is unset the value has no band and so no status -- grey rather than a guess from the other sex's band. `biot` is the only one so far, its bands Mayo Clinic Laboratories' reference limits; `birthYear` is not read, so an age-banded limit is folded into the borderline zone instead.
 - **Optional inputs** -- `optionalInputKeys`: inputs the formula uses when present and replaces with a stated default when absent (albumin, 4.3 g/dL, in `cft` and `biot`), so they never gate the index and are not among its scheduled inputs.
 - **Panels** -- which [monitoring panels](monitoring-panel.md) show this index; unlike an observation, an index is defined with its panel membership built in, not derived from panel LOINC lists.

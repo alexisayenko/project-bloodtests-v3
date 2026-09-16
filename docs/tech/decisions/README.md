@@ -36,6 +36,8 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0018](adr-0018-firebase-storage-provisional.md) | Firebase (Auth + Firestore) replaces the Supabase plan, provisionally | accepted · 2026-09-13 · supersedes 0017 · superseded by 0019 |
 | [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) | Self-hosted Supabase replaces Firebase for cloud sync | accepted · 2026-09-14 · supersedes 0018 |
 | [ADR-0020](adr-0020-constants-from-cited-data-calculators-are-cross-checks.md) | Physical constants come from cited reference data; external calculators are cross-checks, not gold standards | accepted · 2026-09-16 |
+| [ADR-0021](adr-0021-pathway-pages-share-one-overlay-engine.md) | Pathway pages share one overlay and association engine | accepted · 2026-09-16 |
+| [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
 
 ## Where each one bites
 
@@ -81,9 +83,16 @@ Each record opens with `# ADR-NNNN: <title>` and a
   (0003).
 - **Pathways** — 0014, still unbuilt: per-axis Mermaid wiring generated
   to `web/public/data/pathways.json`, the same single-source rule as
-  0010 — the first Hormonal Pathways view hard-codes its wiring in the
-  component meanwhile; see the [pathway](../../product/concepts/pathway.md) concept and
-  [task-0024](../../tasks/task-0024.md).
+  0010 — Hormonal Pathways and Lipid Transport each hard-code their wiring
+  meanwhile. 0021: both pages draw on one shared layer,
+  `web/src/components/conditions/pathwayShared.ts` and `PathwayParts.tsx` —
+  reference and source blocks, the date stepper, dismissal, and the
+  DOM-measured overlay with association lines hidden at rest — and own only
+  their layout and wiring. 0022: generated artwork may ship as illustration,
+  while a shape that encodes a quantity (Lipid Transport's Data-mode particle
+  areas) is computed from cited `lipoprotein-particles.json` and left empty
+  where unsourced. See the [pathway](../../product/concepts/pathway.md) concept,
+  [task-0024](../../tasks/task-0024.md) and [task-0060](../../tasks/task-0060.md).
 - **Sync / storage backend** — 0015: an opt-in dedicated server storage
   mode beside the unchanged local-only default, syncing the existing
   backup-bundle shape; its bearer-token auth model

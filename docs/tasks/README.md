@@ -77,7 +77,7 @@ the index.
 | [task-0057](task-0057.md) | Reconcile the Hormonal Pathways estradiol feedback arrow with the spec | to do |
 | [task-0058](task-0058.md) | Strengthen the sourcing of the receptor effects in the Hormonal Pathways Effects cards | to do |
 | [task-0059](task-0059.md) | Draw the testosterone and inhibin B feedback arrows on Hormonal Pathways | to do |
-| [task-0060](task-0060.md) | Add a Lipid transport pathway diagram | to do |
+| [task-0060](task-0060.md) | Add a Lipid transport pathway diagram | in progress |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because

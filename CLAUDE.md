@@ -687,7 +687,11 @@ and StatPearls (the page's range spanning disagreeing figures), IDL and Lp(a)
 composition "not sourced". The page shares its measures, reference and
 source blocks, stepper, dismiss handling, association rings, raster `Glyph` and
 layout-measuring hook with Hormonal Pathways through `pathwayShared.ts` and
-`PathwayParts.tsx`), Scheduled Visits (`#plan`, reachable despite validation
+`PathwayParts.tsx` — one engine for every axis page, each page keeping only its
+own layout and hand-coded wiring (ADR-0021; still no `pathways.json`,
+ADR-0014) — and its two particle modes are ADR-0022's rule: generated artwork
+ships as labelled illustration, a shape that encodes a quantity is computed
+from cited data and left empty where unsourced), Scheduled Visits (`#plan`, reachable despite validation
 errors: one tab per scheduled visit (`TabBar`, the same in-page tab strip
 Panel Detail and All Observations use, labeled by that visit's month via
 `formatMonthFullYear` or "No month" when unset) showing exactly the active
@@ -1133,11 +1137,11 @@ weekly npm (minor+patch grouped) and github-actions bumps.
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
   panel, lab report, computed index, companion observation (planned),
-  pathway (planned), unit (printed and canonical are a pair: `rawUnit` and
-  `unit`)
+  pathway (two axis pages built: Hormonal Pathways and Lipid Transport),
+  unit (printed and canonical are a pair: `rawUnit` and `unit`)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
-  (twenty records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
+  (twenty-two records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
   ADR-0012 and ADR-0013 2026-09-09, ADR-0014 2026-09-11, ADR-0015 2026-09-12,
-  ADR-0016–0018 2026-09-13, ADR-0019 2026-09-14, ADR-0020 2026-09-16)
+  ADR-0016–0018 2026-09-13, ADR-0019 2026-09-14, ADR-0020–0022 2026-09-16)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
   envelope spec, and its published JSON Schema
