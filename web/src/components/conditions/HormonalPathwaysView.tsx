@@ -376,7 +376,7 @@ const CAPTIONS: Readonly<Record<CaptionId, CaptionSpec>> = {
     note: 'Not bioavailable: held tightly by SHBG, released slowly.',
   },
   'alb-t': {
-    label: 'Albumin-T', title: 'Albumin-bound Testosterone', measure: 'albBound',
+    label: 'Alb-T', title: 'Albumin-bound Testosterone', measure: 'albBound',
     note: 'Loosely bound, released quickly in tissue capillaries.',
   },
   e2: { label: 'E2', title: 'Estradiol', measure: 'E2' },
