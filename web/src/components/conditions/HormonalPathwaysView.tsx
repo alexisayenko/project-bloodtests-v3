@@ -306,7 +306,43 @@ function snapshotOf(
   return snapshot;
 }
 
-const CARRIER_SIZE = 73;
+/** Glyph sizes follow biological scale — molecule < protein < cell < organ — each the drawn size, whatever padding the artwork carries. */
+const SIZE = { molecule: 24, protein: 48, cell: 64, organ: 80 } as const;
+/** Signal molecules match the testosterone docked in a carrier's bubble. */
+const SIGNAL_SIZE = SIZE.molecule;
+/** CarrierIcon's drawing spans ~42.6 of its 48-unit viewBox, so its box is enlarged to bring the drawing itself to protein size. */
+const CARRIER_SIZE = Math.round((SIZE.protein * 48) / 42.6);
+
+/** A raster glyph, its drawn content's bounding box in the file's own pixels, and the size that content is shown at. */
+interface GlyphArt {
+  src: string;
+  width: number;
+  height: number;
+  box: readonly [left: number, top: number, right: number, bottom: number];
+  size: number;
+}
+
+const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.protein };
+const RECEPTOR_ART: GlyphArt = { src: '/pathways/receptor-icon.png', width: 96, height: 96, box: [20, 23, 76, 74], size: SIZE.protein };
+const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
+const BRAIN_ART: GlyphArt = { src: '/pathways/brain-pituitary.png?v=2', width: 256, height: 233, box: [5, 5, 251, 228], size: SIZE.organ };
+
+/** Crops the artwork to its drawn content and scales that to the art's size, so padding in the file never shrinks the glyph. */
+function Glyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string }>) {
+  const [left, top, right, bottom] = art.box;
+  const scale = art.size / Math.max(right - left, bottom - top);
+  const style: CSSProperties = {
+    width: art.width * scale,
+    height: art.height * scale,
+    left: (art.size - (right - left) * scale) / 2 - left * scale,
+    top: (art.size - (bottom - top) * scale) / 2 - top * scale,
+  };
+  return (
+    <span className="mc-pathway-glyph" style={{ width: art.size, height: art.size }}>
+      <img src={art.src} alt={alt} style={style} />
+    </span>
+  );
+}
 
 type Subject = { kind: 'marker'; key: MarkerKey } | { kind: 'index'; key: IndexKey } | { kind: 'pool' };
 
@@ -570,7 +606,7 @@ function Carrier({ carrier }: Readonly<{ carrier: DockedCarrier }>) {
   const bound = (
     <div className="mc-pathway-anchor" style={{ height: CARRIER_SIZE, alignItems: 'center' }} data-node={carrier.bound}>
       <span className="mc-pathway-bubble">
-        <HormoneIcon size={24} />
+        <HormoneIcon size={SIGNAL_SIZE} />
       </span>
       <Caption id={carrier.bound} />
     </div>
@@ -597,7 +633,7 @@ function Exchange() {
 function Hormone({ id, slot }: Readonly<{ id: CaptionId; slot?: boolean }>) {
   return (
     <div className={slot ? 'mc-pathway-anchor mc-pathway-node mc-pathway-slot' : 'mc-pathway-anchor mc-pathway-node'} data-node={id}>
-      <HormoneIcon size={39} />
+      <HormoneIcon size={SIGNAL_SIZE} />
       <Caption id={id} />
     </div>
   );
@@ -606,7 +642,7 @@ function Hormone({ id, slot }: Readonly<{ id: CaptionId; slot?: boolean }>) {
 function Cells({ label, node }: Readonly<{ label: string; node: string }>) {
   return (
     <div className="mc-pathway-anchor mc-pathway-node mc-pathway-slot" data-node={node}>
-      <img src="/pathways/leydig-cells.png" alt="" width={56} height={56} />
+      <Glyph art={CELLS_ART} />
       <div className="mc-pathway-caption">
         <span className="mc-pathway-node-label">{label}</span>
       </div>
@@ -619,7 +655,7 @@ function HpDiagram() {
     <div className="mc-pathway-row mc-pathway-row-start">
       <div className="mc-pathway-hp">
         <div className="mc-pathway-anchor mc-pathway-node" data-node="pituitary">
-          <img src="/pathways/brain-pituitary.png?v=2" alt="Hypothalamus and pituitary" width={80} height={73} />
+          <Glyph art={BRAIN_ART} alt="Hypothalamus and pituitary" />
           <div className="mc-pathway-caption">
             <span className="mc-pathway-node-label">Hypothalamus + Pituitary</span>
           </div>
@@ -641,13 +677,13 @@ function TestesDiagram() {
 function Enzyme({
   label,
   node,
-  image,
+  art,
   children,
-}: Readonly<{ label: string; node: string; image: string; children?: ReactNode }>) {
+}: Readonly<{ label: string; node: string; art: GlyphArt; children?: ReactNode }>) {
   return (
     <div className="mc-pathway-enzyme-col">
       <div className="mc-pathway-enzyme" data-node={node}>
-        <img className="mc-pathway-structure-img" src={image} alt="" width={56} height={56} />
+        <Glyph art={art} />
         <span className="mc-pathway-node-label">{label}</span>
       </div>
       {children && <div className="mc-pathway-product">{children}</div>}
@@ -658,7 +694,7 @@ function Enzyme({
 function Receptor({ label, node }: Readonly<{ label: string; node: string }>) {
   return (
     <div className="mc-pathway-anchor mc-pathway-node" data-node={node}>
-      <img className="mc-pathway-structure-img" src="/pathways/receptor-icon.png" alt="" width={56} height={56} />
+      <Glyph art={RECEPTOR_ART} />
       <div className="mc-pathway-caption">
         <span className="mc-pathway-node-label">{label}</span>
       </div>
@@ -670,10 +706,10 @@ function TargetDiagram() {
   return (
     <div className="mc-pathway-row mc-pathway-row-start">
       <div className="mc-pathway-enzymes">
-        <Enzyme label="5α-reductase" node="srd5a" image="/pathways/enzyme-icon.png">
+        <Enzyme label="5α-reductase" node="srd5a" art={ENZYME_ART}>
           <Hormone id="dht" />
         </Enzyme>
-        <Enzyme label="aromatase" node="aromatase" image="/pathways/enzyme-icon.png">
+        <Enzyme label="aromatase" node="aromatase" art={ENZYME_ART}>
           <Hormone id="e2" />
         </Enzyme>
         <div className="mc-pathway-er">
@@ -894,7 +930,7 @@ function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX): v
   const enzymes = el.querySelector<HTMLElement>('.mc-pathway-enzymes');
   if (!tNode || !enzymes) return;
   enzymes.style.transform = '';
-  const imgs = [...enzymes.querySelectorAll('.mc-pathway-enzyme img')].map((i) => i.getBoundingClientRect());
+  const imgs = [...enzymes.querySelectorAll('.mc-pathway-enzyme .mc-pathway-glyph')].map((i) => i.getBoundingClientRect());
   if (imgs.length !== 2) return;
   const mid = (centerX(imgs[0]) + centerX(imgs[1])) / 2;
   const containerLeft = enzymes.getBoundingClientRect().left - base.left;
@@ -914,7 +950,7 @@ function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX): v
 /** Centres the hypothalamus–pituitary icon on T's vertical axis, the same x the T → androgen-receptor trunk runs down. */
 function positionPituitary(el: HTMLDivElement, centerX: CenterX): void {
   const hp = el.querySelector<HTMLElement>('.mc-pathway-hp');
-  const icon = hp?.querySelector('[data-node="pituitary"] img');
+  const icon = hp?.querySelector('[data-node="pituitary"] .mc-pathway-glyph');
   const tNode = el.querySelector('[data-node="t"]');
   if (!hp || !icon || !tNode) return;
   hp.style.transform = '';
@@ -930,7 +966,7 @@ function buildExtraLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX): s
   if (!trunkNode || !arNode) return [];
   const x = centerX(trunkNode.getBoundingClientRect()) + 8;
   const arRect = arNode.getBoundingClientRect();
-  const firstEnzyme = el.querySelector('[data-node="srd5a"] img');
+  const firstEnzyme = el.querySelector('[data-node="srd5a"] .mc-pathway-glyph');
   const junction = (firstEnzyme?.getBoundingClientRect().top ?? arRect.top) - base.top - 28;
   const extra = [
     `trunk:${x},${junction} ${x},${arRect.top - base.top - 4}`,
@@ -949,7 +985,7 @@ function buildExtraLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX): s
 /** A single fork's trunk-plus-branches line set, from one node down to several target icons. */
 function forkLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX, from: string, targets: readonly string[]): string[] {
   const a = el.querySelector(`[data-node="${from}"]`);
-  const icons = targets.map((t) => el.querySelector(`[data-node="${t}"] img`)).filter((n): n is Element => n !== null);
+  const icons = targets.map((t) => el.querySelector(`[data-node="${t}"] .mc-pathway-glyph`)).filter((n): n is Element => n !== null);
   if (!a || icons.length === 0) return [];
   const x = centerX(a.getBoundingClientRect()) + 8;
   const y1 = (a.querySelector('.mc-pathway-caption') ?? a).getBoundingClientRect().bottom - base.top + 5;
@@ -973,7 +1009,7 @@ function pathwayLine(
   const a = el.querySelector(`[data-node="${from}"]`);
   const b = el.querySelector(`[data-node="${to}"]`);
   if (!a || !b) return [];
-  const ra = (a.classList.contains('mc-pathway-enzyme') ? (a.querySelector('img') ?? a) : a).getBoundingClientRect();
+  const ra = (a.classList.contains('mc-pathway-enzyme') ? (a.querySelector('.mc-pathway-glyph') ?? a) : a).getBoundingClientRect();
   const rb = b.getBoundingClientRect();
   const bottomOf = (node: Element) => (node.querySelector('.mc-pathway-caption') ?? node).getBoundingClientRect().bottom - base.top + 5;
   const down = rb.top >= ra.top;
@@ -986,9 +1022,10 @@ function pathwayLine(
     return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
   }
   if (shape === 'fork') {
-    const x = centerX((a.querySelector('svg, img') ?? a).getBoundingClientRect());
-    const junction = y2 - 24;
-    return [`${x},${bottomOf(a)} ${x},${junction} ${x2},${junction} ${x2},${y2}`];
+    const glyph = (a.querySelector('.mc-pathway-glyph, svg') ?? a).getBoundingClientRect();
+    const midY = glyph.top + glyph.height / 2 - base.top;
+    const x1 = x2 < centerX(glyph) ? glyph.left - base.left - 4 : glyph.right - base.left + 4;
+    return [`${x1},${midY} ${x2},${midY} ${x2},${y2}`];
   }
   if (shape === 'drop') {
     const x = centerX(ra) + 8;
@@ -997,6 +1034,26 @@ function pathwayLine(
     return [`${x},${bottomOf(a)} ${x},${midY} ${edge},${midY}`];
   }
   return [`${centerX(ra)},${down ? bottomOf(a) : ra.top - base.top - 4} ${x2},${y2}`];
+}
+
+interface FeedbackMark {
+  x: number;
+  y: number;
+}
+
+/** Estradiol's negative feedback: up from blood E2, then left at the brain's mid-height to its right side, marked "↓" at the head. */
+function feedbackLine(el: HTMLDivElement, base: DOMRect, centerX: CenterX): { lines: string[]; marks: FeedbackMark[] } {
+  const e2 = el.querySelector('[data-node="e2blood"] svg');
+  const brain = el.querySelector('[data-node="pituitary"] .mc-pathway-glyph');
+  if (!e2 || !brain) return { lines: [], marks: [] };
+  const from = e2.getBoundingClientRect();
+  const to = brain.getBoundingClientRect();
+  const lane = to.top + to.height / 2 - base.top;
+  const tip = to.right - base.left + 4;
+  return {
+    lines: [`${centerX(from)},${from.top - base.top - 4} ${centerX(from)},${lane} ${tip},${lane}`],
+    marks: [{ x: tip + 10, y: lane - 5 }],
+  };
 }
 
 function buildPathwayLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX): string[] {
@@ -1008,7 +1065,7 @@ function ringsFor(el: HTMLDivElement, base: DOMRect, targets: readonly string[])
   return targets.flatMap((target) => {
     const node = el.querySelector(`[data-node="${target}"]`);
     if (!node) return [];
-    const r = (node.querySelector('img, svg, .mc-pathway-bubble') ?? node).getBoundingClientRect();
+    const r = (node.querySelector('.mc-pathway-glyph, svg, .mc-pathway-bubble') ?? node).getBoundingClientRect();
     return [{ cx: r.left + r.width / 2 - base.left, cy: r.top + r.height / 2 - base.top, r: Math.max(r.width, r.height) / 2 + 6 }];
   });
 }
@@ -1039,6 +1096,7 @@ function buildAssociations(el: HTMLDivElement, base: DOMRect): Association[] {
 
 function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: RefObject<HTMLDivElement | null>; active: string | null; focused: string | null; layoutKey: string }>) {
   const [lines, setLines] = useState<string[]>([]);
+  const [marks, setMarks] = useState<FeedbackMark[]>([]);
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
 
@@ -1053,10 +1111,13 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
       const bandsBox = el.querySelector('.mc-pathway-bands')?.getBoundingClientRect();
       if (bandsBox) setVeil({ w: bandsBox.right - base.left, h: bandsBox.bottom - base.top });
       setAssociations(buildAssociations(el, base));
+      const feedback = feedbackLine(el, base, centerX);
+      setMarks(feedback.marks);
       setLines([
         ...buildExtraLines(el, base, centerX),
         ...forkLines(el, base, centerX, 't', ['aromatase', 'srd5a']),
         ...buildPathwayLines(el, base, centerX),
+        ...feedback.lines,
       ]);
     };
     const observer = new ResizeObserver(measure);
@@ -1085,6 +1146,11 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
           />
         );
       })}
+      {marks.map((m) => (
+        <text key={`${m.x},${m.y}`} className="mc-pathway-feedback" x={m.x} y={m.y} textAnchor="middle">
+          ↓
+        </text>
+      ))}
       {associations
         .filter((a) => a.badge === active)
         .map((a) => (

@@ -437,12 +437,16 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   border-radius: var(--radius-card); overflow: hidden; background: var(--surface-band);
   position: relative;
 }
-.mc-pathway-band { position: relative; display: flex; padding-top: 32px; border-top: 1px solid var(--border-subtle); }
+.mc-pathway-band { position: relative; display: flex; padding: 20px 0 0 32px; border-top: 1px solid var(--border-subtle); }
 .mc-pathway-band:nth-of-type(1) { border-top: none; }
 .mc-pathway-band:last-of-type { padding-top: 56px; }
 .mc-pathway-band:nth-of-type(even) { background: var(--surface-band-alt); }
-.mc-pathway-site { position: absolute; top: 10px; left: 16px; z-index: 2; }
+.mc-pathway-site {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 32px; z-index: 2;
+  display: flex; align-items: center; justify-content: center; padding: 4px 0; box-sizing: border-box;
+}
 .mc-pathway-title {
+  margin: 0; max-height: 100%; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--text-muted); line-height: 1.3; cursor: help;
 }
@@ -460,13 +464,13 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 0 24px 52px;
 }
 .mc-pathway-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; color: #8FA3B5; z-index: 1; }
-.mc-pathway-group { display: flex; align-items: center; gap: 12px; margin-left: 64px; }
+.mc-pathway-group { display: flex; align-items: center; gap: 12px; margin-left: 32px; }
 .mc-pathway-enzymes { position: relative; display: flex; align-items: flex-start; gap: 160px; margin-left: 268px; padding-bottom: 96px; }
 .mc-pathway-ar { position: absolute; bottom: 0; left: 0; }
-.mc-pathway-e2blood { margin-left: 72px; }
+.mc-pathway-e2blood { margin-left: 32px; }
 .mc-pathway-hp { display: flex; flex: none; position: relative; }
 .mc-pathway-enzyme-col { display: flex; flex-direction: column; align-items: flex-start; gap: 40px; }
-.mc-pathway-product { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 56px; }
+.mc-pathway-product { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 64px; }
 .mc-pathway-er { position: absolute; left: 0; top: 0; }
 .mc-pathway-toolbar { display: flex; align-items: center; gap: 20px; margin-bottom: 12px; }
 .mc-pathway-chip {
@@ -570,16 +574,15 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-dot-bad { background: var(--status-bad); }
 .mc-pathway-dot-none { background: var(--status-none); }
 .mc-pathway-enzyme { display: flex; align-items: center; gap: 8px; color: var(--navy); }
-.mc-pathway-structure-img {
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-  box-shadow: var(--shadow-card); background: #fff; object-fit: cover;
-}
+.mc-pathway-glyph { position: relative; display: block; flex: none; overflow: hidden; }
+.mc-pathway-glyph img { position: absolute; max-width: none; }
+.mc-pathway-feedback { fill: currentColor; font-size: 13px; font-weight: 700; }
 .mc-pathway-row-start { justify-content: flex-start; }
 .mc-pathway-slot { width: 96px; justify-content: center; }
 .mc-pathway-exchange { flex: none; width: 56px; height: 14px; color: var(--navy); }
 .mc-pathway-node { color: var(--navy); display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .mc-pathway-docked { display: flex; align-items: center; }
-.mc-pathway-docked .mc-pathway-bond { margin-left: -6px; width: 48px; }
+.mc-pathway-docked .mc-pathway-bond { margin-left: -6px; width: 64px; }
 .mc-pathway-docked-left .mc-pathway-bond { margin-left: 0; margin-right: -6px; }
 .mc-pathway-anchor { position: relative; display: flex; }
 .mc-pathway-caption { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; display: flex; flex-direction: column; align-items: center; white-space: nowrap; }
