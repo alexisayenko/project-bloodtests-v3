@@ -2,6 +2,7 @@ import { Rocket, FileText, List, LayoutGrid, CalendarCheck, BookOpen, CircleUser
 import { PathwaysIcon, PillIcon, type IconComponent } from './customIcons';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
+import { COLOR } from '../../styles/tokens';
 
 const ICONS: Record<NavView, LucideIcon | IconComponent> = {
   profile:     Rocket,
@@ -63,9 +64,34 @@ export function SideNav({
 
   return (
     <aside className="mc-sidebar" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      <nav aria-label="Sections" className="mc-side-list">
-        {topItems.map(renderItem)}
-      </nav>
+      {onToggleCollapsed && (
+        <button
+          type="button"
+          className="mc-side-toggle"
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={!collapsed}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <ToggleIcon size={14} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      )}
+      <div>
+        <div className="mc-side-top">
+          <div
+            {...pressable(() => navigate({ view: 'panels' }))}
+            className="mc-side-logo"
+            aria-label="Paneloom, go to Monitoring Panels"
+            title={collapsed ? 'Paneloom, go to Monitoring Panels' : undefined}
+          >
+            <img src="/brand/paneloom-mark.svg" alt="" width={26} height={26} />
+            <span style={{ fontSize: 19, fontWeight: 700, color: COLOR.text, letterSpacing: -0.2 }}>Paneloom</span>
+          </div>
+        </div>
+        <nav aria-label="Sections" className="mc-side-list">
+          {topItems.map(renderItem)}
+        </nav>
+      </div>
 
       <div className="mc-side-tagline" style={{ margin: 'auto 0' }}>
         <div>Your results.</div>
@@ -78,19 +104,6 @@ export function SideNav({
           <nav aria-label="Account" className="mc-side-list" style={{ marginBottom: 12 }}>
             {renderItem(accountItem)}
           </nav>
-        )}
-        {onToggleCollapsed && (
-          <button
-            type="button"
-            className="mc-side-toggle"
-            style={{ marginTop: 12 }}
-            onClick={onToggleCollapsed}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-expanded={!collapsed}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <ToggleIcon size={18} strokeWidth={1.75} aria-hidden="true" />
-          </button>
         )}
       </div>
     </aside>

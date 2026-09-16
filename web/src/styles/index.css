@@ -291,37 +291,60 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-panels-grid--compact .mc-panel-icon svg { width: 20px; height: 20px; }
 .mc-panels-grid--compact .mc-panel-title { font-size: var(--font-card-title); overflow-wrap: anywhere; }
 
-/* Desktop and tablet shell: a top bar over a sidebar. Phones keep .mc-nav
-   (task-0020), so nothing here may reach below the mobile breakpoint. */
+/* Desktop and tablet shell: a sidebar spanning the full viewport height.
+   Phones keep .mc-nav (task-0020), so nothing here may reach below the
+   mobile breakpoint. */
 @media (min-width: 768px) {
-  :root { --mc-topbar-h: 60px; --mc-sidebar-w: 232px; }
-  .mc-topbar {
-    position: sticky; top: 0; z-index: 40; height: var(--mc-topbar-h);
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border-subtle);
-  }
+  :root { --mc-sidebar-w: 232px; }
   /* Fixed rather than sticky: the footer sits outside the shell, so a sticky
      sidebar was pushed up under the top bar once the page reached its end. */
   .mc-sidebar {
-    position: fixed; top: var(--mc-topbar-h); bottom: 0; left: 0; z-index: 30;
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 30;
     width: var(--mc-sidebar-w); overflow: hidden;
     padding: 16px 12px; background: var(--surface); border-right: 1px solid var(--border-subtle);
     transition: width 150ms ease;
   }
   .mc-page, .mc-footer { margin-left: var(--mc-sidebar-w); transition: margin-left 150ms ease; }
-  .mc-side-item > span { white-space: nowrap; }
+  .mc-side-top {
+    display: flex; align-items: center; margin-bottom: 12px;
+  }
+  .mc-side-logo {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    padding: 8px 12px; min-width: 0;
+    transition: padding 150ms ease;
+  }
+  .mc-side-logo span {
+    white-space: nowrap; overflow: hidden; display: inline-block;
+    max-width: 160px; opacity: 1;
+    transition: max-width 150ms ease, opacity 150ms ease;
+  }
+  .mc-side-item > span {
+    white-space: nowrap; overflow: hidden; display: inline-block;
+    max-width: 170px; opacity: 1;
+    transition: max-width 150ms ease, opacity 150ms ease;
+  }
   .mc-side-toggle {
-    display: flex; align-items: center; margin: 0 0 4px; padding: 8px 12px; border: 0; border-radius: 8px;
-    background: none; color: var(--text-muted); cursor: pointer;
+    position: fixed; top: 51px; left: calc(var(--mc-sidebar-w) - 13px); z-index: 31;
+    display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--border-subtle); background: var(--surface);
+    color: var(--text-muted); cursor: pointer;
+    transition: left 150ms ease, background 120ms ease, color 120ms ease;
   }
   .mc-side-toggle:hover { background: var(--surface-muted); color: var(--text); }
-  .mc-side-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .mc-side-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .mc-side-list { display: flex; flex-direction: column; gap: 2px; }
-  .mc-side-tagline { padding: 4px 12px 8px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-  .mc-side-item {
-    display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 8px;
-    font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+  .mc-side-tagline {
+    padding: 4px 12px 8px; font-size: 12px; color: var(--text-muted); line-height: 1.5;
+    overflow: hidden; max-height: 80px; opacity: 1;
+    transition: max-height 150ms ease, opacity 150ms ease, padding 150ms ease;
   }
+  .mc-side-item {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+    transition: width 150ms ease, padding 150ms ease, gap 150ms ease;
+  }
+  .mc-side-item svg { flex-shrink: 0; }
   .mc-side-item:hover { background: var(--surface-muted); color: var(--text); }
   .mc-side-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .mc-side-item[aria-current='page'] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
@@ -337,17 +360,18 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   .mc-page { padding: 28px 24px 48px; }
 }
 @media (min-width: 768px) {
+  /* The icon's own left offset (sidebar padding-left + item/logo padding-left)
+     is deliberately IDENTICAL to the expanded state below -- neither .mc-sidebar's
+     padding nor .mc-side-item's/.mc-side-logo's padding-left change on collapse,
+     so the icons themselves don't shift position, only the label text collapses
+     away beside them. */
   :root[data-sidebar-collapsed] { --mc-sidebar-w: 64px; }
-  :root[data-sidebar-collapsed] .mc-sidebar { padding: 16px 0; }
-  :root[data-sidebar-collapsed] .mc-side-list { align-items: center; }
-  :root[data-sidebar-collapsed] .mc-side-item {
-    justify-content: center; width: 36px; height: 36px; padding: 0; gap: 0;
+  :root[data-sidebar-collapsed] .mc-side-item { gap: 0; }
+  :root[data-sidebar-collapsed] .mc-side-item > span { max-width: 0; opacity: 0; }
+  :root[data-sidebar-collapsed] .mc-side-tagline {
+    max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0;
   }
-  :root[data-sidebar-collapsed] .mc-side-item > span,
-  :root[data-sidebar-collapsed] .mc-side-tagline { display: none; }
-  :root[data-sidebar-collapsed] .mc-side-toggle {
-    justify-content: center; width: 36px; height: 36px; margin: 0 auto 4px; padding: 0;
-  }
+  :root[data-sidebar-collapsed] .mc-side-logo span { max-width: 0; opacity: 0; }
 }
 
 @media (max-width: 767px) {
@@ -430,7 +454,12 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   .mc-table-wrap.mc-col-animated th:first-child,
   .mc-table-wrap.mc-col-animated tbody td:first-child,
   .mc-dates-chip.mc-animated,
-  .mc-dates-chip svg { transition: none; }
+  .mc-dates-chip svg,
+  .mc-side-logo,
+  .mc-side-logo span,
+  .mc-side-item,
+  .mc-side-item > span,
+  .mc-side-tagline { transition: none; }
 }
 
 /* Hormonal Pathways: one horizontal band per anatomical site, its label column
