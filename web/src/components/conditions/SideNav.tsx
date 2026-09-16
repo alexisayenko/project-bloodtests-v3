@@ -1,4 +1,4 @@
-import { Rocket, FileText, List, LayoutGrid, CalendarCheck, BookOpen, CircleUser, ChevronsLeft, ChevronsRight, type LucideIcon } from 'lucide-react';
+import { Rocket, FileText, List, LayoutGrid, CalendarCheck, BookOpen, CircleUser, ChevronsLeft, Droplets, ChevronsRight, type LucideIcon } from 'lucide-react';
 import { PathwaysIcon, PillIcon, type IconComponent } from './customIcons';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
 import { pressable } from './ui';
@@ -9,6 +9,7 @@ const ICONS: Record<NavView, LucideIcon | IconComponent> = {
   all:         List,
   panels:      LayoutGrid,
   pathways:    PathwaysIcon,
+  lipids:      Droplets,
   plan:        CalendarCheck,
   medications: PillIcon,
   reference:   BookOpen,

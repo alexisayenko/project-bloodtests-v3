@@ -15,6 +15,7 @@ import { AllObservationsView } from './AllObservationsView';
 import { ProfileView } from './ProfileView';
 import { MedicationsView } from './MedicationsView';
 import { HormonalPathwaysView } from './HormonalPathwaysView';
+import { LipidTransportView } from './LipidTransportView';
 import { AccountView } from './AccountView';
 import { PlanVisitView } from './PlanVisitView';
 import { PanelDetailView } from './PanelDetailView';
@@ -329,6 +330,16 @@ export function MedicalConditionsPage() {
             allResults={allResults}
             resultsByDate={resultsByDate}
             panelTests={conditions.find((c) => c.name === 'Hypogonadism')?.tests ?? []}
+            unitSystem={unitSystem}
+            onUnitSystemChange={setUnitSystem}
+          />
+        );
+      case 'lipids':
+        return (
+          <LipidTransportView
+            allResults={allResults}
+            resultsByDate={resultsByDate}
+            panelTests={conditions.find((c) => c.name === 'Cardiovascular Risk')?.tests ?? []}
             unitSystem={unitSystem}
             onUnitSystemChange={setUnitSystem}
           />

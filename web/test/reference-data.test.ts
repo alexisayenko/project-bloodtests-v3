@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
-import { ANALYSES, LABORATORY_FILE, MARTIN_HOPKINS_FILE, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS, PATHWAY_RANGE_FILE, RECEPTOR_EFFECTS_FILE } from './dataFiles';
+import { ANALYSES, LABORATORY_FILE, LIPOPROTEIN_PARTICLE_FILE, MARTIN_HOPKINS_FILE, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS, PATHWAY_RANGE_FILE, RECEPTOR_EFFECTS_FILE } from './dataFiles';
 import {
   PATHWAY_RECEPTORS,
   RECEPTOR_EFFECT_SOURCES,
@@ -29,6 +29,8 @@ import {
 } from '../src/data/molarMasses';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
 import { dimensionOf } from '../src/data/unitNormalization';
+import { COMPONENTS, LIPOPROTEIN_PARTICLES, LIPOPROTEIN_SOURCES, apoKey, citedSourceIds, shareRange } from '../src/data/lipoproteinParticles';
+import { blobPolygon, organicRegions, polygonArea } from '../src/components/conditions/lipidParticleGeometry';
 import { MARTIN_HOPKINS_NON_HDL_BANDS, MARTIN_HOPKINS_ROWS, martinHopkinsFactor } from '../src/data/martinHopkinsLdl';
 
 const SCHEMA_ID = 'https://blood.isayenko.net/schema/analytes-1.schema.json';
@@ -37,6 +39,7 @@ const LAB_SCHEMA_ID = 'https://blood.isayenko.net/schema/laboratories-1.schema.j
 const PATHWAY_SCHEMA_ID = 'https://blood.isayenko.net/schema/pathway-reference-ranges-1.schema.json';
 const MARTIN_HOPKINS_SCHEMA_ID = 'https://blood.isayenko.net/schema/martin-hopkins-ldl-table-1.schema.json';
 const RECEPTOR_EFFECTS_SCHEMA_ID = 'https://blood.isayenko.net/schema/pathway-receptor-effects-1.schema.json';
+const LIPOPROTEIN_SCHEMA_ID = 'https://blood.isayenko.net/schema/lipoprotein-particles-1.schema.json';
 
 function loadSchema(name: string): object {
   return JSON.parse(readFileSync(new URL(`../public/schema/${name}`, import.meta.url), 'utf8')) as object;
@@ -50,6 +53,7 @@ ajv.addSchema(loadSchema('laboratories-1.schema.json'));
 ajv.addSchema(loadSchema('pathway-reference-ranges-1.schema.json'));
 ajv.addSchema(loadSchema('martin-hopkins-ldl-table-1.schema.json'));
 ajv.addSchema(loadSchema('pathway-receptor-effects-1.schema.json'));
+ajv.addSchema(loadSchema('lipoprotein-particles-1.schema.json'));
 
 function validator(pointer: string): ValidateFunction {
   const compiled = ajv.getSchema(`${SCHEMA_ID}${pointer}`);
@@ -746,5 +750,89 @@ describe('long common name trimmed for display', () => {
       else seen.set(key, a.loinc);
     }
     expect(collisions).toEqual([]);
+  });
+});
+
+describe('lipoprotein particles conform to lipoprotein-particles-1.schema.json', () => {
+  it('lipoprotein-particles.json is a valid particle table', () => {
+    expect(errorsIn(ajv.getSchema(LIPOPROTEIN_SCHEMA_ID)!, LIPOPROTEIN_PARTICLE_FILE)).toEqual([]);
+  });
+
+  it('rejects an unknown key, a figure over 100%, and a source with neither quote nor table', () => {
+    const particle = ajv.getSchema(`${LIPOPROTEIN_SCHEMA_ID}#/$defs/particle`)!;
+    const source = ajv.getSchema(`${LIPOPROTEIN_SCHEMA_ID}#/$defs/source`)!;
+    const figure = ajv.getSchema(`${LIPOPROTEIN_SCHEMA_ID}#/$defs/figure`)!;
+    expect(particle({ ...LIPOPROTEIN_PARTICLES[0], size: 1 })).toBe(false);
+    expect(figure({ value: 101, source: 'cox-1990' })).toBe(false);
+    const tabled = LIPOPROTEIN_SOURCES.find((s) => s.table)!;
+    expect(source(Object.fromEntries(Object.entries(tabled).filter(([key]) => key !== 'table')))).toBe(false);
+  });
+});
+
+describe('lipoprotein particles are internally consistent', () => {
+  const sourceIds = new Set(LIPOPROTEIN_SOURCES.map((s) => s.id));
+
+  it('lists the particles in transport order', () => {
+    expect(LIPOPROTEIN_PARTICLES.map((p) => p.id)).toEqual(['chylomicron', 'vldl', 'idl', 'ldl', 'lpa', 'hdl']);
+  });
+
+  it('every figure cites a known source, and every source is cited', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      const cited = [
+        p.majorApoproteins.source,
+        p.diameterNm.source,
+        p.densityGPerMl.source,
+        ...COMPONENTS.flatMap((c) => (p.composition[c] ?? []).map((f) => f.source)),
+      ];
+      for (const id of cited) expect(sourceIds.has(id), `${p.id}: ${id}`).toBe(true);
+    }
+    expect(new Set(citedSourceIds())).toEqual(sourceIds);
+    expect(sourceIds.size).toBe(LIPOPROTEIN_SOURCES.length);
+  });
+
+  it('every quote stays under 25 words', () => {
+    for (const s of LIPOPROTEIN_SOURCES) {
+      if (s.quote) expect(s.quote.trim().split(/\s+/).length, s.id).toBeLessThan(25);
+    }
+  });
+
+  it('every interval is ordered', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      for (const interval of [p.diameterNm, p.densityGPerMl]) {
+        if (interval.min !== undefined && interval.max !== undefined) expect(interval.min, p.id).toBeLessThanOrEqual(interval.max);
+      }
+    }
+  });
+
+  it('no particle’s smallest printed shares add up to more than its whole mass, nor its drawn areas', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      const ranges = COMPONENTS.map((c) => shareRange(p, c));
+      for (const r of ranges) if (r) expect(r.min, p.id).toBeLessThanOrEqual(r.max);
+      expect(ranges.reduce((sum, r) => sum + (r?.min ?? 0), 0), p.id).toBeLessThanOrEqual(100);
+      const drawn = (shareRange(p, 'triglyceride')?.midpoint ?? 0) + (shareRange(p, 'cholesterol')?.midpoint ?? 0);
+      expect(drawn, p.id).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it('every structural apolipoprotein is one the source lists for that particle', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      const listed = new Set(p.majorApoproteins.printed.map(apoKey));
+      for (const apo of p.structuralApolipoproteins) expect(listed.has(apoKey(apo)), `${p.id}: ${apo}`).toBe(true);
+    }
+  });
+
+  it('derives a share range from the printed figures without storing it', () => {
+    const ldl = LIPOPROTEIN_PARTICLES.find((p) => p.id === 'ldl')!;
+    expect(shareRange(ldl, 'cholesterol')).toEqual({ min: 26, max: 50, midpoint: 38, approximate: false, sources: ['cox-1990', 'statpearls-ldl'] });
+    expect(shareRange(LIPOPROTEIN_PARTICLES.find((p) => p.id === 'lpa')!, 'triglyceride')).toBeUndefined();
+  });
+
+  it('draws each glyph region at the share of the outline it was asked for', () => {
+    const outline = blobPolygon(100, 100, 60, 'ldl');
+    const total = polygonArea(outline);
+    for (const fractions of [[0.1, 0.38], [0.9, 0.03], [0.05, 0.2]]) {
+      const regions = organicRegions(outline, fractions, { gap: 2.5, amplitude: 4, seed: 'ldl' });
+      regions.forEach((region, k) => expect(Math.abs(polygonArea(region) / total - fractions[k]), `${fractions}`).toBeLessThan(0.01));
+    }
   });
 });

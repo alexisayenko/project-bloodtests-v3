@@ -400,11 +400,11 @@ From 768px up the nav is an app shell (`AppShell.tsx`): a white top bar
 "Your data stays in this browser" when signed out, a cloud-check icon and
 "Synced to your account" when signed in via `useSupabaseAuthUser`) over a left
 sidebar (`SideNav.tsx`) listing
-all nine `NAV_ITEMS` with a line icon each — `lucide-react`'s, except the two
+all ten `NAV_ITEMS` with a line icon each — `lucide-react`'s, except the two
 drawn in `customIcons.tsx` to the same stroke and size, `PillIcon` (a split
 capsule, also the Medications header's pillar and the Pancreatic Function card's
 icon, `PageHeader` pillars accepting either kind) for Medications and
-`PathwaysIcon` (three linked hollow circles) for Hormonal Pathways — Account
+`PathwaysIcon` (three linked hollow circles) for Hormonal Pathways, and `lucide-react`'s `Droplets` for Lipid Transport — Account
 pinned to its foot above a « / » collapse toggle, and a three-line tagline
 vertically centered in the free space between the sections and Account, hidden
 below a 760px viewport height — the active one a
@@ -419,12 +419,12 @@ a tooltip): `AppShell` stamps `data-sidebar-collapsed` on the root element,
 since the footer outside the shell reads the same width variable, and
 `sidebarCollapsed.ts` keeps the choice under localStorage
 `bloodtests_sidebar_collapsed_v1` (`"true"`, the key removed when expanded). Phones keep the old wrapping `NavBar`
-(brand mark plus the same nine labels), until task-0020 designs their shell, and every
+(brand mark plus the same ten labels), until task-0020 designs their shell, and every
 slot stays in place across the breakpoint so rotating a phone remounts nothing.
 Every section's landing page opens with the same `PageHeader.tsx` banner —
 overline, two-tone title, description lines and up to three icon pillars —
 while Panel Detail, report detail and the Reference Book's sub-pages keep a
-plain `<h1>`. The nine sections, in nav order — Get Started (`#profile`: app description,
+plain `<h1>`. The ten sections, in nav order — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
@@ -644,7 +644,46 @@ for now (`INDEX_DEFS` the intended source), and while one is hovered, focused
 or open it draws its association lines, hidden at rest: one purple bus from
 the badge to a lane above its targets, stubs down to dashed rings around each
 target; only an opened badge also veils the rest of the diagram, hover
-drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
+drawing the lines alone), Lipid Transport (`#lipids`, blocked while validation
+errors exist, like Hormonal Pathways: task-0060's first version in
+`LipidTransportView.tsx`, under a `PageHeader` with overline "Lipidology" —
+one row of six lipoprotein particles in transport order (Chylomicron, VLDL,
+IDL, LDL, Lp(a), HDL), each sized by diameter order in fixed steps, not to
+scale (`GLYPH_SIZE` in `lipidParticleGeometry.ts`: 170 / 142 / 118 / 100 / 100 /
+72 px). A "Particles" `SegmentedControl` (unpersisted, default Artwork) switches
+the glyphs: Artwork inlines Alex's ChatGPT-generated SVGs
+(`web/src/assets/lipids/*.svg`, text and background stripped, imported `?raw`
+by `lipidArtwork.ts`, which tags each file's yellow area `<id>-trig`, teal area
+`<id>-chol` and pink pills `<id>-apo` / `<id>-apoa` so they can be measured;
+areas illustrative, and the page says so); Data draws `LipidParticleGlyph.tsx`
+— maroon double outline, a TRIG and a Chol region whose areas are the midpoint
+of the sourced mass shares (`organicRegions` solves each wavy boundary so the
+area is exact), the holder apoprotein as a pill (ApoB-48, ApoB-100, ApoB-100 +
+a hanging apo(a), ApoA-I), no text inside, an unsourced share left empty with
+"composition not sourced" under the particle. Under each particle, chips in the
+Hormonal Pathways look (`mc-pathway-chip`, status dot, expand-in-place card with
+the lab's range or "No reference range"): VLDL-C (the lab's `13458-5`, else the
+`vldl` index marked calc), LDL-C (`13457-7` only), Lp(a) (`10835-7`), HDL-C and
+ApoA-I; a bracket spanning the VLDL-to-Lp(a) columns holds one ApoB chip. A
+badge column on the right — Total cholesterol, LDL-C (one merged badge on the
+Free Testosterone model: face the lab's LDL-C else Martin-Hopkins marked calc;
+expanded, Reported then Calculated Friedewald / Sampson / Martin-Hopkins with
+zones shown once, trimmed sources), Triglycerides, ApoB (cited to Sniderman et
+al. 2019), Non-HDL-C, Remnant-C, TC/HDL-C, LDL-C/HDL-C, AIP, ApoB/ApoA — draws
+Hormonal Pathways' purple association lines on hover, focus or open, ringing
+the compound regions they read (Chol, TRIG or apoprotein pill; the whole
+particle where Data mode has no sourced area), chips ringing theirs on hover. A
+‹ date › stepper over the Cardiovascular Risk panel's `panelDates` and the SI/US
+switch drive every value. Below, a sourced size-and-composition table from
+`web/public/data/lipoprotein-particles.json` (closed schema
+`lipoprotein-particles-1.schema.json`, loader `data/lipoproteinParticles.ts`):
+diameter, density and structural apoproteins from Feingold's Endotext Table 1,
+mass percentages as each source printed them from Clinical Methods Table 31.2
+and StatPearls (the page's range spanning disagreeing figures), IDL and Lp(a)
+composition "not sourced". The page shares its measures, reference and
+source blocks, stepper, dismiss handling, association rings and
+layout-measuring hook with Hormonal Pathways through `pathwayShared.ts` and
+`PathwayParts.tsx`), Scheduled Visits (`#plan`, reachable despite validation
 errors: one tab per scheduled visit (`TabBar`, the same in-page tab strip
 Panel Detail and All Observations use, labeled by that visit's month via
 `formatMonthFullYear` or "No month" when unset) showing exactly the active
@@ -874,10 +913,10 @@ knows one, the value never converted, ADR-0003, and the code's accepted
 units otherwise), and, lower-severity, a unit that resolves
 to neither a Latin spelling nor a UCUM code (the rows whose curated
 tables need extending) are warnings; while errors exist, Monitoring Panels,
-Hormonal Pathways and All
+Hormonal Pathways, Lipid Transport and All
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable) — one rule,
-`routing.ts`'s `isRouteBlocked` (panels, panel, pathways, all), which `isNavItemBlocked`
+`routing.ts`'s `isRouteBlocked` (panels, panel, pathways, lipids, all), which `isNavItemBlocked`
 also asks; the shell swaps the route during render, so the blocked view never
 paints, and replaces the URL with `history.replaceState` in an effect, so a
 redirect adds no history entry and Back cannot loop into it again. Upload
@@ -1005,7 +1044,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (928 tests across 41 files — 927 passing, 1 skipped — as run on 2026-09-16: index
+Vitest suites in `web/test/` (941 tests across 42 files — 940 passing, 1 skipped — as run on 2026-09-16: index
 golden-masters ported from v2, `cft` and `biot` held to ISSAM's published
 worked example (issam.ch/freetesuit.htm) within 0.05% and cross-checked within
 1% against eight fixtures recorded from its live calculator — the tolerance
@@ -1036,7 +1075,13 @@ citation resolving, codes catalogued, molar masses tabulated, and each
 population placing on a catalog unit; pathway receptor effects against
 `pathway-receptor-effects-1.schema.json`, plus both receptor nodes covered,
 every effect citing a source, every citation resolving, every source cited and
-every quote under 25 words; the Martin-Hopkins LDL table against
+every quote under 25 words; lipoprotein particles against
+`lipoprotein-particles-1.schema.json`, plus transport order, every figure citing
+a known source and every source cited, quotes under 25 words, intervals
+ordered, the smallest printed shares and the drawn areas never over 100%, every
+structural apoprotein one its source lists, and each glyph region's area
+within 1% of its share; the particle artwork tagged and text-free in
+`lipid-artwork.test.ts`; the Martin-Hopkins LDL table against
 `martin-hopkins-ldl-table-1.schema.json`, plus internal consistency of its
 180 cells),
 share-link and shared-meta,

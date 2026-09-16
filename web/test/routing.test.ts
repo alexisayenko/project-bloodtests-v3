@@ -12,7 +12,7 @@ describe('nav item state', () => {
   });
 
   it('blocks Monitoring Panels, Hormonal Pathways and All Observations only while reports have errors', () => {
-    expect(NAV_ITEMS.filter((item) => isNavItemBlocked(item.view, true)).map((item) => item.view)).toEqual(['all', 'panels', 'pathways']);
+    expect(NAV_ITEMS.filter((item) => isNavItemBlocked(item.view, true)).map((item) => item.view)).toEqual(['all', 'panels', 'pathways', 'lipids']);
     expect(NAV_ITEMS.some((item) => isNavItemBlocked(item.view, false))).toBe(false);
   });
 
@@ -21,6 +21,7 @@ describe('nav item state', () => {
       { view: 'panels' },
       { view: 'panel', name: 'Thyroid' },
       { view: 'pathways' },
+      { view: 'lipids' },
       { view: 'all' },
       { view: 'all', tab: 'in-range' },
     ];
@@ -49,6 +50,7 @@ describe('routeToHash ↔ hashToRoute', () => {
   const roundTrips: Route[] = [
     { view: 'panels' },
     { view: 'pathways' },
+    { view: 'lipids' },
     { view: 'reference' },
     { view: 'reference', key: 'homair' },
     { view: 'all' },
@@ -84,6 +86,11 @@ describe('routeToHash ↔ hashToRoute', () => {
     expect(hashToRoute('#pathways')).toEqual({ view: 'pathways' });
   });
 
+  it('Lipid Transport lives at #lipids', () => {
+    expect(routeToHash({ view: 'lipids' })).toBe('#lipids');
+    expect(hashToRoute('#lipids')).toEqual({ view: 'lipids' });
+  });
+
   it('reference without a key maps to plain #reference', () => {
     expect(routeToHash({ view: 'reference' })).toBe('#reference');
   });
@@ -103,7 +110,7 @@ describe('routeToHash ↔ hashToRoute', () => {
 });
 
 describe('NAV_ITEMS', () => {
-  it('lists the nine top-level sections in order', () => {
-    expect(NAV_ITEMS.map((i) => i.view)).toEqual(['profile', 'reports', 'all', 'panels', 'pathways', 'plan', 'medications', 'reference', 'account']);
+  it('lists the ten top-level sections in order', () => {
+    expect(NAV_ITEMS.map((i) => i.view)).toEqual(['profile', 'reports', 'all', 'panels', 'pathways', 'lipids', 'plan', 'medications', 'reference', 'account']);
   });
 });
