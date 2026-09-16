@@ -911,16 +911,15 @@ function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX): v
   er.style.top = `${e2Rect.top + e2Rect.height / 2 - box.top - er.offsetHeight / 2}px`;
 }
 
-/** Centres the hypothalamus–pituitary icon over the FSH and LH pair, whatever width their slots shrank to. */
+/** Centres the hypothalamus–pituitary icon on T's vertical axis, the same x the T → androgen-receptor trunk runs down. */
 function positionPituitary(el: HTMLDivElement, centerX: CenterX): void {
   const hp = el.querySelector<HTMLElement>('.mc-pathway-hp');
   const icon = hp?.querySelector('[data-node="pituitary"] img');
-  const fsh = el.querySelector('[data-node="fsh"]');
-  const lh = el.querySelector('[data-node="lh"]');
-  if (!hp || !icon || !fsh || !lh) return;
+  const tNode = el.querySelector('[data-node="t"]');
+  if (!hp || !icon || !tNode) return;
   hp.style.transform = '';
-  const mid = (centerX(fsh.getBoundingClientRect()) + centerX(lh.getBoundingClientRect())) / 2;
-  hp.style.transform = `translateX(${mid - centerX(icon.getBoundingClientRect())}px)`;
+  const axis = centerX(tNode.getBoundingClientRect()) + 8;
+  hp.style.transform = `translateX(${axis - centerX(icon.getBoundingClientRect())}px)`;
 }
 
 /** A trunk line from T down to the androgen receptors, with a spur to DHT when it has a reading. */
