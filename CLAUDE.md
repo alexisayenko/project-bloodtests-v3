@@ -504,7 +504,7 @@ validation errors exist, like Monitoring Panels: task-0024's first version in
 `HormonalPathwaysView.tsx`, under a `PageHeader` with overline
 "Endocrinology", title "Hormonal Pathways" and "Biochemical pathways of
 hormones" — one canvas of four zones, each captioned by small uppercase text at
-its top left with its description on hover: Hypothalamus + Pituitary (empty so
+its top left with its description on hover: Brain (empty so
 far); Blood Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
 with albumin-bound T docked, E2); Testes (Sertoli and Leydig cells); Target
 tissues (5α-reductase → DHT, aromatase → E2, androgen and estrogen receptors).

@@ -54,7 +54,7 @@ interface PathwaySite {
 }
 
 const SITES: PathwaySite[] = [
-  { id: 'hp', title: 'Hypothalamus + Pituitary', description: 'Regulate and release hormones', Icon: BrainPituitaryIcon },
+  { id: 'hp', title: 'Brain', description: 'Regulate and release hormones', Icon: BrainPituitaryIcon },
   { id: 'cardio', title: 'Blood Transport', description: 'Carries hormones; proteins bind and transport them', Icon: HeartPulseIcon },
   { id: 'testes', title: 'Testes', description: 'Produce sex steroids', Icon: TestesIcon },
   { id: 'target', title: 'Target tissues', description: 'Where hormones exert their effects', Icon: TargetTissueIcon },
