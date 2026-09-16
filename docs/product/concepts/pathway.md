@@ -52,17 +52,28 @@
 >
 > **Second axis page, 2026-09-16: Lipid Transport** (`#lipids`,
 > `LipidTransportView.tsx`, [task-0060](../../tasks/task-0060.md)) — its own
-> nav item after Hormonal Pathways rather than an axis tab: the liver with
-> HMG-CoA reductase docked on it over a row of six lipoprotein particles
-> (Chylomicron, VLDL, IDL, LDL, Lp(a), HDL), each a carrier whose Chol, TRIG
-> and apoprotein regions are what chips under it and a badge column ring, on
-> the Cardiovascular Risk panel's dates. Its particles are either Alex's
-> ChatGPT-generated artwork, areas illustrative and labelled so, or glyphs
-> whose areas are computed from the cited `lipoprotein-particles.json`, left
-> empty where unsourced
-> ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)).
-> Only the liver → VLDL arrow of its flows is drawn. **Both pages share one
-> engine**, `pathwayShared.ts` and `PathwayParts.tsx` — reference and source
+> nav item after Hormonal Pathways rather than an axis tab, redrawn 2026-09-17
+> ([task-0062](../../tasks/task-0062.md)) as three pathway zones — Intestine,
+> Liver (with HMG-CoA reductase docked on it and a bare cholesterol icon
+> beside it as its synthesized product) and Blood Transport — each of the six
+> lipoprotein particles (Chylomicron, VLDL, IDL, LDL, HDL, Lp(a)) now a
+> holder-plus-cargo diagram in the same visual language SHBG uses to hold
+> docked testosterone: a carrier icon named for its structural apolipoprotein
+> (ApoB-100 for VLDL/IDL/LDL/Lp(a), ApoB-48 for chylomicron, ApoA-I for HDL)
+> bonded to a stack of small TRIG/Chol circles whose COUNT depicts the amount
+> aboard, never one scaled icon. VLDL → IDL → LDL is drawn as one particle
+> transforming, with no bond between the stages, both its TRIG and Chol counts
+> tapering down the chain (illustrative, not to scale); chylomicron, HDL and
+> Lp(a) are drawn unconnected to that chain, none of them being one of its
+> transformation stages. A badge column rings each particle's own
+> Chol/TRIG/apo icon directly on hover, focus or open, rather than a chip row
+> under it. The particle glyphs are no longer either generated artwork or
+> geometry computed from `lipoprotein-particles.json` — every one is now a
+> hand-drawn `customIcons.tsx` glyph like the rest of the app's icons, so
+> [ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)
+> now bears only on the liver image. Only the liver → VLDL arrow, plus a
+> second, enzyme → synthesized-cholesterol arrow, of its flows are drawn.
+> **Both pages share one engine**, `pathwayShared.ts` and `PathwayParts.tsx` — reference and source
 > blocks, date stepper, one-open-at-a-time dismissal, the DOM-measured overlay
 > with association lines hidden at rest, re-measured on resize, image load,
 > fonts and each page's own layout key, and the level-of-organisation `SIZE`s —
@@ -146,7 +157,7 @@ A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B
 
 ## Icons
 
-Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). Generated artwork may also ship, as illustration only — the brain image and Lipid Transport's liver and particle artwork are ChatGPT-generated, and both pages say so in a muted note — but any shape whose geometry encodes a quantity is drawn from cited reference data, and labelled artwork never stands in for it ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)).
+Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). Generated artwork may also ship, as illustration only — the brain image and Lipid Transport's liver are ChatGPT-generated, and both pages say so in a muted note — but any shape whose geometry encodes a quantity is drawn from cited reference data, and labelled artwork never stands in for it ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)); Lipid Transport's particle icons (`CholesterolIcon`, `TriglycerideIcon`, joining `CarrierIcon`) are hand-drawn `customIcons.tsx` glyphs like every other role, no longer generated or data-computed.
 
 | Role | Icon |
 | --- | --- |

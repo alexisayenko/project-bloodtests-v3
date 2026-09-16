@@ -88,11 +88,16 @@ Each record opens with `# ADR-NNNN: <title>` and a
   `web/src/components/conditions/pathwayShared.ts` and `PathwayParts.tsx` —
   reference and source blocks, the date stepper, dismissal, and the
   DOM-measured overlay with association lines hidden at rest — and own only
-  their layout and wiring. 0022: generated artwork may ship as illustration,
-  while a shape that encodes a quantity (Lipid Transport's Data-mode particle
-  areas) is computed from cited `lipoprotein-particles.json` and left empty
-  where unsourced. See the [pathway](../../product/concepts/pathway.md) concept,
-  [task-0024](../../tasks/task-0024.md) and [task-0060](../../tasks/task-0060.md).
+  their layout and wiring. 0022: generated artwork may ship as illustration
+  — the brain and Lipid Transport's liver image — but never stands in for a
+  shape that encodes a quantity; Lipid Transport's particle icons, redrawn in
+  task-0062 as hand-drawn `customIcons.tsx` glyphs, no longer carry
+  computed-from-data areas the way the retired Data mode did, and the sourced
+  `lipoprotein-particles.json` composition (IDL and Lp(a) "not sourced") now
+  surfaces only in the page's own size-and-composition table. See the
+  [pathway](../../product/concepts/pathway.md) concept,
+  [task-0024](../../tasks/task-0024.md), [task-0060](../../tasks/task-0060.md)
+  and [task-0062](../../tasks/task-0062.md).
 - **Sync / storage backend** — 0015: an opt-in dedicated server storage
   mode beside the unchanged local-only default, syncing the existing
   backup-bundle shape; its bearer-token auth model
