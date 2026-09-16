@@ -78,6 +78,7 @@ the index.
 | [task-0058](task-0058.md) | Strengthen the sourcing of the receptor effects in the Hormonal Pathways Effects cards | to do |
 | [task-0059](task-0059.md) | Draw the testosterone and inhibin B feedback arrows on Hormonal Pathways | to do |
 | [task-0060](task-0060.md) | Add a Lipid transport pathway diagram | in progress |
+| [task-0061](task-0061.md) | Add Scores -- simplified summary for users who don't want to dig into details | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
