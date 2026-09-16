@@ -647,7 +647,8 @@ target; only an opened badge also veils the rest of the diagram, hover
 drawing the lines alone), Lipid Transport (`#lipids`, blocked while validation
 errors exist, like Hormonal Pathways: task-0060's first version in
 `LipidTransportView.tsx`, under a `PageHeader` with overline "Lipidology" —
-the liver at organ size (`LiverIcon`, 128px, the level-of-organisation sizes now
+the liver at organ size (`web/public/pathways/liver.png`, ChatGPT-generated artwork
+by Alex, 128px wide, the level-of-organisation sizes now
 shared as `pathwayShared.ts`'s `SIZE`) with HMG-CoA reductase docked on it at
 molecular size (the shared enzyme artwork, its card citing Feingold's Endotext
 chapters), a pale arrow down to VLDL, over

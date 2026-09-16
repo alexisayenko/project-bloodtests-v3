@@ -37,8 +37,6 @@ import { AssociationLayer, ChipValue, Cites, DateStepper, Glyph, ReferenceBlock,
 import { ParticleGlyph } from './LipidParticleGlyph';
 import { artworkFor } from './lipidArtwork';
 import { CompositionSection } from './LipidCompositionSection';
-import { LiverIcon } from './customIcons';
-import { LIPID } from '../../styles/tokens';
 
 type UnitSystem = 'si' | 'us';
 
@@ -505,7 +503,7 @@ function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle:
     <div className="mc-lipid-organ">
       <div className="mc-lipid-liver">
         <span data-node="liver" className="mc-lipid-liver-icon">
-          <LiverIcon size={SIZE.organ} color={LIPID.outline} aria-label="Liver" role="img" />
+          <img src="/pathways/liver.png?v=1" alt="Liver" width={SIZE.organ} height={Math.round((SIZE.organ * 176) / 256)} />
         </span>
         <button
           type="button"
