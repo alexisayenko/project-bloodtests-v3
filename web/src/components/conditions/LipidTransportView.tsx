@@ -13,6 +13,8 @@ import { hasReference, type ResultEntry } from './resultsLookup';
 import {
   CARD_WIDTH,
   DASH,
+  ENZYME_ART,
+  SIZE,
   EMPTY,
   NO_REFERENCE,
   associationFor,
@@ -31,10 +33,12 @@ import {
   type Measure,
   type ReferenceInfo,
 } from './pathwayShared';
-import { AssociationLayer, ChipValue, Cites, DateStepper, ReferenceBlock, SourcesBlock } from './PathwayParts';
+import { AssociationLayer, ChipValue, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
 import { ParticleGlyph } from './LipidParticleGlyph';
 import { artworkFor } from './lipidArtwork';
 import { CompositionSection } from './LipidCompositionSection';
+import { LiverIcon } from './customIcons';
+import { LIPID } from '../../styles/tokens';
 
 type UnitSystem = 'si' | 'us';
 
@@ -471,12 +475,83 @@ function Badges({
   );
 }
 
+// ---- liver ----
+
+const HMGCR = 'hmgcr';
+const HMGCR_NOTE = 'Rate-limiting enzyme of cholesterol synthesis; the target of statins.';
+
+const HMGCR_SOURCES: readonly CitedSource[] = [
+  {
+    organization: 'Endotext (Feingold KR)',
+    title: 'Introduction to Lipids and Lipoproteins',
+    url: 'https://www.ncbi.nlm.nih.gov/books/NBK305896/',
+    year: 2024,
+    retrieved: '2026-09-16',
+    quote: 'HMG-CoA reductase, the rate limiting enzyme in cholesterol synthesis',
+  },
+  {
+    organization: 'Endotext (Feingold KR)',
+    title: 'Cholesterol Lowering Drugs',
+    url: 'https://www.ncbi.nlm.nih.gov/books/NBK395573/',
+    year: 2026,
+    retrieved: '2026-09-16',
+    quote: 'Statins are competitive inhibitors of HMG-CoA reductase, which leads to a decrease in cholesterol synthesis in the liver',
+  },
+];
+
+/** The liver at organ size, with HMG-CoA reductase docked on it at molecular size. */
+function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle: (id: string, el: HTMLElement) => void }>) {
+  return (
+    <div className="mc-lipid-organ">
+      <div className="mc-lipid-liver">
+        <span data-node="liver" className="mc-lipid-liver-icon">
+          <LiverIcon size={SIZE.organ} color={LIPID.outline} aria-label="Liver" role="img" />
+        </span>
+        <button
+          type="button"
+          className="mc-lipid-enzyme"
+          data-caption={HMGCR}
+          data-node={HMGCR}
+          aria-expanded={open === HMGCR}
+          title={HMGCR_NOTE}
+          onClick={(e) => onToggle(HMGCR, e.currentTarget)}
+        >
+          <Glyph art={ENZYME_ART} />
+          <span className="mc-pathway-node-label">HMG-CoA reductase</span>
+        </button>
+      </div>
+      <div className="mc-lipid-name">Liver</div>
+    </div>
+  );
+}
+
+function EnzymeCard({ left, top }: Readonly<{ left: number; top: number }>) {
+  const scope = `lipid-${HMGCR}`;
+  return (
+    <dialog open className="mc-pathway-pop" aria-label="HMG-CoA reductase" style={{ left, top, width: CARD_WIDTH, margin: 0 }}>
+      <div className="mc-pathway-pop-title">HMG-CoA reductase</div>
+      <p className="mc-pathway-pop-note">
+        The rate-limiting enzyme in cholesterol synthesis
+        <Cites scope={scope} cites={[1]} />; statins inhibit it, lowering the liver's cholesterol synthesis
+        <Cites scope={scope} cites={[2]} />.
+      </p>
+      <SourcesBlock scope={scope} info={{ headCites: [], lines: [], sources: [...HMGCR_SOURCES] }} />
+    </dialog>
+  );
+}
+
 /** Badge-to-particle association lines, measured from the DOM like Hormonal Pathways' and hidden at rest. */
 function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root: RefObject<HTMLDivElement | null>; active: string | null; focused: string | null; layoutKey: string }>) {
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
+  const [secretion, setSecretion] = useState<string | null>(null);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
+    const organ = el.querySelector('.mc-lipid-organ')?.getBoundingClientRect();
+    const vldl = el.querySelector('[data-node="vldl"]')?.getBoundingClientRect();
+    setSecretion(
+      organ && vldl ? `M${vldl.left + vldl.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldl.left + vldl.width / 2 - base.left},${vldl.top - base.top - 4}` : null
+    );
     const box = el.querySelector('.mc-lipid-particles')?.getBoundingClientRect();
     if (box) setVeil({ w: box.right - base.left, h: box.bottom - base.top });
     // A region with no sourced area in Data mode is not drawn, so its particle's outline is ringed instead.
@@ -490,6 +565,12 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   });
   return (
     <svg className="mc-pathway-overlay" aria-hidden="true">
+      <defs>
+        <marker id="mc-lipid-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0L10 5L0 10z" fill="currentColor" />
+        </marker>
+      </defs>
+      {secretion && <path d={secretion} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       <AssociationLayer associations={associations} active={active} focused={focused} veil={veil} />
     </svg>
   );
@@ -550,7 +631,7 @@ export function LipidTransportView({
   useDismiss(open, close, '.mc-pathway-pop, [data-caption], [data-badge]', replaceCard);
 
   const openChip = open ? CHIP_BY_ID[open] : undefined;
-  const badgeOpen = openChip ? null : open;
+  const badgeOpen = openChip || open === HMGCR ? null : open;
   return (
     <div>
       <PageHeader
@@ -591,6 +672,7 @@ export function LipidTransportView({
         <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}|${particleMode}`} />
         <div className="mc-pathway-main">
           <div className="mc-lipid-particles">
+            <LiverNode open={open} onToggle={toggleChip} />
             {LIPOPROTEIN_PARTICLES.map((p) => (
               <figure key={p.id} className="mc-lipid-particle">
                 <div className="mc-lipid-glyph">
@@ -618,6 +700,7 @@ export function LipidTransportView({
         </div>
         <Badges snapshot={snapshot} unitSystem={unitSystem} open={badgeOpen} setOpen={setOpen} setHovered={setHovered} />
         {openChip && cardAt && <ChipCard chip={openChip} left={cardAt.left} top={cardAt.top} snapshot={snapshot} date={date} unitSystem={unitSystem} />}
+        {open === HMGCR && cardAt && <EnzymeCard left={cardAt.left} top={cardAt.top} />}
       </div>
       <CompositionSection />
     </div>

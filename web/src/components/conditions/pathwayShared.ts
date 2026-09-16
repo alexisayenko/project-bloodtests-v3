@@ -280,3 +280,17 @@ export function useMeasuredLayout(root: RefObject<HTMLDivElement | null>, layout
     };
   }, [root, layoutKey]);
 }
+
+/** Glyph sizes encode level of organisation — molecular actor < cell < organ — each the drawn size, whatever padding the artwork carries. */
+export const SIZE = { molecular: 32, cell: 64, organ: 128 } as const;
+
+/** A raster glyph, its drawn content's bounding box in the file's own pixels, and the size that content is shown at. */
+export interface GlyphArt {
+  src: string;
+  width: number;
+  height: number;
+  box: readonly [left: number, top: number, right: number, bottom: number];
+  size: number;
+}
+
+export const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.molecular };

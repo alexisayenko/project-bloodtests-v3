@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -34,8 +33,8 @@ import { panelDates, type Observation } from './markers';
 import { displayedResult, formatFullDate } from './ui';
 import { hasReference, nearestEntryTo, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
-import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';
-import { AssociationLayer, ChipValue, Cites, DateStepper, ReferenceBlock, SourcesBlock } from './PathwayParts';
+import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, ENZYME_ART, SIZE, type GlyphArt, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';
+import { AssociationLayer, ChipValue, Glyph, Cites, DateStepper, ReferenceBlock, SourcesBlock } from './PathwayParts';
 import { SegmentedControl } from '../primitives';
 import {
   BrainPituitaryIcon,
@@ -265,8 +264,6 @@ function snapshotOf(
   return snapshot;
 }
 
-/** Glyph sizes encode level of organisation — molecular actor < cell < organ — each the drawn size, whatever padding the artwork carries. */
-const SIZE = { molecular: 32, cell: 64, organ: 128 } as const;
 const SIGNAL_SIZE = SIZE.molecular;
 /** A bound-T bubble is itself a molecular actor; the testosterone docked inside it is scaled to fit. */
 const BUBBLE_SIZE = SIZE.molecular;
@@ -274,36 +271,9 @@ const DOCKED_SIZE = Math.round(BUBBLE_SIZE / 1.5);
 /** CarrierIcon's drawing spans ~42.6 of its 48-unit viewBox, so its box is enlarged to bring the drawing itself to molecular-actor size. */
 const CARRIER_SIZE = Math.round((SIZE.molecular * 48) / 42.6);
 
-/** A raster glyph, its drawn content's bounding box in the file's own pixels, and the size that content is shown at. */
-interface GlyphArt {
-  src: string;
-  width: number;
-  height: number;
-  box: readonly [left: number, top: number, right: number, bottom: number];
-  size: number;
-}
-
-const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.molecular };
 const RECEPTOR_ART: GlyphArt = { src: '/pathways/receptor-icon.png?v=2', width: 96, height: 96, box: [20, 23, 76, 74], size: SIZE.molecular };
 const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
 const BRAIN_ART: GlyphArt = { src: '/pathways/brain-pituitary.png?v=3', width: 256, height: 233, box: [5, 5, 251, 228], size: SIZE.organ };
-
-/** Crops the artwork to its drawn content and scales that to the art's size, so padding in the file never shrinks the glyph. */
-function Glyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string }>) {
-  const [left, top, right, bottom] = art.box;
-  const scale = art.size / Math.max(right - left, bottom - top);
-  const style: CSSProperties = {
-    width: art.width * scale,
-    height: art.height * scale,
-    left: (art.size - (right - left) * scale) / 2 - left * scale,
-    top: (art.size - (bottom - top) * scale) / 2 - top * scale,
-  };
-  return (
-    <span className="mc-pathway-glyph" style={{ width: art.size, height: art.size }}>
-      <img src={art.src} alt={alt} style={style} />
-    </span>
-  );
-}
 
 type Subject = { kind: 'marker'; key: MarkerKey } | { kind: 'index'; key: IndexKey } | { kind: 'pool' };
 

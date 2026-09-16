@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { formatMonthYear } from '../../data/months';
-import { DASH, type Association, type Measure, type ReferenceInfo } from './pathwayShared';
+import { DASH, type Association, type GlyphArt, type Measure, type ReferenceInfo } from './pathwayShared';
 
 /** A diagram chip's value, its share of total T on a line of its own. */
 export function ChipValue({ measure }: Readonly<{ measure: Measure }>) {
@@ -138,5 +138,22 @@ export function AssociationLayer({
           </g>
         ))}
     </>
+  );
+}
+
+/** Crops the artwork to its drawn content and scales that to the art's size, so padding in the file never shrinks the glyph. */
+export function Glyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string }>) {
+  const [left, top, right, bottom] = art.box;
+  const scale = art.size / Math.max(right - left, bottom - top);
+  const style: CSSProperties = {
+    width: art.width * scale,
+    height: art.height * scale,
+    left: (art.size - (right - left) * scale) / 2 - left * scale,
+    top: (art.size - (bottom - top) * scale) / 2 - top * scale,
+  };
+  return (
+    <span className="mc-pathway-glyph" style={{ width: art.size, height: art.size }}>
+      <img src={art.src} alt={alt} style={style} />
+    </span>
   );
 }

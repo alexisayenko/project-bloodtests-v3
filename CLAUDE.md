@@ -647,6 +647,10 @@ target; only an opened badge also veils the rest of the diagram, hover
 drawing the lines alone), Lipid Transport (`#lipids`, blocked while validation
 errors exist, like Hormonal Pathways: task-0060's first version in
 `LipidTransportView.tsx`, under a `PageHeader` with overline "Lipidology" —
+the liver at organ size (`LiverIcon`, 128px, the level-of-organisation sizes now
+shared as `pathwayShared.ts`'s `SIZE`) with HMG-CoA reductase docked on it at
+molecular size (the shared enzyme artwork, its card citing Feingold's Endotext
+chapters), a pale arrow down to VLDL, over
 one row of six lipoprotein particles in transport order (Chylomicron, VLDL,
 IDL, LDL, Lp(a), HDL), each sized by diameter order in fixed steps, not to
 scale (`GLYPH_SIZE` in `lipidParticleGeometry.ts`: 170 / 142 / 118 / 100 / 100 /
@@ -681,7 +685,7 @@ diameter, density and structural apoproteins from Feingold's Endotext Table 1,
 mass percentages as each source printed them from Clinical Methods Table 31.2
 and StatPearls (the page's range spanning disagreeing figures), IDL and Lp(a)
 composition "not sourced". The page shares its measures, reference and
-source blocks, stepper, dismiss handling, association rings and
+source blocks, stepper, dismiss handling, association rings, raster `Glyph` and
 layout-measuring hook with Hormonal Pathways through `pathwayShared.ts` and
 `PathwayParts.tsx`), Scheduled Visits (`#plan`, reachable despite validation
 errors: one tab per scheduled visit (`TabBar`, the same in-page tab strip
