@@ -517,12 +517,13 @@ Free T, Bio-T, T/LH, DHT/T and T/E2 come from `computeIndex` over
 `testosteronePools`. A single select in `HormonalPathwaysView.tsx` — not a
 checkbox — offers three mutually-exclusive fallbacks for a selected date with
 no same-draw albumin reading: "Don't use a fallback" (no albumin, as the old
-unchecked state), "Use the previously measured albumin" (the newest reading
-strictly before the selected date, found through a new `latestEntryBefore`
-helper in `resultsLookup.ts`, the date-bounded sibling of
-`latestEntryByLoinc`), and "Use 43 g/L (4.3 g/dL)" (the old checked-default
-state, still the default selection) — feeding `DEFAULT_ALBUMIN_GDL` or the
-resolved prior reading to Free T, Bio-T and the pools exactly as before; a
+unchecked state), "Use the nearest measured albumin" (the numeric reading
+closest in days to the selected date on either side, the selected date itself
+excluded and a tie going to the earlier, found through `nearestEntryTo` in
+`resultsLookup.ts`, the date-anchored sibling of `latestEntryByLoinc`), and
+"Use 43 g/L (4.3 g/dL)" (the old checked-default state, still the default
+selection) — feeding `DEFAULT_ALBUMIN_GDL` or the resolved nearest reading to
+Free T, Bio-T and the pools exactly as before; a
 same-draw reading always wins over the select regardless of which option is
 chosen, and the choice lives in plain component `useState`, unpersisted like
 the checkbox's state before it. Node captions are
@@ -941,7 +942,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (916 tests across 41 files — 915 passing, 1 skipped — as run on 2026-09-16: index
+Vitest suites in `web/test/` (922 tests across 41 files — 921 passing, 1 skipped — as run on 2026-09-16: index
 golden-masters ported from v2, `cft` and `biot` cross-checked within 1% against
 eight fixtures recorded from the ISSAM calculator (issam.ch), bioavailable testosterone and sex-dependent index
 bands, calculated free testosterone (Ly & Handelsman) and Martin-Hopkins LDL-C

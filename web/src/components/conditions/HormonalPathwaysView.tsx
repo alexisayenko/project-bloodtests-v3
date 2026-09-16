@@ -33,7 +33,7 @@ import type { Result } from '../../types';
 import { fmtNum, isOutOfRange } from '../../utils/format';
 import { panelDates, type Observation } from './markers';
 import { displayedResult, formatFullDate } from './ui';
-import { hasReference, latestEntryBefore, type ResultEntry } from './resultsLookup';
+import { hasReference, nearestEntryTo, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
 import { SegmentedControl } from '../primitives';
 import {
@@ -172,19 +172,19 @@ function labRangeOf(key: MarkerKey, result: Result, unit: string, unitSystem: Un
 
 /**
  * What to use for albumin when the selected draw has no reading of its own:
- * `none` computes without it, `prior` prefers the patient's own most recent
- * earlier measurement, `default` falls back to the fixed ISSAM-calculator
- * constant (`DEFAULT_ALBUMIN_GDL`).
+ * `none` computes without it, `nearest` prefers the patient's own measurement
+ * from the draw closest in time, before or after, `default` falls back to the
+ * fixed ISSAM-calculator constant (`DEFAULT_ALBUMIN_GDL`).
  */
-const ALBUMIN_FALLBACKS = ['none', 'prior', 'default'] as const;
+const ALBUMIN_FALLBACKS = ['none', 'nearest', 'default'] as const;
 type AlbuminFallback = (typeof ALBUMIN_FALLBACKS)[number];
 
 function albuminFallbackLabel(fallback: AlbuminFallback, unitSystem: 'si' | 'us'): string {
   switch (fallback) {
     case 'none':
       return "Don't use a fallback";
-    case 'prior':
-      return 'Use the previously measured albumin';
+    case 'nearest':
+      return 'Use the nearest measured albumin';
     case 'default':
       return `Use ${unitSystem === 'si' ? `${fmtNum(DEFAULT_ALBUMIN_GDL * 10)} g/L` : `${fmtNum(DEFAULT_ALBUMIN_GDL)} g/dL`}`;
   }
@@ -192,9 +192,10 @@ function albuminFallbackLabel(fallback: AlbuminFallback, unitSystem: 'si' | 'us'
 
 /**
  * Albumin in g/dL for the selected draw: a same-draw reading always wins;
- * otherwise the fallback picks between no albumin, the newest strictly-prior
- * reading (converted the same way a same-draw one is, via `markersForIndex`),
- * or the fixed constant. `prior` with nothing to find yields no albumin --
+ * otherwise the fallback picks between no albumin, the reading nearest in time
+ * on another date (converted the same way a same-draw one is, via
+ * `markersForIndex`), or the fixed constant. `nearest` with nothing to find
+ * yields no albumin --
  * the fallbacks are exclusive choices, not a cascade.
  */
 /**
@@ -220,9 +221,9 @@ function resolveAlbumin(
 ): number | undefined {
   if (sameDraw != null) return sameDraw;
   if (fallback === 'default') return DEFAULT_ALBUMIN_GDL;
-  if (fallback === 'prior' && date && biot) {
-    const prior = latestEntryBefore(allResults, MARKER_CODES.ALB, date, { numericOnly: true });
-    if (prior) return markersForIndex(biot, resultsByDate[prior.date] ?? {})['ALB'];
+  if (fallback === 'nearest' && date && biot) {
+    const nearest = nearestEntryTo(allResults, MARKER_CODES.ALB, date, { numericOnly: true });
+    if (nearest) return markersForIndex(biot, resultsByDate[nearest.date] ?? {})['ALB'];
   }
   return undefined;
 }
@@ -618,7 +619,7 @@ function HpDiagram() {
     <div className="mc-pathway-row mc-pathway-row-start">
       <div className="mc-pathway-hp">
         <div className="mc-pathway-anchor mc-pathway-node" data-node="pituitary">
-          <img src="/pathways/brain-pituitary.png" alt="Hypothalamus and pituitary" width={80} height={73} />
+          <img src="/pathways/brain-pituitary.png?v=2" alt="Hypothalamus and pituitary" width={80} height={73} />
           <div className="mc-pathway-caption">
             <span className="mc-pathway-node-label">Hypothalamus + Pituitary</span>
           </div>
