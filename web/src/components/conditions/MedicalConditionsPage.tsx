@@ -330,6 +330,7 @@ export function MedicalConditionsPage() {
             resultsByDate={resultsByDate}
             panelTests={conditions.find((c) => c.name === 'Hypogonadism')?.tests ?? []}
             unitSystem={unitSystem}
+            onUnitSystemChange={setUnitSystem}
           />
         );
       case 'medications':
