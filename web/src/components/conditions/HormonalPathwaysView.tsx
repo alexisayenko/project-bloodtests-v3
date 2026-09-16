@@ -1122,9 +1122,32 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
         ...feedback.lines,
       ]);
     };
-    const observer = new ResizeObserver(measure);
+    let frame = 0;
+    let disposed = false;
+    const observer = new ResizeObserver(() => schedule());
+    const observeNodes = () => el.querySelectorAll('[data-node]').forEach((node) => observer.observe(node));
+    const schedule = () => {
+      if (frame || disposed) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        observeNodes();
+        measure();
+      });
+    };
+    const onLoad = (e: Event) => {
+      if (e.target instanceof HTMLImageElement) schedule();
+    };
     observer.observe(el);
-    return () => observer.disconnect();
+    observeNodes();
+    el.addEventListener('load', onLoad, true);
+    if ('fonts' in document) document.fonts.ready.then(schedule, () => undefined);
+    schedule();
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      el.removeEventListener('load', onLoad, true);
+      observer.disconnect();
+    };
   }, [root, layoutKey]);
 
   return (
@@ -1543,7 +1566,7 @@ export function HormonalPathwaysView({
       </div>
       <PathwayContext.Provider value={state}>
       <div className="mc-pathway-layout" ref={bandsRef}>
-      <PathwayArrows root={bandsRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}`} />
+      <PathwayArrows root={bandsRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}|${albuminFallback}|${tMolarMass}`} />
       <div className="mc-pathway-main">
         <div className="mc-pathway-bands">
           {SITES.map(({ id, title, description }) => (
