@@ -523,7 +523,8 @@ left, and centred by a measured transform on T's vertical axis); Blood
 Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
 with albumin-bound T docked, E2); Testes (Sertoli and Leydig cells); Target
 tissues (5α-reductase → DHT, aromatase → E2, each enzyme centred over its
-product, androgen and estrogen receptors).
+product, androgen and estrogen receptors), a muted `ArtworkNote` under the
+toolbar saying the brain and cell images are illustrative (ADR-0022).
 Values are the user's: the shell passes the loaded reports, the Hypogonadism
 panel's observations and its persisted `unitSystem` with its setter, and a
 ‹ date › stepper lists exactly
@@ -648,7 +649,7 @@ drawing the lines alone), Lipid Transport (`#lipids`, blocked while validation
 errors exist, like Hormonal Pathways: task-0060's first version in
 `LipidTransportView.tsx`, under a `PageHeader` with overline "Lipidology" —
 the liver at organ size (`web/public/pathways/liver.png`, ChatGPT-generated artwork
-by Alex, 128px wide, the level-of-organisation sizes now
+by Alex, illustrative, 128px wide, the level-of-organisation sizes now
 shared as `pathwayShared.ts`'s `SIZE`) with HMG-CoA reductase docked on it at
 molecular size (the shared enzyme artwork, its card citing Feingold's Endotext
 chapters), a pale arrow down to VLDL, over
@@ -660,7 +661,7 @@ the glyphs: Artwork inlines Alex's ChatGPT-generated SVGs
 (`web/src/assets/lipids/*.svg`, text and background stripped, imported `?raw`
 by `lipidArtwork.ts`, which tags each file's yellow area `<id>-trig`, teal area
 `<id>-chol` and pink pills `<id>-apo` / `<id>-apoa` so they can be measured;
-areas illustrative, and the page says so); Data draws `LipidParticleGlyph.tsx`
+areas illustrative, and the page's `ArtworkNote` says so); Data draws `LipidParticleGlyph.tsx`
 — maroon double outline, a TRIG and a Chol region whose areas are the midpoint
 of the sourced mass shares (`organicRegions` solves each wavy boundary so the
 area is exact), the holder apoprotein as a pill (ApoB-48, ApoB-100, ApoB-100 +

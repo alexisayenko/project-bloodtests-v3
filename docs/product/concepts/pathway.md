@@ -146,7 +146,7 @@ A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B
 
 ## Icons
 
-Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). Generated artwork may also ship, as illustration only — the brain image and Lipid Transport's particle artwork are ChatGPT-generated — but any shape whose geometry encodes a quantity is drawn from cited reference data, and labelled artwork never stands in for it ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)).
+Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). Generated artwork may also ship, as illustration only — the brain image and Lipid Transport's liver and particle artwork are ChatGPT-generated, and both pages say so in a muted note — but any shape whose geometry encodes a quantity is drawn from cited reference data, and labelled artwork never stands in for it ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)).
 
 | Role | Icon |
 | --- | --- |

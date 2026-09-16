@@ -70,9 +70,10 @@ where no source exists the shape stays empty and says so.**
   defaulting to Artwork, and a note that changes with the mode.
 - A new quantity-bearing shape needs a data file, a schema, citations and a
   geometry test before it is drawn; a new illustration needs none of these.
-- The Hormonal Pathways page does not label its brain image as generated
-  artwork. It encodes no quantity, so the rule does not require it; its
-  provenance is recorded in task-0024.
+- The Hormonal Pathways page labels its brain and cell images anyway, in the
+  same muted `ArtworkNote` Lipid Transport uses ("The brain and cell images are
+  illustrative."). They encode no quantity, so the rule does not require it;
+  their provenance is recorded in task-0024.
 - Sizes follow a stated ordinal rule (level of organisation, or diameter order
   on the particle row), never an unsourced scale, whichever mode draws them.
 
