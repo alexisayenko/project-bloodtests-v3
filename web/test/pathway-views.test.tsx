@@ -230,6 +230,40 @@ describe('LipidTransportView', () => {
     expect(circleCount('ldl-chol')).toBe(1);
   });
 
+  it('renders chylomicron, HDL and Lp(a) as their own holder particles with no link into the VLDL chain', async () => {
+    const el = await mount(LipidTransportView, [], CARDIO_TESTS);
+    const circleCount = (dataNode: string) => q(el, `[data-node="${dataNode}"]`).querySelectorAll('.mc-pathway-bubble').length;
+
+    const chylomicron = q(el, '[data-node="chylomicron"]');
+    expect([...chylomicron.querySelectorAll('.mc-pathway-node-label')].map((l) => l.textContent)).toEqual(['TRIG', 'ApoB-48', 'Chol', 'Chylomicron']);
+    expect(circleCount('chylomicron-trig')).toBe(4);
+    expect(circleCount('chylomicron-chol')).toBe(1);
+
+    const hdl = q(el, '[data-node="hdl"]');
+    expect([...hdl.querySelectorAll('.mc-pathway-node-label')].map((l) => l.textContent)).toEqual(['TRIG', 'ApoA-I', 'Chol', 'HDL']);
+    expect(circleCount('hdl-trig')).toBe(1);
+    expect(circleCount('hdl-chol')).toBe(1);
+
+    const lpa = q(el, '[data-node="lpa"]');
+    expect([...lpa.querySelectorAll('.mc-pathway-node-label')].map((l) => l.textContent)).toEqual(['TRIG', 'ApoB-100', 'Chol', 'Lp(a)']);
+    expect(circleCount('lpa-trig')).toBe(1);
+    expect(circleCount('lpa-chol')).toBe(1);
+
+    for (const particle of [chylomicron, hdl, lpa]) {
+      expect(particle.querySelector('[data-node="vldl"], [data-node="idl"], [data-node="ldl"]')).toBeNull();
+    }
+  });
+
+  it("shows Lp(a)'s extra apo(a) pill on its holder icon, and only there", async () => {
+    const el = await mount(LipidTransportView, [], CARDIO_TESTS);
+    const pill = q(el, '[data-node="lpa"] .mc-lipid-extra-apo');
+    expect(pill.title).toBe('apo(a)');
+    expect(q(pill, '.mc-lipid-extra-apo-label').textContent).toBe('(a)');
+    for (const id of ['vldl', 'idl', 'ldl', 'chylomicron', 'hdl']) {
+      expect(el.querySelector(`[data-node="${id}"] .mc-lipid-extra-apo`)).toBeNull();
+    }
+  });
+
   it('falls back to Martin-Hopkins on the LDL-C badge when the lab reported no LDL-C', async () => {
     const el = await mount(LipidTransportView, LIPID_RESULTS, CARDIO_TESTS);
     await click(buttonNamed(el, 'US'));
