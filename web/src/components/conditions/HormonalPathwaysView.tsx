@@ -322,8 +322,8 @@ interface GlyphArt {
   size: number;
 }
 
-const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.protein };
-const RECEPTOR_ART: GlyphArt = { src: '/pathways/receptor-icon.png', width: 96, height: 96, box: [20, 23, 76, 74], size: SIZE.protein };
+const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.protein };
+const RECEPTOR_ART: GlyphArt = { src: '/pathways/receptor-icon.png?v=2', width: 96, height: 96, box: [20, 23, 76, 74], size: SIZE.protein };
 const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
 const BRAIN_ART: GlyphArt = { src: '/pathways/brain-pituitary.png?v=2', width: 256, height: 233, box: [5, 5, 251, 228], size: SIZE.organ };
 
