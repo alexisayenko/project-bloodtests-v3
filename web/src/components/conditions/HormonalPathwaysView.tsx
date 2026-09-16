@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -20,8 +19,7 @@ import {
   type SubjectProfile,
 } from '../../data/computedIndices';
 import { DEFAULT_ALBUMIN_GDL, INDEX_DEFS, TESTOSTERONE_MOLAR_MASS, testosteronePools } from '../../data/indexDefs';
-import { ALIAS_TO_PRIMARY, ALSO_REFS, DEFAULT_UNITS } from '../../data/analyteCatalog';
-import { formatMonthYear } from '../../data/months';
+import { DEFAULT_UNITS } from '../../data/analyteCatalog';
 import {
   PATHWAY_RANGE_SOURCE_BY_ID,
   convertConcentration,
@@ -36,6 +34,8 @@ import { panelDates, type Observation } from './markers';
 import { displayedResult, formatFullDate } from './ui';
 import { hasReference, nearestEntryTo, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
+import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';
+import { AssociationLayer, ChipValue, Cites, DateStepper, ReferenceBlock, SourcesBlock } from './PathwayParts';
 import { SegmentedControl } from '../primitives';
 import {
   BrainPituitaryIcon,
@@ -61,40 +61,10 @@ const SITES: PathwaySite[] = [
   { id: 'target', title: 'Target tissues', description: 'Where hormones exert their effects', Icon: TargetTissueIcon },
 ];
 
-const DASH = '–';
-
-type Status = 'ok' | 'warn' | 'bad' | 'none';
-
-interface LabRange {
-  low?: number;
-  high?: number;
-  unit: string;
-}
-
-interface Measure {
-  text: string;
-  status: Status;
-  /** The unit the value is shown in, when there is a reading. */
-  unit?: string;
-  /** The lab-printed range, in the same unit as the shown value. */
-  lab?: LabRange;
-  /** A testosterone fraction's share of total testosterone, in molar terms. */
-  share?: string;
-  /** The same share as a number, for the pools donut. */
-  sharePercent?: number;
-}
-
 /** The pathway is the male axis, so every range and zone here is the adult male one. */
 const MALE: SubjectProfile = { sex: 'male' };
 
-const EMPTY: Measure = { text: DASH, status: 'none' };
-
 const FSH_LOINC = '15067-2';
-
-function withVariants(loinc: string): string[] {
-  const primary = ALIAS_TO_PRIMARY[loinc] ?? loinc;
-  return [...new Set([loinc, primary, ...(ALSO_REFS[primary] ?? []).map((ref) => ref.loinc)])];
-}
 
 type MarkerKey = 'LH' | 'FSH' | 'T' | 'SHBG' | 'ALB' | 'E2' | 'DHT' | 'FT';
 type IndexKey = 'cft' | 'cftlh' | 'biot' | 'tlh' | 'dhtt' | 'te2';
@@ -150,18 +120,6 @@ function inDisplayUnit(key: MeasureKey, value: number, unit: string, unitSystem:
 }
 
 const formatShare = (percent: number) => `${percent.toFixed(percent < 1 ? 2 : 1)}%`;
-
-const valueText = (measure: Measure) => (measure.share ? `${measure.text} · ${measure.share}` : measure.text);
-
-/** A diagram chip's value, its share of total T on a line of its own. */
-function ChipValue({ measure }: Readonly<{ measure: Measure }>) {
-  return (
-    <>
-      {measure.text}
-      {measure.share && <span className="mc-pathway-share">{measure.share}</span>}
-    </>
-  );
-}
 
 /** The lab-printed bounds, converted exactly as the shown value was. */
 function labRangeOf(key: MarkerKey, result: Result, unit: string, unitSystem: UnitSystem): LabRange {
@@ -393,53 +351,10 @@ const EFFECTS_PREFIX = 'effects-';
 const effectsIdOf = (node: string) => EFFECTS_PREFIX + node;
 const effectsNodeOf = (id: string | null): string | null => (id?.startsWith(EFFECTS_PREFIX) ? id.slice(EFFECTS_PREFIX.length) : null);
 
-interface CitedSource {
-  organization: string;
-  title: string;
-  url?: string;
-  year?: number;
-  retrieved?: string;
-}
-
-interface ReferenceLine {
-  label?: string;
-  text: string;
-  cites: number[];
-}
-
-interface ReferenceInfo {
-  tag?: string;
-  headCites: number[];
-  lines: ReferenceLine[];
-  empty?: string;
-  sources: CitedSource[];
-}
-
-function formatBounds(low: number | undefined, high: number | undefined, unit: string | undefined, inclusive: boolean): string {
-  const u = unit ? ` ${unit}` : '';
-  if (low != null && high != null) return `${fmtNum(low)} – ${fmtNum(high)}${u}`;
-  if (low != null) return `${inclusive ? '≥' : '>'} ${fmtNum(low)}${u}`;
-  if (high != null) return `${inclusive ? '≤' : '<'} ${fmtNum(high)}${u}`;
-  return DASH;
-}
-
 function indexReference(key: IndexKey, unitSystem: UnitSystem): ReferenceInfo {
   const def = defOf(key);
-  const bands = def ? indexBands(def, MALE) : null;
-  if (!def || !bands) return { headCites: [], lines: [], empty: 'No reference range', sources: [] };
-  const shown = bands.cut.map((c) => inDisplayUnit(key, c, def.unit ?? '', unitSystem));
-  const u = shown[0].unit ? ` ${shown[0].unit}` : '';
-  const [good, warn] = shown.map((c) => fmtNum(c.value));
-  const zones: [string, string][] = bands.hi
-    ? [['Within range', `≥ ${good}${u}`], ['Borderline', `${warn} – ${good}${u}`], ['Low', `< ${warn}${u}`]]
-    : [['Within range', `< ${good}${u}`], ['Borderline', `${good} – ${warn}${u}`], ['High', `≥ ${warn}${u}`]];
-  const sources = def.references.map((r) => ({ organization: r.organization, title: r.document, url: r.url, year: r.year, retrieved: r.retrieved }));
-  return {
-    tag: 'guide',
-    headCites: sources.map((_, i) => i + 1),
-    lines: zones.map(([label, text]) => ({ label, text, cites: [] })),
-    sources,
-  };
+  if (!def) return NO_REFERENCE;
+  return zoneReference(def, indexBands(def, MALE), (c) => inDisplayUnit(key, c, def.unit ?? '', unitSystem));
 }
 
 function curatedReference(key: MarkerKey, measure: Measure, unitSystem: 'si' | 'us'): ReferenceInfo {
@@ -470,79 +385,8 @@ function referenceOf(measureKey: MeasureKey, snapshot: Snapshot, unitSystem: 'si
   if (subject.kind === 'pool') return { headCites: [], lines: [], empty: 'No reference range (calculated pool)', sources: [] };
   if (subject.kind === 'index') return indexReference(subject.key, unitSystem);
   const measure = snapshot[subject.key];
-  if (measure.lab) {
-    const { low, high, unit } = measure.lab;
-    return { tag: 'lab', headCites: [], lines: [{ text: formatBounds(low, high, unit, false), cites: [] }], sources: [] };
-  }
+  if (measure.lab) return labReference(measure.lab);
   return curatedReference(subject.key, measure, unitSystem);
-}
-
-function Cites({ scope, cites }: Readonly<{ scope: string; cites: readonly number[] }>) {
-  if (cites.length === 0) return null;
-  return (
-    <span className="mc-pathway-cites">
-      {cites.map((n) => (
-        <a
-          key={n}
-          className="mc-pathway-cite"
-          href={`#${scope}-src-${n}`}
-          onClick={(e) => {
-            e.preventDefault();
-            document.getElementById(`${scope}-src-${n}`)?.scrollIntoView({ block: 'nearest' });
-          }}
-        >
-          [{n}]
-        </a>
-      ))}
-    </span>
-  );
-}
-
-function ReferenceBlock({ scope, info, title = 'Reference range' }: Readonly<{ scope: string; info: ReferenceInfo; title?: string }>) {
-  return (
-    <div className="mc-pathway-ref">
-      <div className="mc-pathway-ref-head">
-        <b>{title}</b>
-        {info.tag && <span className="mc-pathway-ref-tag">{info.tag}</span>}
-        <Cites scope={scope} cites={info.headCites} />
-      </div>
-      {info.lines.map((line) => (
-        <div key={`${line.label ?? ''}|${line.text}`} className="mc-pathway-ref-line">
-          {line.label && <span className="mc-pathway-ref-label">{line.label}</span>}
-          <span className="mc-pathway-ref-value">
-            {line.text}
-            <Cites scope={scope} cites={line.cites} />
-          </span>
-        </div>
-      ))}
-      {info.empty && <div className="mc-pathway-ref-empty">{info.empty}</div>}
-    </div>
-  );
-}
-
-function SourcesBlock({ scope, info }: Readonly<{ scope: string; info: ReferenceInfo }>) {
-  if (info.sources.length === 0) return null;
-  return (
-    <div className="mc-pathway-sources">
-      <b>Sources</b>
-      <ol>
-        {info.sources.map((s, i) => (
-          <li key={`${s.title}|${s.url ?? ''}`} id={`${scope}-src-${i + 1}`}>
-            {s.organization}.{' '}
-            {s.url ? (
-              <a href={s.url} target="_blank" rel="noreferrer">
-                {s.title}
-              </a>
-            ) : (
-              s.title
-            )}
-            {s.year ? ` (${s.year})` : ''}
-            {s.retrieved ? `, retrieved ${s.retrieved}` : ''}
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
 }
 
 interface PathwayState {
@@ -575,8 +419,6 @@ function Caption({ id }: Readonly<{ id: CaptionId }>) {
     </button>
   );
 }
-
-const CARD_WIDTH = 300;
 
 function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ id: CaptionId; left: number; top: number; snapshot: Snapshot; date: string | undefined; unitSystem: 'si' | 'us' }>) {
   const spec = CAPTIONS[id];
@@ -933,26 +775,6 @@ const PATHWAYS: ReadonlyArray<readonly [string, string, PathwayShape]> = [
   ['e2blood', 'er', 'drop'],
 ];
 
-function roundedPath(points: string, radius = 10): string {
-  const pts = points.split(' ').map((p) => p.split(',').map(Number) as [number, number]);
-  let d = `M${pts[0][0]},${pts[0][1]}`;
-  for (let i = 1; i < pts.length - 1; i++) {
-    const [px, py] = pts[i - 1];
-    const [cx, cy] = pts[i];
-    const [nx, ny] = pts[i + 1];
-    const inLen = Math.hypot(cx - px, cy - py);
-    const outLen = Math.hypot(nx - cx, ny - cy);
-    const r = Math.min(radius, inLen / 2, outLen / 2);
-    const ax = cx - ((cx - px) / inLen) * r;
-    const ay = cy - ((cy - py) / inLen) * r;
-    const bx = cx + ((nx - cx) / outLen) * r;
-    const by = cy + ((ny - cy) / outLen) * r;
-    d += ` L${ax},${ay} Q${cx},${cy} ${bx},${by}`;
-  }
-  const last = pts.at(-1) ?? pts[0];
-  return `${d} L${last[0]},${last[1]}`;
-}
-
 /** The one badge merging measured free T with both calculated estimates. */
 const FREE_T_BADGE = 'free-t';
 
@@ -964,12 +786,6 @@ const ASSOCIATIONS: Readonly<Record<string, readonly string[]>> = {
   dhtt: ['srd5a'],
   't-e2': ['aromatase'],
 };
-
-interface Association {
-  badge: string;
-  paths: string[];
-  rings: { cx: number; cy: number; r: number }[];
-}
 
 type CenterX = (rect: DOMRect) => number;
 
@@ -1135,36 +951,6 @@ function buildPathwayLines(el: HTMLDivElement, base: DOMRect, centerX: CenterX):
   return PATHWAYS.flatMap(([from, to, shape]) => pathwayLine(el, base, centerX, from, to, shape));
 }
 
-/** The rings drawn around an association's target nodes. */
-function ringsFor(el: HTMLDivElement, base: DOMRect, targets: readonly string[]): { cx: number; cy: number; r: number }[] {
-  return targets.flatMap((target) => {
-    const node = el.querySelector(`[data-node="${target}"]`);
-    if (!node) return [];
-    const r = (node.querySelector('.mc-pathway-glyph, svg, .mc-pathway-bubble') ?? node).getBoundingClientRect();
-    return [{ cx: r.left + r.width / 2 - base.left, cy: r.top + r.height / 2 - base.top, r: Math.max(r.width, r.height) / 2 + 6 }];
-  });
-}
-
-/** One badge's association bus-plus-rings, or none while its targets aren't on screen. */
-function associationFor(el: HTMLDivElement, base: DOMRect, badge: string, targets: readonly string[]): Association[] {
-  const badgeEl = el.querySelector(`[data-badge="${badge}"]`);
-  if (!badgeEl) return [];
-  const br = badgeEl.getBoundingClientRect();
-  const bx = br.left - base.left;
-  const by = br.top + 20 - base.top;
-  const rings = ringsFor(el, base, targets);
-  if (rings.length === 0) return [];
-  const lane = Math.min(...rings.map((g) => g.cy - g.r)) - 16;
-  const rightmost = Math.max(...rings.map((g) => g.cx));
-  const leftmost = Math.min(...rings.map((g) => g.cx));
-  const turn = Math.max(rightmost + 24, bx - 24);
-  const paths = [
-    roundedPath(`${bx},${by} ${turn},${by} ${turn},${lane} ${leftmost},${lane}`, 12),
-    ...rings.map((g) => `M${g.cx},${lane} L${g.cx},${g.cy - g.r}`),
-  ];
-  return [{ badge, paths, rings }];
-}
-
 function buildAssociations(el: HTMLDivElement, base: DOMRect): Association[] {
   return Object.entries(ASSOCIATIONS).flatMap(([badge, targets]) => associationFor(el, base, badge, targets));
 }
@@ -1175,52 +961,23 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
 
-  useEffect(() => {
-    const el = root.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const measure = () => {
-      const base = el.getBoundingClientRect();
-      const centerX: CenterX = (r) => r.left + r.width / 2 - base.left;
-      fitBands(el, base, centerX);
-      const bandsBox = el.querySelector('.mc-pathway-bands')?.getBoundingClientRect();
-      if (bandsBox) setVeil({ w: bandsBox.right - base.left, h: bandsBox.bottom - base.top });
-      setAssociations(buildAssociations(el, base));
-      const feedback = feedbackLine(el, base, centerX);
-      setMarks(feedback.marks);
-      setLines([
-        ...buildExtraLines(el, base, centerX),
-        ...forkLines(el, base, centerX, 't', ['aromatase', 'srd5a']),
-        ...buildPathwayLines(el, base, centerX),
-        ...feedback.lines,
-      ]);
-    };
-    let frame = 0;
-    let disposed = false;
-    const observer = new ResizeObserver(() => schedule());
-    const observeNodes = () => el.querySelectorAll('[data-node]').forEach((node) => observer.observe(node));
-    const schedule = () => {
-      if (frame || disposed) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        observeNodes();
-        measure();
-      });
-    };
-    const onLoad = (e: Event) => {
-      if (e.target instanceof HTMLImageElement) schedule();
-    };
-    observer.observe(el);
-    observeNodes();
-    el.addEventListener('load', onLoad, true);
-    if ('fonts' in document) document.fonts.ready.then(schedule, () => undefined);
-    schedule();
-    return () => {
-      disposed = true;
-      cancelAnimationFrame(frame);
-      el.removeEventListener('load', onLoad, true);
-      observer.disconnect();
-    };
-  }, [root, layoutKey]);
+  const measure = (el: HTMLDivElement) => {
+    const base = el.getBoundingClientRect();
+    const centerX: CenterX = (r) => r.left + r.width / 2 - base.left;
+    fitBands(el, base, centerX);
+    const bandsBox = el.querySelector('.mc-pathway-bands')?.getBoundingClientRect();
+    if (bandsBox) setVeil({ w: bandsBox.right - base.left, h: bandsBox.bottom - base.top });
+    setAssociations(buildAssociations(el, base));
+    const feedback = feedbackLine(el, base, centerX);
+    setMarks(feedback.marks);
+    setLines([
+      ...buildExtraLines(el, base, centerX),
+      ...forkLines(el, base, centerX, 't', ['aromatase', 'srd5a']),
+      ...buildPathwayLines(el, base, centerX),
+      ...feedback.lines,
+    ]);
+  };
+  useMeasuredLayout(root, layoutKey, measure);
 
   return (
     <svg className="mc-pathway-overlay" aria-hidden="true">
@@ -1248,31 +1005,7 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
           ↓
         </text>
       ))}
-      {associations
-        .filter((a) => a.badge === active)
-        .map((a) => (
-          <g key={a.badge}>
-            {veil && a.badge === focused && (
-              <>
-                <mask id="mc-pathway-veil-mask">
-                  <rect x={0} y={0} width={veil.w} height={veil.h} fill="white" />
-                  {a.rings.map((g) => (
-                    <circle key={`${g.cx},${g.cy}`} cx={g.cx} cy={g.cy} r={g.r} fill="black" />
-                  ))}
-                </mask>
-                <rect className="mc-pathway-veil" x={0} y={0} width={veil.w} height={veil.h} mask="url(#mc-pathway-veil-mask)" />
-              </>
-            )}
-            <g className="mc-pathway-assoc">
-              {a.paths.map((d) => (
-                <path key={d} d={d} fill="none" />
-              ))}
-              {a.rings.map((g) => (
-                <circle key={`${g.cx},${g.cy}`} cx={g.cx} cy={g.cy} r={g.r} fill="none" />
-              ))}
-            </g>
-          </g>
-        ))}
+      <AssociationLayer associations={associations} active={active} focused={focused} veil={veil} />
     </svg>
   );
 }
@@ -1289,9 +1022,6 @@ interface Badge {
   /** No formula is implemented for this badge: render a fixed placeholder instead of looking up `measure` in the Snapshot. */
   unavailable?: boolean;
 }
-
-/** Shown in place of a computed reference range for an `unavailable` badge — there is no value to bound. */
-const NO_REFERENCE: ReferenceInfo = { headCites: [], lines: [], empty: 'No reference range', sources: [] };
 
 const BADGES: ReadonlyArray<Badge> = [
   {
@@ -1345,48 +1075,12 @@ function badgeReferenceInfo(expanded: boolean, measure: Measure | undefined, b: 
   return referenceOf(b.measure!, snapshot, unitSystem);
 }
 
-/** Renumbers each block's citations into one deduplicated source list, in order of first appearance. */
-function mergeReferences(infos: readonly ReferenceInfo[]): { infos: ReferenceInfo[]; sources: CitedSource[] } {
-  const keys: string[] = [];
-  const sources: CitedSource[] = [];
-  const merged = infos.map((info) => {
-    const map = info.sources.map((s) => {
-      const key = `${s.title}|${s.url ?? ''}`;
-      if (!keys.includes(key)) {
-        keys.push(key);
-        sources.push(s);
-      }
-      return keys.indexOf(key) + 1;
-    });
-    const to = (n: number) => map[n - 1];
-    return { ...info, headCites: info.headCites.map(to), lines: info.lines.map((l) => ({ ...l, cites: l.cites.map(to) })), sources: [] };
-  });
-  return { infos: merged, sources };
-}
-
 /** The Free Testosterone badge cites only these, in this order, matched by title; INDEX_DEFS keeps the full list. */
 const FREE_T_SOURCE_TITLES: readonly string[] = [
   'Testosterone Therapy in Men With Hypogonadism',
   'A critical evaluation of simple methods for the estimation of free testosterone',
   'Empirical estimation of free testosterone',
 ];
-
-/** Keeps only the listed sources and renumbers every tag into that list, dropping tags whose source was cut. */
-function keepSources(infos: readonly ReferenceInfo[], sources: readonly CitedSource[], titles: readonly string[]): { infos: ReferenceInfo[]; sources: CitedSource[] } {
-  const kept: CitedSource[] = [];
-  const renumber = new Map<number, number>();
-  for (const title of titles) {
-    const matches = sources.flatMap((s, i) => (s.title.includes(title) ? [i + 1] : []));
-    if (matches.length === 0) continue;
-    kept.push(sources[matches[0] - 1]);
-    for (const n of matches) renumber.set(n, kept.length);
-  }
-  const to = (cites: readonly number[]) => [...new Set(cites.flatMap((n) => (renumber.has(n) ? [renumber.get(n)!] : [])))];
-  return {
-    infos: infos.map((info) => ({ ...info, headCites: to(info.headCites), lines: info.lines.map((l) => ({ ...l, cites: to(l.cites) })) })),
-    sources: kept,
-  };
-}
 
 const FREE_T_PCT_RANGE = '1.5–3.2 %';
 
@@ -1415,22 +1109,7 @@ function FreeTestosteroneBody({ badge, snapshot, unitSystem }: Readonly<{ badge:
   };
   const pctLine = <ReferenceBlock scope={scope} info={pctRef} title="Ref range (%)" />;
   const [measured, ...calculated] = infos;
-  const [first, ...rest] = calculated;
-  const sameZones =
-    first.lines.length > 0 &&
-    rest.every((info) => info.lines.length === first.lines.length && info.lines.every((l, i) => l.label === first.lines[i].label && l.text === first.lines[i].text));
-  const calculatedRef: ReferenceInfo = {
-    tag: calculated.find((i) => i.tag)?.tag,
-    headCites: [...new Set(calculated.flatMap((i) => i.headCites))].sort((a, b) => a - b),
-    lines: sameZones
-      ? first.lines.map((l, i) => ({ ...l, cites: [...new Set(calculated.flatMap((info) => info.lines[i].cites))] }))
-      : calculated.flatMap((info, i) => {
-          const method = CALCULATED_FREE_T[i][1];
-          if (info.lines.length === 0) return [{ label: method, text: info.empty ?? DASH, cites: [] }];
-          return info.lines.map((l) => ({ ...l, label: `${method} · ${l.label ?? ''}` }));
-        }),
-    sources: [],
-  };
+  const calculatedRef = combinedZones(calculated, CALCULATED_FREE_T.map(([, method]) => method));
   return (
     <div className="mc-pathway-badge-body">
       <div className="mc-pathway-badge-section">
@@ -1519,28 +1198,6 @@ function Badges({
   );
 }
 
-/** Visually hides the fieldset's legend without removing it from the accessibility tree. */
-const SR_ONLY_STYLE: CSSProperties = {
-  position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden',
-  clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0,
-};
-
-function DateStepper({ dates, index, onChange }: Readonly<{ dates: readonly string[]; index: number; onChange: (index: number) => void }>) {
-  const date = dates[index];
-  return (
-    <fieldset className="mc-pathway-stepper" style={{ margin: 0, padding: 0, minWidth: 0 }}>
-      <legend style={SR_ONLY_STYLE}>Measurement date</legend>
-      <button type="button" aria-label="Previous date" disabled={index <= 0} onClick={() => onChange(index - 1)}>
-        ‹
-      </button>
-      <span className="mc-pathway-stepper-label">{date ? formatMonthYear(date) : DASH}</span>
-      <button type="button" aria-label="Next date" disabled={index >= dates.length - 1} onClick={() => onChange(index + 1)}>
-        ›
-      </button>
-    </fieldset>
-  );
-}
-
 export function HormonalPathwaysView({
   allResults,
   resultsByDate,
@@ -1590,28 +1247,12 @@ export function HormonalPathwaysView({
     [open, placeCard]
   );
 
-  useEffect(() => {
-    if (open === null) return;
-    const onPointer = (e: PointerEvent) => {
-      if (e.target instanceof Element && e.target.closest('.mc-pathway-pop, [data-caption], [data-badge], [data-effects]')) return;
-      setOpen(null);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(null);
-    };
-    const onResize = () => {
-      const chip = bandsRef.current?.querySelector(`[data-caption="${open}"], [data-effects="${open}"]`);
-      if (chip) setCardAt(placeCard(chip));
-    };
-    document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('keydown', onKey);
-    window.addEventListener('resize', onResize);
-    return () => {
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('keydown', onKey);
-      window.removeEventListener('resize', onResize);
-    };
+  const close = useCallback(() => setOpen(null), []);
+  const replaceCard = useCallback(() => {
+    const chip = bandsRef.current?.querySelector(`[data-caption="${open}"], [data-effects="${open}"]`);
+    if (chip) setCardAt(placeCard(chip));
   }, [open, placeCard]);
+  useDismiss(open, close, '.mc-pathway-pop, [data-caption], [data-badge], [data-effects]', replaceCard);
 
   const effectsNode = effectsNodeOf(open);
   const badgeOpen = isCaptionId(open) || effectsNode ? null : open;
