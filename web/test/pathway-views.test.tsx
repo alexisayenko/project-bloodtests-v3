@@ -216,18 +216,18 @@ describe('LipidTransportView', () => {
     expect(value()).toBe('200 mg/dL');
   });
 
-  it('renders VLDL as a holder apoprotein carrying a stack of TRIG and Chol circles, IDL with fewer TRIG circles and LDL with none', async () => {
+  it('renders VLDL, IDL and LDL as holder apoproteins with a falling stack of TRIG and Chol circles', async () => {
     const el = await mount(LipidTransportView, [], CARDIO_TESTS);
     const vldl = q(el, '[data-node="vldl"]');
     const labels = [...vldl.querySelectorAll('.mc-pathway-node-label')].map((l) => l.textContent);
     expect(labels).toEqual(['TRIG', 'ApoB-100', 'Chol', 'VLDL']);
-    const vldlTrigCircles = q(el, '[data-node="vldl-trig"]').querySelectorAll('.mc-pathway-bubble');
-    const vldlCholCircles = q(el, '[data-node="vldl-chol"]').querySelectorAll('.mc-pathway-bubble');
-    expect(vldlTrigCircles).toHaveLength(3);
-    expect(vldlCholCircles).toHaveLength(2);
-    const idlTrigCircles = q(el, '[data-node="idl-trig"]').querySelectorAll('.mc-pathway-bubble');
-    expect(idlTrigCircles).toHaveLength(2);
-    expect(el.querySelector('[data-node="ldl-trig"]')).toBeNull();
+    const circleCount = (dataNode: string) => q(el, `[data-node="${dataNode}"]`).querySelectorAll('.mc-pathway-bubble').length;
+    expect(circleCount('vldl-trig')).toBe(3);
+    expect(circleCount('vldl-chol')).toBe(3);
+    expect(circleCount('idl-trig')).toBe(2);
+    expect(circleCount('idl-chol')).toBe(2);
+    expect(circleCount('ldl-trig')).toBe(1);
+    expect(circleCount('ldl-chol')).toBe(1);
   });
 
   it('falls back to Martin-Hopkins on the LDL-C badge when the lab reported no LDL-C', async () => {

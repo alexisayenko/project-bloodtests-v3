@@ -453,7 +453,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     // Each lipoprotein stage (VLDL, IDL, LDL) gets its own bond(s) to ApoB-100 and a dashed outline hugging its actual icons -- IDL and LDL may have no TRIG bubble, since most is shed by then.
     const bonds: string[] = [];
     const outlines: { x: number; y: number; w: number; h: number }[] = [];
-    for (const id of ['vldl', 'idl', 'ldl']) {
+    for (const id of ['vldl', 'idl', 'ldl', 'chylomicron', 'hdl', 'lpa']) {
       const trig = el.querySelector(`[data-node="${id}-trig"]`)?.getBoundingClientRect();
       const apo = el.querySelector(`[data-node="${id}-apo"]`)?.getBoundingClientRect();
       const chol = el.querySelector(`[data-node="${id}-chol"]`)?.getBoundingClientRect();
@@ -464,8 +464,10 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       const cholEdge = onEdge(c, a, chol.width / 2 + 2);
       const apoFromC = onEdge(a, c, apoRadius);
       let bond = `M${cholEdge.x},${cholEdge.y} L${apoFromC.x},${apoFromC.y}`;
-      let left = Math.min(chol.left, apo.left) - base.left;
-      let right = Math.max(chol.right, apo.right) - base.left;
+      // ApoB-100's own caption is wider than its icon, so it can overhang the icon's own bounds -- include it so the box never clips it.
+      const apoCaption = el.querySelector(`[data-node="${id}-apo"]`)?.closest('.mc-pathway-anchor')?.querySelector('.mc-pathway-caption')?.getBoundingClientRect();
+      let left = Math.min(chol.left, apo.left, apoCaption?.left ?? Infinity) - base.left;
+      let right = Math.max(chol.right, apo.right, apoCaption?.right ?? -Infinity) - base.left;
       let top = Math.min(chol.top, apo.top) - base.top;
       if (trig) {
         const t = rectCenter(trig, base);
@@ -555,14 +557,11 @@ const STACK_TRIG_ICON_SIZE = 21;
 /** The cholesterol glyph's own drawing reads smaller than TRIG's at the same size, so its icon runs bigger to fill its circle as fully. */
 const STACK_CHOL_ICON_SIZE = 28;
 /**
- * Cholesterol's absolute amount barely changes down the chain -- only its
- * *share* of a shrinking particle rises -- so every stage gets the same chol
- * circle count; only TRIG's count falls: 3 for VLDL, 2 for IDL (shed via
- * lipoprotein lipase), 0 for LDL (essentially none left). Illustrative
+ * TRIG: 3 for VLDL, 2 for IDL (shed via lipoprotein lipase), 1 for LDL
+ * (essentially none left). Chol: 2 for VLDL, 1 for IDL and LDL. Illustrative
  * counts, not to scale: the sourced data (lipoprotein-particles.json) only
  * gives % of each particle's own mass, and IDL's isn't sourced at all.
  */
-const CHOL_STACK_COUNT = 2;
 
 /** A cargo diagram's own anchor: an icon (or docked bubble) with a caption below it, sized to line up with the apoprotein's own height. `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it looking off-center. */
 function CargoAnchor({ children, label, labelOffset = 0 }: Readonly<{ children: ReactNode; label: string; labelOffset?: number }>) {
@@ -632,13 +631,31 @@ function CompoundStack({
 // ---- lipoprotein chain ----
 
 /**
- * One stage of the endogenous chain, drawn as a holder-plus-cargo row: ApoB-100
- * always carries a fixed pair of Chol circles, and (while there's still
+ * One stage of the endogenous chain, drawn as a holder-plus-cargo row:
+ * ApoB-100 carries its own stack of Chol circles, and (while there's still
  * triglyceride left to carry) a stack of TRIG circles too, bonded to it at
  * the same sharp angle VLDL uses. With no TRIG left, ApoB-100 and Chol sit
  * side by side on a plain bond instead of a V.
  */
-function ParticleNode({ id, label, trigCount, trigOverlap = 0 }: Readonly<{ id: string; label: string; trigCount: number; trigOverlap?: number }>) {
+function ParticleNode({
+  id,
+  label,
+  holder = 'ApoB-100',
+  extraApo,
+  trigCount,
+  cholCount,
+  trigOverlap = 0,
+}: Readonly<{
+  id: string;
+  label: string;
+  /** The particle's structural apolipoprotein -- ApoB-100 for the endogenous chain, ApoB-48 for chylomicron, ApoA-I for HDL. */
+  holder?: string;
+  /** Lp(a) carries a second protein, apo(a), disulfide-linked to its ApoB-100 -- drawn as a small pill hanging off the holder icon. */
+  extraApo?: string;
+  trigCount: number;
+  cholCount: number;
+  trigOverlap?: number;
+}>) {
   const hasTrig = trigCount > 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node={id}>
@@ -661,9 +678,15 @@ function ParticleNode({ id, label, trigCount, trigOverlap = 0 }: Readonly<{ id: 
           </>
         )}
         <div style={{ marginTop: VLDL_APO_DROP }}>
-          <CargoAnchor label="ApoB-100">
-            <span data-node={`${id}-apo`}>
+          <CargoAnchor label={holder}>
+            <span data-node={`${id}-apo`} style={extraApo ? { position: 'relative' } : undefined}>
               <CarrierIcon size={CARGO_APO_SIZE} />
+              {extraApo && (
+                <span className="mc-lipid-extra-apo" title={extraApo}>
+                  <CarrierIcon size={Math.round(CARGO_APO_SIZE * 0.55)} />
+                  <span className="mc-lipid-extra-apo-label">(a)</span>
+                </span>
+              )}
             </span>
           </CargoAnchor>
         </div>
@@ -671,7 +694,7 @@ function ParticleNode({ id, label, trigCount, trigOverlap = 0 }: Readonly<{ id: 
         <div style={{ marginTop: hasTrig ? VLDL_CARGO_DROP : VLDL_APO_DROP }}>
           <CompoundStack
             dataNode={`${id}-chol`}
-            count={CHOL_STACK_COUNT}
+            count={cholCount}
             circleSize={STACK_CHOL_CIRCLE_SIZE}
             iconSize={STACK_CHOL_ICON_SIZE}
             icon={CholesterolIcon}
@@ -690,15 +713,15 @@ function ParticleNode({ id, label, trigCount, trigOverlap = 0 }: Readonly<{ id: 
  * The endogenous lipoprotein pathway: the liver's secreted VLDL loses
  * triglyceride and becomes IDL, then LDL -- one ApoB-100 particle
  * transforming, not three separate ones. Each stage keeps its own cargo
- * diagram, its TRIG circle count falling to zero down the chain while Chol's
- * stays fixed.
+ * diagram, its TRIG and Chol circle counts both falling down the chain as
+ * the particle sheds mass.
  */
 function LipoproteinChain() {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 28, paddingBottom: 26 }}>
-      <ParticleNode id="vldl" label="VLDL" trigCount={3} trigOverlap={3} />
-      <ParticleNode id="idl" label="IDL" trigCount={2} />
-      <ParticleNode id="ldl" label="LDL" trigCount={0} />
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 44, paddingBottom: 26 }}>
+      <ParticleNode id="vldl" label="VLDL" trigCount={3} cholCount={3} trigOverlap={3} />
+      <ParticleNode id="idl" label="IDL" trigCount={2} cholCount={2} trigOverlap={3} />
+      <ParticleNode id="ldl" label="LDL" trigCount={1} cholCount={1} />
     </div>
   );
 }
@@ -783,6 +806,14 @@ export function LipidTransportView({
         <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}`} />
         <div className="mc-pathway-main">
           <div className="mc-pathway-bands">
+            <section className="mc-pathway-band" aria-label="Intestine">
+              <div className="mc-pathway-site">
+                <h2 className="mc-pathway-title" title="Packages dietary fat, absorbed from a meal, into chylomicrons">Intestine</h2>
+              </div>
+              <div className="mc-pathway-diagram">
+                <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={3} />
+              </div>
+            </section>
             <section className="mc-pathway-band" aria-label="Liver">
               <div className="mc-pathway-site">
                 <h2 className="mc-pathway-title" title="Synthesizes cholesterol and secretes VLDL into the blood">Liver</h2>
@@ -799,6 +830,10 @@ export function LipidTransportView({
               </div>
               <div className="mc-pathway-diagram">
                 <LipoproteinChain />
+                <div style={{ display: 'flex', gap: 44, marginTop: 32 }}>
+                  <ParticleNode id="hdl" label="HDL" holder="ApoA-I" trigCount={1} cholCount={1} />
+                  <ParticleNode id="lpa" label="Lp(a)" holder="ApoB-100" extraApo="apo(a)" trigCount={1} cholCount={1} />
+                </div>
               </div>
             </section>
           </div>
