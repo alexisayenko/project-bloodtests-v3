@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { PageHeader } from './PageHeader';
-import { CarrierIcon, CholesterolIcon, TriglycerideIcon } from './customIcons';
+import { CarrierIcon, CholesterolIcon, TriglycerideIcon, type IconComponent } from './customIcons';
 import { SegmentedControl } from '../primitives';
 import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
 import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
@@ -397,12 +397,12 @@ function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle:
           title={HMGCR_NOTE}
           onClick={(e) => onToggle(HMGCR, e.currentTarget)}
         >
-          <span className="mc-pathway-bubble" style={{ width: HMGCR_DOCK_SIZE, height: HMGCR_DOCK_SIZE }}>
+          <span className="mc-pathway-bubble" data-node="reductase-bubble" style={{ width: HMGCR_DOCK_SIZE, height: HMGCR_DOCK_SIZE }}>
             <Glyph art={ENZYME_ART} />
           </span>
           <span className="mc-pathway-node-label">HMG-CoA reductase</span>
         </button>
-        <span className="mc-lipid-synth-chol">
+        <span className="mc-lipid-synth-chol" data-node="synth-chol">
           <CholesterolIcon size={STANDALONE_CHOL_ICON_SIZE} />
         </span>
       </div>
@@ -426,11 +426,23 @@ function EnzymeCard({ left, top }: Readonly<{ left: number; top: number }>) {
 }
 
 /** Badge-to-particle association lines, measured from the DOM like Hormonal Pathways' and hidden at rest. */
+type Point = { x: number; y: number };
+const rectCenter = (r: DOMRect, base: DOMRect): Point => ({ x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top });
+/** A point on the line from `from` to `to`, pulled back `radius` px from `from` -- lets a bond meet a circle radially instead of at a fixed side point. */
+const onEdge = (from: Point, to: Point, radius: number): Point => {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  return { x: from.x + (dx / dist) * radius, y: from.y + (dy / dist) * radius };
+};
+
 function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root: RefObject<HTMLDivElement | null>; active: string | null; focused: string | null; layoutKey: string }>) {
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
   const [secretion, setSecretion] = useState<string | null>(null);
-  const [vldlBond, setVldlBond] = useState<string | null>(null);
+  const [particleBonds, setParticleBonds] = useState<string[]>([]);
+  const [particleOutlines, setParticleOutlines] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
+  const [synthArrow, setSynthArrow] = useState<string | null>(null);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
     const organ = el.querySelector('.mc-lipid-organ')?.getBoundingClientRect();
@@ -438,29 +450,47 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     setSecretion(
       organ && vldl ? `M${vldl.left + vldl.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldl.left + vldl.width / 2 - base.left},${vldl.top - base.top - 4}` : null
     );
-    const trig = el.querySelector('[data-node="vldl-trig"]')?.getBoundingClientRect();
-    const apo = el.querySelector('[data-node="vldl-apo"]')?.getBoundingClientRect();
-    const chol = el.querySelector('[data-node="vldl-chol"]')?.getBoundingClientRect();
-    setVldlBond(
-      trig && apo && chol
+    // Each lipoprotein stage (VLDL, IDL, LDL) gets its own bond(s) to ApoB-100 and a dashed outline hugging its actual icons -- IDL and LDL may have no TRIG bubble, since most is shed by then.
+    const bonds: string[] = [];
+    const outlines: { x: number; y: number; w: number; h: number }[] = [];
+    for (const id of ['vldl', 'idl', 'ldl']) {
+      const trig = el.querySelector(`[data-node="${id}-trig"]`)?.getBoundingClientRect();
+      const apo = el.querySelector(`[data-node="${id}-apo"]`)?.getBoundingClientRect();
+      const chol = el.querySelector(`[data-node="${id}-chol"]`)?.getBoundingClientRect();
+      if (!apo || !chol) continue;
+      const a = rectCenter(apo, base);
+      const c = rectCenter(chol, base);
+      const apoRadius = apo.width / 2 + 3;
+      const cholEdge = onEdge(c, a, chol.width / 2 + 2);
+      const apoFromC = onEdge(a, c, apoRadius);
+      let bond = `M${cholEdge.x},${cholEdge.y} L${apoFromC.x},${apoFromC.y}`;
+      let left = Math.min(chol.left, apo.left) - base.left;
+      let right = Math.max(chol.right, apo.right) - base.left;
+      let top = Math.min(chol.top, apo.top) - base.top;
+      if (trig) {
+        const t = rectCenter(trig, base);
+        const trigEdge = onEdge(t, a, trig.width / 2 + 2);
+        const apoFromT = onEdge(a, t, apoRadius);
+        bond += ` M${trigEdge.x},${trigEdge.y} L${apoFromT.x},${apoFromT.y}`;
+        left = Math.min(left, trig.left - base.left);
+        top = Math.min(top, trig.top - base.top);
+      }
+      bonds.push(bond);
+      const pad = 10;
+      outlines.push({ x: left - pad, y: top - pad, w: right - left + pad * 2, h: apo.bottom - base.top + 26 - (top - pad) });
+    }
+    setParticleBonds(bonds);
+    setParticleOutlines(outlines);
+    const reductase = el.querySelector('[data-node="reductase-bubble"]')?.getBoundingClientRect();
+    const synthChol = el.querySelector('[data-node="synth-chol"]')?.getBoundingClientRect();
+    setSynthArrow(
+      reductase && synthChol
         ? (() => {
-            const center = (r: DOMRect) => ({ x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top });
-            const t = center(trig);
-            const c = center(chol);
-            const a = center(apo);
-            // Pull each end back along the center-to-center line by that node's own radius, so the bond meets the circle radially (perpendicular to its edge) instead of at a fixed side point.
-            const onEdge = (from: { x: number; y: number }, to: { x: number; y: number }, radius: number) => {
-              const dx = to.x - from.x;
-              const dy = to.y - from.y;
-              const dist = Math.hypot(dx, dy);
-              return { x: from.x + (dx / dist) * radius, y: from.y + (dy / dist) * radius };
-            };
-            const apoRadius = apo.width / 2 + 3;
-            const trigEdge = onEdge(t, a, trig.width / 2 + 2);
-            const cholEdge = onEdge(c, a, chol.width / 2 + 2);
-            const apoFromT = onEdge(a, t, apoRadius);
-            const apoFromC = onEdge(a, c, apoRadius);
-            return `M${trigEdge.x},${trigEdge.y} L${apoFromT.x},${apoFromT.y} M${cholEdge.x},${cholEdge.y} L${apoFromC.x},${apoFromC.y}`;
+            const r = rectCenter(reductase, base);
+            const s = rectCenter(synthChol, base);
+            const from = onEdge(r, s, reductase.width / 2 + 3);
+            const to = onEdge(s, r, synthChol.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
           })()
         : null
     );
@@ -480,7 +510,13 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         </marker>
       </defs>
       {secretion && <path d={secretion} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
-      {vldlBond && <path d={vldlBond} fill="none" stroke="var(--navy)" strokeWidth={1.5} />}
+      {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {particleBonds.map((d, i) => (
+        <path key={i} d={d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
+      ))}
+      {particleOutlines.map((o, i) => (
+        <rect key={i} x={o.x} y={o.y} width={o.w} height={o.h} rx={14} fill="none" stroke="var(--lipid-outline)" strokeWidth={1.5} strokeDasharray="4 3" />
+      ))}
       <AssociationLayer associations={associations} active={active} focused={focused} veil={veil} />
     </svg>
   );
@@ -491,20 +527,42 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
 /** ApoB-100's own drawing spans ~42.6 of its 48-unit viewBox (HormonalPathwaysView's CARRIER_SIZE), so its box is enlarged to bring the drawing itself to molecular-actor size. */
 const CARGO_APO_SIZE = Math.round((SIZE.molecular * 48) / 42.6);
 const CARGO_BUBBLE_SIZE = SIZE.molecular;
-const CARGO_ICON_SIZE = Math.round(CARGO_BUBBLE_SIZE * 0.85);
-/** The cholesterol icon reads clearer bigger than TRIG's, so its bubble grows a
- * little to hold a bigger icon -- the icon itself grows more than the bubble
- * does, so it fills more of its dock rather than just scaling uniformly. */
-const CARGO_CHOL_BUBBLE_SIZE = Math.round(CARGO_BUBBLE_SIZE * 1.15);
-const CARGO_CHOL_ICON_SIZE = Math.round(CARGO_BUBBLE_SIZE * 1.05);
 /** The bare cholesterol icon by the liver has no bubble to fill, so it reads at a bigger, more visible size than the docked one -- roomier than a bare signal molecule on Hormonal Pathways (SIZE.molecular). */
 const STANDALONE_CHOL_ICON_SIZE = Math.round(SIZE.molecular * 1.35);
-/** How far ApoB-100 drops below TRIG/Chol, so the two bonds meet it at a sharp ~60 degree angle. IDL/LDL drop the same amount to line up with it, since they're the same particle further down the chain. */
+/**
+ * Every bond line in this chain (TRIG-ApoB, Chol-ApoB, and the plain
+ * ApoB-Chol bond LDL uses with no TRIG) is tuned to the same ~75px length,
+ * so the chain reads as one consistent unit of "distance a bond spans"
+ * rather than particle-specific line lengths.
+ */
+/** How far ApoB-100 drops below TRIG/Chol, so the two bonds meet it at a sharp angle. IDL/LDL drop the same amount to line up with it, since they're the same particle further down the chain. */
 const VLDL_APO_DROP = 160;
-/** TRIG and Chol also drop partway down their own bond lines, toward ApoB-100, so the V reads as a shorter, tighter shape rather than spanning the full height. Tuned together with VLDL_CARGO_GAP for a ~60 degree vertex angle at a fixed bond length. */
-const VLDL_CARGO_DROP = 28;
+/** TRIG and Chol also drop partway down their own bond lines, toward ApoB-100, so the V reads as a shorter, tighter shape rather than spanning the full height. Tuned together with VLDL_CARGO_GAP for a ~75px bond length. */
+const VLDL_CARGO_DROP = 51;
 /** Horizontal gap either side of ApoB-100, tuned together with VLDL_CARGO_DROP. */
 const VLDL_CARGO_GAP = 4;
+/** Horizontal gap either side of ApoB-100 when there's no TRIG (LDL) -- wider than VLDL_CARGO_GAP since there's no vertical drop to help the bond reach the same ~75px length. */
+const LDL_CARGO_GAP = 42;
+/**
+ * Circle size for each compound's individual unit-bubble in a stack (below).
+ * A little smaller than the cargo diagram's single-icon bubbles, since three
+ * of them now stack where one used to sit.
+ */
+const STACK_TRIG_CIRCLE_SIZE = Math.round(CARGO_BUBBLE_SIZE * 0.78);
+const STACK_CHOL_CIRCLE_SIZE = Math.round(CARGO_BUBBLE_SIZE * 0.82);
+/** Matches DOCKED_SIZE, the size a hormone icon renders at docked inside a carrier's bubble on Hormonal Pathways (HormonalPathwaysView.tsx) -- same convention, an icon docked inside another shape. */
+const STACK_TRIG_ICON_SIZE = 21;
+/** The cholesterol glyph's own drawing reads smaller than TRIG's at the same size, so its icon runs bigger to fill its circle as fully. */
+const STACK_CHOL_ICON_SIZE = 28;
+/**
+ * Cholesterol's absolute amount barely changes down the chain -- only its
+ * *share* of a shrinking particle rises -- so every stage gets the same chol
+ * circle count; only TRIG's count falls: 3 for VLDL, 2 for IDL (shed via
+ * lipoprotein lipase), 0 for LDL (essentially none left). Illustrative
+ * counts, not to scale: the sourced data (lipoprotein-particles.json) only
+ * gives % of each particle's own mass, and IDL's isn't sourced at all.
+ */
+const CHOL_STACK_COUNT = 2;
 
 /** A cargo diagram's own anchor: an icon (or docked bubble) with a caption below it, sized to line up with the apoprotein's own height. `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it looking off-center. */
 function CargoAnchor({ children, label, labelOffset = 0 }: Readonly<{ children: ReactNode; label: string; labelOffset?: number }>) {
@@ -518,53 +576,112 @@ function CargoAnchor({ children, label, labelOffset = 0 }: Readonly<{ children: 
   );
 }
 
-// ---- lipoprotein chain ----
-
-/** A node in the IDL/LDL part of the chain, the same circle-icon-plus-caption node the cargo diagram uses for TRIG/ApoB-100/Chol. */
-function ChainAnchor({ id, label }: Readonly<{ id: string; label: string }>) {
+/** A vertical stack of identical small bubbles: how many circles is how much of that compound is aboard, not one bigger blob -- a discrete count rather than a scaled size, so "more" never looks like "bigger". */
+function CompoundStack({
+  dataNode,
+  count,
+  circleSize,
+  iconSize,
+  icon: Icon,
+  label,
+  labelOffset = 0,
+  overlap = 0,
+}: Readonly<{
+  dataNode: string;
+  count: number;
+  circleSize: number;
+  iconSize: number;
+  icon: IconComponent;
+  label: string;
+  labelOffset?: number;
+  /** When set (px), circles cascade diagonally and partly cover each other instead of stacking edge to edge. */
+  overlap?: number;
+}>) {
+  const cascadeSpan = overlap * (count - 1);
   return (
-    <CargoAnchor label={label}>
-      <span className="mc-pathway-bubble mc-lipid-chain-node" style={{ width: CARGO_BUBBLE_SIZE, height: CARGO_BUBBLE_SIZE }} data-node={id}>
-        <CarrierIcon size={CARGO_ICON_SIZE} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div
+        data-node={dataNode}
+        style={
+          overlap
+            ? { position: 'relative', width: circleSize + cascadeSpan, height: circleSize + cascadeSpan }
+            : { display: 'flex', flexDirection: 'column', gap: 3 }
+        }
+      >
+        {Array.from({ length: count }, (_, i) => (
+          <span
+            key={i}
+            className="mc-pathway-bubble"
+            style={
+              overlap
+                ? { position: 'absolute', left: i * overlap, top: i * overlap, width: circleSize, height: circleSize, zIndex: i }
+                : { width: circleSize, height: circleSize }
+            }
+          >
+            <Icon size={iconSize} />
+          </span>
+        ))}
+      </div>
+      <span className="mc-pathway-node-label" style={{ marginTop: 6, display: 'inline-block', transform: labelOffset ? `translateX(${labelOffset}px)` : undefined }}>
+        {label}
       </span>
-    </CargoAnchor>
+    </div>
   );
 }
 
+// ---- lipoprotein chain ----
+
 /**
- * VLDL is drawn as the same TRIG/ApoB-100/Chol holder-plus-cargo row the
- * cargo diagram above uses -- it's the same particle, so it gets the same
- * picture, grouped under one "VLDL" label rather than a new, smaller glyph.
+ * One stage of the endogenous chain, drawn as a holder-plus-cargo row: ApoB-100
+ * always carries a fixed pair of Chol circles, and (while there's still
+ * triglyceride left to carry) a stack of TRIG circles too, bonded to it at
+ * the same sharp angle VLDL uses. With no TRIG left, ApoB-100 and Chol sit
+ * side by side on a plain bond instead of a V.
  */
-function VldlNode() {
+function ParticleNode({ id, label, trigCount, trigOverlap = 0 }: Readonly<{ id: string; label: string; trigCount: number; trigOverlap?: number }>) {
+  const hasTrig = trigCount > 0;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="vldl">
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
-        <div style={{ marginTop: VLDL_CARGO_DROP }}>
-          <CargoAnchor label="TRIG" labelOffset={-5}>
-            <span className="mc-pathway-bubble" data-node="vldl-trig" style={{ width: CARGO_BUBBLE_SIZE, height: CARGO_BUBBLE_SIZE }}>
-              <TriglycerideIcon size={CARGO_ICON_SIZE} />
-            </span>
-          </CargoAnchor>
-        </div>
-        <span style={{ width: VLDL_CARGO_GAP }} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node={id}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+        {hasTrig && (
+          <>
+            <div style={{ marginTop: VLDL_CARGO_DROP }}>
+              <CompoundStack
+                dataNode={`${id}-trig`}
+                count={trigCount}
+                circleSize={STACK_TRIG_CIRCLE_SIZE}
+                iconSize={STACK_TRIG_ICON_SIZE}
+                icon={TriglycerideIcon}
+                label="TRIG"
+                labelOffset={-5}
+                overlap={trigOverlap}
+              />
+            </div>
+            <span style={{ width: VLDL_CARGO_GAP }} />
+          </>
+        )}
         <div style={{ marginTop: VLDL_APO_DROP }}>
           <CargoAnchor label="ApoB-100">
-            <span data-node="vldl-apo">
+            <span data-node={`${id}-apo`}>
               <CarrierIcon size={CARGO_APO_SIZE} />
             </span>
           </CargoAnchor>
         </div>
-        <span style={{ width: VLDL_CARGO_GAP }} />
-        <div style={{ marginTop: VLDL_CARGO_DROP }}>
-          <CargoAnchor label="Chol" labelOffset={5}>
-            <span className="mc-pathway-bubble" data-node="vldl-chol" style={{ width: CARGO_CHOL_BUBBLE_SIZE, height: CARGO_CHOL_BUBBLE_SIZE }}>
-              <CholesterolIcon size={CARGO_CHOL_ICON_SIZE} />
-            </span>
-          </CargoAnchor>
+        <span style={{ width: hasTrig ? VLDL_CARGO_GAP : LDL_CARGO_GAP }} />
+        <div style={{ marginTop: hasTrig ? VLDL_CARGO_DROP : VLDL_APO_DROP }}>
+          <CompoundStack
+            dataNode={`${id}-chol`}
+            count={CHOL_STACK_COUNT}
+            circleSize={STACK_CHOL_CIRCLE_SIZE}
+            iconSize={STACK_CHOL_ICON_SIZE}
+            icon={CholesterolIcon}
+            label="Chol"
+            labelOffset={hasTrig ? 5 : 0}
+            overlap={3}
+          />
         </div>
       </div>
-      <span className="mc-pathway-node-label">VLDL</span>
+      <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>{label}</span>
     </div>
   );
 }
@@ -572,16 +689,16 @@ function VldlNode() {
 /**
  * The endogenous lipoprotein pathway: the liver's secreted VLDL loses
  * triglyceride and becomes IDL, then LDL -- one ApoB-100 particle
- * transforming, not three separate ones.
+ * transforming, not three separate ones. Each stage keeps its own cargo
+ * diagram, its TRIG circle count falling to zero down the chain while Chol's
+ * stays fixed.
  */
 function LipoproteinChain() {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 28, paddingBottom: 26 }}>
-      <VldlNode />
-      <div style={{ display: 'flex', gap: 28, marginTop: VLDL_APO_DROP }}>
-        <ChainAnchor id="idl" label="IDL" />
-        <ChainAnchor id="ldl" label="LDL" />
-      </div>
+      <ParticleNode id="vldl" label="VLDL" trigCount={3} trigOverlap={3} />
+      <ParticleNode id="idl" label="IDL" trigCount={2} />
+      <ParticleNode id="ldl" label="LDL" trigCount={0} />
     </div>
   );
 }

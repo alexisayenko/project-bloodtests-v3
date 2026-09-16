@@ -216,16 +216,18 @@ describe('LipidTransportView', () => {
     expect(value()).toBe('200 mg/dL');
   });
 
-  it('renders VLDL as a holder apoprotein carrying its two cargo chips, cholesterol drawn larger than triglyceride', async () => {
+  it('renders VLDL as a holder apoprotein carrying a stack of TRIG and Chol circles, IDL with fewer TRIG circles and LDL with none', async () => {
     const el = await mount(LipidTransportView, [], CARDIO_TESTS);
-    const diagram = q(el, '[data-node="vldl"]');
-    const labels = [...diagram.querySelectorAll('.mc-pathway-node-label')].map((l) => l.textContent);
+    const vldl = q(el, '[data-node="vldl"]');
+    const labels = [...vldl.querySelectorAll('.mc-pathway-node-label')].map((l) => l.textContent);
     expect(labels).toEqual(['TRIG', 'ApoB-100', 'Chol', 'VLDL']);
-    const bubbles = diagram.querySelectorAll('.mc-pathway-bubble');
-    expect(bubbles).toHaveLength(2);
-    const trigWidth = Number(bubbles[0].querySelector('svg')!.getAttribute('width'));
-    const cholWidth = Number(bubbles[1].querySelector('svg')!.getAttribute('width'));
-    expect(cholWidth).toBeGreaterThan(trigWidth);
+    const vldlTrigCircles = q(el, '[data-node="vldl-trig"]').querySelectorAll('.mc-pathway-bubble');
+    const vldlCholCircles = q(el, '[data-node="vldl-chol"]').querySelectorAll('.mc-pathway-bubble');
+    expect(vldlTrigCircles).toHaveLength(3);
+    expect(vldlCholCircles).toHaveLength(2);
+    const idlTrigCircles = q(el, '[data-node="idl-trig"]').querySelectorAll('.mc-pathway-bubble');
+    expect(idlTrigCircles).toHaveLength(2);
+    expect(el.querySelector('[data-node="ldl-trig"]')).toBeNull();
   });
 
   it('falls back to Martin-Hopkins on the LDL-C badge when the lab reported no LDL-C', async () => {
