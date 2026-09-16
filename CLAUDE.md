@@ -941,8 +941,9 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (885 tests across 40 files — 884 passing, 1 skipped — as run on 2026-09-15: index
-golden-masters ported from v2, bioavailable testosterone and sex-dependent index
+Vitest suites in `web/test/` (916 tests across 41 files — 915 passing, 1 skipped — as run on 2026-09-16: index
+golden-masters ported from v2, `cft` and `biot` cross-checked within 1% against
+eight fixtures recorded from the ISSAM calculator (issam.ch), bioavailable testosterone and sex-dependent index
 bands, calculated free testosterone (Ly & Handelsman) and Martin-Hopkins LDL-C
 golden-masters, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC

@@ -31,6 +31,7 @@ export const MARKER_LOINC: Record<string, string[]> = {
   GLU: ['2345-7'],
   Insulin: ['20448-7'],
   T: ['14913-8', '2986-8'],
+  FT: ['2991-8'],
   SHBG: ['2942-1', '13967-5'],
   ALB: ['1751-7'],
   DHT: ['1848-1', '15057-3'],
@@ -103,6 +104,8 @@ const T_NGDL_TO_NMOLL = molarPerMass('testosterone');
 const FT3_PGML_TO_PMOLL = molarPerMass('triiodothyronine');
 const FT4_NGDL_TO_PMOLL = molarPerMass('thyroxine');
 const CORTISOL_UGDL_TO_NMOLL = molarPerMass('cortisol');
+const FT_PGML_TO_PMOLL = molarPerMassUnit('testosterone', 'pg/mL', 'pmol/L');
+const FT_NGDL_TO_PMOLL = molarPerMassUnit('testosterone', 'ng/dL', 'pmol/L');
 
 /** A same-dimension rescale, derived rather than typed: g/L -> mg/dL is 100. */
 const rescale = (fromUnit: string, toUnit: string): number => {
@@ -131,6 +134,12 @@ const UNIT_CONVERSIONS: UnitConv[] = [
   // Testosterone: ng/mL <-> nmol/L directly (ng/mL -> ng/dL -> nmol/L combined).
   { marker: 'T', from: 'ng/mL', to: 'nmol/L', conv: (x) => x * rescale('ng/mL', 'ng/dL') * T_NGDL_TO_NMOLL },
   { marker: 'T', from: 'nmol/L', to: 'ng/mL', conv: (x) => x / T_NGDL_TO_NMOLL / rescale('ng/mL', 'ng/dL') },
+  // Free testosterone (2991-8): printed pg/mL or ng/dL, or pmol/L; ftpct reads
+  // it in pmol/L to divide by total T in nmol/L.
+  { marker: 'FT', from: 'pg/mL', to: 'pmol/L', conv: (x) => x * FT_PGML_TO_PMOLL },
+  { marker: 'FT', from: 'pmol/L', to: 'pg/mL', conv: (x) => x / FT_PGML_TO_PMOLL },
+  { marker: 'FT', from: 'ng/dL', to: 'pmol/L', conv: (x) => x * FT_NGDL_TO_PMOLL },
+  { marker: 'FT', from: 'pmol/L', to: 'ng/dL', conv: (x) => x / FT_NGDL_TO_PMOLL },
   // Cortisol: the [Moles/volume] sibling code 14675-3 reports nmol/L, while
   // cortdhea's formula works from the mass code's ug/dL.
   { marker: 'Cortisol', from: 'nmol/L', to: 'ug/dL', conv: (x) => x / CORTISOL_UGDL_TO_NMOLL },

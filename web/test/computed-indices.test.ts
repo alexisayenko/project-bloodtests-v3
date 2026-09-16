@@ -9,7 +9,7 @@ import {
   markersForIndex,
   zone,
 } from '../src/data/computedIndices';
-import { INDEX_DEFS } from '../src/data/indexDefs';
+import { INDEX_DEFS, TESTOSTERONE_MOLAR_MASS, testosteronePools } from '../src/data/indexDefs';
 import type { Result } from '../src/types';
 
 /**
@@ -55,6 +55,7 @@ const RESULTS: Record<string, Result> = Object.fromEntries([
   r('2339-0', 95, 'mg/dL'), // GLU
   r('20448-7', 8, 'uIU/mL'), // Insulin
   r('14913-8', 17.335, 'nmol/L'), // T — 500 ng/dL, molar
+  r('2991-8', 90, 'pg/mL'), // Free T, measured
   r('2942-1', 40, 'nmol/L'), // SHBG
   r('1751-7', 4.3, 'g/dL'), // ALB
   r('10501-5', 5, 'mIU/mL'), // LH
@@ -94,8 +95,12 @@ const GOLD: Record<string, number> = {
   homair: 1.874918,
   homab: 90.231958,
   cft: 93.162473,
+  cftpct: 1.863268,
+  ftpct: 1.800018,
   cftlh: 77.989086,
+  cftlhpct: 1.559797,
   biot: 7.569375,
+  biotpct: 43.66527,
   fai: 43.3375,
   tlh: 99.999028,
   te2: 16.666505,
@@ -170,11 +175,102 @@ describe('calculatedFreeTestosterone via the cft index (Vermeulen golden master)
   it('albumin defaults to 4.3 when omitted', () => {
     expect(cft.fn(fixture(300, 60))!).toBeCloseTo(39.353986, 5);
   });
+});
 
-  it('matches the ISSAM reference calculator (T 446, SHBG 24.9, ALB 4.3 → ~2.41%)', () => {
-    const ft = cft.fn(fixture(446, 24.9, 4.3))!;
-    const pct = (ft / 10 / 446) * 100;
-    expect(pct).toBeCloseTo(2.41, 1);
+// The exact anchor: the worked example on https://www.issam.ch/freetesuit.htm
+// ("Explanation and examples", retrieved 2026-09-16), which uses the correct
+// constants (Kt 1e9, Ka 3.6e4, albumin 69 kDa, T 288.4 g/mol). Two typos on the
+// page are not copied: a 48.86e9 denominator (2 × 23.43 = 46.86) and FT
+// multiplied by 288.5 rather than 288.4.
+describe('cft and biot match ISSAM\'s published worked example (issam.ch/freetesuit.htm, retrieved 2026-09-16)', () => {
+  const cft = INDEX_DEFS.find((d) => d.key === 'cft')!;
+  const biot = INDEX_DEFS.find((d) => d.key === 'biot')!;
+  const TOLERANCE = 0.0005; // [S] is printed to 5 significant figures
+  const expectWithin = (actual: number, expected: number) => {
+    expect(Math.abs(actual - expected) / expected).toBeLessThan(TOLERANCE);
+  };
+
+  const T_NMOL = 10; // the page's 288.4 ng/dL
+  const SHBG = 40;
+  const ALB = 4.3; // Ka·[Alb] = 22.43
+  const FREE_T_MOLL = 1.7388e-10;
+
+  const tNgdl = convertUnit(T_NMOL, 'T', 'nmol/L', 'ng/dL')!;
+  const ftNgdl = cft.fn({ T: tNgdl, SHBG, ALB })! / 10;
+  const ftNmol = convertUnit(ftNgdl, 'T', 'ng/dL', 'nmol/L')!;
+  const bioNmol = biot.fn({ T: T_NMOL, SHBG, ALB })!;
+
+  it('free T [S] = 1.7388e-10 mol/L', () => {
+    expectWithin(ftNmol * 1e-9, FREE_T_MOLL);
+  });
+
+  it('free fraction 1.7388 %', () => {
+    expectWithin((ftNmol / T_NMOL) * 100, 1.7388);
+  });
+
+  it('bioavailable T = [S] × 23.43', () => {
+    expectWithin(bioNmol * 1e-9, FREE_T_MOLL * 23.43);
+  });
+
+  it('FT 5.02 ng/dL and bio-T 118 ng/dL at the page\'s 3 significant figures', () => {
+    expect(Number(ftNgdl.toPrecision(3))).toBe(5.02);
+    expect(Number(convertUnit(bioNmol, 'T', 'nmol/L', 'ng/dL')!.toPrecision(3))).toBe(118);
+  });
+});
+
+// An independent check, not a gold standard: eight cases recorded by hand from
+// the live calculator at https://www.issam.ch/freetesto.htm on 2026-09-16. Its
+// script converts ng/dL to mol/L at ~280 g/mol (T / 2.8 × 1e-10) instead of
+// 288.4 and displays 3 significant figures, hence the 1% tolerance. cftlh has
+// no counterpart: issam.ch offers Vermeulen only.
+describe('cft and biot cross-checked against the ISSAM calculator (issam.ch, retrieved 2026-09-16)', () => {
+  const cft = INDEX_DEFS.find((d) => d.key === 'cft')!;
+  const biot = INDEX_DEFS.find((d) => d.key === 'biot')!;
+  const TOLERANCE = 0.01;
+  const expectWithinPct = (actual: number, expected: number) => {
+    expect(Math.abs(actual - expected) / expected).toBeLessThan(TOLERANCE);
+  };
+
+  // [T, T unit, SHBG nmol/L, ALB g/dL, free T, FT %, bioavailable T, bio %], free and bio-T in T's unit
+  const ISSAM = [
+    [888, 'ng/dL', 30, 4.3, 22.1, 2.49, 518, 58.3],
+    [500, 'ng/dL', 40, 4.5, 9.15, 1.83, 224, 44.8],
+    [300, 'ng/dL', 60, 4.3, 3.95, 1.32, 92.5, 30.8],
+    [446, 'ng/dL', 24.9, 4.3, 10.8, 2.41, 252, 56.6],
+    [150, 'ng/dL', 80, 3.5, 1.58, 1.05, 30.4, 20.3],
+    [1200, 'ng/dL', 15, 5.0, 35.6, 2.97, 965, 80.4],
+    [250, 'ng/dL', 100, 4.3, 2.15, 0.86, 50.4, 20.2],
+    [15, 'nmol/L', 40, 4.3, 0.275, 1.83, 6.44, 42.9],
+  ] as const;
+
+  it.each(ISSAM)('T %s %s, SHBG %s, ALB %s', (t, unit, shbg, alb, ft, ftPct, bio, bioPct) => {
+    const tNgdl = unit === 'ng/dL' ? t : convertUnit(t, 'T', unit, 'ng/dL')!;
+    const tNmol = unit === 'nmol/L' ? t : convertUnit(t, 'T', unit, 'nmol/L')!;
+    const ftNgdl = cft.fn({ T: tNgdl, SHBG: shbg, ALB: alb })! / 10;
+    const bioNmol = biot.fn({ T: tNmol, SHBG: shbg, ALB: alb })!;
+    const ftOut = unit === 'ng/dL' ? ftNgdl : convertUnit(ftNgdl, 'T', 'ng/dL', unit)!;
+    const bioOut = unit === 'nmol/L' ? bioNmol : convertUnit(bioNmol, 'T', 'nmol/L', unit)!;
+
+    expectWithinPct(ftOut, ft);
+    expectWithinPct((ftNgdl / tNgdl) * 100, ftPct);
+    expectWithinPct(bioOut, bio);
+    expectWithinPct((bioNmol / tNmol) * 100, bioPct);
+  });
+});
+
+describe('testosteronePools with issam.ch\'s 280 g/mol solve (issam.ch, retrieved 2026-09-16)', () => {
+  const tNmol = convertUnit(888, 'T', 'ng/dL', 'nmol/L')!;
+  const pools = testosteronePools(tNmol, 30, 4.3, 280);
+  const ngdl = (nmol: number) => Number(convertUnit(nmol, 'T', 'nmol/L', 'ng/dL')!.toPrecision(3));
+
+  it('reproduces the calculator\'s display: free 2.49 %, FT 22.1 ng/dL, bio-T 518 ng/dL', () => {
+    expect(Number(((pools.free / tNmol) * 100).toFixed(2))).toBe(2.49);
+    expect(ngdl(pools.free)).toBe(22.1);
+    expect(ngdl(pools.free + pools.albuminBound)).toBe(518);
+  });
+
+  it('defaults to the molar-masses.json solve', () => {
+    expect(testosteronePools(tNmol, 30, 4.3, TESTOSTERONE_MOLAR_MASS)).toEqual(testosteronePools(tNmol, 30, 4.3));
   });
 });
 
@@ -253,12 +349,6 @@ describe('biot (bioavailable testosterone, Vermeulen 1999)', () => {
     expect(biot.fn({ T: 15, SHBG: 40, ALB: 4.3 })!).toBeCloseTo(ftNmol * (1 + KA * albMolL(4.3)), 6);
   });
 
-  it('matches the ISSAM calculator arithmetic within 1% (T 446 ng/dL, SHBG 24.9, ALB 4.3 -> 56.59% of total)', () => {
-    const tNmol = convertUnit(446, 'T', 'ng/dL', 'nmol/L')!;
-    const pct = (biot.fn({ T: tNmol, SHBG: 24.9, ALB: 4.3 })! / tNmol) * 100;
-    expect(Math.abs(pct - 56.59) / 56.59).toBeLessThan(0.01);
-  });
-
   it('takes albumin as 4.3 g/dL when no reading exists', () => {
     expect(biot.fn({ T: 15, SHBG: 40 })).toBe(biot.fn({ T: 15, SHBG: 40, ALB: 4.3 }));
     const draw = Object.fromEntries([r('14913-8', 15, 'nmol/L'), r('13967-5', 40, 'nmol/L')]);
@@ -312,6 +402,76 @@ describe('biot (bioavailable testosterone, Vermeulen 1999)', () => {
     expect(biot.fn({ T: 15, ALB: 4.3 })).toBeNull();
     expect(biot.fn({ SHBG: 40, ALB: 4.3 })).toBeNull();
     expect(computeIndex(biot, Object.fromEntries([r('14913-8', 15, 'nmol/L'), r('1751-7', 4.3, 'g/dL')]))).toBeNull();
+  });
+});
+
+describe('testosterone fractions, % of total', () => {
+  const def = (key: string) => INDEX_DEFS.find((d) => d.key === key)!;
+  const [cft, cftpct, ftpct, cftlh, cftlhpct, biot, biotpct] =
+    ['cft', 'cftpct', 'ftpct', 'cftlh', 'cftlhpct', 'biot', 'biotpct'].map(def);
+  const nmolFromPgml = (pgml: number) => convertUnit(pgml / 10, 'T', 'ng/dL', 'nmol/L')!;
+
+  it('sit right after their parent index', () => {
+    const keys = INDEX_DEFS.map((d) => d.key);
+    expect(keys.slice(keys.indexOf('cft'), keys.indexOf('cft') + 3)).toEqual(['cft', 'cftpct', 'ftpct']);
+    expect(keys[keys.indexOf('cftlh') + 1]).toBe('cftlhpct');
+    expect(keys[keys.indexOf('biot') + 1]).toBe('biotpct');
+  });
+
+  it('carry no bands', () => {
+    for (const d of [cftpct, ftpct, cftlhpct, biotpct]) {
+      expect([d.key, indexBands(d, { sex: 'male' })]).toEqual([d.key, null]);
+    }
+  });
+
+  it('cftpct reproduces ISSAM\'s worked example: 1.7388 % at T 10 nmol/L, SHBG 40, ALB 4.3', () => {
+    expect(Math.abs(cftpct.fn({ T: 10, SHBG: 40, ALB: 4.3 })! - 1.7388) / 1.7388).toBeLessThan(0.0005);
+  });
+
+  it('cftpct is cft over total T in molar terms, albumin defaulting as for cft', () => {
+    for (const [t, s, alb] of [[10, 40, 4.3], [25, 15, 3.6], [6, 90, undefined]] as const) {
+      const tNgdl = convertUnit(t, 'T', 'nmol/L', 'ng/dL')!;
+      const expected = (nmolFromPgml(cft.fn({ T: tNgdl, SHBG: s, ALB: alb })!) / t) * 100;
+      expect(cftpct.fn({ T: t, SHBG: s, ALB: alb })!).toBeCloseTo(expected, 8);
+    }
+  });
+
+  it('biotpct is biot over total T: ≈ 40.74 % at T 10 nmol/L, SHBG 40, ALB 4.3', () => {
+    // ISSAM prints [S] = 1.7388e-10 and Ka·[Alb] = 22.43, so 1.7388 × 23.43 ≈ 40.74 at 5 significant figures.
+    expect(Math.abs(biotpct.fn({ T: 10, SHBG: 40, ALB: 4.3 })! - 40.74) / 40.74).toBeLessThan(0.0005);
+    for (const [t, s, alb] of [[15, 40, 4.5], [30, 20, 3.5], [8, 70, undefined]] as const) {
+      expect(biotpct.fn({ T: t, SHBG: s, ALB: alb })!).toBeCloseTo((biot.fn({ T: t, SHBG: s, ALB: alb })! / t) * 100, 8);
+    }
+  });
+
+  it('cftlhpct is cftlh over total T in molar terms, null exactly where cftlh is', () => {
+    for (const [t, s] of [[20, 30], [3, 30], [12, 55]] as const) {
+      expect(cftlhpct.fn({ T: t, SHBG: s })!).toBeCloseTo((nmolFromPgml(cftlh.fn({ T: t, SHBG: s })!) / t) * 100, 8);
+    }
+    for (const [t, s] of [[5, 800], [1, 400]] as const) {
+      expect(cftlh.fn({ T: t, SHBG: s })).toBeNull();
+      expect(cftlhpct.fn({ T: t, SHBG: s })).toBeNull();
+    }
+  });
+
+  it('ftpct divides measured free T by total T in molar terms, whatever units they were printed in', () => {
+    const tNmol = 15;
+    const ftPgml = 90;
+    const expected = (nmolFromPgml(ftPgml) / tNmol) * 100;
+    const asPrinted = [
+      Object.fromEntries([r('2991-8', ftPgml, 'pg/mL'), r('14913-8', tNmol, 'nmol/L')]),
+      Object.fromEntries([r('2991-8', ftPgml / 10, 'ng/dL'), r('2986-8', convertUnit(tNmol, 'T', 'nmol/L', 'ng/mL')!, 'ng/mL')]),
+      Object.fromEntries([r('2991-8', nmolFromPgml(ftPgml) * 1000, 'pmol/L'), r('14913-8', tNmol, 'nmol/L')]),
+    ];
+    for (const draw of asPrinted) {
+      expect(ftpct.fn(markersForIndex(ftpct, draw))!).toBeCloseTo(expected, 8);
+    }
+  });
+
+  it('ftpct declines a free T it cannot place in pmol/L', () => {
+    const draw = Object.fromEntries([r('2991-8', 90, '%'), r('14913-8', 15, 'nmol/L')]);
+    expect(markersForIndex(ftpct, draw)['FT']).toBeUndefined();
+    expect(computeIndex(ftpct, draw)).toBeNull();
   });
 });
 
@@ -520,8 +680,13 @@ describe('zone (3-band coloring, ported from v2 flag tests)', () => {
     expect(zone(50, 100, 65, true)).toBe('bad');
   });
 
-  it('every index has a band to judge by: fixed cut-points or bands by sex', () => {
-    for (const def of INDEX_DEFS) expect(def.cut != null || def.bandsBySex != null, def.key).toBe(true);
+  // The testosterone fractions have no sourced band that fits the three-zone model, and carry none on purpose.
+  const UNBANDED = new Set(['cftpct', 'ftpct', 'cftlhpct', 'biotpct']);
+
+  it('every other index has a band to judge by: fixed cut-points or bands by sex', () => {
+    for (const def of INDEX_DEFS) {
+      expect(def.cut != null || def.bandsBySex != null, def.key).toBe(!UNBANDED.has(def.key));
+    }
   });
 
   it('an index without bands by sex ignores the profile', () => {
