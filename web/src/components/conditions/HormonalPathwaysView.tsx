@@ -974,7 +974,7 @@ interface Association {
 type CenterX = (rect: DOMRect) => number;
 
 /** Aligns the two conversion enzymes under T and docks the estrogen-receptor box under blood E2 — a DOM mutation, not a line to draw. */
-function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX): void {
+function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX, zoom: number): void {
   const tNode = el.querySelector('[data-node="t"]');
   const enzymes = el.querySelector<HTMLElement>('.mc-pathway-enzymes');
   if (!tNode || !enzymes) return;
@@ -984,27 +984,53 @@ function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX): v
   const mid = (centerX(imgs[0]) + centerX(imgs[1])) / 2;
   const containerLeft = enzymes.getBoundingClientRect().left - base.left;
   const ar = enzymes.querySelector<HTMLElement>('.mc-pathway-ar');
-  if (ar) ar.style.left = `${mid - containerLeft - ar.offsetWidth / 2}px`;
-  enzymes.style.transform = `translateX(${centerX(tNode.getBoundingClientRect()) + 8 - mid}px)`;
+  if (ar) ar.style.left = `${(mid - containerLeft - ar.getBoundingClientRect().width / 2) / zoom}px`;
+  enzymes.style.transform = `translateX(${(centerX(tNode.getBoundingClientRect()) + 8 - mid) / zoom}px)`;
   const er = enzymes.querySelector<HTMLElement>('.mc-pathway-er');
   const e2 = el.querySelector('[data-node="e2"]');
   const e2blood = el.querySelector('[data-node="e2blood"]');
   if (!er || !e2 || !e2blood) return;
   const box = enzymes.getBoundingClientRect();
   const e2Rect = e2.getBoundingClientRect();
-  er.style.left = `${centerX(e2blood.getBoundingClientRect()) + base.left + 48 - box.left}px`;
-  er.style.top = `${e2Rect.top + e2Rect.height / 2 - box.top - er.offsetHeight / 2}px`;
+  er.style.left = `${(centerX(e2blood.getBoundingClientRect()) + base.left - box.left) / zoom + 48}px`;
+  er.style.top = `${(e2Rect.top + e2Rect.height / 2 - box.top - er.getBoundingClientRect().height / 2) / zoom}px`;
 }
 
 /** Centres the hypothalamus–pituitary icon on T's vertical axis, the same x the T → androgen-receptor trunk runs down. */
-function positionPituitary(el: HTMLDivElement, centerX: CenterX): void {
+function positionPituitary(el: HTMLDivElement, centerX: CenterX, zoom: number): void {
   const hp = el.querySelector<HTMLElement>('.mc-pathway-hp');
   const icon = hp?.querySelector('[data-node="pituitary"] .mc-pathway-glyph');
   const tNode = el.querySelector('[data-node="t"]');
   if (!hp || !icon || !tNode) return;
   hp.style.transform = '';
   const axis = centerX(tNode.getBoundingClientRect()) + 8;
-  hp.style.transform = `translateX(${axis - centerX(icon.getBoundingClientRect())}px)`;
+  hp.style.transform = `translateX(${(axis - centerX(icon.getBoundingClientRect())) / zoom}px)`;
+}
+
+const bandsZoom = (bands: HTMLElement): number => Number(bands.style.getPropertyValue('zoom')) || 1;
+
+/**
+ * Zooms the site bands out just enough for the diagram's right-most node to clear the badge column, once the
+ * container-relative spacing has tightened as far as it goes; back to 1 whenever it already fits. The natural
+ * extent is measured unzoomed-equivalent, so the result does not feed back into itself.
+ */
+function fitBands(el: HTMLDivElement, base: DOMRect, centerX: CenterX): void {
+  const main = el.querySelector<HTMLElement>('.mc-pathway-main');
+  const bands = el.querySelector<HTMLElement>('.mc-pathway-bands');
+  if (!main || !bands) return;
+  const zoom = bandsZoom(bands);
+  positionPituitary(el, centerX, zoom);
+  positionEnzymes(el, base, centerX, zoom);
+  const left = bands.getBoundingClientRect().left;
+  const parts = bands.querySelectorAll('[data-node], .mc-pathway-caption, .mc-pathway-node-label');
+  const right = Math.max(left, ...[...parts].map((n) => n.getBoundingClientRect().right));
+  const natural = (right - left) / zoom + 8;
+  const next = Math.min(1, main.getBoundingClientRect().width / natural);
+  if (Math.abs(next - zoom) < 0.002) return;
+  if (next === 1) bands.style.removeProperty('zoom');
+  else bands.style.setProperty('zoom', next.toFixed(4));
+  positionPituitary(el, centerX, bandsZoom(bands));
+  positionEnzymes(el, base, centerX, bandsZoom(bands));
 }
 
 /** A trunk line from T down to the androgen receptors, with a spur to DHT when it has a reading. */
@@ -1155,8 +1181,7 @@ function PathwayArrows({ root, active, focused, layoutKey }: Readonly<{ root: Re
     const measure = () => {
       const base = el.getBoundingClientRect();
       const centerX: CenterX = (r) => r.left + r.width / 2 - base.left;
-      positionPituitary(el, centerX);
-      positionEnzymes(el, base, centerX);
+      fitBands(el, base, centerX);
       const bandsBox = el.querySelector('.mc-pathway-bands')?.getBoundingClientRect();
       if (bandsBox) setVeil({ w: bandsBox.right - base.left, h: bandsBox.bottom - base.top });
       setAssociations(buildAssociations(el, base));

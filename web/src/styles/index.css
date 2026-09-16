@@ -461,13 +461,13 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 }
 .mc-pathway-diagram { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .mc-pathway-row {
-  display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 0 24px 52px;
+  display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 0 24px 52px var(--pw-fit-pad);
 }
 .mc-pathway-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; color: #8FA3B5; z-index: 1; }
-.mc-pathway-group { display: flex; align-items: center; gap: 12px; margin-left: 32px; }
-.mc-pathway-enzymes { position: relative; display: flex; align-items: flex-start; gap: 220px; margin-left: 268px; padding-bottom: 96px; }
+.mc-pathway-group { display: flex; align-items: center; gap: var(--pw-fit-group-gap); margin-left: var(--pw-fit-group-indent); }
+.mc-pathway-enzymes { position: relative; display: flex; align-items: flex-start; gap: var(--pw-fit-enzyme-gap); margin-left: 268px; padding-bottom: 96px; }
 .mc-pathway-ar { position: absolute; bottom: 0; left: 0; }
-.mc-pathway-e2blood { margin-left: 53px; }
+.mc-pathway-e2blood { margin-left: var(--pw-fit-e2-indent); }
 .mc-pathway-hp { display: flex; flex: none; position: relative; }
 .mc-pathway-enzyme-col { display: flex; flex-direction: column; align-items: center; gap: 40px; }
 .mc-pathway-enzyme-col .mc-pathway-enzyme { position: relative; }
@@ -534,7 +534,18 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-veil { fill: #f2f7fa; opacity: 0.72; animation: mc-veil-in 0.18s ease-out; }
 @keyframes mc-veil-in { from { opacity: 0; } to { opacity: 0.72; } }
 @keyframes mc-assoc-in { from { opacity: 0; } to { opacity: 0.85; } }
-.mc-pathway-main { flex: 1; min-width: 0; }
+.mc-pathway-main { flex: 1; min-width: 0; container-type: inline-size; }
+/* Horizontal spacing eases from its full value on a 1150px canvas to its minimum at 720px, so the diagram
+   tightens beside the badge column; fitBands zooms the bands only for what spacing alone cannot absorb. */
+.mc-pathway-bands {
+  --pw-fit-pad: clamp(8px, calc(8px + (100cqi - 720px) * 0.0372), 24px);
+  --pw-fit-slot: clamp(80px, calc(80px + (100cqi - 720px) * 0.0372), 96px);
+  --pw-fit-group-indent: clamp(4px, calc(4px + (100cqi - 720px) * 0.0651), 32px);
+  --pw-fit-group-gap: clamp(6px, calc(6px + (100cqi - 720px) * 0.014), 12px);
+  --pw-fit-exchange: clamp(32px, calc(32px + (100cqi - 720px) * 0.0558), 56px);
+  --pw-fit-enzyme-gap: clamp(176px, calc(176px + (100cqi - 720px) * 0.1023), 220px);
+  --pw-fit-e2-indent: clamp(34px, calc(34px + (100cqi - 720px) * 0.0442), 53px);
+}
 .mc-pathway-badges { flex: 0 0 220px; display: flex; flex-direction: column; gap: 10px; }
 .mc-pathway-badge {
   background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 12px;
@@ -583,8 +594,8 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-glyph img { position: absolute; max-width: none; }
 .mc-pathway-feedback { fill: currentColor; font-size: 13px; font-weight: 700; }
 .mc-pathway-row-start { justify-content: flex-start; }
-.mc-pathway-slot { width: 96px; justify-content: center; }
-.mc-pathway-exchange { flex: none; width: 56px; height: 14px; color: var(--navy); }
+.mc-pathway-slot { width: var(--pw-fit-slot); justify-content: center; }
+.mc-pathway-exchange { flex: none; width: var(--pw-fit-exchange); height: 14px; color: var(--navy); }
 .mc-pathway-node { color: var(--navy); display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .mc-pathway-docked { display: flex; align-items: center; }
 .mc-pathway-docked .mc-pathway-bond { margin-left: -6px; width: 64px; }
