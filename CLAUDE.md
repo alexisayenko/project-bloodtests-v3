@@ -1053,7 +1053,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (941 tests across 42 files — 940 passing, 1 skipped — as run on 2026-09-16: index
+Vitest suites in `web/test/` (966 tests across 44 files — 965 passing, 1 skipped — as run on 2026-09-16: index
 golden-masters ported from v2, `cft` and `biot` held to ISSAM's published
 worked example (issam.ch/freetesuit.htm) within 0.05% and cross-checked within
 1% against eight fixtures recorded from its live calculator — the tolerance
@@ -1098,7 +1098,14 @@ explore-model, markers, routing,
 scheduling, month keys, ui helpers, build stamp, format utils, lab pricing and the visit
 plan, medications, the backup archive and its restore, the showcase generator,
 import-results, old-shape stored sessions and the results context, analyte sort,
-the Monitoring Panels status filter; the mobile reveal —
+the Monitoring Panels status filter, both pathway views rendered in jsdom over
+synthetic results (`pathway-views.test.tsx`: zones, particles, badges and the
+illustrative-artwork note, grey dashes with no data, the date stepper, the SI/US
+switch, testosterone shares and the molar-mass select, Artwork/Data modes and
+"composition not sourced", the LDL-C badge's Martin-Hopkins fallback, a badge's
+reference range and Escape) and `pathwayShared.ts`'s pure helpers
+(`pathway-shared.test.ts`), with nothing that needs real layout measurement
+tested; the mobile reveal —
 `TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile` — has none
 yet). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build in a

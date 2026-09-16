@@ -33,7 +33,7 @@ import {
   type Measure,
   type ReferenceInfo,
 } from './pathwayShared';
-import { AssociationLayer, ChipValue, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
+import { ArtworkNote, AssociationLayer, ChipValue, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
 import { ParticleGlyph } from './LipidParticleGlyph';
 import { artworkFor } from './lipidArtwork';
 import { CompositionSection } from './LipidCompositionSection';
@@ -661,11 +661,11 @@ export function LipidTransportView({
           />
         </div>
       </div>
-      <div className="mc-lipid-mode-note">
+      <ArtworkNote>
         {particleMode === 'artwork'
           ? 'Icon fill areas are illustrative; the table below has the sourced shares. Sizes show diameter order, not scale.'
           : 'Yellow and teal areas are the sourced triglyceride and cholesterol mass shares, at the midpoint of the table below; where a share is not sourced, lines ring the whole particle. Sizes show diameter order, not scale.'}
-      </div>
+      </ArtworkNote>
       <div className="mc-pathway-layout" ref={layoutRef}>
         <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}|${particleMode}`} />
         <div className="mc-pathway-main">

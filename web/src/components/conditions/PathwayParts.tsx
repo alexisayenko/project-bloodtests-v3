@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { formatMonthYear } from '../../data/months';
 import { DASH, type Association, type GlyphArt, type Measure, type ReferenceInfo } from './pathwayShared';
 
@@ -156,4 +156,9 @@ export function Glyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string 
       <img src={art.src} alt={alt} style={style} />
     </span>
   );
+}
+
+/** The small muted line saying which pictures on a pathway page are illustration rather than data (ADR-0022). */
+export function ArtworkNote({ children }: Readonly<{ children: ReactNode }>) {
+  return <div className="mc-pathway-art-note">{children}</div>;
 }

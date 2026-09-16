@@ -558,7 +558,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-lipid-chips { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 8px; max-width: 150px; }
 .mc-lipid-chip { display: flex; flex-direction: column; align-items: center; white-space: nowrap; }
 .mc-lipid-none { font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.35; }
-.mc-lipid-mode-note { font-size: 13px; color: var(--text-muted); margin: -4px 0 14px; }
+.mc-pathway-art-note { font-size: 13px; color: var(--text-muted); margin: -4px 0 14px; }
 .mc-lipid-calc { margin-left: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
 .mc-lipid-organ { grid-row: 1; grid-column: 2; justify-self: center; display: flex; flex-direction: column; align-items: center; margin-bottom: 28px; }
 .mc-lipid-liver { position: relative; }

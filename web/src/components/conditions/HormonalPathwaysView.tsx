@@ -34,7 +34,7 @@ import { displayedResult, formatFullDate } from './ui';
 import { hasReference, nearestEntryTo, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
 import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, ENZYME_ART, SIZE, type GlyphArt, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';
-import { AssociationLayer, ChipValue, Glyph, Cites, DateStepper, ReferenceBlock, SourcesBlock } from './PathwayParts';
+import { ArtworkNote, AssociationLayer, ChipValue, Glyph, Cites, DateStepper, ReferenceBlock, SourcesBlock } from './PathwayParts';
 import { SegmentedControl } from '../primitives';
 import {
   BrainPituitaryIcon,
@@ -1248,6 +1248,7 @@ export function HormonalPathwaysView({
           />
         </div>
       </div>
+      <ArtworkNote>The brain and cell images are illustrative.</ArtworkNote>
       <PathwayContext.Provider value={state}>
       <div className="mc-pathway-layout" ref={bandsRef}>
       <PathwayArrows root={bandsRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}|${albuminFallback}|${tMolarMass}`} />

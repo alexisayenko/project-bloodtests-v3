@@ -85,8 +85,10 @@ types, hooks) and `PathwayParts.tsx` (components) in
 - `SIZE` is the default, not a law: Lipid Transport's particle row sizes by
   diameter order instead (`GLYPH_SIZE`, 170 / 142 / 118 / 100 / 100 / 72 px),
   since it exists to compare particles side by side.
-- Nothing tests the shared modules or either view directly yet; the layer's
-  behaviour is checked by using the pages.
+- `pathway-shared.test.ts` covers the shared pure helpers and
+  `pathway-views.test.tsx` renders both views in jsdom over synthetic results;
+  the measured overlay geometry needs real layout, so it is still checked by
+  using the pages.
 
 ## What would force revisiting
 
