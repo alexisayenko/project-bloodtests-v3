@@ -72,6 +72,11 @@ the index.
 | [task-0052](task-0052.md) | Add a normalize toggle to What's-in-range and hoist Unit System above the tab strip | in progress |
 | [task-0053](task-0053.md) | Add medications to the What's-in-range chart | done |
 | [task-0054](task-0054.md) | Fix Panel Detail's What's-in-range chart showing "No plottable markers" on showcase data | to do |
+| [task-0055](task-0055.md) | Decide whether the free-T percentage indices take status from Labcorp's 1.5–3.2 % interval | to do |
+| [task-0056](task-0056.md) | Source the calculated free testosterone 65 / 100 pg/mL cut-offs, or mark them unsourced | to do |
+| [task-0057](task-0057.md) | Reconcile the Hormonal Pathways estradiol feedback arrow with the spec | to do |
+| [task-0058](task-0058.md) | Strengthen the sourcing of the receptor effects in the Hormonal Pathways Effects cards | to do |
+| [task-0059](task-0059.md) | Draw the testosterone and inhibin B feedback arrows on Hormonal Pathways | to do |
 
 Per-concern roll-ups (`C1.md`, …) are described under
 [Rolling reports](#rolling-reports); none exist yet, because
