@@ -571,6 +571,18 @@ Swerdloff 2017 (Endocrine Reviews) for DHT, a single hospital lab standing in
 for the major reference labs that could not be retrieved (open in task-0024);
 Free T, Bio-T and the ratios show `INDEX_DEFS`' male zones and citations, and
 the pools "No reference range (calculated pool)" with a bioavailability note.
+Under each receptor node's label, "Androgen receptors" and "Estrogen receptors",
+a small "Effects ▸" chip (`data-effects`, the same one-open state, Escape and
+outside click) opens a floating card of what that receptor's activation does in
+adult men — its ligands, a bullet list each carrying [n] cites, and a Sources
+footer — read from `web/public/data/pathway-receptor-effects.json` (closed-object
+schema `pathway-receptor-effects-1.schema.json`, loader
+`data/pathwayReceptorEffects.ts` with `receptorById` / `numberedEffects`), every
+effect citing at least one retrieved source with short verbatim `quotes`
+(Finkelstein 2013 NEJM, Handelsman's and Swerdloff & Ng's Endotext chapters,
+Smith & Walker 2014, Rochira & Carani 2009, Hayes 2000 JCEM); the chip sits in
+the node's out-of-flow caption, so the receptor boxes and the arrows landing on
+them do not move.
 The pathway arrows are an SVG overlay measured from the DOM and re-measured by
 a `ResizeObserver` — the brain forking to FSH and LH from its left side at
 mid-height, FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
@@ -986,7 +998,7 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (922 tests across 41 files — 921 passing, 1 skipped — as run on 2026-09-16: index
+Vitest suites in `web/test/` (928 tests across 41 files — 927 passing, 1 skipped — as run on 2026-09-16: index
 golden-masters ported from v2, `cft` and `biot` held to ISSAM's published
 worked example (issam.ch/freetesuit.htm) within 0.05% and cross-checked within
 1% against eight fixtures recorded from its live calculator — the tolerance
@@ -1014,7 +1026,10 @@ recomputed from its formula, agreeing with a cited source within
 `laboratories-1.schema.json`; pathway reference ranges against
 `pathway-reference-ranges-1.schema.json`, plus every source cited and every
 citation resolving, codes catalogued, molar masses tabulated, and each
-population placing on a catalog unit; the Martin-Hopkins LDL table against
+population placing on a catalog unit; pathway receptor effects against
+`pathway-receptor-effects-1.schema.json`, plus both receptor nodes covered,
+every effect citing a source, every citation resolving, every source cited and
+every quote under 25 words; the Martin-Hopkins LDL table against
 `martin-hopkins-ldl-table-1.schema.json`, plus internal consistency of its
 180 cells),
 share-link and shared-meta,

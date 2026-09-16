@@ -486,6 +486,9 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-chip-open:hover { border-color: var(--accent); }
 .mc-pathway-chip-head { display: inline-flex; align-items: center; gap: 5px; }
 .mc-pathway-chip .mc-pathway-dot { width: 6px; height: 6px; }
+.mc-pathway-effects-toggle { margin-top: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; color: var(--accent); }
+.mc-pathway-effects { margin: 2px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+.mc-pathway-effects li { color: var(--text-secondary); }
 .mc-pathway-pop {
   position: absolute; z-index: 5; box-sizing: border-box; background: var(--surface); border: 1px solid var(--accent);
   border-radius: 12px; box-shadow: var(--shadow-pop); padding: 10px 12px; font-size: 12px; line-height: 1.4;

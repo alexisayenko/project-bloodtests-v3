@@ -29,6 +29,7 @@ import {
   rangeStatus,
   rangesInUnit,
 } from '../../data/pathwayReferenceRanges';
+import { numberedEffects, receptorById } from '../../data/pathwayReceptorEffects';
 import type { Result } from '../../types';
 import { fmtNum, isOutOfRange } from '../../utils/format';
 import { panelDates, type Observation } from './markers';
@@ -388,6 +389,10 @@ const CAPTIONS: Readonly<Record<CaptionId, CaptionSpec>> = {
 
 const isCaptionId = (id: string | null): id is CaptionId => id != null && id in CAPTIONS;
 
+const EFFECTS_PREFIX = 'effects-';
+const effectsIdOf = (node: string) => EFFECTS_PREFIX + node;
+const effectsNodeOf = (id: string | null): string | null => (id?.startsWith(EFFECTS_PREFIX) ? id.slice(EFFECTS_PREFIX.length) : null);
+
 interface CitedSource {
   organization: string;
   title: string;
@@ -543,7 +548,7 @@ function SourcesBlock({ scope, info }: Readonly<{ scope: string; info: Reference
 interface PathwayState {
   open: string | null;
   snapshot: Snapshot;
-  toggleCaption: (id: CaptionId, chip: HTMLElement) => void;
+  toggleCaption: (id: string, chip: HTMLElement) => void;
 }
 
 const PathwayContext = createContext<PathwayState | null>(null);
@@ -588,6 +593,33 @@ function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ i
       {spec.note && <p className="mc-pathway-pop-note">{spec.note}</p>}
       <ReferenceBlock scope={scope} info={info} />
       <SourcesBlock scope={scope} info={info} />
+    </dialog>
+  );
+}
+
+function EffectsCard({ node, left, top }: Readonly<{ node: string; left: number; top: number }>) {
+  const receptor = receptorById(node);
+  if (!receptor) return null;
+  const { effects, sources } = numberedEffects(receptor);
+  const scope = `pathway-${effectsIdOf(node)}`;
+  return (
+    <dialog open className="mc-pathway-pop" aria-label={`${receptor.name}: effects`} style={{ left, top, width: CARD_WIDTH, margin: 0 }}>
+      <div className="mc-pathway-pop-title">{receptor.name}</div>
+      <div className="mc-pathway-pop-facts">
+        <span><b>Activated by</b> {receptor.ligands.join(', ')}</span>
+      </div>
+      <div className="mc-pathway-ref">
+        <div className="mc-pathway-ref-head"><b>Effects in adult men</b></div>
+        <ul className="mc-pathway-effects">
+          {effects.map((e) => (
+            <li key={e.id}>
+              {e.text}
+              <Cites scope={scope} cites={e.cites} />
+            </li>
+          ))}
+        </ul>
+      </div>
+      <SourcesBlock scope={scope} info={{ headCites: [], lines: [], sources }} />
     </dialog>
   );
 }
@@ -694,11 +726,26 @@ function Enzyme({
 }
 
 function Receptor({ label, node }: Readonly<{ label: string; node: string }>) {
+  const state = useContext(PathwayContext);
+  const id = effectsIdOf(node);
+  const expanded = state?.open === id;
   return (
     <div className="mc-pathway-anchor mc-pathway-node" data-node={node}>
       <Glyph art={RECEPTOR_ART} />
       <div className="mc-pathway-caption">
         <span className="mc-pathway-node-label">{label}</span>
+        {state && receptorById(node) && (
+          <button
+            type="button"
+            className={expanded ? 'mc-pathway-chip mc-pathway-effects-toggle mc-pathway-chip-open' : 'mc-pathway-chip mc-pathway-effects-toggle'}
+            data-effects={id}
+            aria-expanded={expanded}
+            aria-label={`${label}: effects`}
+            onClick={(e) => state.toggleCaption(id, e.currentTarget)}
+          >
+            Effects {expanded ? '▾' : '▸'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1507,7 +1554,7 @@ export function HormonalPathwaysView({
   }, []);
 
   const toggleCaption = useCallback(
-    (id: CaptionId, chip: HTMLElement) => {
+    (id: string, chip: HTMLElement) => {
       if (open === id) {
         setOpen(null);
         return;
@@ -1521,14 +1568,14 @@ export function HormonalPathwaysView({
   useEffect(() => {
     if (open === null) return;
     const onPointer = (e: PointerEvent) => {
-      if (e.target instanceof Element && e.target.closest('.mc-pathway-pop, [data-caption], [data-badge]')) return;
+      if (e.target instanceof Element && e.target.closest('.mc-pathway-pop, [data-caption], [data-badge], [data-effects]')) return;
       setOpen(null);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(null);
     };
     const onResize = () => {
-      const chip = bandsRef.current?.querySelector(`[data-caption="${open}"]`);
+      const chip = bandsRef.current?.querySelector(`[data-caption="${open}"], [data-effects="${open}"]`);
       if (chip) setCardAt(placeCard(chip));
     };
     document.addEventListener('pointerdown', onPointer);
@@ -1541,7 +1588,8 @@ export function HormonalPathwaysView({
     };
   }, [open, placeCard]);
 
-  const badgeOpen = isCaptionId(open) ? null : open;
+  const effectsNode = effectsNodeOf(open);
+  const badgeOpen = isCaptionId(open) || effectsNode ? null : open;
   const state = useMemo<PathwayState>(() => ({ open, snapshot, toggleCaption }), [open, snapshot, toggleCaption]);
   return (
     <div>
@@ -1615,6 +1663,7 @@ export function HormonalPathwaysView({
       {isCaptionId(open) && cardAt && (
         <CaptionCard id={open} left={cardAt.left} top={cardAt.top} snapshot={snapshot} date={date} unitSystem={unitSystem} />
       )}
+      {effectsNode && cardAt && <EffectsCard node={effectsNode} left={cardAt.left} top={cardAt.top} />}
       </div>
       </PathwayContext.Provider>
     </div>

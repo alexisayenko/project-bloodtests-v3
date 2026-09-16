@@ -28,7 +28,9 @@
 > chips with status dots; a chip or badge expands in place to a reference
 > range — the lab's own when printed, else the cited, adult-male ranges of
 > `pathway-reference-ranges.json`, `INDEX_DEFS`' zones for indices, none for
-> the calculated pools. No `pathways.json` yet — the wiring is hand-coded in
+> the calculated pools. Each receptor node carries a compact "Effects ▸"
+> chip opening a card of what its activation does in adult men, every bullet
+> citing [n] sources from `pathway-receptor-effects.json`. No `pathways.json` yet — the wiring is hand-coded in
 > the component — and of the feedback arrows only that one E2 → brain arrow.
 > Where the
 > build departs from what follows (zones, not bands, their captions turned 90°
@@ -80,7 +82,7 @@ Only two cells are ever seen, as **small text on their arrow**: "Leydig cells" o
 
 ### Signal
 
-A molecule that carries information along the axis: T, E2, DHT, cortisol, GnRH, Kp, LH, FSH, prolactin, inhibin B. It is raised by the signal upstream, made by a conversion, or enters as a side input (cortisol, prolactin); every arrow that changes it lands on it. Where it comes from, and for T, DHT and E2 the target-cell receptor each acts on, is hover text. **DHT and E2 are end nodes**: no arrow draws their action on target cells.
+A molecule that carries information along the axis: T, E2, DHT, cortisol, GnRH, Kp, LH, FSH, prolactin, inhibin B. It is raised by the signal upstream, made by a conversion, or enters as a side input (cortisol, prolactin); every arrow that changes it lands on it. Where it comes from, and for T, DHT and E2 the target-cell receptor each acts on, is hover text. **DHT and E2 end at the receptors**: DHT's arrow lands on the androgen receptors and E2's path, through blood E2, on the estrogen receptors; no further arrow leaves either receptor. What each receptor's activation does in adult men is an **Effects** card under it instead — a short list, every effect citing its sources, read from `pathway-receptor-effects.json`.
 
 The central T in Blood transport is the free pool: labeled "T", it carries **no amount** — the Free T badge shows it.
 
