@@ -35,6 +35,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) | Supabase (self-hosted, then managed cloud) replaces the bearer-token server; real accounts/OAuth return | accepted · 2026-09-13 · supersedes 0015 · superseded by 0018 |
 | [ADR-0018](adr-0018-firebase-storage-provisional.md) | Firebase (Auth + Firestore) replaces the Supabase plan, provisionally | accepted · 2026-09-13 · supersedes 0017 · superseded by 0019 |
 | [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) | Self-hosted Supabase replaces Firebase for cloud sync | accepted · 2026-09-14 · supersedes 0018 |
+| [ADR-0020](adr-0020-constants-from-cited-data-calculators-are-cross-checks.md) | Physical constants come from cited reference data; external calculators are cross-checks, not gold standards | accepted · 2026-09-16 |
 
 ## Where each one bites
 
@@ -56,7 +57,14 @@ Each record opens with `# ADR-NNNN: <title>` and a
   concepts. 0011 applies the same rule to mass↔molar arithmetic —
   `web/public/data/molar-masses.json`, derived in
   `web/src/data/molarMasses.ts`; see
-  [`../molar-masses.md`](../molar-masses.md).
+  [`../molar-masses.md`](../molar-masses.md). 0020 holds that line
+  against outside tools: issam.ch's free-testosterone calculator converts
+  T at ~280 g/mol, and the app keeps 288.431, anchors its tests on
+  ISSAM's published worked example exactly and on the live calculator at
+  a 1% tolerance whose cause is written down, and allows the other mass
+  only as the Hormonal Pathways page's labelled, unpersisted cross-check
+  select; see the [computed index](../../product/concepts/computed-index.md)
+  concept and [task-0047](../../tasks/task-0047.md).
 - **Relations between markers** — 0005, still unbuilt; see the
   [companion observation](../../product/concepts/companion-observation.md)
   concept and [task-0010](../../tasks/task-0010.md).

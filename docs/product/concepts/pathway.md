@@ -4,23 +4,33 @@
 > ([task-0024](../../tasks/task-0024.md),
 > [ADR-0014](../../tech/decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
 > `HormonalPathwaysView.tsx` draws four captioned zones on one canvas —
-> Hypothalamus + Pituitary (empty so far), Blood Transport, Testes, Target
-> tissues — with pathway arrows measured from the DOM and, as of 2026-09-12,
-> ten clickable badges (Total T, Bioavailable T, the measured Free
-> Testosterone, cFT (Vermeulen), three `unavailable` cFT variants — Ly &
-> Handelsman, Sartorius, Zakharov — that render "Not available" rather than a
-> value, then T/LH, DHT/T, T/E2), now on the user's own readings: a ‹ date › stepper over the Hypogonadism
+> Brain (a hypothalamus–pituitary image, `brain-pituitary.png`, with forked
+> arrows to FSH and LH), Blood Transport, Testes, Target
+> tissues — with pathway arrows measured from the DOM and, as of 2026-09-16,
+> a testosterone pools donut (SHBG-T, Albumin-T, Free T, with callouts) atop
+> six clickable badges (Total T, Bioavailable T, one merged Free Testosterone
+> — its face cFT (Vermeulen), expanded into Measured (LOINC `2991-8`, with the
+> lab's range) and Calculated (Vermeulen and Ly & Handelsman, their identical
+> zones shown once, plus Labcorp's 1.5–3.2 % adult male range) — then T/LH,
+> DHT/T, T/E2), now on the user's own readings: a ‹ date › stepper over the Hypogonadism
 > panel's results-table dates (latest by default), values in the SI/US unit
-> system, indices from `INDEX_DEFS`, the bound pools from `testosteronePools`,
-> and an albumin default of 4.3 g/dL behind a checkbox. Node captions are
+> system through a toggle bound to the shell's persisted setting, each
+> testosterone fraction also shown as % of total T, the Vermeulen values and
+> bound pools from `testosteronePools`, the other indices from `INDEX_DEFS`,
+> and, when a draw has no albumin, a select choosing no fallback, the nearest
+> measured albumin, or 4.3 g/dL (the default). That row of selects under the
+> diagram also carries "Testosterone molar mass" — 288.4 g/mol
+> (PubChem), the default, or 280 g/mol (issam.ch calculator) — which re-solves
+> only this page's Vermeulen values, unpersisted, as a labelled cross-check
+> aid ([ADR-0020](../../tech/decisions/adr-0020-constants-from-cited-data-calculators-are-cross-checks.md)). Node captions are
 > chips with status dots; a chip or badge expands in place to a reference
 > range — the lab's own when printed, else the cited, adult-male ranges of
 > `pathway-reference-ranges.json`, `INDEX_DEFS`' zones for indices, none for
 > the calculated pools. No `pathways.json` or feedback arrows yet. Where the
 > build departs from what follows (zones, not bands; badges in one column;
 > association lines hidden at rest; cells and receptors drawn; a date stepper
-> rather than a month stepper; a default albumin; ten badges rather than six,
-> an expanded badge overlaying rather than pushing down its neighbors, and the
+> rather than a month stepper; a default albumin; a merged Free Testosterone
+> badge and a pools donut, an expanded badge overlaying rather than pushing down its neighbors, and the
 > enzyme and receptor icons drawn as shared PNG artwork — `enzyme-icon.png`,
 > `receptor-icon.png` — rather than hand-drawn per-role SVG), task-0024's
 > status note records it. No protein on the page renders a real structure
@@ -47,7 +57,7 @@ Drawn: bands, signals, carriers, enzymes, badges and lines. **Not drawn**: cells
 
 ### Band
 
-An organ, drawn as a zone of one canvas and named by a small uppercase caption at its top left, its description on hover: Hypothalamus + Pituitary, Blood Transport, Testes, Target tissues. Blood Transport is a compartment rather than an organ, drawn as a zone alike. (The spec's five horizontal bands became these four zones in the first build.)
+An organ, drawn as a zone of one canvas and named by a small uppercase caption at its top left, its description on hover: Brain (hypothalamus and pituitary), Blood Transport, Testes, Target tissues. Blood Transport is a compartment rather than an organ, drawn as a zone alike. (The spec's five horizontal bands became these four zones in the first build.)
 
 **Where an arrow acts is data, not drawing.** Each arrow keeps its site as organ → region/tissue → cell → receptor, shown as its hover text — "T acts on Kp neurons in the arcuate nucleus via the androgen receptor":
 
@@ -77,7 +87,7 @@ A converter: aromatase (T → E2), 5α-reductase (T → DHT), drawn as a node on
 
 ## Badges
 
-Badges are descriptive — they report a value, they do not make a diagnosis. They sit in one column on the right, in the order Total T, Free T, Bioavailable T, T/LH, DHT/T, T/E2, with no group headings. Two kinds:
+Badges are descriptive — they report a value, they do not make a diagnosis. They sit in one column on the right, under a testosterone pools donut, in the order Total T, Bioavailable T, Free Testosterone, T/LH, DHT/T, T/E2, with no group headings; Free Testosterone is one badge for every free-T value — measured (`2991-8`) and calculated by Vermeulen and by Ly & Handelsman — its face the Vermeulen figure, and every testosterone fraction also shows its % of total T. Two kinds:
 
 - **Measures** of pools — Total T, Free T, Bioavailable T — each joined to the T bubbles it sums.
 - **Ratios** of processes, each tied to what it reads:

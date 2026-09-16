@@ -274,7 +274,19 @@ set" as the popup's Ref, and "sex not set" in What's in range's not-taken list r
 plotted against some band; the Reference Book, having no profile, names both
 ("men > … · women < …"). The bands are Mayo Clinic Laboratories' TTBS reference
 limits converted from ng/dL; `birthYear` is not read, so the men's borderline
-band is the span Mayo calls low at 20–29 but normal at 60–69 (task-0004). A
+band is the span Mayo calls low at 20–29 but normal at 60–69 (task-0004).
+Hypogonadism also carries four testosterone shares of total, all `%` and
+deliberately band-less (no `cut`, no `bandsBySex`, so never a status): `cftpct`
+and `cftlhpct` (calculated free T by Vermeulen / Ly & Handelsman), `ftpct`
+(LOINC `15432-8`, from measured free T — `MARKER_LOINC`'s `FT`, `2991-8`,
+converting pg/mL and ng/dL ↔ pmol/L through derived factors) and `biotpct`
+(`6891-6`); Labcorp's 1.5–3.2 % adult male interval belongs to equilibrium
+dialysis and is a single interval where a band needs a borderline, so it is
+quoted in their prose only. `TESTOSTERONE_MOLAR_MASS` (`molarMassOf`) is
+exported beside `testosteronePools`, whose optional `solveMolarMass` exists
+only for the Hormonal Pathways cross-check select — issam.ch's calculator
+solves at ~280 g/mol, which the app documents as a deviation rather than
+adopting (ADR-0020, task-0047). A
 citation may carry an optional ISO `retrieved` date, shown in the Reference
 Book as "· retrieved <date>". An index
 reads its inputs through `MARKER_CANDIDATE_LOINCS`, which expands
@@ -504,17 +516,29 @@ validation errors exist, like Monitoring Panels: task-0024's first version in
 `HormonalPathwaysView.tsx`, under a `PageHeader` with overline
 "Endocrinology", title "Hormonal Pathways" and "Biochemical pathways of
 hormones" — one canvas of four zones, each captioned by small uppercase text at
-its top left with its description on hover: Brain (empty so
-far); Blood Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
+its top left with its description on hover: Brain (a hypothalamus–pituitary
+image, `web/public/pathways/brain-pituitary.png`, generated in ChatGPT by Alex,
+forking arrows to FSH and LH); Blood Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
 with albumin-bound T docked, E2); Testes (Sertoli and Leydig cells); Target
 tissues (5α-reductase → DHT, aromatase → E2, androgen and estrogen receptors).
 Values are the user's: the shell passes the loaded reports, the Hypogonadism
-panel's observations and the unit system, and a ‹ date › stepper lists exactly
+panel's observations and its persisted `unitSystem` with its setter, and a
+‹ date › stepper lists exactly
 that panel's results-table dates — `markers.ts`'s `panelDates`, shared with
-`PanelDetailView` — defaulting to the latest, the readings shown in SI/US;
-Free T, Bio-T, T/LH, DHT/T and T/E2 come from `computeIndex` over
-`INDEX_DEFS`, and the SHBG-bound and albumin-bound pools from `indexDefs.ts`'s
-`testosteronePools`. A single select in `HormonalPathwaysView.tsx` — not a
+`PanelDetailView` — defaulting to the latest, the readings shown in SI/US
+through an SI / US `SegmentedControl` beside it that changes the shell's
+setting; cFT (Vermeulen), Bio-T and the SHBG-bound and albumin-bound pools
+come from one `indexDefs.ts` `testosteronePools` solve, cFT (Ly & Handelsman),
+T/LH, DHT/T and T/E2 from `computeIndex` over `INDEX_DEFS`, and measured free
+T (`2991-8`) from the reports, every testosterone fraction also showing its
+molar % of total T on its chip or badge. Under the diagram sits a row of
+calculation selects: the albumin fallback below, and "Testosterone molar mass"
+— "288.4 g/mol (PubChem)", the `TESTOSTERONE_MOLAR_MASS` default, or "280 g/mol
+(issam.ch calculator)" — passed as `testosteronePools`' optional
+`solveMolarMass`, which rescales only the total T fed to the quadratic, so it
+moves only this page's Vermeulen values; unpersisted `useState`, a labelled
+aid for reproducing issam.ch's figures, never a constant anywhere else
+(ADR-0020). A single select in `HormonalPathwaysView.tsx` — not a
 checkbox — offers three mutually-exclusive fallbacks for a selected date with
 no same-draw albumin reading: "Don't use a fallback" (no albumin, as the old
 unchecked state), "Use the nearest measured albumin" (the numeric reading
@@ -545,7 +569,7 @@ for the major reference labs that could not be retrieved (open in task-0024);
 Free T, Bio-T and the ratios show `INDEX_DEFS`' male zones and citations, and
 the pools "No reference range (calculated pool)" with a bioavailability note.
 The pathway arrows are an SVG overlay measured from the DOM and re-measured by
-a `ResizeObserver` — FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
+a `ResizeObserver` — the pituitary forking to FSH and LH, FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
 enzymes and down to the androgen receptors, enzymes → products,
 DHT → androgen receptors, E2 → blood E2 → estrogen receptors — thin pale
 strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon` (T, E2,
@@ -566,11 +590,17 @@ credit line) until task-0024 replaced them in two passes — first aromatase and
 nodes used before, along with them. FSH's real structure (PDB 1XWD) lives on
 only in the unrelated Reference Book FSH page (`#reference/fsh`, under
 `web/public/reference/fsh/`, untouched by this).
-A column of eight badges on the right, in order — Total
-Testosterone, Bioavailable Testosterone, Free Testosterone (the measured
-value, LOINC `2991-8`), cFT (Vermeulen) (the calculated value, formerly plain
-"Free Testosterone"), cFT (Ly & Handelsman) (a real computed value, its own
-empirical regression on total T and SHBG), T/LH, DHT/T, T/E2 — each
+A column on the right opens with a "Testosterone pools" donut card — SHBG-T,
+Albumin-T and Free T (Vermeulen) as shares of total T, with callout labels, the
+free sliver widened to a visible minimum, "Bio-T = Albumin-T + Free T" beneath —
+over six badges, in order — Total Testosterone, Bioavailable Testosterone, Free
+Testosterone, T/LH, DHT/T, T/E2. Free Testosterone is one merged badge (it
+replaced separate measured, cFT (Vermeulen) and cFT (Ly & Handelsman) badges):
+its face is cFT (Vermeulen); expanded, a Measured section (the `2991-8`
+reading, its lab range) and a Calculated one (cFT Vermeulen and Ly & Handelsman,
+their zones shown once when identical, plus Labcorp's 1.5–3.2 % adult male
+range), one merged Meaning / Low / High / Caveats, and sources trimmed to
+Bhasin 2018, Vermeulen 1999, Ly & Handelsman 2005 and Labcorp. Each badge
 expands on click, an open badge overlaying 150% width over the canvas and,
 absolutely positioned, over the badges below it in the column rather than
 pushing them down: Reference range now leads, then Meaning (rewritten
@@ -943,8 +973,14 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 ## Quality
 
 Vitest suites in `web/test/` (922 tests across 41 files — 921 passing, 1 skipped — as run on 2026-09-16: index
-golden-masters ported from v2, `cft` and `biot` cross-checked within 1% against
-eight fixtures recorded from the ISSAM calculator (issam.ch), bioavailable testosterone and sex-dependent index
+golden-masters ported from v2, `cft` and `biot` held to ISSAM's published
+worked example (issam.ch/freetesuit.htm) within 0.05% and cross-checked within
+1% against eight fixtures recorded from its live calculator — the tolerance
+being that calculator's known deviation, T converted at ~280 g/mol and albumin
+at a rounded 1.45e-4 mol/L per g/dL against the app's 288.431 and 1/6900
+(ADR-0020; reported to ISSAM 2026-09-16) — plus `testosteronePools`' 280 g/mol
+solve and the four band-less testosterone % indices (`cftpct`, `ftpct`,
+`cftlhpct`, `biotpct`), bioavailable testosterone and sex-dependent index
 bands, calculated free testosterone (Ly & Handelsman) and Martin-Hopkins LDL-C
 golden-masters, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
@@ -1015,7 +1051,8 @@ weekly npm (minor+patch grouped) and github-actions bumps.
   pathway (planned), unit (printed and canonical are a pair: `rawUnit` and
   `unit`)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
-  (fourteen records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
-  ADR-0012 and ADR-0013 2026-09-09, ADR-0014 2026-09-11)
+  (twenty records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
+  ADR-0012 and ADR-0013 2026-09-09, ADR-0014 2026-09-11, ADR-0015 2026-09-12,
+  ADR-0016–0018 2026-09-13, ADR-0019 2026-09-14, ADR-0020 2026-09-16)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
   envelope spec, and its published JSON Schema
