@@ -306,13 +306,14 @@ function snapshotOf(
   return snapshot;
 }
 
-/** Glyph sizes follow biological scale — molecule < protein < cell < organ — each the drawn size, whatever padding the artwork carries. */
-const SIZE = { molecule: 16, protein: 32, cell: 64, organ: 128 } as const;
-/** Signal molecules match the testosterone docked in a carrier's bubble. */
-const SIGNAL_SIZE = SIZE.molecule;
-const BUBBLE_SIZE = SIGNAL_SIZE * 1.5;
-/** CarrierIcon's drawing spans ~42.6 of its 48-unit viewBox, so its box is enlarged to bring the drawing itself to protein size. */
-const CARRIER_SIZE = Math.round((SIZE.protein * 48) / 42.6);
+/** Glyph sizes encode level of organisation — molecular actor < cell < organ — each the drawn size, whatever padding the artwork carries. */
+const SIZE = { molecular: 32, cell: 64, organ: 128 } as const;
+const SIGNAL_SIZE = SIZE.molecular;
+/** A bound-T bubble is itself a molecular actor; the testosterone docked inside it is scaled to fit. */
+const BUBBLE_SIZE = SIZE.molecular;
+const DOCKED_SIZE = Math.round(BUBBLE_SIZE / 1.5);
+/** CarrierIcon's drawing spans ~42.6 of its 48-unit viewBox, so its box is enlarged to bring the drawing itself to molecular-actor size. */
+const CARRIER_SIZE = Math.round((SIZE.molecular * 48) / 42.6);
 
 /** A raster glyph, its drawn content's bounding box in the file's own pixels, and the size that content is shown at. */
 interface GlyphArt {
@@ -323,8 +324,8 @@ interface GlyphArt {
   size: number;
 }
 
-const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.protein };
-const RECEPTOR_ART: GlyphArt = { src: '/pathways/receptor-icon.png?v=2', width: 96, height: 96, box: [20, 23, 76, 74], size: SIZE.protein };
+const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.molecular };
+const RECEPTOR_ART: GlyphArt = { src: '/pathways/receptor-icon.png?v=2', width: 96, height: 96, box: [20, 23, 76, 74], size: SIZE.molecular };
 const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
 const BRAIN_ART: GlyphArt = { src: '/pathways/brain-pituitary.png?v=2', width: 256, height: 233, box: [5, 5, 251, 228], size: SIZE.organ };
 
@@ -607,7 +608,7 @@ function Carrier({ carrier }: Readonly<{ carrier: DockedCarrier }>) {
   const bound = (
     <div className="mc-pathway-anchor" style={{ height: CARRIER_SIZE, alignItems: 'center' }} data-node={carrier.bound}>
       <span className="mc-pathway-bubble" style={{ width: BUBBLE_SIZE, height: BUBBLE_SIZE }}>
-        <HormoneIcon size={SIGNAL_SIZE} />
+        <HormoneIcon size={DOCKED_SIZE} />
       </span>
       <Caption id={carrier.bound} />
     </div>

@@ -127,7 +127,7 @@ Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Al
 
 The carrier and the cells must stay visually distinct: a dense filled cluster against a few separate outlined circles with nuclei. A detailed steroid is angular fused rings, three hexagons and one pentagon. Badge groups carry no icon, and there is no receptor icon.
 
-**Glyph size follows biological scale** (Alex, 2026-09-16) — an ordinal hierarchy, not proportional, since real sizes span ~10⁶: molecule < protein < cell/tissue < organ, doubling per step. Molecules (T, both E2, DHT, FSH, LH, and the T docked in the SHBG-bound and albumin-bound bubbles) 16px; proteins (SHBG, albumin, aromatase, 5α-reductase, the androgen and estrogen receptors) 32px; cells (Sertoli, Leydig) 64px; organs (the brain image) 128px. Glyphs sit bare, with no tile or frame, and a new node takes the size of its kind.
+**Glyph size encodes level of organisation, not molecular mass** (Alex, 2026-09-16) — consistent with node kinds being roles, not chemistry — as an ordinal hierarchy doubling per step: molecular actors (the signals T, DHT, both E2, FSH and LH; the carriers SHBG and albumin; the enzymes; the receptors; and the SHBG-bound and albumin-bound T circles, the T docked inside each scaled to fit) 32px; cells (Sertoli, Leydig) 64px; organs (the brain image) 128px. Glyphs sit bare, with no tile or frame, and a new node takes the size of its level.
 
 ## Notation
 
