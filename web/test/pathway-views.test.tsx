@@ -193,17 +193,12 @@ const LIPID_RESULTS: ResultEntry[] = [
 ];
 
 describe('LipidTransportView', () => {
-  it('renders particles, badges and the illustrative note with grey dashes when there is no data', async () => {
+  it('renders the liver, badges and the illustrative note with grey dashes when there is no data', async () => {
     const el = await mount(LipidTransportView, [], CARDIO_TESTS);
-    const particles = [...el.querySelectorAll('.mc-lipid-particle figcaption')].map((f) => f.textContent);
-    expect(particles).toEqual(['Chylomicron', 'VLDL', 'IDL', 'LDL', 'Lp(a)', 'HDL']);
+    expect(el.querySelector('[data-node="liver"]')).not.toBeNull();
     expect(el.querySelectorAll('[data-badge]')).toHaveLength(10);
     expect([...el.querySelectorAll('.mc-pathway-badge-value')].every((v) => v.textContent === '–')).toBe(true);
     expect(q(el, '.mc-pathway-art-note').textContent).toMatch(/illustrative/);
-    for (const id of ['ldl-c', 'hdl-c', 'apoa1', 'lpa-mass', 'apob-particles']) {
-      expect(chipValue(el, id)).toBe('–');
-      expect(el.querySelector(`[data-caption="${id}"] .mc-pathway-dot-none`)).not.toBeNull();
-    }
   });
 
   it('steps through the panel dates, defaulting to the latest', async () => {
@@ -213,23 +208,24 @@ describe('LipidTransportView', () => {
     expect(q(el, '.mc-pathway-stepper-label').textContent).toBe(formatMonthYear(LIPID_EARLIER));
   });
 
-  it('shows a chip in SI and switches its unit when the unit system changes', async () => {
+  it('shows a badge value in SI and switches its unit when the unit system changes', async () => {
     const el = await mount(LipidTransportView, LIPID_RESULTS, CARDIO_TESTS);
-    expect(chipValue(el, 'hdl-c')).toMatch(/mmol\/L/);
+    const value = () => q(el, '[data-badge="tc"] .mc-pathway-badge-value').textContent ?? '';
+    expect(value()).toMatch(/mmol\/L/);
     await click(buttonNamed(el, 'US'));
-    expect(chipValue(el, 'hdl-c')).toBe('50 mg/dL');
+    expect(value()).toBe('200 mg/dL');
   });
 
-  it('switches between artwork and data particles, naming unsourced compositions in data mode', async () => {
-    const el = await mount(LipidTransportView, LIPID_RESULTS, CARDIO_TESTS);
-    const unsourced = () => [...el.querySelectorAll('.mc-lipid-particle')].filter((p) => p.textContent?.includes('composition not sourced'));
-    expect(el.querySelectorAll('.mc-lipid-art')).toHaveLength(6);
-    expect(unsourced()).toHaveLength(0);
-    await click(buttonNamed(el, 'Data'));
-    expect(el.querySelectorAll('.mc-lipid-art')).toHaveLength(0);
-    expect(unsourced().map((p) => p.querySelector('figcaption')?.textContent)).toEqual(['IDL', 'Lp(a)']);
-    await click(buttonNamed(el, 'Artwork'));
-    expect(el.querySelectorAll('.mc-lipid-art')).toHaveLength(6);
+  it('renders VLDL as a holder apoprotein carrying its two cargo chips, cholesterol drawn larger than triglyceride', async () => {
+    const el = await mount(LipidTransportView, [], CARDIO_TESTS);
+    const diagram = q(el, '[data-node="vldl"]');
+    const labels = [...diagram.querySelectorAll('.mc-pathway-node-label')].map((l) => l.textContent);
+    expect(labels).toEqual(['TRIG', 'ApoB-100', 'Chol', 'VLDL']);
+    const bubbles = diagram.querySelectorAll('.mc-pathway-bubble');
+    expect(bubbles).toHaveLength(2);
+    const trigWidth = Number(bubbles[0].querySelector('svg')!.getAttribute('width'));
+    const cholWidth = Number(bubbles[1].querySelector('svg')!.getAttribute('width'));
+    expect(cholWidth).toBeGreaterThan(trigWidth);
   });
 
   it('falls back to Martin-Hopkins on the LDL-C badge when the lab reported no LDL-C', async () => {
@@ -238,7 +234,6 @@ describe('LipidTransportView', () => {
     const value = q(el, '[data-badge="ldl"] .mc-pathway-badge-value');
     expect(value.querySelector('.mc-lipid-calc')).not.toBeNull();
     expect(value.textContent).toMatch(/^\d+(\.\d+)? mg\/dL/);
-    expect(chipValue(el, 'ldl-c')).toBe('–');
   });
 
   it('expands a badge to its reference range and closes it on Escape', async () => {

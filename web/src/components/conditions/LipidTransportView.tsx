@@ -1,24 +1,22 @@
-import { useCallback, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { PageHeader } from './PageHeader';
+import { CarrierIcon, CholesterolIcon, TriglycerideIcon } from './customIcons';
 import { SegmentedControl } from '../primitives';
-import { LIPOPROTEIN_PARTICLES, shareRange, type LipoproteinParticle } from '../../data/lipoproteinParticles';
+import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
 import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { convertConcentration } from '../../data/pathwayReferenceRanges';
 import type { Result } from '../../types';
 import { fmtNum, isOutOfRange } from '../../utils/format';
 import { panelDates, type Observation } from './markers';
-import { formatFullDate } from './ui';
 import { hasReference, type ResultEntry } from './resultsLookup';
 import {
   CARD_WIDTH,
-  DASH,
   ENZYME_ART,
   SIZE,
   EMPTY,
   NO_REFERENCE,
   associationFor,
-  ringsFor,
   combinedZones,
   keepSources,
   labReference,
@@ -30,24 +28,17 @@ import {
   zoneReference,
   type Association,
   type CitedSource,
+  type GlyphArt,
   type Measure,
   type ReferenceInfo,
 } from './pathwayShared';
-import { ArtworkNote, AssociationLayer, ChipValue, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
-import { ParticleGlyph } from './LipidParticleGlyph';
-import { artworkFor } from './lipidArtwork';
+import { ArtworkNote, AssociationLayer, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
 import { CompositionSection } from './LipidCompositionSection';
 
 type UnitSystem = 'si' | 'us';
 
 /** The monitoring panel whose results-table dates this page steps through. */
 const PANEL_NAME = 'Cardiovascular Risk';
-
-/** Alex's supplied artwork (areas illustrative) or the glyph drawn from the sourced shares. */
-const PARTICLE_MODES = ['artwork', 'data'] as const;
-type ParticleMode = (typeof PARTICLE_MODES)[number];
-
-const hasSourcedShares = (p: LipoproteinParticle) => Boolean(shareRange(p, 'triglyceride') || shareRange(p, 'cholesterol'));
 
 // ---- measures ----
 
@@ -146,39 +137,11 @@ function CalcTag() {
   return <span className="mc-lipid-calc">calc</span>;
 }
 
-// ---- particle chips ----
-
-interface ChipSpec {
-  id: string;
-  label: string;
-  title: string;
-  measure: MarkerSpec | IndexSpec;
-  /** The lab's own reading, shown instead of `measure` whenever the draw has one. */
-  preferMarker?: MarkerSpec;
-  note?: string;
-  meaning?: string;
-  sources?: readonly CitedSource[];
-  /** The particle regions its association rings mark. */
-  targets: readonly string[];
-}
-
-const PARTICLE_CHIPS: Readonly<Record<string, readonly ChipSpec[]>> = {
-  chylomicron: [],
-  vldl: [{ id: 'vldl-c', label: 'VLDL-C', title: 'VLDL cholesterol', measure: idx('vldl'), preferMarker: MARKERS.VLDL, targets: ['vldl-chol'] }],
-  idl: [],
-  ldl: [{ id: 'ldl-c', label: 'LDL-C', title: 'LDL cholesterol', measure: MARKERS.LDL, targets: ['ldl-chol'] }],
-  lpa: [{ id: 'lpa-mass', label: 'Lp(a)', title: 'Lipoprotein(a)', measure: MARKERS.LPA, targets: ['lpa-apoa'] }],
-  hdl: [
-    { id: 'hdl-c', label: 'HDL-C', title: 'HDL cholesterol', measure: MARKERS.HDL, targets: ['hdl-chol'] },
-    { id: 'apoa1', label: 'ApoA-I', title: 'Apolipoprotein A-I', measure: MARKERS.APOA1, targets: ['hdl-apo'] },
-  ],
-};
+// ---- badges ----
 
 const regions = (region: string, particles: readonly string[]) => particles.map((p) => `${p}-${region}`);
 const ALL_PARTICLES = LIPOPROTEIN_PARTICLES.map((p) => p.id);
 const APOB_PILLS = regions('apo', ['vldl', 'idl', 'ldl', 'lpa']);
-
-const APOB_NOTE = 'One ApoB-100 per VLDL, IDL, LDL and Lp(a) particle.';
 
 const APOB_MEANING =
   'Each VLDL, IDL, LDL and Lp(a) particle carries exactly one ApoB-100, so ApoB counts atherogenic particles, while LDL-C measures their cholesterol cargo. When they disagree — e.g. many small, cholesterol-poor LDL particles — ApoB tracks risk more accurately.';
@@ -198,92 +161,6 @@ const APOB_SOURCES: readonly CitedSource[] = [
 function withSources(info: ReferenceInfo, sources: readonly CitedSource[] = []): { info: ReferenceInfo; cites: number[] } {
   return { info: { ...info, sources: [...info.sources, ...sources] }, cites: sources.map((_, i) => info.sources.length + i + 1) };
 }
-
-/** Spans the four ApoB-100 particles rather than sitting under one of them. */
-const APOB_CHIP: ChipSpec = { id: 'apob-particles', label: 'ApoB', title: 'Apolipoprotein B', measure: MARKERS.APOB, note: APOB_NOTE, meaning: APOB_MEANING, sources: APOB_SOURCES, targets: APOB_PILLS };
-
-const NO_CHIP_NOTE: Readonly<Record<string, string>> = {
-  chylomicron: 'No routine measure; adds to TG when not fasting',
-  idl: 'No routine measure',
-};
-
-function resolveChip(chip: ChipSpec, snapshot: Snapshot): { spec: MarkerSpec | IndexSpec; measure: Measure } {
-  if (chip.preferMarker) {
-    const measured = snapshot.marker(chip.preferMarker);
-    if (measured !== EMPTY) return { spec: chip.preferMarker, measure: measured };
-  }
-  return { spec: chip.measure, measure: measureOf(chip.measure, snapshot) };
-}
-
-const CHIP_BY_ID: Readonly<Record<string, ChipSpec>> = Object.fromEntries(
-  [...Object.values(PARTICLE_CHIPS).flat(), APOB_CHIP].map((c) => [c.id, c])
-);
-
-function Chip({
-  chip,
-  snapshot,
-  open,
-  onToggle,
-  setHovered,
-}: Readonly<{ chip: ChipSpec; snapshot: Snapshot; open: string | null; onToggle: (id: string, el: HTMLElement) => void; setHovered: (id: string | null) => void }>) {
-  const { spec, measure } = resolveChip(chip, snapshot);
-  const expanded = open === chip.id;
-  return (
-    <button
-      type="button"
-      className={expanded ? 'mc-pathway-chip mc-pathway-chip-open mc-lipid-chip' : 'mc-pathway-chip mc-lipid-chip'}
-      data-caption={chip.id}
-      aria-expanded={expanded}
-      title={chip.note}
-      onClick={(e) => onToggle(chip.id, e.currentTarget)}
-      onMouseEnter={() => setHovered(chip.id)}
-      onMouseLeave={() => setHovered(null)}
-      onFocus={() => setHovered(chip.id)}
-      onBlur={() => setHovered(null)}
-    >
-      <span className="mc-pathway-chip-head">
-        <span className="mc-pathway-node-label">{chip.label}</span>
-        {spec.kind === 'index' && measure !== EMPTY && <CalcTag />}
-        <span className={`mc-pathway-dot mc-pathway-dot-${measure.status}`} />
-      </span>
-      <span className="mc-pathway-node-value">
-        <ChipValue measure={measure} />
-      </span>
-    </button>
-  );
-}
-
-function ChipCard({ chip, left, top, snapshot, date, unitSystem }: Readonly<{ chip: ChipSpec; left: number; top: number; snapshot: Snapshot; date: string | undefined; unitSystem: UnitSystem }>) {
-  const { spec, measure } = resolveChip(chip, snapshot);
-  const { info, cites } = withSources(referenceOf(spec, measure, unitSystem), chip.sources);
-  const scope = `lipid-${chip.id}`;
-  const estimated = chip.preferMarker && spec.kind === 'index' && measure !== EMPTY;
-  return (
-    <dialog open className="mc-pathway-pop" aria-label={chip.title} style={{ left, top, width: CARD_WIDTH, margin: 0 }}>
-      <div className="mc-pathway-pop-title">{chip.title}</div>
-      <div className="mc-pathway-pop-facts">
-        <span>
-          <b>Value</b> {valueText(measure)}
-        </span>
-        <span>
-          <b>Date</b> {date ? formatFullDate(date) : DASH}
-        </span>
-      </div>
-      {chip.meaning && (
-        <p className="mc-pathway-pop-note">
-          {chip.meaning}
-          <Cites scope={scope} cites={cites} />
-        </p>
-      )}
-      {!chip.meaning && chip.note && <p className="mc-pathway-pop-note">{chip.note}</p>}
-      {estimated && <p className="mc-pathway-pop-note">Calculated as TG ÷ 5; the lab reported no VLDL-C this draw.</p>}
-      <ReferenceBlock scope={scope} info={info} />
-      <SourcesBlock scope={scope} info={info} />
-    </dialog>
-  );
-}
-
-// ---- badges ----
 
 interface MethodsSpec {
   reported: MarkerSpec;
@@ -478,6 +355,12 @@ function Badges({
 const HMGCR = 'hmgcr';
 const HMGCR_NOTE = 'Rate-limiting enzyme of cholesterol synthesis; the target of statins.';
 
+/** Liver silhouette, cropped to its non-transparent bounding box the way BRAIN_ART is (HormonalPathwaysView.tsx). */
+const LIVER_ART: GlyphArt = { src: '/pathways/liver.png?v=1', width: 256, height: 176, box: [4, 4, 252, 172], size: SIZE.organ };
+
+/** HMG-CoA reductase docks on the liver the way a bound-hormone bubble docks on a carrier: a white circle behind the icon so it reads over the artwork. */
+const HMGCR_DOCK_SIZE = Math.round(SIZE.molecular * 1.5);
+
 const HMGCR_SOURCES: readonly CitedSource[] = [
   {
     organization: 'Endotext (Feingold KR)',
@@ -502,8 +385,8 @@ function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle:
   return (
     <div className="mc-lipid-organ">
       <div className="mc-lipid-liver">
-        <span data-node="liver" className="mc-lipid-liver-icon">
-          <img src="/pathways/liver.png?v=1" alt="Liver" width={SIZE.organ} height={Math.round((SIZE.organ * 176) / 256)} />
+        <span data-node="liver">
+          <Glyph art={LIVER_ART} alt="Liver" />
         </span>
         <button
           type="button"
@@ -514,11 +397,15 @@ function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle:
           title={HMGCR_NOTE}
           onClick={(e) => onToggle(HMGCR, e.currentTarget)}
         >
-          <Glyph art={ENZYME_ART} />
+          <span className="mc-pathway-bubble" style={{ width: HMGCR_DOCK_SIZE, height: HMGCR_DOCK_SIZE }}>
+            <Glyph art={ENZYME_ART} />
+          </span>
           <span className="mc-pathway-node-label">HMG-CoA reductase</span>
         </button>
+        <span className="mc-lipid-synth-chol">
+          <CholesterolIcon size={STANDALONE_CHOL_ICON_SIZE} />
+        </span>
       </div>
-      <div className="mc-lipid-name">Liver</div>
     </div>
   );
 }
@@ -543,6 +430,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
   const [secretion, setSecretion] = useState<string | null>(null);
+  const [vldlBond, setVldlBond] = useState<string | null>(null);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
     const organ = el.querySelector('.mc-lipid-organ')?.getBoundingClientRect();
@@ -550,16 +438,39 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     setSecretion(
       organ && vldl ? `M${vldl.left + vldl.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldl.left + vldl.width / 2 - base.left},${vldl.top - base.top - 4}` : null
     );
+    const trig = el.querySelector('[data-node="vldl-trig"]')?.getBoundingClientRect();
+    const apo = el.querySelector('[data-node="vldl-apo"]')?.getBoundingClientRect();
+    const chol = el.querySelector('[data-node="vldl-chol"]')?.getBoundingClientRect();
+    setVldlBond(
+      trig && apo && chol
+        ? (() => {
+            const center = (r: DOMRect) => ({ x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top });
+            const t = center(trig);
+            const c = center(chol);
+            const a = center(apo);
+            // Pull each end back along the center-to-center line by that node's own radius, so the bond meets the circle radially (perpendicular to its edge) instead of at a fixed side point.
+            const onEdge = (from: { x: number; y: number }, to: { x: number; y: number }, radius: number) => {
+              const dx = to.x - from.x;
+              const dy = to.y - from.y;
+              const dist = Math.hypot(dx, dy);
+              return { x: from.x + (dx / dist) * radius, y: from.y + (dy / dist) * radius };
+            };
+            const apoRadius = apo.width / 2 + 3;
+            const trigEdge = onEdge(t, a, trig.width / 2 + 2);
+            const cholEdge = onEdge(c, a, chol.width / 2 + 2);
+            const apoFromT = onEdge(a, t, apoRadius);
+            const apoFromC = onEdge(a, c, apoRadius);
+            return `M${trigEdge.x},${trigEdge.y} L${apoFromT.x},${apoFromT.y} M${cholEdge.x},${cholEdge.y} L${apoFromC.x},${apoFromC.y}`;
+          })()
+        : null
+    );
     const box = el.querySelector('.mc-lipid-particles')?.getBoundingClientRect();
     if (box) setVeil({ w: box.right - base.left, h: box.bottom - base.top });
     // A region with no sourced area in Data mode is not drawn, so its particle's outline is ringed instead.
     const present = (targets: readonly string[]) => [
       ...new Set(targets.map((t) => (el.querySelector(`[data-node="${t}"]`) ? t : t.split('-')[0]))),
     ];
-    setAssociations([
-      ...BADGES.flatMap((b) => associationFor(el, base, b.id, present(b.targets))),
-      ...Object.values(CHIP_BY_ID).map((c) => ({ badge: c.id, paths: [], rings: ringsFor(el, base, present(c.targets)) })),
-    ]);
+    setAssociations(BADGES.flatMap((b) => associationFor(el, base, b.id, present(b.targets))));
   });
   return (
     <svg className="mc-pathway-overlay" aria-hidden="true">
@@ -569,8 +480,109 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         </marker>
       </defs>
       {secretion && <path d={secretion} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {vldlBond && <path d={vldlBond} fill="none" stroke="var(--navy)" strokeWidth={1.5} />}
       <AssociationLayer associations={associations} active={active} focused={focused} veil={veil} />
     </svg>
+  );
+}
+
+// ---- cargo diagram ----
+
+/** ApoB-100's own drawing spans ~42.6 of its 48-unit viewBox (HormonalPathwaysView's CARRIER_SIZE), so its box is enlarged to bring the drawing itself to molecular-actor size. */
+const CARGO_APO_SIZE = Math.round((SIZE.molecular * 48) / 42.6);
+const CARGO_BUBBLE_SIZE = SIZE.molecular;
+const CARGO_ICON_SIZE = Math.round(CARGO_BUBBLE_SIZE * 0.85);
+/** The cholesterol icon reads clearer bigger than TRIG's, so its bubble grows a
+ * little to hold a bigger icon -- the icon itself grows more than the bubble
+ * does, so it fills more of its dock rather than just scaling uniformly. */
+const CARGO_CHOL_BUBBLE_SIZE = Math.round(CARGO_BUBBLE_SIZE * 1.15);
+const CARGO_CHOL_ICON_SIZE = Math.round(CARGO_BUBBLE_SIZE * 1.05);
+/** The bare cholesterol icon by the liver has no bubble to fill, so it reads at a bigger, more visible size than the docked one -- roomier than a bare signal molecule on Hormonal Pathways (SIZE.molecular). */
+const STANDALONE_CHOL_ICON_SIZE = Math.round(SIZE.molecular * 1.35);
+/** How far ApoB-100 drops below TRIG/Chol, so the two bonds meet it at a sharp ~60 degree angle. IDL/LDL drop the same amount to line up with it, since they're the same particle further down the chain. */
+const VLDL_APO_DROP = 160;
+/** TRIG and Chol also drop partway down their own bond lines, toward ApoB-100, so the V reads as a shorter, tighter shape rather than spanning the full height. Tuned together with VLDL_CARGO_GAP for a ~60 degree vertex angle at a fixed bond length. */
+const VLDL_CARGO_DROP = 28;
+/** Horizontal gap either side of ApoB-100, tuned together with VLDL_CARGO_DROP. */
+const VLDL_CARGO_GAP = 4;
+
+/** A cargo diagram's own anchor: an icon (or docked bubble) with a caption below it, sized to line up with the apoprotein's own height. `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it looking off-center. */
+function CargoAnchor({ children, label, labelOffset = 0 }: Readonly<{ children: ReactNode; label: string; labelOffset?: number }>) {
+  return (
+    <div className="mc-pathway-anchor" style={{ height: CARGO_APO_SIZE, alignItems: 'center' }}>
+      {children}
+      <div className="mc-pathway-caption" style={labelOffset ? { transform: `translateX(calc(-50% + ${labelOffset}px))` } : undefined}>
+        <span className="mc-pathway-node-label">{label}</span>
+      </div>
+    </div>
+  );
+}
+
+// ---- lipoprotein chain ----
+
+/** A node in the IDL/LDL part of the chain, the same circle-icon-plus-caption node the cargo diagram uses for TRIG/ApoB-100/Chol. */
+function ChainAnchor({ id, label }: Readonly<{ id: string; label: string }>) {
+  return (
+    <CargoAnchor label={label}>
+      <span className="mc-pathway-bubble mc-lipid-chain-node" style={{ width: CARGO_BUBBLE_SIZE, height: CARGO_BUBBLE_SIZE }} data-node={id}>
+        <CarrierIcon size={CARGO_ICON_SIZE} />
+      </span>
+    </CargoAnchor>
+  );
+}
+
+/**
+ * VLDL is drawn as the same TRIG/ApoB-100/Chol holder-plus-cargo row the
+ * cargo diagram above uses -- it's the same particle, so it gets the same
+ * picture, grouped under one "VLDL" label rather than a new, smaller glyph.
+ */
+function VldlNode() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="vldl">
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ marginTop: VLDL_CARGO_DROP }}>
+          <CargoAnchor label="TRIG" labelOffset={-5}>
+            <span className="mc-pathway-bubble" data-node="vldl-trig" style={{ width: CARGO_BUBBLE_SIZE, height: CARGO_BUBBLE_SIZE }}>
+              <TriglycerideIcon size={CARGO_ICON_SIZE} />
+            </span>
+          </CargoAnchor>
+        </div>
+        <span style={{ width: VLDL_CARGO_GAP }} />
+        <div style={{ marginTop: VLDL_APO_DROP }}>
+          <CargoAnchor label="ApoB-100">
+            <span data-node="vldl-apo">
+              <CarrierIcon size={CARGO_APO_SIZE} />
+            </span>
+          </CargoAnchor>
+        </div>
+        <span style={{ width: VLDL_CARGO_GAP }} />
+        <div style={{ marginTop: VLDL_CARGO_DROP }}>
+          <CargoAnchor label="Chol" labelOffset={5}>
+            <span className="mc-pathway-bubble" data-node="vldl-chol" style={{ width: CARGO_CHOL_BUBBLE_SIZE, height: CARGO_CHOL_BUBBLE_SIZE }}>
+              <CholesterolIcon size={CARGO_CHOL_ICON_SIZE} />
+            </span>
+          </CargoAnchor>
+        </div>
+      </div>
+      <span className="mc-pathway-node-label">VLDL</span>
+    </div>
+  );
+}
+
+/**
+ * The endogenous lipoprotein pathway: the liver's secreted VLDL loses
+ * triglyceride and becomes IDL, then LDL -- one ApoB-100 particle
+ * transforming, not three separate ones.
+ */
+function LipoproteinChain() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 28, paddingBottom: 26 }}>
+      <VldlNode />
+      <div style={{ display: 'flex', gap: 28, marginTop: VLDL_APO_DROP }}>
+        <ChainAnchor id="idl" label="IDL" />
+        <ChainAnchor id="ldl" label="LDL" />
+      </div>
+    </div>
   );
 }
 
@@ -595,7 +607,6 @@ export function LipidTransportView({
   const [hovered, setHovered] = useState<string | null>(null);
   const [cardAt, setCardAt] = useState<{ left: number; top: number } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
-  const [particleMode, setParticleMode] = useState<ParticleMode>('artwork');
   const dates = useMemo(() => panelDates(PANEL_NAME, panelTests, allResults).reverse(), [panelTests, allResults]);
   const date = picked && dates.includes(picked) ? picked : dates.at(-1);
   const snapshot = useMemo(() => snapshotOf(allResults, resultsByDate, date, unitSystem), [allResults, resultsByDate, date, unitSystem]);
@@ -628,8 +639,7 @@ export function LipidTransportView({
   }, [open, placeCard]);
   useDismiss(open, close, '.mc-pathway-pop, [data-caption], [data-badge]', replaceCard);
 
-  const openChip = open ? CHIP_BY_ID[open] : undefined;
-  const badgeOpen = openChip || open === HMGCR ? null : open;
+  const badgeOpen = open === HMGCR ? null : open;
   return (
     <div>
       <PageHeader
@@ -650,54 +660,33 @@ export function LipidTransportView({
             format={(sys) => sys.toUpperCase()}
           />
         </div>
-        <div className="mc-pathway-check">
-          <span aria-hidden="true">Particles</span>
-          <SegmentedControl
-            label="Particles"
-            options={PARTICLE_MODES}
-            value={particleMode}
-            onChange={setParticleMode}
-            format={(mode) => (mode === 'artwork' ? 'Artwork' : 'Data')}
-          />
-        </div>
       </div>
-      <ArtworkNote>
-        {particleMode === 'artwork'
-          ? 'Icon fill areas are illustrative; the table below has the sourced shares. Sizes show diameter order, not scale.'
-          : 'Yellow and teal areas are the sourced triglyceride and cholesterol mass shares, at the midpoint of the table below; where a share is not sourced, lines ring the whole particle. Sizes show diameter order, not scale.'}
-      </ArtworkNote>
+      <ArtworkNote>The liver image is illustrative.</ArtworkNote>
       <div className="mc-pathway-layout" ref={layoutRef}>
-        <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}|${particleMode}`} />
+        <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}`} />
         <div className="mc-pathway-main">
-          <div className="mc-lipid-particles">
-            <LiverNode open={open} onToggle={toggleChip} />
-            {LIPOPROTEIN_PARTICLES.map((p) => (
-              <figure key={p.id} className="mc-lipid-particle">
-                <div className="mc-lipid-glyph">
-                  {particleMode === 'artwork' ? (
-                    <span className="mc-lipid-art" dangerouslySetInnerHTML={{ __html: artworkFor(p.id, p.name) }} />
-                  ) : (
-                    <ParticleGlyph particle={p} />
-                  )}
+          <div className="mc-pathway-bands">
+            <section className="mc-pathway-band" aria-label="Liver">
+              <div className="mc-pathway-site">
+                <h2 className="mc-pathway-title" title="Synthesizes cholesterol and secretes VLDL into the blood">Liver</h2>
+              </div>
+              <div className="mc-pathway-diagram">
+                <div className="mc-lipid-particles">
+                  <LiverNode open={open} onToggle={toggleChip} />
                 </div>
-                <figcaption className="mc-lipid-name">{p.name}</figcaption>
-                {particleMode === 'data' && !hasSourcedShares(p) && <span className="mc-lipid-none">composition not sourced</span>}
-                <div className="mc-lipid-chips">
-                  {(PARTICLE_CHIPS[p.id] ?? []).map((chip) => (
-                    <Chip key={chip.id} chip={chip} snapshot={snapshot} open={open} onToggle={toggleChip} setHovered={setHovered} />
-                  ))}
-                  {NO_CHIP_NOTE[p.id] && <span className="mc-lipid-none">{NO_CHIP_NOTE[p.id]}</span>}
-                </div>
-              </figure>
-            ))}
-            <div className="mc-lipid-apob" title={APOB_NOTE}>
-              <span className="mc-lipid-brace" aria-hidden="true" />
-              <Chip chip={APOB_CHIP} snapshot={snapshot} open={open} onToggle={toggleChip} setHovered={setHovered} />
-            </div>
+              </div>
+            </section>
+            <section className="mc-pathway-band" aria-label="Blood Transport">
+              <div className="mc-pathway-site">
+                <h2 className="mc-pathway-title" title="VLDL sheds triglyceride and becomes IDL, then LDL">Blood Transport</h2>
+              </div>
+              <div className="mc-pathway-diagram">
+                <LipoproteinChain />
+              </div>
+            </section>
           </div>
         </div>
         <Badges snapshot={snapshot} unitSystem={unitSystem} open={badgeOpen} setOpen={setOpen} setHovered={setHovered} />
-        {openChip && cardAt && <ChipCard chip={openChip} left={cardAt.left} top={cardAt.top} snapshot={snapshot} date={date} unitSystem={unitSystem} />}
         {open === HMGCR && cardAt && <EnzymeCard left={cardAt.left} top={cardAt.top} />}
       </div>
       <CompositionSection />

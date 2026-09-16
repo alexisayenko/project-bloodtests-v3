@@ -234,3 +234,50 @@ export const TargetTissueIcon: IconComponent = ({ size = 24, color = 'currentCol
     </g>
   </svg>
 );
+
+// ---- Lipid molecule icons ----
+
+/** Cholesterol: CarrierIcon's three-ring steroid cargo, outline only, no fill. */
+export const CholesterolIcon: IconComponent = ({ size = 48, color = '#94a028', strokeWidth = 1.4, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    <path d="M18.54 23.45 22.18 25.55V29.75L18.54 31.85 14.9 29.75V25.55ZM25.82 23.45 29.46 25.55V29.75L25.82 31.85 22.18 29.75V25.55ZM29.46 17.15 33.1 19.25V23.45L29.46 25.55 25.82 23.45V19.25Z" />
+  </svg>
+);
+
+/** Triglyceride: a three-point glycerol backbone with three fatty-acid tails. */
+export const TriglycerideIcon: IconComponent = ({ size = 48, color = '#c9a227', strokeWidth = 2, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    <path d="M8 19V29" />
+    <path d="M8 19 12 17 16 19 20 17 24 19 28 17 32 19 36 17 40 19" />
+    <path d="M8 24 12 22 16 24 20 22 24 24 28 22 32 24 36 22 40 24" />
+    <path d="M8 29 12 27 16 29 20 27 24 29 28 27 32 29 36 27 40 29" />
+    <g fill={color} stroke="none">
+      <circle cx="8" cy="19" r="1.4" />
+      <circle cx="8" cy="24" r="1.4" />
+      <circle cx="8" cy="29" r="1.4" />
+    </g>
+  </svg>
+);

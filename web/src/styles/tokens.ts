@@ -110,12 +110,3 @@ export const SPACE = {
   5: 'var(--space-5)',
   6: 'var(--space-6)',
 } as const;
-
-/** Lipid Transport particle glyph fills and outlines. */
-export const LIPID = {
-  outline: 'var(--lipid-outline)',
-  shell: 'var(--lipid-shell)',
-  trig: 'var(--lipid-trig)',
-  chol: 'var(--lipid-chol)',
-  apo: 'var(--lipid-apo)',
-} as const;

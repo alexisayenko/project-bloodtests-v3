@@ -30,7 +30,6 @@ import {
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
 import { dimensionOf } from '../src/data/unitNormalization';
 import { COMPONENTS, LIPOPROTEIN_PARTICLES, LIPOPROTEIN_SOURCES, apoKey, citedSourceIds, shareRange } from '../src/data/lipoproteinParticles';
-import { blobPolygon, organicRegions, polygonArea } from '../src/components/conditions/lipidParticleGeometry';
 import { MARTIN_HOPKINS_NON_HDL_BANDS, MARTIN_HOPKINS_ROWS, martinHopkinsFactor } from '../src/data/martinHopkinsLdl';
 
 const SCHEMA_ID = 'https://blood.isayenko.net/schema/analytes-1.schema.json';
@@ -825,14 +824,5 @@ describe('lipoprotein particles are internally consistent', () => {
     const ldl = LIPOPROTEIN_PARTICLES.find((p) => p.id === 'ldl')!;
     expect(shareRange(ldl, 'cholesterol')).toEqual({ min: 26, max: 50, midpoint: 38, approximate: false, sources: ['cox-1990', 'statpearls-ldl'] });
     expect(shareRange(LIPOPROTEIN_PARTICLES.find((p) => p.id === 'lpa')!, 'triglyceride')).toBeUndefined();
-  });
-
-  it('draws each glyph region at the share of the outline it was asked for', () => {
-    const outline = blobPolygon(100, 100, 60, 'ldl');
-    const total = polygonArea(outline);
-    for (const fractions of [[0.1, 0.38], [0.9, 0.03], [0.05, 0.2]]) {
-      const regions = organicRegions(outline, fractions, { gap: 2.5, amplitude: 4, seed: 'ldl' });
-      regions.forEach((region, k) => expect(Math.abs(polygonArea(region) / total - fractions[k]), `${fractions}`).toBeLessThan(0.01));
-    }
   });
 });
