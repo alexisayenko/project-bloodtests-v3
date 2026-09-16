@@ -589,7 +589,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-node-value { font-size: var(--font-small); color: var(--navy); opacity: 0.8; }
 .mc-pathway-share { display: block; color: var(--text-secondary); }
 .mc-pathway-bond { width: 14px; border-top: 1.5px solid var(--navy); }
-.mc-pathway-bubble { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1.5px solid var(--navy); border-radius: 50%; background: #fff; }
+.mc-pathway-bubble { display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--navy); border-radius: 50%; background: #fff; }
 .mc-pathway-node-label { font-size: var(--font-small); font-weight: 600; color: var(--navy); line-height: 1.2; }
 .mc-pathway-pools {
   background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 12px;

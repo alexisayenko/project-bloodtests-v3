@@ -307,9 +307,10 @@ function snapshotOf(
 }
 
 /** Glyph sizes follow biological scale — molecule < protein < cell < organ — each the drawn size, whatever padding the artwork carries. */
-const SIZE = { molecule: 24, protein: 48, cell: 64, organ: 80 } as const;
+const SIZE = { molecule: 16, protein: 32, cell: 64, organ: 128 } as const;
 /** Signal molecules match the testosterone docked in a carrier's bubble. */
 const SIGNAL_SIZE = SIZE.molecule;
+const BUBBLE_SIZE = SIGNAL_SIZE * 1.5;
 /** CarrierIcon's drawing spans ~42.6 of its 48-unit viewBox, so its box is enlarged to bring the drawing itself to protein size. */
 const CARRIER_SIZE = Math.round((SIZE.protein * 48) / 42.6);
 
@@ -605,7 +606,7 @@ function Carrier({ carrier }: Readonly<{ carrier: DockedCarrier }>) {
   );
   const bound = (
     <div className="mc-pathway-anchor" style={{ height: CARRIER_SIZE, alignItems: 'center' }} data-node={carrier.bound}>
-      <span className="mc-pathway-bubble">
+      <span className="mc-pathway-bubble" style={{ width: BUBBLE_SIZE, height: BUBBLE_SIZE }}>
         <HormoneIcon size={SIGNAL_SIZE} />
       </span>
       <Caption id={carrier.bound} />
