@@ -583,8 +583,15 @@ effect citing at least one retrieved source with short verbatim `quotes`
 Smith & Walker 2014, Rochira & Carani 2009, Hayes 2000 JCEM); the chip sits in
 the node's out-of-flow caption, so the receptor boxes and the arrows landing on
 them do not move.
-The pathway arrows are an SVG overlay measured from the DOM and re-measured by
-a `ResizeObserver` — the brain forking to FSH and LH from its left side at
+The pathway arrows are an SVG overlay measured from the DOM and re-measured,
+coalesced into one animation frame, whenever the diagram box or any
+`data-node` element resizes, an image loads, `document.fonts.ready` settles,
+or the date, unit system, albumin fallback or molar mass changes. The canvas
+and the 220px badge column sit side by side down to a 1280px viewport: the
+diagram's horizontal spacing eases with the canvas width through container
+query units (`--pw-fit-*`), and `fitBands` zooms the zones out only for what
+spacing cannot absorb, correcting the DOM-placed brain, enzymes and receptors
+for the zoom so arrows stay attached. The arrows: the brain forking to FSH and LH from its left side at
 mid-height, FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
 enzymes and down to the androgen receptors, enzymes → products,
 DHT → androgen receptors, E2 → blood E2 → estrogen receptors, and estradiol's

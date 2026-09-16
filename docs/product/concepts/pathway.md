@@ -8,7 +8,9 @@
 > vertical axis, with forked arrows to FSH and LH leaving its left side and,
 > as of 2026-09-16, estradiol's feedback from blood E2 entering its right side,
 > marked "↓"), Blood Transport, Testes, Target
-> tissues — with pathway arrows measured from the DOM and, as of 2026-09-16,
+> tissues — with pathway arrows measured from the DOM (re-measured as nodes,
+> images, fonts or values change), the canvas beside the badge column down to a
+> 1280px viewport (spacing tightens first, then the zones zoom out), and, as of 2026-09-16,
 > a testosterone pools donut (SHBG-T, Albumin-T, Free T, with callouts) atop
 > six clickable badges (Total T, Bioavailable T, one merged Free Testosterone
 > — its face cFT (Vermeulen), expanded into Measured (LOINC `2991-8`, with the
