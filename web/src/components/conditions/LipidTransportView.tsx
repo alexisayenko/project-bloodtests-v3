@@ -349,6 +349,11 @@ function Badges({
   );
 }
 
+// ---- intestine ----
+
+/** Intestine loop silhouette, cropped to its non-transparent bounding box the way LIVER_ART is. */
+const INTESTINE_ART: GlyphArt = { src: '/pathways/intestine.png?v=1', width: 237, height: 256, box: [5, 5, 232, 251], size: SIZE.organ };
+
 // ---- liver ----
 
 const HMGCR = 'hmgcr';
@@ -794,14 +799,6 @@ export function LipidTransportView({
         <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}`} />
         <div className="mc-pathway-main">
           <div className="mc-pathway-bands">
-            <section className="mc-pathway-band" aria-label="Intestine">
-              <div className="mc-pathway-site">
-                <h2 className="mc-pathway-title" title="Packages dietary fat, absorbed from a meal, into chylomicrons">Intestine</h2>
-              </div>
-              <div className="mc-pathway-diagram">
-                <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={3} />
-              </div>
-            </section>
             <section className="mc-pathway-band" aria-label="Liver">
               <div className="mc-pathway-site">
                 <h2 className="mc-pathway-title" title="Synthesizes cholesterol and secretes VLDL into the blood">Liver</h2>
@@ -821,6 +818,19 @@ export function LipidTransportView({
                 <div style={{ display: 'flex', gap: 44, marginTop: 32 }}>
                   <ParticleNode id="hdl" label="HDL" holder="ApoA-I" trigCount={1} cholCount={1} />
                   <ParticleNode id="lpa" label="Lp(a)" holder="ApoB-100" extraApo="apo(a)" trigCount={1} cholCount={1} />
+                </div>
+              </div>
+            </section>
+            <section className="mc-pathway-band" aria-label="Intestine">
+              <div className="mc-pathway-site">
+                <h2 className="mc-pathway-title" title="Packages dietary fat, absorbed from a meal, into chylomicrons">Intestine</h2>
+              </div>
+              <div className="mc-pathway-diagram">
+                <div className="mc-lipid-intestine">
+                  <span data-node="intestine">
+                    <Glyph art={INTESTINE_ART} alt="Intestine" />
+                  </span>
+                  <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={3} />
                 </div>
               </div>
             </section>
