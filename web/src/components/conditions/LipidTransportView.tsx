@@ -402,7 +402,7 @@ function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle:
           title={HMGCR_NOTE}
           onClick={(e) => onToggle(HMGCR, e.currentTarget)}
         >
-          <span data-node="reductase-bubble">
+          <span className="mc-lipid-enzyme-backdrop" data-node="reductase-bubble">
             <Glyph art={ENZYME_ART} />
           </span>
           <span className="mc-pathway-node-label">HMG-CoA reductase</span>
