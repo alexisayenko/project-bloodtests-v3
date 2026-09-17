@@ -604,7 +604,13 @@ blood E2, FSH and LH — every signal drawn as the same schematic rather than a
 real structure) and `CarrierIcon` (SHBG and Albumin), plus
 `web/public/pathways/leydig-cells.png` (Sertoli and Leydig cells, cropped from
 a mockup with a transparent background) and two shared custom-artwork icons —
-`enzyme-icon.png` (a bead-ring graphic) for both aromatase and 5α-reductase,
+`enzyme-icon.png` (a bead-ring graphic) for both aromatase and 5α-reductase
+(both rendered through `Particle1Node`/`Particle1` — `pathwayShared.ts`/
+`PathwayParts.tsx`, a shared bare-glyph-plus-caption node type generalizing
+this "bare icon, no tile, optional white circular backdrop for contrast on
+busy artwork" convention; refactor only, same rendered output — Lipid
+Transport's own enzyme nodes, HMG-CoA reductase and LPL, are a deferred
+follow-up),
 `receptor-icon.png` (a Y-shaped graphic) for both the androgen and estrogen
 receptor nodes, both on transparent backgrounds — a deliberate style choice
 (task-0024), not an accuracy correction. Every glyph sits bare, with no tile
@@ -730,9 +736,55 @@ and `liver-trig` (the liver's own DGAT/glycerol-3-phosphate triglyceride
 synthesis, `LIVER_TRIG_SYNTH_NOTE`) — `liver-trig` also the landing point for
 the fatty-acid-supply arrow crossing in from Blood Transport, rather than
 that arrow feeding the VLDL box directly. Both nodes, and the
-synthesized-cholesterol icon beside HMG-CoA reductase, render at
-`STANDALONE_CHOL_ICON_SIZE`, bumped 30% larger in the same raster-swap pass —
-which also grows the enterocyte TRIG/ApoB-48 markers sharing the constant),
+synthesized-cholesterol icon beside HMG-CoA reductase, originally all
+rendered at `STANDALONE_CHOL_ICON_SIZE`; `liver-apob`/`liver-trig`, and
+Intestine's mirroring `enterocyte-apob48`/`enterocyte-trig` pair, were then
+sized back down to plain `SIZE.molecular` (32px) — all four had been reading
+as full particle cores rather than small synthesis markers — while
+`synth-chol` alone stayed at `STANDALONE_CHOL_ICON_SIZE`. The fatty-acid-supply
+arrow now lands on the liver artwork itself first and hands off to
+`liver-trig` on its own arrow (FA → Liver → `liver-trig` → Nascent VLDL's
+TRIG, not FA → `liver-trig` directly), so the liver reads as actually taking
+up and reprocessing the fatty acids; both that arrow and the newer
+`liver-apob` source arrow are straight vertical lines, and `liverToTrigArrow`'s
+edge projection is anchored to the liver artwork's own bottom edge rather
+than a center-based one, which used to start right next to HMG-CoA
+reductase (near the artwork's middle) and wrongly implied the enzyme —
+cholesterol synthesis only — also produced TRIG. None of the liver/Intestine
+synthesis markers has adopted `Particle1`/`Particle1Node` yet
+(`pathwayShared.ts`/`PathwayParts.tsx`, generalizing the same bare-glyph
+convention proved out so far only on Hormonal Pathways' own `Enzyme`
+component — see above); Lipid Transport's own enzyme nodes, HMG-CoA
+reductase and LPL, are a deferred follow-up. A fourth zone, Arterial Wall
+(`artery-wall.png`, Alex/ChatGPT-generated, same crop/transparent-bg recipe
+as the page's other organ art, an endothelium strip with a drawn gap), sits
+between Blood Transport and Intestine: LDL, IDL and Lp(a) each get a dashed
+arrow from their own ApoB-100 down to that gap; VLDL gets none, by omission
+rather than an unsourced claim — Borén et al. 2020 (European Heart Journal,
+EAS Consensus Panel) is cited for both the binding mechanism (ApoB-100's
+positively-charged residues binding the arterial wall's proteoglycans) and
+the ~70nm size ceiling that excludes VLDL, with a clickable chip on the gap
+opening a cited `RetentionCard` (mirrors the HMG-CoA reductase enzyme chip)
+and a plain hover tooltip summarizing the same claim. The Blood Transport
+zone's `LplBranch` now stacks LPL directly above the fatty-acid glyph it
+releases — a straight vertical join, the glyph now labeled "fatty acids" to
+match the zone's other marker's wording — instead of side by side, with two
+separate arrows fanning out from it to Muscle and Adipocytes
+(`CellDestination`, reusing the same generic `CELLS_ART` cell artwork as
+Peripheral cells and Enterocytes) rather than the two cells sitting nearby
+with no arrows at all. A dev-only "Debug" toggle beside the SI/US control
+(`useNodeDrag`, `pathwayShared.ts`) lets any `data-node` element be dragged
+with the mouse — a purely visual `transform`, never touching real
+`left`/`top`/`margin`, reset by a reload or toggling Debug off with nothing
+persisted — with a live panel (an icon-only Copy button) reporting each
+dragged node's id, accumulated dx/dy and its currently-set positioning
+properties, so a reposition is an exact pixel delta from that readout
+rather than a guess-then-screenshot loop; a `MC_NUDGE_EVENT` custom event
+keeps the measured-arrow overlay recomputing on every drag frame, since a
+CSS `transform` fires no `ResizeObserver`. Every liver- and Intestine-zone
+node reposition since — `liver-apob`/`liver-trig`/`synth-chol`/Nascent VLDL,
+then `enterocyte-trig`/`enterocyte-apob48`/Chylomicron — was taken from that
+tool's own readout),
 Scheduled Visits (`#plan`, reachable despite validation
 errors: one tab per scheduled visit (`TabBar`, the same in-page tab strip
 Panel Detail and All Observations use, labeled by that visit's month via
