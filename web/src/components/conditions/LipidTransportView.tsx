@@ -535,12 +535,39 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
           })
         : []
     );
-    // VLDL's separate fate for its shed triglyceride: a path down to LPL's own bubble, then on to the fatty-acid glyph -- one continuous arrow, kept apart from the LDL-uptake one above.
+    // VLDL's separate fate for its shed triglyceride: a path down to LPL's own bubble, then straight down again to the fatty-acid glyph directly below it, then on to Muscle and Adipocytes -- one continuous arrow, kept apart from the LDL-uptake one above.
     const lplBubble = el.querySelector('[data-node="lpl-bubble"]')?.getBoundingClientRect();
     const fattyAcids = el.querySelector('[data-node="fatty-acids"]')?.getBoundingClientRect();
+    const lplMuscle = el.querySelector('[data-node="lpl-muscle"]')?.getBoundingClientRect();
+    const lplAdipocytes = el.querySelector('[data-node="lpl-adipocytes"]')?.getBoundingClientRect();
     setLplArrow(
       vldl && lplBubble && fattyAcids
-        ? `M${vldl.left - base.left + 20},${vldl.bottom - base.top + 2} L${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.top - base.top - 4} M${lplBubble.right - base.left + 2},${lplBubble.top + lplBubble.height / 2 - base.top} L${fattyAcids.left - base.left - 2},${fattyAcids.top + fattyAcids.height / 2 - base.top}`
+        ? [
+            `M${vldl.left - base.left + 20},${vldl.bottom - base.top + 2} L${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.top - base.top - 4}`,
+            `M${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.bottom - base.top + 2} L${fattyAcids.left + fattyAcids.width / 2 - base.left},${fattyAcids.top - base.top - 2}`,
+            ...(lplMuscle
+              ? [
+                  (() => {
+                    const r = rectCenter(fattyAcids, base);
+                    const s = rectCenter(lplMuscle, base);
+                    const from = onEdge(r, s, fattyAcids.width / 2 + 3);
+                    const to = onEdge(s, r, lplMuscle.width / 2 + 5);
+                    return `M${from.x},${from.y} L${to.x},${to.y}`;
+                  })(),
+                ]
+              : []),
+            ...(lplAdipocytes
+              ? [
+                  (() => {
+                    const r = rectCenter(fattyAcids, base);
+                    const s = rectCenter(lplAdipocytes, base);
+                    const from = onEdge(r, s, fattyAcids.width / 2 + 3);
+                    const to = onEdge(s, r, lplAdipocytes.width / 2 + 5);
+                    return `M${from.x},${from.y} L${to.x},${to.y}`;
+                  })(),
+                ]
+              : []),
+          ].join(' ')
         : null
     );
     // Every particle (VLDL, IDL, LDL, chylomicron, HDL, Lp(a)) gets its own TRIG/Chol bonds to its holder apoprotein and a dashed outline hugging its actual icons.
@@ -813,9 +840,9 @@ const FATTY_ACID_ICON_SIZE = 34;
 /** Fatty-acid cluster glyph, cropped to its non-transparent bounding box the way LIVER_ART is. `size` is overridden per call site, since Glyph bakes its render size into the art object. */
 const FATTY_ACID_ART: GlyphArt = { src: '/pathways/fatty-acid.png?v=1', width: 824, height: 833, box: [6, 6, 818, 827], size: SIZE.molecular };
 
-function CellDestination({ label }: Readonly<{ label: string }>) {
+function CellDestination({ label, dataNode }: Readonly<{ label: string; dataNode?: string }>) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node={dataNode}>
       <Glyph art={CELLS_ART} />
       <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>{label}</span>
     </div>
@@ -825,19 +852,21 @@ function CellDestination({ label }: Readonly<{ label: string }>) {
 function LplBranch() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 36 }}>
-      {/* Nudges (position: relative + left/top) taken from the debug drag overlay's readout. */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', left: 201, top: -234 }} title={LPL_NOTE}>
-        <span data-node="lpl-bubble">
-          <Glyph art={ENZYME_ART} />
-        </span>
-        <span className="mc-pathway-node-label">LPL</span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} title={LPL_NOTE}>
+          <span data-node="lpl-bubble">
+            <Glyph art={ENZYME_ART} />
+          </span>
+          <span className="mc-pathway-node-label">LPL</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="fatty-acids" title={LPL_ARROW_NOTE}>
+          <Glyph art={{ ...FATTY_ACID_ART, size: FATTY_ACID_ICON_SIZE }} alt="Fatty acids" />
+          <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>fatty acids</span>
+        </div>
       </div>
-      <span data-node="fatty-acids" title={LPL_ARROW_NOTE} style={{ position: 'relative', left: 134, top: -119 }}>
-        <Glyph art={{ ...FATTY_ACID_ART, size: FATTY_ACID_ICON_SIZE }} alt="Fatty acids" />
-      </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <CellDestination label="Muscle" />
-        <CellDestination label="Adipocytes" />
+        <CellDestination label="Muscle" dataNode="lpl-muscle" />
+        <CellDestination label="Adipocytes" dataNode="lpl-adipocytes" />
       </div>
     </div>
   );
@@ -1130,18 +1159,21 @@ export function LipidTransportView({
                     <EnterocytesNode />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {/* Byproduct marker, same shape and size as liver-trig and LPL's fatty-acids node -- not yet on Particle1Node (task-0062-followup), though as a GlyphArt-based byproduct it's the cheap half of this pair to convert once that lands. */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocyte-trig" title={TRIG_SYNTH_NOTE}>
+                      {/* Nudges (position: relative + left/top) taken from the debug drag overlay's readout. */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', left: 72, top: 1 }} data-node="enterocyte-trig" title={TRIG_SYNTH_NOTE}>
                         <Glyph art={{ ...TRIGLYCERIDE_ART, size: SIZE.molecular }} alt="Triglyceride" />
                         <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>TRIG</span>
                       </div>
                       {/* A structural-apoprotein marker, same size as liver-apob (ApoB-100) -- both use CarrierIcon, a hand-drawn IconComponent Particle1Node can't render yet (it only wraps a GlyphArt via Glyph). When that's extended, this and liver-apob should share one Particle1 type; 'carrier' already means SHBG/Albumin-style binding carriers on Hormonal Pathways, a different role from a lipoprotein's own structural apoprotein, so land on a distinct type (e.g. 'apoprotein') for both rather than overloading 'carrier'. */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocyte-apob48" title={APOB48_SYNTH_NOTE}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', left: 77, top: 18 }} data-node="enterocyte-apob48" title={APOB48_SYNTH_NOTE}>
                         <CarrierIcon size={SIZE.molecular} />
                         <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>ApoB-48</span>
                       </div>
                     </div>
                   </div>
-                  <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={4} />
+                  <div style={{ position: 'relative', left: 117, top: -17 }}>
+                    <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={4} />
+                  </div>
                 </div>
               </div>
             </section>
