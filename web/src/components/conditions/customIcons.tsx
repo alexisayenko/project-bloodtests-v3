@@ -306,7 +306,15 @@ export const FattyAcidIcon: IconComponent = ({ size = 48, color = '#c9a227', str
   </svg>
 );
 
-/** A few loose fatty acids -- three short carbon-chain tails, each with its own head, in parallel rows rather than one tail repeated. */
+const FATTY_ACID_SCATTER = [
+  { x: 9, y: 11, r: -25 },
+  { x: 29, y: 8, r: 50 },
+  { x: 6, y: 28, r: 5 },
+  { x: 27, y: 30, r: -65 },
+  { x: 36, y: 38, r: 160 },
+];
+
+/** A few loose fatty acids -- short carbon-chain tails, each with its own head, scattered at random positions and angles rather than one tail repeated. */
 export const FattyAcidClusterIcon: IconComponent = ({ size = 48, color = '#c9a227', strokeWidth = 2, ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -321,10 +329,10 @@ export const FattyAcidClusterIcon: IconComponent = ({ size = 48, color = '#c9a22
     aria-hidden="true"
     {...rest}
   >
-    {[-11, 0, 11].map((dy) => (
-      <g key={dy} transform={`translate(0 ${dy})`}>
-        <path d="M8 14 12 10 16 14 20 10 24 14 28 10 32 14" />
-        <circle cx="8" cy="14" r="2.2" fill={color} stroke="none" />
+    {FATTY_ACID_SCATTER.map(({ x, y, r }, i) => (
+      <g key={i} transform={`translate(${x} ${y}) rotate(${r})`}>
+        <path d="M0 0 4 -5 8 0 12 -5 16 0" />
+        <circle cx="0" cy="0" r="1.8" fill={color} stroke="none" />
       </g>
     ))}
   </svg>
