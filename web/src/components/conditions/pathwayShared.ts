@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../../data/analyteCatalog';
 import { fmtNum } from '../../utils/format';
 import type { IndexBands, IndexDef } from '../../data/computedIndices';
@@ -244,6 +244,9 @@ export function associationFor(el: HTMLElement, base: DOMRect, badge: string, ta
  * `[data-node]` inside it resizes, an image inside it loads, or fonts settle --
  * one animation frame at most per burst.
  */
+/** Dispatched on a `useMeasuredLayout` root to force its next-frame recompute outside the triggers it watches on its own -- e.g. a debug drag's `transform`, which fires no ResizeObserver. */
+export const MC_NUDGE_EVENT = 'mc-pathway-nudge';
+
 export function useMeasuredLayout(root: RefObject<HTMLDivElement | null>, layoutKey: string, measure: (el: HTMLDivElement) => void): void {
   const latest = useRef(measure);
   useEffect(() => {
@@ -267,18 +270,130 @@ export function useMeasuredLayout(root: RefObject<HTMLDivElement | null>, layout
     const onLoad = (e: Event) => {
       if (e.target instanceof HTMLImageElement) schedule();
     };
+    const onNudge = () => schedule();
     observer.observe(el);
     observeNodes();
     el.addEventListener('load', onLoad, true);
+    el.addEventListener(MC_NUDGE_EVENT, onNudge);
     if ('fonts' in document) document.fonts.ready.then(schedule, () => undefined);
     schedule();
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
       el.removeEventListener('load', onLoad, true);
+      el.removeEventListener(MC_NUDGE_EVENT, onNudge);
       observer.disconnect();
     };
   }, [root, layoutKey]);
+}
+
+/** One dragged node's accumulated offset, plus a one-time snapshot of whichever positioning fields are actually set (inline if set, else computed), taken at drag start. */
+export interface NodeDragState {
+  dx: number;
+  dy: number;
+  left: string;
+  top: string;
+  marginLeft: string;
+  marginTop: string;
+}
+
+function styleSnapshot(el: HTMLElement): Pick<NodeDragState, 'left' | 'top' | 'marginLeft' | 'marginTop'> {
+  const cs = getComputedStyle(el);
+  const field = (inline: string, computed: string) => (inline ? `${inline} (inline)` : `${computed} (computed)`);
+  return {
+    left: field(el.style.left, cs.left),
+    top: field(el.style.top, cs.top),
+    marginLeft: field(el.style.marginLeft, cs.marginLeft),
+    marginTop: field(el.style.marginTop, cs.marginTop),
+  };
+}
+
+/**
+ * DEV-ONLY drag debugging (temporary, session-only tool -- no persistence):
+ * while `enabled`, every `[data-node]` element inside `root` becomes
+ * mouse-draggable. Dragging applies a purely visual `transform:
+ * translate(dx, dy)` to the element -- it never touches `left`/`top`/margin,
+ * so a reload always resets it -- and dispatches `MC_NUDGE_EVENT` on `root`
+ * each frame so a `useMeasuredLayout` consumer (e.g. the arrow overlay)
+ * re-measures and tracks the node in real time, since a bare `transform`
+ * fires no ResizeObserver on its own. Each node's accumulated (dx, dy) is
+ * kept across repeated drags within the session, logged to the console on
+ * mouseup, and returned for an on-page readout; `reset()` clears every
+ * transform and the accumulated state, used when Debug mode is turned off.
+ */
+export function useNodeDrag(root: RefObject<HTMLDivElement | null>, enabled: boolean) {
+  const [drags, setDrags] = useState<Record<string, NodeDragState>>({});
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const dragsRef = useRef(drags);
+  dragsRef.current = drags;
+
+  useEffect(() => {
+    const el = root.current;
+    if (!el || !enabled) return;
+    let frame = 0;
+    let current: {
+      id: string;
+      el: HTMLElement;
+      startX: number;
+      startY: number;
+      baseDx: number;
+      baseDy: number;
+      snapshot: Pick<NodeDragState, 'left' | 'top' | 'marginLeft' | 'marginTop'>;
+    } | null = null;
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!current || frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (!current) return;
+        const dx = Math.round(current.baseDx + (e.clientX - current.startX));
+        const dy = Math.round(current.baseDy + (e.clientY - current.startY));
+        current.el.style.transform = `translate(${dx}px, ${dy}px)`;
+        setDrags((prev) => ({ ...prev, [current!.id]: { ...current!.snapshot, dx, dy } }));
+        el.dispatchEvent(new CustomEvent(MC_NUDGE_EVENT));
+      });
+    };
+    const onMouseUp = () => {
+      if (current) {
+        const id = current.id;
+        const d = dragsRef.current[id];
+        if (d) console.log(`[debug] ${id}: dx=${d.dx >= 0 ? '+' : ''}${d.dx} dy=${d.dy >= 0 ? '+' : ''}${d.dy}`);
+      }
+      current = null;
+      setActiveId(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-node]') : null;
+      if (!target) return;
+      e.preventDefault();
+      const id = target.getAttribute('data-node')!;
+      const prior = dragsRef.current[id];
+      current = { id, el: target, startX: e.clientX, startY: e.clientY, baseDx: prior?.dx ?? 0, baseDy: prior?.dy ?? 0, snapshot: styleSnapshot(target) };
+      setActiveId(id);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    };
+
+    el.addEventListener('mousedown', onMouseDown);
+    return () => {
+      el.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      cancelAnimationFrame(frame);
+    };
+  }, [root, enabled]);
+
+  const reset = useCallback(() => {
+    root.current?.querySelectorAll<HTMLElement>('[data-node]').forEach((node) => {
+      node.style.transform = '';
+    });
+    setDrags({});
+    setActiveId(null);
+  }, [root]);
+
+  return { drags, activeId, reset };
 }
 
 /** Glyph sizes encode level of organisation — molecular actor < cell < organ — each the drawn size, whatever padding the artwork carries. */

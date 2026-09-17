@@ -24,6 +24,7 @@ import {
   mergeReferences,
   useDismiss,
   useMeasuredLayout,
+  useNodeDrag,
   valueText,
   withVariants,
   zoneReference,
@@ -968,6 +969,14 @@ export function LipidTransportView({
   const [hovered, setHovered] = useState<string | null>(null);
   const [cardAt, setCardAt] = useState<{ left: number; top: number } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  const [debug, setDebug] = useState(false);
+  const { drags, activeId, reset: resetDrags } = useNodeDrag(layoutRef, debug);
+  const toggleDebug = useCallback(() => {
+    setDebug((prev) => {
+      if (prev) resetDrags();
+      return !prev;
+    });
+  }, [resetDrags]);
   const dates = useMemo(() => panelDates(PANEL_NAME, panelTests, allResults).reverse(), [panelTests, allResults]);
   const date = picked && dates.includes(picked) ? picked : dates.at(-1);
   const snapshot = useMemo(() => snapshotOf(allResults, resultsByDate, date, unitSystem), [allResults, resultsByDate, date, unitSystem]);
@@ -1021,9 +1030,28 @@ export function LipidTransportView({
             format={(sys) => sys.toUpperCase()}
           />
         </div>
+        <button
+          type="button"
+          onClick={toggleDebug}
+          title="Dev-only: drag a diagram node to see the pixel offset it moved"
+          aria-pressed={debug}
+          style={{
+            marginLeft: 'auto',
+            padding: '4px 10px',
+            fontSize: 12,
+            fontWeight: 600,
+            borderRadius: 6,
+            border: debug ? '1px solid #b83227' : '1px solid #ccc',
+            background: debug ? '#b83227' : '#fff',
+            color: debug ? '#fff' : '#333',
+            cursor: 'pointer',
+          }}
+        >
+          {debug ? 'Debug: ON' : 'Debug'}
+        </button>
       </div>
       <ArtworkNote>The liver and artery-wall images are illustrative.</ArtworkNote>
-      <div className="mc-pathway-layout" ref={layoutRef}>
+      <div className="mc-pathway-layout" ref={layoutRef} style={debug ? { cursor: 'grab' } : undefined}>
         <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}`} />
         <div className="mc-pathway-main">
           <div className="mc-pathway-bands">
@@ -1108,6 +1136,60 @@ export function LipidTransportView({
         {open === HMGCR && cardAt && <EnzymeCard left={cardAt.left} top={cardAt.top} />}
         {open === RETENTION && cardAt && <RetentionCard left={cardAt.left} top={cardAt.top} />}
       </div>
+      {debug && <DebugPanel drags={drags} activeId={activeId} />}
+    </div>
+  );
+}
+
+/** Dev-only readout for the drag-debug toggle above: every dragged node's accumulated offset and its own positioning fields, so a drag can be translated into a CSS fix without guessing. */
+function DebugPanel({ drags, activeId }: Readonly<{ drags: Record<string, ReturnType<typeof useNodeDrag>['drags'][string]>; activeId: string | null }>) {
+  const ids = Object.keys(drags);
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        right: 16,
+        bottom: 16,
+        zIndex: 9999,
+        width: 300,
+        maxHeight: '55vh',
+        overflowY: 'auto',
+        background: 'rgba(24,24,24,0.94)',
+        color: '#eee',
+        fontSize: 11,
+        fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
+        borderRadius: 8,
+        padding: 10,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.45)',
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: 6 }}>Debug: dragged nodes ({ids.length})</div>
+      {ids.length === 0 && <div style={{ opacity: 0.7 }}>Drag any diagram node to see its offset.</div>}
+      {ids.map((id) => {
+        const d = drags[id];
+        return (
+          <div
+            key={id}
+            style={{ marginBottom: 6, padding: 4, borderRadius: 4, background: id === activeId ? 'rgba(255,255,255,0.14)' : 'transparent' }}
+          >
+            <div>
+              {id}
+              {id === activeId ? ' (dragging)' : ''}
+            </div>
+            <div>
+              dx={d.dx >= 0 ? '+' : ''}
+              {d.dx} dy={d.dy >= 0 ? '+' : ''}
+              {d.dy}
+            </div>
+            <div style={{ opacity: 0.75 }}>
+              left: {d.left} · top: {d.top}
+            </div>
+            <div style={{ opacity: 0.75 }}>
+              marginLeft: {d.marginLeft} · marginTop: {d.marginTop}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
