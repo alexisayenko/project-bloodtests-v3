@@ -444,6 +444,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
   const [secretion, setSecretion] = useState<string | null>(null);
+  const [fattyAcids, setFattyAcids] = useState<string | null>(null);
   const [particleBonds, setParticleBonds] = useState<string[]>([]);
   const [particleOutlines, setParticleOutlines] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
   const [synthArrow, setSynthArrow] = useState<string | null>(null);
@@ -453,6 +454,12 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     const vldl = el.querySelector('[data-node="vldl"]')?.getBoundingClientRect();
     setSecretion(
       organ && vldl ? `M${vldl.left + vldl.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldl.left + vldl.width / 2 - base.left},${vldl.top - base.top - 4}` : null
+    );
+    const targetCells = el.querySelector('[data-node="target-cells"]')?.getBoundingClientRect();
+    setFattyAcids(
+      vldl && targetCells
+        ? `M${vldl.left + vldl.width / 2 - base.left},${vldl.bottom - base.top + 2} L${targetCells.left + targetCells.width / 2 - base.left},${targetCells.top - base.top - 4}`
+        : null
     );
     // Every particle (VLDL, IDL, LDL, chylomicron, HDL, Lp(a)) gets its own TRIG/Chol bonds to its holder apoprotein and a dashed outline hugging its actual icons.
     const bonds: string[] = [];
@@ -511,6 +518,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         </marker>
       </defs>
       {secretion && <path d={secretion} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {fattyAcids && <path d={fattyAcids} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {particleBonds.map((d, i) => (
         <path key={i} d={d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
@@ -702,6 +710,22 @@ function ParticleNode({
   );
 }
 
+/** Lipoprotein lipase, anchored on capillary walls in tissue, strips VLDL of its triglyceride -- the fatty acids released feed muscle and fat cells. */
+const LPL_NOTE = "Lipoprotein lipase releases fatty acids from VLDL's triglycerides into tissue";
+
+/** Same cell artwork Hormonal Pathways uses for Sertoli/Leydig -- generic tissue cells, not organ-specific. */
+const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
+
+/** Where LPL delivers VLDL's fatty acids -- drawn below VLDL, the particle it acts on. */
+function TargetCellsNode() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="target-cells" title={LPL_NOTE}>
+      <Glyph art={CELLS_ART} />
+      <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>Target cells</span>
+    </div>
+  );
+}
+
 /**
  * The endogenous lipoprotein pathway: the liver's secreted VLDL loses
  * triglyceride and becomes IDL, then LDL -- one ApoB-100 particle
@@ -712,7 +736,10 @@ function ParticleNode({
 function LipoproteinChain() {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 44, paddingBottom: 26 }}>
-      <ParticleNode id="vldl" label="VLDL" trigCount={3} cholCount={3} trigOverlap={3} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+        <ParticleNode id="vldl" label="VLDL" trigCount={3} cholCount={3} trigOverlap={3} />
+        <TargetCellsNode />
+      </div>
       <ParticleNode id="idl" label="IDL" trigCount={2} cholCount={2} trigOverlap={3} />
       <ParticleNode id="ldl" label="LDL" trigCount={1} cholCount={1} />
     </div>
