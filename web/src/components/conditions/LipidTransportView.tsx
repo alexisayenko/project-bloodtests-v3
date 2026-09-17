@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { PageHeader } from './PageHeader';
-import { CarrierIcon, CholesterolIcon, FattyAcidClusterIcon, TriglycerideIcon, type IconComponent } from './customIcons';
+import { CarrierIcon, CholesterolIcon, type IconComponent } from './customIcons';
 import { SegmentedControl } from '../primitives';
 import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
 import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
@@ -674,7 +674,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
 const CARGO_APO_SIZE = Math.round((SIZE.molecular * 48) / 42.6);
 const CARGO_BUBBLE_SIZE = SIZE.molecular;
 /** The bare cholesterol icon by the liver has no bubble to fill, so it reads at a bigger, more visible size than the docked one -- roomier than a bare signal molecule on Hormonal Pathways (SIZE.molecular). */
-const STANDALONE_CHOL_ICON_SIZE = Math.round(SIZE.molecular * 1.35);
+const STANDALONE_CHOL_ICON_SIZE = Math.round(SIZE.molecular * 1.35 * 1.3);
 /**
  * Every bond line in this chain (TRIG-ApoB and Chol-ApoB) is tuned to the
  * same ~75px length, so the chain reads as one consistent unit of "distance
@@ -705,6 +705,11 @@ const STACK_CHOL_ICON_SIZE = 34;
  * counts, not to scale: the sourced data (lipoprotein-particles.json) only
  * gives % of each particle's own mass, and IDL's isn't sourced at all.
  */
+
+/** Triglyceride glyph, cropped to its non-transparent bounding box the way LIVER_ART is. `size` is overridden per call site by TriglycerideGlyphIcon below, since Glyph bakes its render size into the art object. */
+const TRIGLYCERIDE_ART: GlyphArt = { src: '/pathways/triglyceride.png?v=1', width: 675, height: 449, box: [6, 6, 669, 443], size: SIZE.molecular };
+/** Adapts TRIGLYCERIDE_ART to the `IconComponent` shape `CompoundStack`'s `icon` prop expects, so the raster glyph can stand in for the hand-drawn `TriglycerideIcon` there. */
+const TriglycerideGlyphIcon: IconComponent = ({ size = 48 }) => <Glyph art={{ ...TRIGLYCERIDE_ART, size }} alt="Triglyceride" />;
 
 /** A cargo diagram's own anchor: an icon (or docked bubble) with a caption below it, sized to line up with the apoprotein's own height. `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it looking off-center. */
 function CargoAnchor({ children, label, labelOffset = 0 }: Readonly<{ children: ReactNode; label: string; labelOffset?: number }>) {
@@ -809,7 +814,7 @@ function ParticleNode({
             count={trigCount}
             circleSize={STACK_TRIG_CIRCLE_SIZE}
             iconSize={STACK_TRIG_ICON_SIZE}
-            icon={TriglycerideIcon}
+            icon={TriglycerideGlyphIcon}
             label="TRIG"
             labelOffset={-5}
             overlap={trigOverlap}
@@ -894,6 +899,8 @@ function EnterocytesNode() {
 const LPL_NOTE = 'Lipoprotein lipase';
 const LPL_ARROW_NOTE = "Lipoprotein lipase releases fatty acids from VLDL's triglycerides for muscle energy and fat storage";
 const FATTY_ACID_ICON_SIZE = 34;
+/** Fatty-acid cluster glyph, cropped to its non-transparent bounding box the way LIVER_ART is. `size` is overridden per call site, since Glyph bakes its render size into the art object. */
+const FATTY_ACID_ART: GlyphArt = { src: '/pathways/fatty-acid.png?v=1', width: 824, height: 833, box: [6, 6, 818, 827], size: SIZE.molecular };
 
 function CellDestination({ label }: Readonly<{ label: string }>) {
   return (
@@ -914,7 +921,7 @@ function LplBranch() {
         <span className="mc-pathway-node-label">LPL</span>
       </div>
       <span data-node="fatty-acids" title={LPL_ARROW_NOTE}>
-        <FattyAcidClusterIcon size={FATTY_ACID_ICON_SIZE} />
+        <Glyph art={{ ...FATTY_ACID_ART, size: FATTY_ACID_ICON_SIZE }} alt="Fatty acids" />
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <CellDestination label="Muscle" />
@@ -1035,7 +1042,7 @@ export function LipidTransportView({
                 <div className="mc-lipid-particles">
                   <LiverNode open={open} onToggle={toggleChip} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 4, marginLeft: 100 }}>
                   <div title={VLDL_ASSEMBLY_NOTE}>
                     <ParticleNode id="vldl-construction" label="Nascent VLDL" trigCount={3} cholCount={3} />
                   </div>
@@ -1049,7 +1056,7 @@ export function LipidTransportView({
               <div className="mc-pathway-diagram">
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }} data-node="fa-supply" title={VLDL_FATTY_ACID_SUPPLY_NOTE}>
-                    <FattyAcidClusterIcon size={28} />
+                    <Glyph art={{ ...FATTY_ACID_ART, size: 28 }} alt="Fatty acids" />
                     <span className="mc-pathway-node-label" style={{ fontSize: 10 }}>fatty acids</span>
                   </div>
                 </div>
@@ -1077,7 +1084,7 @@ export function LipidTransportView({
                     <EnterocytesNode />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocyte-trig" title={TRIG_SYNTH_NOTE}>
-                        <TriglycerideIcon size={STANDALONE_CHOL_ICON_SIZE} />
+                        <Glyph art={{ ...TRIGLYCERIDE_ART, size: STANDALONE_CHOL_ICON_SIZE }} alt="Triglyceride" />
                         <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>TRIG</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocyte-apob48" title={APOB48_SYNTH_NOTE}>
