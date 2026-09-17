@@ -91,8 +91,11 @@ Each record opens with `# ADR-NNNN: <title>` and a
   their layout and wiring. 0022: generated artwork may ship as illustration
   — the brain and Lipid Transport's liver image — but never stands in for a
   shape that encodes a quantity; Lipid Transport's particle icons, redrawn in
-  task-0062 as hand-drawn `customIcons.tsx` glyphs, no longer carry
-  computed-from-data areas the way the retired Data mode did, and the sourced
+  task-0062 first as hand-drawn `customIcons.tsx` glyphs and later (TRIG and
+  the fatty-acid markers) as ChatGPT-generated raster artwork, no longer
+  carry computed-from-data areas the way the retired Data mode did — a
+  stack's own circle count, not its icon's shape or size, still encodes
+  quantity either way — and the sourced
   `lipoprotein-particles.json` composition (IDL and Lp(a) "not sourced") now
   surfaces only in the page's own size-and-composition table. See the
   [pathway](../../product/concepts/pathway.md) concept,

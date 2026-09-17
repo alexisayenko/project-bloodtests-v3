@@ -657,13 +657,25 @@ illustrative, 128px wide, the level-of-organisation sizes shared as
 size — the shared enzyme artwork, its card citing Feingold's Endotext chapters —
 a pale arrow from the enzyme to a bare `CholesterolIcon` beside it as its
 synthesized product, and a second pale arrow down to VLDL) and Blood Transport.
-Every particle is a `ParticleNode`: a central `CarrierIcon` whose `holder` prop
-names the structural apolipoprotein carrying it — ApoB-100 for VLDL, IDL, LDL
-and Lp(a) alike, ApoB-48 for chylomicron, ApoA-I for HDL — bonded to a
-`CompoundStack` of small identical TRIG and Chol circles, one `TriglycerideIcon`
-or `CholesterolIcon` (both new in `customIcons.tsx`) per bubble, where the COUNT
-of circles depicts how much of that compound is aboard rather than one icon's
-size, deliberately, so "more" never reads as "one bigger blob"; every bond line
+Every particle is a `ParticleNode` — together with `CompoundStack`,
+`CargoAnchor` and the particle sizing constants, extracted (task-0062, a pure
+file move, no behavior change) into its own module, `Particle3.tsx`, named
+"Particle3" as the third lipoprotein-particle rendering design in this
+codebase's history, after the two retired approaches below (a reshape of its
+props into a compounds-array `ParticleConfig` model was discussed and paused
+mid-implementation, not yet built): a central `CarrierIcon` whose `holder`
+prop names the structural apolipoprotein carrying it — ApoB-100 for VLDL,
+IDL, LDL and Lp(a) alike, ApoB-48 for chylomicron, ApoA-I for HDL — bonded to
+a `CompoundStack` of small identical TRIG and Chol circles, one
+`CholesterolIcon` (still hand-drawn, `customIcons.tsx`) or, since task-0062's
+raster swap, a `TriglycerideGlyphIcon` (adapting ChatGPT-generated artwork —
+`web/public/pathways/triglyceride.png`, same crop/transparent-bg recipe as
+liver.png/intestine.png — to `CompoundStack`'s `IconComponent` prop, retiring
+the hand-drawn `TriglycerideIcon` there; the same pass replaced the page's
+fatty-acid markers with `web/public/pathways/fatty-acid.png`) per bubble,
+where the COUNT of circles, not the icon's own size, depicts how much of that
+compound is aboard, deliberately, so "more" never reads as "one bigger blob";
+every bond line
 in the diagram — TRIG-ApoB, Chol-ApoB, and LDL's plain ApoB-Chol bond once no
 TRIG is left — is tuned to the same ~75px length across all three chain stages
 in one pass, not VLDL-only. VLDL → IDL → LDL is the core endogenous pathway,
@@ -705,9 +717,23 @@ replaced — its Artwork/Data `SegmentedControl`, the ChatGPT-generated particle
 SVGs, and the files that drew computed-geometry glyphs from the sourced data
 (`LipidParticleGlyph.tsx`, `lipidArtwork.ts`, `lipidParticleGeometry.ts`,
 `web/src/assets/lipids/*.svg`, `web/test/lipid-artwork.test.ts`) — is gone;
-every particle icon is now a hand-drawn `customIcons.tsx` glyph like every other
-pathway page uses, so ADR-0022's artwork-vs-computed-glyph distinction now bears
-only on the liver image, not on any particle), Scheduled Visits (`#plan`, reachable despite validation
+each particle icon is now either a hand-drawn `customIcons.tsx` glyph
+(`CholesterolIcon`) or, for TRIG and the fatty-acid markers, task-0062's later
+ChatGPT-generated raster artwork — but ADR-0022's artwork-vs-computed-glyph
+distinction still holds, since every bubble renders at one fixed size
+regardless of which icon fills it, so it is a stack's own circle count, never
+the icon's shape or size, that encodes quantity. The liver zone also carries
+two standalone nodes feeding its nascent-VLDL assembly, each on its own
+measured arrow: `liver-apob` (a bare `CarrierIcon`, labeled ApoB-100, since
+the assembled particle's own ApoB-100 previously had no source arrow at all)
+and `liver-trig` (the liver's own DGAT/glycerol-3-phosphate triglyceride
+synthesis, `LIVER_TRIG_SYNTH_NOTE`) — `liver-trig` also the landing point for
+the fatty-acid-supply arrow crossing in from Blood Transport, rather than
+that arrow feeding the VLDL box directly. Both nodes, and the
+synthesized-cholesterol icon beside HMG-CoA reductase, render at
+`STANDALONE_CHOL_ICON_SIZE`, bumped 30% larger in the same raster-swap pass —
+which also grows the enterocyte TRIG/ApoB-48 markers sharing the constant),
+Scheduled Visits (`#plan`, reachable despite validation
 errors: one tab per scheduled visit (`TabBar`, the same in-page tab strip
 Panel Detail and All Observations use, labeled by that visit's month via
 `formatMonthFullYear` or "No month" when unset) showing exactly the active
