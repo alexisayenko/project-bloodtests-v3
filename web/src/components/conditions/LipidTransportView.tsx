@@ -968,7 +968,7 @@ export function LipidTransportView({
                 <div className="mc-lipid-particles">
                   <LiverNode open={open} onToggle={toggleChip} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', gap: 8, marginTop: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: 8, marginTop: 4 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }} title={VLDL_FATTY_ACID_SUPPLY_NOTE}>
                     <FattyAcidIcon size={16} />
                     <span className="mc-pathway-node-label" style={{ fontSize: 10 }}>fatty acids</span>
