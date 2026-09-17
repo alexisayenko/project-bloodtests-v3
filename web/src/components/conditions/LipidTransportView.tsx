@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { PageHeader } from './PageHeader';
-import { CarrierIcon, CholesterolIcon, TriglycerideIcon, type IconComponent } from './customIcons';
+import { CarrierIcon, CholesterolIcon, FattyAcidIcon, TriglycerideIcon, type IconComponent } from './customIcons';
 import { SegmentedControl } from '../primitives';
 import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
 import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
@@ -780,10 +780,10 @@ function EnterocytesNode() {
  * strips fatty acids from VLDL's TG as it becomes IDL/LDL, releasing them to
  * muscle for energy and fat tissue for storage -- a different, real pathway
  * from LDL's own cholesterol delivery above, so it gets its own arrow rather
- * than merging with `LDL_UPTAKE_NOTE`. The fatty-acid glyph reuses
- * `TriglycerideIcon` at small size (LPL frees fatty acids from triglycerides,
- * so the same glyph stands in for both, per this page's existing icon-reuse
- * convention). Muscle and Adipocytes reuse the same generic cell artwork as
+ * than merging with `LDL_UPTAKE_NOTE`. The fatty-acid glyph is
+ * `FattyAcidIcon`, a single carbon-chain tail (not `TriglycerideIcon`'s
+ * three), since LPL releases individual fatty acids rather than whole
+ * triglycerides. Muscle and Adipocytes reuse the same generic cell artwork as
  * Peripheral cells and Enterocytes (`CELLS_ART`), for the same reason: no
  * tissue-specific artwork exists yet.
  */
@@ -810,9 +810,9 @@ function LplBranch() {
         <span className="mc-pathway-node-label">LPL</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} data-node="fatty-acids" title={LPL_ARROW_NOTE}>
-        <TriglycerideIcon size={FATTY_ACID_ICON_SIZE} />
-        <TriglycerideIcon size={FATTY_ACID_ICON_SIZE} />
-        <TriglycerideIcon size={FATTY_ACID_ICON_SIZE} />
+        <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
+        <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
+        <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <CellDestination label="Muscle" />

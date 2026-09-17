@@ -281,3 +281,27 @@ export const TriglycerideIcon: IconComponent = ({ size = 48, color = '#c9a227', 
     </g>
   </svg>
 );
+
+/** Fatty acid: one carbon-chain tail off a carboxylic-acid head, as LPL releases from a triglyceride. */
+export const FattyAcidIcon: IconComponent = ({ size = 48, color = '#c9a227', strokeWidth = 2, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    <path d="M8 24 12 18 16 24 20 18 24 24 28 18 32 24 36 18 40 24" />
+    <path d="M8 24 5 20" />
+    <path d="M8 24 5 28" />
+    <g fill={color} stroke="none">
+      <circle cx="8" cy="24" r="1.6" />
+    </g>
+  </svg>
+);
