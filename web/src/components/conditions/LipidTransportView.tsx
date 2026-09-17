@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
+import { Copy } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { CarrierIcon, CholesterolIcon } from './customIcons';
 import { SegmentedControl } from '../primitives';
@@ -1063,7 +1064,7 @@ export function LipidTransportView({
                 <div className="mc-lipid-particles">
                   <LiverNode open={open} onToggle={toggleChip} />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: -32, marginLeft: 221 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: -20, marginLeft: 291 }}>
                   <div title={VLDL_ASSEMBLY_NOTE}>
                     <ParticleNode id="vldl-construction" label="Nascent VLDL" trigCount={3} cholCount={3} trigOverlap={4} />
                   </div>
@@ -1163,7 +1164,39 @@ function DebugPanel({ drags, activeId }: Readonly<{ drags: Record<string, Return
         boxShadow: '0 4px 20px rgba(0,0,0,0.45)',
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 6 }}>Debug: dragged nodes ({ids.length})</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ fontWeight: 700 }}>Debug: dragged nodes ({ids.length})</div>
+        {ids.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              const text = ids
+                .map((id) => {
+                  const d = drags[id];
+                  return `${id}\ndx=${d.dx >= 0 ? '+' : ''}${d.dx} dy=${d.dy >= 0 ? '+' : ''}${d.dy}\nleft: ${d.left} · top: ${d.top}\nmarginLeft: ${d.marginLeft} · marginTop: ${d.marginTop}`;
+                })
+                .join('\n');
+              navigator.clipboard?.writeText(text);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: 10,
+              fontFamily: 'inherit',
+              color: '#eee',
+              background: 'rgba(255,255,255,0.14)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: 4,
+              padding: '2px 8px',
+              cursor: 'pointer',
+            }}
+          >
+            <Copy size={12} />
+            Copy
+          </button>
+        )}
+      </div>
       {ids.length === 0 && <div style={{ opacity: 0.7 }}>Drag any diagram node to see its offset.</div>}
       {ids.map((id) => {
         const d = drags[id];
