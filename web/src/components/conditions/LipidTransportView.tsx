@@ -3,7 +3,7 @@ import { Copy } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { CarrierIcon, CholesterolIcon } from './customIcons';
 import { SegmentedControl } from '../primitives';
-import { ParticleNode, TRIGLYCERIDE_ART } from './Particle3';
+import { ParticleNode } from './Particle3';
 import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
 import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
@@ -16,6 +16,7 @@ import {
   CARD_WIDTH,
   ENZYME_ART,
   SIZE,
+  TRIGLYCERIDE_ART,
   EMPTY,
   NO_REFERENCE,
   associationFor,

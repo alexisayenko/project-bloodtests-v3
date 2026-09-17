@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { CarrierIcon, CholesterolIcon, type IconComponent } from './customIcons';
-import { SIZE, type GlyphArt } from './pathwayShared';
+import { SIZE, TRIGLYCERIDE_ART } from './pathwayShared';
 import { Glyph } from './PathwayParts';
 
 /** ApoB-100's own drawing spans ~42.6 of its 48-unit viewBox (HormonalPathwaysView's CARRIER_SIZE), so its box is enlarged to bring the drawing itself to molecular-actor size. */
@@ -37,9 +37,7 @@ const STACK_CHOL_ICON_SIZE = 34;
  * gives % of each particle's own mass, and IDL's isn't sourced at all.
  */
 
-/** Triglyceride glyph, cropped to its non-transparent bounding box the way LIVER_ART is. `size` is overridden per call site by TriglycerideGlyphIcon below, since Glyph bakes its render size into the art object. Exported for LipidTransportView's own standalone TRIG glyphs (the liver's and enterocytes' own triglyceride synthesis), which sit outside any particle. */
-export const TRIGLYCERIDE_ART: GlyphArt = { src: '/pathways/triglyceride.png?v=1', width: 675, height: 449, box: [6, 6, 669, 443], size: SIZE.molecular };
-/** Adapts TRIGLYCERIDE_ART to the `IconComponent` shape `CompoundStack`'s `icon` prop expects, so the raster glyph can stand in for the hand-drawn `TriglycerideIcon` there. */
+/** Adapts TRIGLYCERIDE_ART (pathwayShared.ts) to the `IconComponent` shape `CompoundStack`'s `icon` prop expects, so the raster glyph can stand in for the hand-drawn `TriglycerideIcon` there. */
 const TriglycerideGlyphIcon: IconComponent = ({ size = 48 }) => <Glyph art={{ ...TRIGLYCERIDE_ART, size }} alt="Triglyceride" />;
 
 /** A cargo diagram's own anchor: an icon (or docked bubble) with a caption below it, sized to line up with the apoprotein's own height. `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it looking off-center. */

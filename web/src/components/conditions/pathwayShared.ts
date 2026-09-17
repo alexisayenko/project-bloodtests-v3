@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../../data/analyteCatalog';
 import { fmtNum } from '../../utils/format';
 import type { IndexBands, IndexDef } from '../../data/computedIndices';
@@ -325,7 +325,9 @@ export function useNodeDrag(root: RefObject<HTMLDivElement | null>, enabled: boo
   const [drags, setDrags] = useState<Record<string, NodeDragState>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const dragsRef = useRef(drags);
-  dragsRef.current = drags;
+  useEffect(() => {
+    dragsRef.current = drags;
+  }, [drags]);
 
   useEffect(() => {
     const el = root.current;
@@ -385,13 +387,13 @@ export function useNodeDrag(root: RefObject<HTMLDivElement | null>, enabled: boo
     };
   }, [root, enabled]);
 
-  const reset = useCallback(() => {
+  const reset = () => {
     root.current?.querySelectorAll<HTMLElement>('[data-node]').forEach((node) => {
       node.style.transform = '';
     });
     setDrags({});
     setActiveId(null);
-  }, [root]);
+  };
 
   return { drags, activeId, reset };
 }
@@ -409,6 +411,9 @@ export interface GlyphArt {
 }
 
 export const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.molecular };
+
+/** Triglyceride glyph, cropped to its non-transparent bounding box. `size` is overridden per call site, since Glyph bakes its render size into the art object. Lives here (rather than Particle3.tsx, a components-only file) since react-refresh requires a file to export only components; LipidTransportView's own standalone TRIG glyphs (the liver's and enterocytes' own triglyceride synthesis, which sit outside any particle) import it from here too. */
+export const TRIGLYCERIDE_ART: GlyphArt = { src: '/pathways/triglyceride.png?v=1', width: 675, height: 449, box: [6, 6, 669, 443], size: SIZE.molecular };
 
 /**
  * particle1: the simplest reusable pathway node config -- a single bare
