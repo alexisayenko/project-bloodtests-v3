@@ -444,7 +444,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
   const [secretion, setSecretion] = useState<string | null>(null);
-  const [fattyAcids, setFattyAcids] = useState<string | null>(null);
+  const [ldlUptake, setLdlUptake] = useState<string | null>(null);
   const [particleBonds, setParticleBonds] = useState<string[]>([]);
   const [particleOutlines, setParticleOutlines] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
   const [synthArrow, setSynthArrow] = useState<string | null>(null);
@@ -455,10 +455,11 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     setSecretion(
       organ && vldl ? `M${vldl.left + vldl.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldl.left + vldl.width / 2 - base.left},${vldl.top - base.top - 4}` : null
     );
+    const ldl = el.querySelector('[data-node="ldl"]')?.getBoundingClientRect();
     const targetCells = el.querySelector('[data-node="target-cells"]')?.getBoundingClientRect();
-    setFattyAcids(
-      vldl && targetCells
-        ? `M${vldl.left + vldl.width / 2 - base.left},${vldl.bottom - base.top + 2} L${targetCells.left + targetCells.width / 2 - base.left},${targetCells.top - base.top - 4}`
+    setLdlUptake(
+      ldl && targetCells
+        ? `M${ldl.left + ldl.width / 2 - base.left},${ldl.bottom - base.top + 2} L${targetCells.left + targetCells.width / 2 - base.left},${targetCells.top - base.top - 4}`
         : null
     );
     // Every particle (VLDL, IDL, LDL, chylomicron, HDL, Lp(a)) gets its own TRIG/Chol bonds to its holder apoprotein and a dashed outline hugging its actual icons.
@@ -518,7 +519,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         </marker>
       </defs>
       {secretion && <path d={secretion} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
-      {fattyAcids && <path d={fattyAcids} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {ldlUptake && <path d={ldlUptake} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {particleBonds.map((d, i) => (
         <path key={i} d={d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
@@ -710,16 +711,16 @@ function ParticleNode({
   );
 }
 
-/** Lipoprotein lipase, anchored on capillary walls in tissue, strips VLDL of its triglyceride -- the fatty acids released feed muscle and fat cells. */
-const LPL_NOTE = "Lipoprotein lipase releases fatty acids from VLDL's triglycerides into tissue";
+/** LDL is the particle that actually reaches peripheral cells; not yet in lipoprotein-particles.json's cited sources (task-0060's F11 is marked "to retrieve"), so kept brief rather than sourced. */
+const LDL_UPTAKE_NOTE = 'LDL delivers cholesterol to peripheral cells via the LDL receptor';
 
 /** Same cell artwork Hormonal Pathways uses for Sertoli/Leydig -- generic tissue cells, not organ-specific. */
 const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
 
-/** Where LPL delivers VLDL's fatty acids -- drawn below VLDL, the particle it acts on. */
+/** Where LDL delivers its cholesterol -- centered below the whole VLDL-IDL-LDL chain, in the gap above HDL/Lp(a). */
 function TargetCellsNode() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="target-cells" title={LPL_NOTE}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="target-cells" title={LDL_UPTAKE_NOTE}>
       <Glyph art={CELLS_ART} />
       <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>Target cells</span>
     </div>
@@ -731,17 +732,18 @@ function TargetCellsNode() {
  * triglyceride and becomes IDL, then LDL -- one ApoB-100 particle
  * transforming, not three separate ones. Each stage keeps its own cargo
  * diagram, its TRIG and Chol circle counts both falling down the chain as
- * the particle sheds mass.
+ * the particle sheds mass. Target cells sits centered below the row, since
+ * it is LDL -- not VLDL -- that delivers cholesterol to it.
  */
 function LipoproteinChain() {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 44, paddingBottom: 26 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 'fit-content' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 44, paddingBottom: 26 }}>
         <ParticleNode id="vldl" label="VLDL" trigCount={3} cholCount={3} trigOverlap={3} />
-        <TargetCellsNode />
+        <ParticleNode id="idl" label="IDL" trigCount={2} cholCount={2} trigOverlap={3} />
+        <ParticleNode id="ldl" label="LDL" trigCount={1} cholCount={1} />
       </div>
-      <ParticleNode id="idl" label="IDL" trigCount={2} cholCount={2} trigOverlap={3} />
-      <ParticleNode id="ldl" label="LDL" trigCount={1} cholCount={1} />
+      <TargetCellsNode />
     </div>
   );
 }
