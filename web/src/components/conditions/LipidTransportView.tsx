@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { PageHeader } from './PageHeader';
-import { CarrierIcon, CholesterolIcon, FattyAcidIcon, TriglycerideIcon, type IconComponent } from './customIcons';
+import { CarrierIcon, CholesterolIcon, FattyAcidClusterIcon, TriglycerideIcon, type IconComponent } from './customIcons';
 import { SegmentedControl } from '../primitives';
 import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
 import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
@@ -884,16 +884,16 @@ function EnterocytesNode() {
  * muscle for energy and fat tissue for storage -- a different, real pathway
  * from LDL's own cholesterol delivery above, so it gets its own arrow rather
  * than merging with `LDL_UPTAKE_NOTE`. The fatty-acid glyph is
- * `FattyAcidIcon`, a single carbon-chain tail (not `TriglycerideIcon`'s
- * three), since LPL releases individual fatty acids rather than whole
- * triglycerides. Muscle and Adipocytes reuse the same generic cell artwork as
- * Peripheral cells and Enterocytes (`CELLS_ART`), for the same reason: no
+ * `FattyAcidClusterIcon`, several loose carbon-chain tails scattered in one
+ * icon (not `TriglycerideIcon`'s three tails on one glycerol backbone),
+ * since LPL releases individual fatty acids rather than whole triglycerides.
+ * Muscle and Adipocytes reuse the same generic cell artwork as Peripheral
+ * cells and Enterocytes (`CELLS_ART`), for the same reason: no
  * tissue-specific artwork exists yet.
  */
 const LPL_NOTE = 'Lipoprotein lipase';
 const LPL_ARROW_NOTE = "Lipoprotein lipase releases fatty acids from VLDL's triglycerides for muscle energy and fat storage";
-const FATTY_ACID_ICON_SIZE = 20;
-const FATTY_ACID_STACK_OVERLAP = 6;
+const FATTY_ACID_ICON_SIZE = 34;
 
 function CellDestination({ label }: Readonly<{ label: string }>) {
   return (
@@ -913,17 +913,9 @@ function LplBranch() {
         </span>
         <span className="mc-pathway-node-label">LPL</span>
       </div>
-      <div
-        style={{ position: 'relative', width: FATTY_ACID_ICON_SIZE + FATTY_ACID_STACK_OVERLAP * 2, height: FATTY_ACID_ICON_SIZE + FATTY_ACID_STACK_OVERLAP * 2 }}
-        data-node="fatty-acids"
-        title={LPL_ARROW_NOTE}
-      >
-        {[0, 1, 2].map((i) => (
-          <span key={i} style={{ position: 'absolute', left: i * FATTY_ACID_STACK_OVERLAP, top: i * FATTY_ACID_STACK_OVERLAP, zIndex: i }}>
-            <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
-          </span>
-        ))}
-      </div>
+      <span data-node="fatty-acids" title={LPL_ARROW_NOTE}>
+        <FattyAcidClusterIcon size={FATTY_ACID_ICON_SIZE} />
+      </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <CellDestination label="Muscle" />
         <CellDestination label="Adipocytes" />
@@ -1057,7 +1049,7 @@ export function LipidTransportView({
               <div className="mc-pathway-diagram">
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }} data-node="fa-supply" title={VLDL_FATTY_ACID_SUPPLY_NOTE}>
-                    <FattyAcidIcon size={16} />
+                    <FattyAcidClusterIcon size={28} />
                     <span className="mc-pathway-node-label" style={{ fontSize: 10 }}>fatty acids</span>
                   </div>
                 </div>

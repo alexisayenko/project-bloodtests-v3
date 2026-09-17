@@ -305,3 +305,27 @@ export const FattyAcidIcon: IconComponent = ({ size = 48, color = '#c9a227', str
     </g>
   </svg>
 );
+
+/** A few loose fatty acids -- three short carbon-chain tails, each with its own head, in parallel rows rather than one tail repeated. */
+export const FattyAcidClusterIcon: IconComponent = ({ size = 48, color = '#c9a227', strokeWidth = 2, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    {[-11, 0, 11].map((dy) => (
+      <g key={dy} transform={`translate(0 ${dy})`}>
+        <path d="M8 14 12 10 16 14 20 10 24 14 28 10 32 14" />
+        <circle cx="8" cy="14" r="2.2" fill={color} stroke="none" />
+      </g>
+    ))}
+  </svg>
+);
