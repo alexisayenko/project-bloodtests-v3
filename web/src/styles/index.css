@@ -582,9 +582,9 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   --pw-fit-chain-gap: clamp(48px, calc(48px + (100cqi - 720px) * 0.0651), 76px);
 }
 .mc-lipid-particles { display: grid; grid-template-columns: repeat(6, auto); justify-content: start; align-items: start; column-gap: 14px; row-gap: 6px; }
-.mc-lipid-synth-chol { position: absolute; left: 78%; top: 78%; transform: translate(calc(-50% + 32px), calc(-50% + 32px)); }
-.mc-lipid-liver-apob { position: absolute; left: 45%; top: 78%; transform: translate(-50%, calc(-50% + 32px)); display: flex; flex-direction: column; align-items: center; }
-.mc-lipid-liver-trig { position: absolute; left: 135%; top: 95%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+.mc-lipid-synth-chol { position: absolute; left: 191px; top: 96px; transform: translate(calc(-50% + 32px), calc(-50% + 32px)); }
+.mc-lipid-liver-apob { position: absolute; left: 70px; top: 250px; transform: translate(-50%, calc(-50% + 32px)); display: flex; flex-direction: column; align-items: center; }
+.mc-lipid-liver-trig { position: absolute; left: 107px; top: 164px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
 .mc-lipid-extra-apo { position: absolute; right: -8px; bottom: -6px; background: #fff; border-radius: 50%; }
 .mc-lipid-extra-apo-label { position: absolute; right: -14px; bottom: -4px; font-size: 9px; font-weight: 600; color: var(--lipid-outline); }
 .mc-pathway-art-note { font-size: 13px; color: var(--text-muted); margin: -4px 0 14px; }

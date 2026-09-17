@@ -1063,7 +1063,7 @@ export function LipidTransportView({
                 <div className="mc-lipid-particles">
                   <LiverNode open={open} onToggle={toggleChip} />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 20, marginLeft: 170 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: -32, marginLeft: 221 }}>
                   <div title={VLDL_ASSEMBLY_NOTE}>
                     <ParticleNode id="vldl-construction" label="Nascent VLDL" trigCount={3} cholCount={3} trigOverlap={4} />
                   </div>
