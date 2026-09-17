@@ -1,6 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 import { formatMonthYear } from '../../data/months';
-import { DASH, type Association, type GlyphArt, type Measure, type ReferenceInfo } from './pathwayShared';
+import { DASH, type Association, type GlyphArt, type Measure, type Particle1, type ReferenceInfo } from './pathwayShared';
 
 /** A diagram chip's value, its share of total T on a line of its own. */
 export function ChipValue({ measure }: Readonly<{ measure: Measure }>) {
@@ -155,6 +155,64 @@ export function Glyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string 
     <span className="mc-pathway-glyph" style={{ width: art.size, height: art.size }}>
       <img src={art.src} alt={alt} style={style} />
     </span>
+  );
+}
+
+/**
+ * White circular backdrop so a bare glyph reads over busy illustrative
+ * artwork (e.g. HMG-CoA reductase on the liver image) -- an inline-style
+ * equivalent of Lipid Transport's own `.mc-lipid-enzyme-backdrop` class,
+ * kept as inline styles here rather than a shared CSS class so this
+ * cross-page component carries no dependency on Lipid Transport's own CSS
+ * branding, and `LipidTransportView.tsx` (which still references that
+ * class by name) needs no change when this lands.
+ */
+const PARTICLE1_BACKDROP_STYLE: CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, borderRadius: '50%',
+  background: '#fff', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.15)',
+};
+
+/**
+ * particle1: a single bare glyph with a caption -- the simplest reusable
+ * pathway node (see `Particle1` in `pathwayShared.ts`). Reuses the same
+ * `.mc-pathway-enzyme`/`.mc-pathway-enzyme-col` layout Hormonal Pathways'
+ * own `Enzyme` node already used, caption beside the glyph; a node whose
+ * kind wants a different caption layout (e.g. below, like a receptor)
+ * isn't migrated to this shape yet.
+ */
+export function Particle1Node({
+  particle,
+  art,
+  dataNode,
+  alt,
+  title,
+  onClick,
+  children,
+}: Readonly<{
+  particle: Particle1;
+  art: GlyphArt;
+  /** The `data-node` id arrows and association lines target. */
+  dataNode: string;
+  alt?: string;
+  title?: string;
+  onClick?: MouseEventHandler<HTMLDivElement>;
+  /** Content rendered below the node, e.g. an enzyme's product. */
+  children?: ReactNode;
+}>) {
+  return (
+    <div className="mc-pathway-enzyme-col">
+      <div className="mc-pathway-enzyme" data-node={dataNode} title={title} onClick={onClick}>
+        {particle.backdrop ? (
+          <span style={PARTICLE1_BACKDROP_STYLE}>
+            <Glyph art={art} alt={alt} />
+          </span>
+        ) : (
+          <Glyph art={art} alt={alt} />
+        )}
+        <span className="mc-pathway-node-label">{particle.name}</span>
+      </div>
+      {children && <div className="mc-pathway-product">{children}</div>}
+    </div>
   );
 }
 

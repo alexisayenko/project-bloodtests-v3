@@ -294,3 +294,22 @@ export interface GlyphArt {
 }
 
 export const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.molecular };
+
+/**
+ * particle1: the simplest reusable pathway node config -- a single bare
+ * glyph with a caption, for a molecular-scale actor. Covers every kind of
+ * bare, no-tile node currently hand-coded across both pathway pages: an
+ * enzyme (HMG-CoA reductase, LPL, aromatase, 5α-reductase), a carrier
+ * (SHBG, Albumin), a signal (T, DHT, E2), a receptor (androgen/estrogen),
+ * or a standalone byproduct with no carrier of its own (LPL's released
+ * fatty acids). particle2/particle3 (docked-compound and multi-compound
+ * lipoprotein nodes) are out of scope here -- see `ParticleNode` in
+ * `Particle3.tsx` for the latter.
+ */
+export interface Particle1 {
+  /** Caption text, e.g. "HMG-CoA reductase". */
+  name: string;
+  type: 'enzyme' | 'carrier' | 'signal' | 'receptor' | 'byproduct';
+  /** White circular backdrop for contrast when the node sits on top of busy illustrative artwork (e.g. HMG-CoA reductase on the liver image). Omit/false for a node on plain background. */
+  backdrop?: boolean;
+}

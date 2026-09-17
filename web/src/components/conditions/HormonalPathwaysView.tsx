@@ -33,8 +33,8 @@ import { panelDates, type Observation } from './markers';
 import { displayedResult, formatFullDate } from './ui';
 import { hasReference, nearestEntryTo, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
-import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, ENZYME_ART, SIZE, type GlyphArt, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';
-import { ArtworkNote, AssociationLayer, ChipValue, Glyph, Cites, DateStepper, ReferenceBlock, SourcesBlock } from './PathwayParts';
+import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, ENZYME_ART, SIZE, type GlyphArt, type Particle1, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';
+import { ArtworkNote, AssociationLayer, ChipValue, Glyph, Cites, DateStepper, Particle1Node, ReferenceBlock, SourcesBlock } from './PathwayParts';
 import { SegmentedControl } from '../primitives';
 import {
   BrainPituitaryIcon,
@@ -520,20 +520,18 @@ function TestesDiagram() {
   );
 }
 
+/** Refactored onto particle1 (`Particle1`/`Particle1Node` in pathwayShared.ts/PathwayParts.tsx) -- same bare-glyph-plus-caption output, no backdrop (task-0024: bare icons only here). */
 function Enzyme({
   label,
   node,
   art,
   children,
 }: Readonly<{ label: string; node: string; art: GlyphArt; children?: ReactNode }>) {
+  const particle: Particle1 = { name: label, type: 'enzyme' };
   return (
-    <div className="mc-pathway-enzyme-col">
-      <div className="mc-pathway-enzyme" data-node={node}>
-        <Glyph art={art} />
-        <span className="mc-pathway-node-label">{label}</span>
-      </div>
-      {children && <div className="mc-pathway-product">{children}</div>}
-    </div>
+    <Particle1Node particle={particle} art={art} dataNode={node}>
+      {children}
+    </Particle1Node>
   );
 }
 
