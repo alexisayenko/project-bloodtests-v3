@@ -453,6 +453,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [synthArrow, setSynthArrow] = useState<string | null>(null);
   const [enterocyteTrigArrow, setEnterocyteTrigArrow] = useState<string | null>(null);
   const [enterocyteApoB48Arrow, setEnterocyteApoB48Arrow] = useState<string | null>(null);
+  const [cholToVldlArrow, setCholToVldlArrow] = useState<string | null>(null);
+  const [liverTrigArrow, setLiverTrigArrow] = useState<string | null>(null);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
     const organ = el.querySelector('.mc-lipid-organ')?.getBoundingClientRect();
@@ -537,6 +539,24 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
           })()
         : null
     );
+    const vldlConstructionChol = el.querySelector('[data-node="vldl-construction-chol"]')?.getBoundingClientRect();
+    setCholToVldlArrow(
+      synthChol && vldlConstructionChol
+        ? (() => {
+            const r = rectCenter(synthChol, base);
+            const s = rectCenter(vldlConstructionChol, base);
+            const from = onEdge(r, s, synthChol.width / 2 + 3);
+            const to = onEdge(s, r, vldlConstructionChol.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
+        : null
+    );
+    const vldlConstructionTrig = el.querySelector('[data-node="vldl-construction-trig"]')?.getBoundingClientRect();
+    setLiverTrigArrow(
+      organ && vldlConstructionTrig
+        ? `M${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left},${vldlConstructionTrig.top - base.top - 4}`
+        : null
+    );
     const enterocytes = el.querySelector('[data-node="enterocytes"]')?.getBoundingClientRect();
     const enterocyteTrig = el.querySelector('[data-node="enterocyte-trig"]')?.getBoundingClientRect();
     const enterocyteApoB48 = el.querySelector('[data-node="enterocyte-apob48"]')?.getBoundingClientRect();
@@ -584,6 +604,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       ))}
       {lplArrow && <path d={lplArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {cholToVldlArrow && <path d={cholToVldlArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {liverTrigArrow && <path d={liverTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {enterocyteTrigArrow && <path d={enterocyteTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {enterocyteApoB48Arrow && <path d={enterocyteApoB48Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {particleBonds.map((d, i) => (
