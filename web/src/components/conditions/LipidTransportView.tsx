@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { PageHeader } from './PageHeader';
 import { CarrierIcon, CholesterolIcon } from './customIcons';
 import { SegmentedControl } from '../primitives';
@@ -414,8 +414,14 @@ function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle:
           <CholesterolIcon size={STANDALONE_CHOL_ICON_SIZE} />
         </span>
         <div className="mc-lipid-liver-apob" data-node="liver-apob" title={VLDL_ASSEMBLY_NOTE}>
-          <CarrierIcon size={STANDALONE_CHOL_ICON_SIZE} />
+          {/* A structural-apoprotein marker beside HMG-CoA reductase, so it reads at that same molecular-actor size (SIZE.molecular) rather than the bigger standalone-bubble size used for the bare Chol icon above -- not yet on Particle1Node (task-0062-followup): that only renders a GlyphArt raster via Glyph, and this is CarrierIcon, a hand-drawn IconComponent. Pair this with Intestine's enterocyte-apob48 (same role, same size) when converting -- see its own comment for why 'carrier' (SHBG/Albumin-style binding) isn't the right Particle1 type for either. */}
+          <CarrierIcon size={SIZE.molecular} />
           <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>ApoB-100</span>
+        </div>
+        {/* A synthesis marker feeding Nascent VLDL's own TRIG stack, fanned out between liver-apob (straight down from the reductase) and synth-chol (right of it), matching how fatty acids arrive at the liver and get handed off to this node -- not yet on Particle1Node (task-0062-followup), though as a GlyphArt-based byproduct marker (same shape as LPL's fatty-acids node) it's the cheaper of the two conversions once that lands. */}
+        <div className="mc-lipid-liver-trig" data-node="liver-trig" title={LIVER_TRIG_SYNTH_NOTE}>
+          <Glyph art={{ ...TRIGLYCERIDE_ART, size: SIZE.molecular }} alt="Triglyceride" />
+          <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>TRIG</span>
         </div>
       </div>
     </div>
@@ -466,6 +472,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [trigToChylomicronArrow, setTrigToChylomicronArrow] = useState<string | null>(null);
   const [apoB48ToChylomicronArrow, setApoB48ToChylomicronArrow] = useState<string | null>(null);
   const [faSupplyArrow, setFaSupplyArrow] = useState<string | null>(null);
+  const [liverToTrigArrow, setLiverToTrigArrow] = useState<string | null>(null);
+  const [retentionArrows, setRetentionArrows] = useState<string[]>([]);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
     const vldl = el.querySelector('[data-node="vldl"]')?.getBoundingClientRect();
@@ -509,6 +517,21 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       chain.push(`M${idl.right - base.left},${y} L${ldl.left - base.left},${y}`);
     }
     setChainArrows(chain);
+    // Retention: LDL, IDL and Lp(a) each get a dashed arrow (a zone-crossing, like faSupplyArrow below) from their own ApoB-100 down to the artery-wall strip's own drawn gap in the endothelium -- never from VLDL, which the diagram omits per RETENTION_SOURCES' size ceiling.
+    const lpaApo = el.querySelector('[data-node="lpa-apo"]')?.getBoundingClientRect();
+    const arteryGap = el.querySelector(`[data-node="${ARTERY_GAP}"]`)?.getBoundingClientRect();
+    setRetentionArrows(
+      arteryGap
+        ? [idlApo, ldlApo, lpaApo].flatMap((apo) => {
+            if (!apo) return [];
+            const from = rectCenter(apo, base);
+            const to = rectCenter(arteryGap, base);
+            const start = onEdge(from, to, apo.width / 2 + 3);
+            const end = onEdge(to, from, arteryGap.width / 2 + 3);
+            return [`M${start.x},${start.y} L${end.x},${end.y}`];
+          })
+        : []
+    );
     // VLDL's separate fate for its shed triglyceride: a path down to LPL's own bubble, then on to the fatty-acid glyph -- one continuous arrow, kept apart from the LDL-uptake one above.
     const lplBubble = el.querySelector('[data-node="lpl-bubble"]')?.getBoundingClientRect();
     const fattyAcids = el.querySelector('[data-node="fatty-acids"]')?.getBoundingClientRect();
@@ -597,14 +620,26 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
           })()
         : null
     );
-    // Free fatty acids circulate in Blood Transport (adipose lipolysis, chylomicron remnants) before the liver takes them up -- this arrow crosses the zone boundary rather than starting inside Liver, landing on liver-trig rather than jumping straight into the Nascent VLDL box.
+    // Free fatty acids circulate in Blood Transport (adipose lipolysis, chylomicron remnants) before the liver takes them up -- this arrow crosses the zone boundary and lands on the liver itself, which then hands off to its own TRIG synthesis (liver-trig) as a separate step, rather than jumping straight to liver-trig.
     const faSupply = el.querySelector('[data-node="fa-supply"]')?.getBoundingClientRect();
+    const liverOrgan = el.querySelector('[data-node="liver"]')?.getBoundingClientRect();
     setFaSupplyArrow(
-      faSupply && liverTrig
+      faSupply && liverOrgan
         ? (() => {
             const r = rectCenter(faSupply, base);
-            const s = rectCenter(liverTrig, base);
+            const s = rectCenter(liverOrgan, base);
             const from = onEdge(r, s, faSupply.width / 2 + 3);
+            const to = onEdge(s, r, liverOrgan.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
+        : null
+    );
+    setLiverToTrigArrow(
+      liverOrgan && liverTrig
+        ? (() => {
+            const r = rectCenter(liverOrgan, base);
+            const s = rectCenter(liverTrig, base);
+            const from = onEdge(r, s, liverOrgan.width / 2 + 3);
             const to = onEdge(s, r, liverTrig.width / 2 + 5);
             return `M${from.x},${from.y} L${to.x},${to.y}`;
           })()
@@ -685,6 +720,10 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       {liverTrigArrow && <path d={liverTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {apoB100Arrow && <path d={apoB100Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {faSupplyArrow && <path d={faSupplyArrow} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />}
+      {liverToTrigArrow && <path d={liverToTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {retentionArrows.map((d, i) => (
+        <path key={i} d={d} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />
+      ))}
       {enterocyteTrigArrow && <path d={enterocyteTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {enterocyteApoB48Arrow && <path d={enterocyteApoB48Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {trigToChylomicronArrow && <path d={trigToChylomicronArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
@@ -811,6 +850,103 @@ function LipoproteinChain() {
   );
 }
 
+// ---- arterial wall ----
+
+/** Cross-section strip (endothelium, intima, media), cropped to its non-transparent bounding box the way LIVER_ART is -- wide and short (~4.8:1 content), so it is sized as a horizontal band via a custom `size` rather than SIZE.organ's small square. */
+const ARTERY_WALL_ART: GlyphArt = { src: '/pathways/artery-wall.png?v=1', width: 1648, height: 355, box: [6, 6, 1642, 349], size: 760 };
+
+const RETENTION = 'retention';
+const ARTERY_GAP = 'artery-gap';
+
+/** Plain hover summary on the zone and the arrows landing on it; the clickable gap chip carries the full cited claim (RetentionCard). */
+const RETENTION_NOTE =
+  'LDL, IDL and Lp(a) cross a damaged endothelium and are retained by ApoB-100 binding intima proteoglycans; particles above ~70 nm, including VLDL, mostly cannot cross this way, so no arrow is drawn from it.';
+
+/**
+ * Response-to-retention mechanism (Williams KJ, Tabas I 1995) and the
+ * particle-size ceiling on which apoB lipoproteins can cross the
+ * endothelium at all, both restated with the same wording in the 2020 EAS
+ * Consensus Panel review -- one retrievable, quotable source for both
+ * claims, so cited once rather than compounding sources. Deliberately no
+ * VLDL arrow: task-0062's own read of this source is that large VLDL sits
+ * above the ~70 nm ceiling the second quote gives, so omission (not an
+ * invented threshold) is the correct call for that particle.
+ */
+const RETENTION_SOURCES: readonly CitedSource[] = [
+  {
+    organization: 'European Heart Journal (Borén J, Chapman MJ, Krauss RM, et al.; European Atherosclerosis Society Consensus Panel)',
+    title: 'Low-density lipoproteins cause atherosclerotic cardiovascular disease: pathophysiological, genetic, and therapeutic insights',
+    // Same paper as the second entry below; SourcesBlock keys each source by title|url, so the two carry distinct (harmless) URL fragments to stay unique rather than colliding as React list keys.
+    url: 'https://doi.org/10.1093/eurheartj/ehz962#retention',
+    year: 2020,
+    retrieved: '2026-09-17',
+    quote:
+      'positively charged amino acyl residues (arginine and lysine) in apoB100 with negatively charged sulfate and carboxylic acid groups of arterial wall proteoglycans',
+  },
+  {
+    organization: 'European Heart Journal (Borén J, Chapman MJ, Krauss RM, et al.; European Atherosclerosis Society Consensus Panel)',
+    title: 'Low-density lipoproteins cause atherosclerotic cardiovascular disease: pathophysiological, genetic, and therapeutic insights',
+    url: 'https://doi.org/10.1093/eurheartj/ehz962#size-limit',
+    year: 2020,
+    retrieved: '2026-09-17',
+    quote: 'Apolipoprotein B-containing lipoproteins of up to ∼70 nm in diameter […] can cross the endothelium',
+  },
+];
+
+/**
+ * PathwayParts' own `Glyph` always renders a SQUARE box (art.size × art.size),
+ * fine for the organ/cell/molecular icons it was built for (all inscribed in
+ * a square slot, some letterboxed) but wrong for this strip's ~4.8:1 content
+ * -- a square slot would leave it a sliver in the middle of mostly empty
+ * space. This sizes the box to art.size × its own aspect-derived height
+ * instead, the same crop-to-content-bbox technique applied on a rectangle.
+ */
+function WideGlyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string }>) {
+  const [left, top, right, bottom] = art.box;
+  const scale = art.size / (right - left);
+  const height = (bottom - top) * scale;
+  const style: CSSProperties = { width: art.width * scale, height: art.height * scale, left: -left * scale, top: -top * scale };
+  return (
+    <span className="mc-pathway-glyph" style={{ width: art.size, height }}>
+      <img src={art.src} alt={alt} style={style} />
+    </span>
+  );
+}
+
+/** The artery-wall strip with a clickable point over the endothelium's own drawn gap -- both the retention arrows from LDL/IDL/Lp(a) and RetentionCard land here. */
+function ArteryWallNode({ open, onToggle }: Readonly<{ open: string | null; onToggle: (id: string, el: HTMLElement) => void }>) {
+  return (
+    <div className="mc-lipid-artery">
+      <WideGlyph art={ARTERY_WALL_ART} alt="Arterial wall cross-section" />
+      <button
+        type="button"
+        className="mc-lipid-artery-gap"
+        data-caption={RETENTION}
+        data-node={ARTERY_GAP}
+        aria-expanded={open === RETENTION}
+        aria-label="Arterial retention"
+        title={RETENTION_NOTE}
+        onClick={(e) => onToggle(RETENTION, e.currentTarget)}
+      />
+    </div>
+  );
+}
+
+function RetentionCard({ left, top }: Readonly<{ left: number; top: number }>) {
+  const scope = `lipid-${RETENTION}`;
+  return (
+    <dialog open className="mc-pathway-pop" aria-label="Arterial retention" style={{ left, top, width: CARD_WIDTH, margin: 0 }}>
+      <div className="mc-pathway-pop-title">Arterial retention</div>
+      <p className="mc-pathway-pop-note">
+        LDL, IDL and Lp(a) cross a damaged endothelium and are retained in the intima, their ApoB-100 binding arterial-wall proteoglycans
+        <Cites scope={scope} cites={[1]} />. Only particles up to about 70 nm can cross the endothelium this way -- too small a ceiling for VLDL, which is why the diagram draws no arrow from it
+        <Cites scope={scope} cites={[2]} />.
+      </p>
+      <SourcesBlock scope={scope} info={{ headCites: [], lines: [], sources: [...RETENTION_SOURCES] }} />
+    </dialog>
+  );
+}
+
 // ---- page ----
 
 export function LipidTransportView({
@@ -864,7 +1000,7 @@ export function LipidTransportView({
   }, [open, placeCard]);
   useDismiss(open, close, '.mc-pathway-pop, [data-caption], [data-badge]', replaceCard);
 
-  const badgeOpen = open === HMGCR ? null : open;
+  const badgeOpen = open === HMGCR || open === RETENTION ? null : open;
   return (
     <div>
       <PageHeader
@@ -886,7 +1022,7 @@ export function LipidTransportView({
           />
         </div>
       </div>
-      <ArtworkNote>The liver image is illustrative.</ArtworkNote>
+      <ArtworkNote>The liver and artery-wall images are illustrative.</ArtworkNote>
       <div className="mc-pathway-layout" ref={layoutRef}>
         <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}`} />
         <div className="mc-pathway-main">
@@ -900,10 +1036,6 @@ export function LipidTransportView({
                   <LiverNode open={open} onToggle={toggleChip} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 20, marginLeft: 170 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="liver-trig" title={LIVER_TRIG_SYNTH_NOTE}>
-                    <Glyph art={{ ...TRIGLYCERIDE_ART, size: STANDALONE_CHOL_ICON_SIZE }} alt="Triglyceride" />
-                    <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>TRIG</span>
-                  </div>
                   <div title={VLDL_ASSEMBLY_NOTE}>
                     <ParticleNode id="vldl-construction" label="Nascent VLDL" trigCount={3} cholCount={3} trigOverlap={4} />
                   </div>
@@ -932,6 +1064,16 @@ export function LipidTransportView({
                 <LplBranch />
               </div>
             </section>
+            <section className="mc-pathway-band" aria-label="Arterial Wall">
+              <div className="mc-pathway-site">
+                <h2 className="mc-pathway-title" title="LDL, IDL and Lp(a) cross a damaged endothelium and are retained by ApoB-100 binding intima proteoglycans">
+                  Arterial Wall
+                </h2>
+              </div>
+              <div className="mc-pathway-diagram">
+                <ArteryWallNode open={open} onToggle={toggleChip} />
+              </div>
+            </section>
             <section className="mc-pathway-band" aria-label="Intestine">
               <div className="mc-pathway-site">
                 <h2 className="mc-pathway-title" title="Packages dietary fat, absorbed from a meal, into chylomicrons">Intestine</h2>
@@ -944,12 +1086,14 @@ export function LipidTransportView({
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <EnterocytesNode />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {/* Byproduct marker, same shape and size as liver-trig and LPL's fatty-acids node -- not yet on Particle1Node (task-0062-followup), though as a GlyphArt-based byproduct it's the cheap half of this pair to convert once that lands. */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocyte-trig" title={TRIG_SYNTH_NOTE}>
-                        <Glyph art={{ ...TRIGLYCERIDE_ART, size: STANDALONE_CHOL_ICON_SIZE }} alt="Triglyceride" />
+                        <Glyph art={{ ...TRIGLYCERIDE_ART, size: SIZE.molecular }} alt="Triglyceride" />
                         <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>TRIG</span>
                       </div>
+                      {/* A structural-apoprotein marker, same size as liver-apob (ApoB-100) -- both use CarrierIcon, a hand-drawn IconComponent Particle1Node can't render yet (it only wraps a GlyphArt via Glyph). When that's extended, this and liver-apob should share one Particle1 type; 'carrier' already means SHBG/Albumin-style binding carriers on Hormonal Pathways, a different role from a lipoprotein's own structural apoprotein, so land on a distinct type (e.g. 'apoprotein') for both rather than overloading 'carrier'. */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocyte-apob48" title={APOB48_SYNTH_NOTE}>
-                        <CarrierIcon size={STANDALONE_CHOL_ICON_SIZE} />
+                        <CarrierIcon size={SIZE.molecular} />
                         <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>ApoB-48</span>
                       </div>
                     </div>
@@ -962,6 +1106,7 @@ export function LipidTransportView({
         </div>
         <Badges snapshot={snapshot} unitSystem={unitSystem} open={badgeOpen} setOpen={setOpen} setHovered={setHovered} />
         {open === HMGCR && cardAt && <EnzymeCard left={cardAt.left} top={cardAt.top} />}
+        {open === RETENTION && cardAt && <RetentionCard left={cardAt.left} top={cardAt.top} />}
       </div>
     </div>
   );

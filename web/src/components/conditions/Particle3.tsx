@@ -96,7 +96,8 @@ function CompoundStack({
                 : { width: circleSize, height: circleSize }
             }
           >
-            <Icon size={iconSize} />
+            {/* Cascaded circles overlap, so only the frontmost (topmost z-index) one draws its icon -- the ones behind it are bare discs, otherwise their icons show through as visual clutter. The count still depicts the amount; only which layer carries the icon changes. */}
+            {(!overlap || i === count - 1) && <Icon size={iconSize} />}
           </span>
         ))}
       </div>
