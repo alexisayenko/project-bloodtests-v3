@@ -695,13 +695,7 @@ ringing each particle's own Chol/TRIG circle stack or ApoB/ApoA icon directly
 whole particle when a specific region isn't rendered; the per-particle
 reference-range chips and the ApoB bracket the old row carried are gone, a badge
 now rings the diagram itself. A ‹ date › stepper over the Cardiovascular Risk
-panel's `panelDates` and the SI/US switch drive every value. Below, a sourced
-size-and-composition table from `web/public/data/lipoprotein-particles.json`
-(closed schema `lipoprotein-particles-1.schema.json`, loader
-`data/lipoproteinParticles.ts`): diameter, density and structural apoproteins
-from Feingold's Endotext Table 1, mass percentages as each source printed them
-from Clinical Methods Table 31.2 and StatPearls (the page's range spanning
-disagreeing figures), IDL and Lp(a) composition "not sourced". The page shares
+panel's `panelDates` and the SI/US switch drive every value. The page shares
 its measures, reference and source blocks, stepper, dismiss handling,
 association rings, raster `Glyph` and layout-measuring hook with Hormonal
 Pathways through `pathwayShared.ts` and `PathwayParts.tsx` — one engine for

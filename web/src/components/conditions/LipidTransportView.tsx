@@ -33,7 +33,6 @@ import {
   type ReferenceInfo,
 } from './pathwayShared';
 import { ArtworkNote, AssociationLayer, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
-import { CompositionSection } from './LipidCompositionSection';
 
 type UnitSystem = 'si' | 'us';
 
@@ -830,7 +829,6 @@ export function LipidTransportView({
         <Badges snapshot={snapshot} unitSystem={unitSystem} open={badgeOpen} setOpen={setOpen} setHovered={setHovered} />
         {open === HMGCR && cardAt && <EnzymeCard left={cardAt.left} top={cardAt.top} />}
       </div>
-      <CompositionSection />
     </div>
   );
 }
