@@ -460,14 +460,18 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     const idl = el.querySelector('[data-node="idl"]')?.getBoundingClientRect();
     const ldl = el.querySelector('[data-node="ldl"]')?.getBoundingClientRect();
     const targetCells = el.querySelector('[data-node="target-cells"]')?.getBoundingClientRect();
-    setLdlUptake(
-      ldl && targetCells
-        ? `M${ldl.left + ldl.width / 2 - base.left},${ldl.bottom - base.top + 2} L${targetCells.left + targetCells.width / 2 - base.left},${targetCells.top - base.top - 4}`
-        : null
-    );
-    // VLDL -> IDL -> LDL is one particle transforming, so each hop is drawn as a short horizontal arrow through the gap between the two particles' own boxes, at the holder apoprotein's own height -- never crossing either particle's TRIG/Chol circles, which sit to the sides of that gap, not in it.
+    // VLDL -> IDL -> LDL is one particle transforming, so each hop (and LDL's own handoff to Peripheral cells, now beside it in the same row) is drawn as a short horizontal arrow through the gap between the two boxes, at the holder apoprotein's own height -- never crossing either particle's TRIG/Chol circles, which sit to the sides of that gap, not in it.
     const vldlApo = el.querySelector('[data-node="vldl-apo"]')?.getBoundingClientRect();
     const idlApo = el.querySelector('[data-node="idl-apo"]')?.getBoundingClientRect();
+    const ldlApo = el.querySelector('[data-node="ldl-apo"]')?.getBoundingClientRect();
+    setLdlUptake(
+      ldl && targetCells && ldlApo
+        ? (() => {
+            const y = ldlApo.top + ldlApo.height / 2 - base.top;
+            return `M${ldl.right - base.left},${y} L${targetCells.left - base.left},${y}`;
+          })()
+        : null
+    );
     const chain: string[] = [];
     if (vldl && idl && vldlApo) {
       const y = vldlApo.top + vldlApo.height / 2 - base.top;
@@ -553,7 +557,10 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         <path key={i} d={d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
       ))}
       {particleOutlines.map((o, i) => (
-        <rect key={i} x={o.x} y={o.y} width={o.w} height={o.h} rx={14} fill="none" stroke="var(--lipid-outline)" strokeWidth={1.5} strokeDasharray="4 3" />
+        // A fixed 14px radius would round LDL's own (near-square, 1-TRIG/1-Chol) box into a pill or circle;
+        // capping it to at most a third of the box's own shorter side keeps every particle's outline reading
+        // as a rounded rectangle, LDL included, whatever its own box shape happens to be.
+        <rect key={i} x={o.x} y={o.y} width={o.w} height={o.h} rx={Math.min(10, o.w / 3, o.h / 3)} fill="none" stroke="var(--lipid-outline)" strokeWidth={1.5} strokeDasharray="4 3" />
       ))}
       <AssociationLayer associations={associations} active={active} focused={focused} veil={veil} />
     </svg>
@@ -579,16 +586,17 @@ const VLDL_CARGO_DROP = 51;
 /** Horizontal gap either side of ApoB-100, tuned together with VLDL_CARGO_DROP. */
 const VLDL_CARGO_GAP = 4;
 /**
- * Circle size for each compound's individual unit-bubble in a stack (below).
- * A little smaller than the cargo diagram's single-icon bubbles, since three
- * of them now stack where one used to sit.
+ * Circle size for each compound's individual unit-bubble in a stack (below) --
+ * the same 32px diameter as `CARGO_BUBBLE_SIZE` and as `BUBBLE_SIZE`
+ * (`SIZE.molecular`) on Hormonal Pathways' own docked bubbles, so a bubble
+ * reads as the same size everywhere it appears on either page.
  */
-const STACK_TRIG_CIRCLE_SIZE = Math.round(CARGO_BUBBLE_SIZE * 0.78);
-const STACK_CHOL_CIRCLE_SIZE = Math.round(CARGO_BUBBLE_SIZE * 0.82);
-/** Matches DOCKED_SIZE, the size a hormone icon renders at docked inside a carrier's bubble on Hormonal Pathways (HormonalPathwaysView.tsx) -- same convention, an icon docked inside another shape. */
-const STACK_TRIG_ICON_SIZE = 21;
-/** The cholesterol glyph's own drawing reads smaller than TRIG's at the same size, so its icon runs bigger to fill its circle as fully. */
-const STACK_CHOL_ICON_SIZE = 28;
+const STACK_TRIG_CIRCLE_SIZE = CARGO_BUBBLE_SIZE;
+const STACK_CHOL_CIRCLE_SIZE = CARGO_BUBBLE_SIZE;
+/** Scaled up from Hormonal Pathways' DOCKED_SIZE (21, sized for a 25px stack circle) to keep the same fill ratio now the circle itself is bigger (32px, matching Hormonal Pathways' own bubble diameter). */
+const STACK_TRIG_ICON_SIZE = 27;
+/** The cholesterol glyph's own drawing reads smaller than TRIG's at the same size, so its icon runs bigger than its own circle to fill it as fully -- scaled up together with STACK_CHOL_CIRCLE_SIZE to keep the same proportion. */
+const STACK_CHOL_ICON_SIZE = 34;
 /**
  * TRIG: 3 for VLDL, 2 for IDL (shed via lipoprotein lipase), 1 for LDL
  * (essentially none left), 4 for chylomicron (the fattiest particle). Chol:
@@ -730,7 +738,7 @@ function ParticleNode({
             icon={CholesterolIcon}
             label="Chol"
             labelOffset={5}
-            overlap={3}
+            overlap={4}
           />
         </div>
       </div>
@@ -745,7 +753,7 @@ const LDL_UPTAKE_NOTE = 'LDL delivers cholesterol to peripheral cells via the LD
 /** Same cell artwork Hormonal Pathways uses for Sertoli/Leydig -- generic tissue cells, not organ-specific. */
 const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
 
-/** Where LDL delivers its cholesterol -- centered below the whole VLDL-IDL-LDL chain, in the gap above HDL/Lp(a). Labeled "Peripheral cells", the standard lipidology term for LDL-receptor uptake by non-liver body cells; `data-node="target-cells"` is kept as-is since the arrow measurement above queries it. */
+/** Where LDL delivers its cholesterol -- sits to the right of LDL, at the end of the chain row. Labeled "Peripheral cells", the standard lipidology term for LDL-receptor uptake by non-liver body cells; `data-node="target-cells"` is kept as-is since the arrow measurement above queries it. */
 function TargetCellsNode() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="target-cells" title={LDL_UPTAKE_NOTE}>
@@ -819,15 +827,20 @@ function LplBranch() {
  * triglyceride and becomes IDL, then LDL -- one ApoB-100 particle
  * transforming, not three separate ones. Each stage keeps its own cargo
  * diagram, its TRIG and Chol circle counts both falling down the chain as
- * the particle sheds mass. Peripheral cells sits centered below the row,
- * since it is LDL -- not VLDL -- that delivers cholesterol to it.
+ * the particle sheds mass. Peripheral cells sits beside LDL, at the end of
+ * the row, since it is LDL -- not VLDL -- that delivers cholesterol to it.
+ * The gap between the row and it eases with the container's own width
+ * (`--pw-fit-ldl-gap`, defined alongside Hormonal Pathways' own `--pw-fit-*`
+ * variables on the shared `.mc-pathway-bands` container-query root), so it
+ * still clears the badge column at a narrower viewport instead of running
+ * under it.
  */
 function LipoproteinChain() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 'fit-content' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 76, paddingBottom: 26 }}>
-        <ParticleNode id="vldl" label="VLDL" trigCount={3} cholCount={3} trigOverlap={3} />
-        <ParticleNode id="idl" label="IDL" trigCount={2} cholCount={2} trigOverlap={3} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--pw-fit-ldl-gap, 32px)', width: 'fit-content' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--pw-fit-chain-gap, 76px)' }}>
+        <ParticleNode id="vldl" label="VLDL" trigCount={3} cholCount={3} trigOverlap={4} />
+        <ParticleNode id="idl" label="IDL" trigCount={2} cholCount={2} trigOverlap={4} />
         <ParticleNode id="ldl" label="LDL" trigCount={1} cholCount={1} />
       </div>
       <TargetCellsNode />
@@ -948,7 +961,7 @@ export function LipidTransportView({
                     <Glyph art={INTESTINE_ART} alt="Intestine" />
                   </span>
                   <EnterocytesNode />
-                  <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={3} />
+                  <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={4} />
                 </div>
               </div>
             </section>

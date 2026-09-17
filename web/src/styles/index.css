@@ -577,6 +577,9 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   --pw-fit-exchange: clamp(32px, calc(32px + (100cqi - 720px) * 0.0558), 56px);
   --pw-fit-enzyme-gap: clamp(176px, calc(176px + (100cqi - 720px) * 0.1023), 220px);
   --pw-fit-e2-indent: clamp(34px, calc(34px + (100cqi - 720px) * 0.0442), 53px);
+  /* Lipid Transport: gap between the VLDL-IDL-LDL row and Peripheral cells, and between VLDL/IDL/LDL themselves, eased the same way so the row plus Peripheral cells still clears the badge column at a narrower canvas. */
+  --pw-fit-ldl-gap: clamp(16px, calc(16px + (100cqi - 720px) * 0.0372), 32px);
+  --pw-fit-chain-gap: clamp(48px, calc(48px + (100cqi - 720px) * 0.0651), 76px);
 }
 .mc-lipid-particles { display: grid; grid-template-columns: repeat(6, auto); justify-content: start; align-items: start; column-gap: 14px; row-gap: 6px; }
 .mc-lipid-synth-chol { position: absolute; left: 78%; top: 78%; transform: translate(calc(-50% + 32px), calc(-50% + 32px)); }
