@@ -445,6 +445,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
   const [secretion, setSecretion] = useState<string | null>(null);
   const [ldlUptake, setLdlUptake] = useState<string | null>(null);
+  const [chainArrows, setChainArrows] = useState<string[]>([]);
+  const [lplArrow, setLplArrow] = useState<string | null>(null);
   const [particleBonds, setParticleBonds] = useState<string[]>([]);
   const [particleOutlines, setParticleOutlines] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
   const [synthArrow, setSynthArrow] = useState<string | null>(null);
@@ -455,11 +457,33 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     setSecretion(
       organ && vldl ? `M${vldl.left + vldl.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldl.left + vldl.width / 2 - base.left},${vldl.top - base.top - 4}` : null
     );
+    const idl = el.querySelector('[data-node="idl"]')?.getBoundingClientRect();
     const ldl = el.querySelector('[data-node="ldl"]')?.getBoundingClientRect();
     const targetCells = el.querySelector('[data-node="target-cells"]')?.getBoundingClientRect();
     setLdlUptake(
       ldl && targetCells
         ? `M${ldl.left + ldl.width / 2 - base.left},${ldl.bottom - base.top + 2} L${targetCells.left + targetCells.width / 2 - base.left},${targetCells.top - base.top - 4}`
+        : null
+    );
+    // VLDL -> IDL -> LDL is one particle transforming, so each hop is drawn as a short horizontal arrow through the gap between the two particles' own boxes, at the holder apoprotein's own height -- never crossing either particle's TRIG/Chol circles, which sit to the sides of that gap, not in it.
+    const vldlApo = el.querySelector('[data-node="vldl-apo"]')?.getBoundingClientRect();
+    const idlApo = el.querySelector('[data-node="idl-apo"]')?.getBoundingClientRect();
+    const chain: string[] = [];
+    if (vldl && idl && vldlApo) {
+      const y = vldlApo.top + vldlApo.height / 2 - base.top;
+      chain.push(`M${vldl.right - base.left},${y} L${idl.left - base.left},${y}`);
+    }
+    if (idl && ldl && idlApo) {
+      const y = idlApo.top + idlApo.height / 2 - base.top;
+      chain.push(`M${idl.right - base.left},${y} L${ldl.left - base.left},${y}`);
+    }
+    setChainArrows(chain);
+    // VLDL's separate fate for its shed triglyceride: a path down to LPL's own bubble, then on to the fatty-acid glyph -- one continuous arrow, kept apart from the LDL-uptake one above.
+    const lplBubble = el.querySelector('[data-node="lpl-bubble"]')?.getBoundingClientRect();
+    const fattyAcids = el.querySelector('[data-node="fatty-acids"]')?.getBoundingClientRect();
+    setLplArrow(
+      vldl && lplBubble && fattyAcids
+        ? `M${vldl.left - base.left + 20},${vldl.bottom - base.top + 2} L${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.top - base.top - 4} M${lplBubble.right - base.left + 2},${lplBubble.top + lplBubble.height / 2 - base.top} L${fattyAcids.left - base.left - 2},${fattyAcids.top + fattyAcids.height / 2 - base.top}`
         : null
     );
     // Every particle (VLDL, IDL, LDL, chylomicron, HDL, Lp(a)) gets its own TRIG/Chol bonds to its holder apoprotein and a dashed outline hugging its actual icons.
@@ -520,6 +544,10 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       </defs>
       {secretion && <path d={secretion} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {ldlUptake && <path d={ldlUptake} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {chainArrows.map((d, i) => (
+        <path key={i} d={d} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />
+      ))}
+      {lplArrow && <path d={lplArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {particleBonds.map((d, i) => (
         <path key={i} d={d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
@@ -717,12 +745,71 @@ const LDL_UPTAKE_NOTE = 'LDL delivers cholesterol to peripheral cells via the LD
 /** Same cell artwork Hormonal Pathways uses for Sertoli/Leydig -- generic tissue cells, not organ-specific. */
 const CELLS_ART: GlyphArt = { src: '/pathways/leydig-cells.png', width: 50, height: 50, box: [7, 6, 48, 46], size: SIZE.cell };
 
-/** Where LDL delivers its cholesterol -- centered below the whole VLDL-IDL-LDL chain, in the gap above HDL/Lp(a). */
+/** Where LDL delivers its cholesterol -- centered below the whole VLDL-IDL-LDL chain, in the gap above HDL/Lp(a). Labeled "Peripheral cells", the standard lipidology term for LDL-receptor uptake by non-liver body cells; `data-node="target-cells"` is kept as-is since the arrow measurement above queries it. */
 function TargetCellsNode() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="target-cells" title={LDL_UPTAKE_NOTE}>
       <Glyph art={CELLS_ART} />
-      <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>Target cells</span>
+      <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>Peripheral cells</span>
+    </div>
+  );
+}
+
+/** Same cell artwork as target cells / Sertoli-Leydig -- generic tissue cells packaging absorbed fat, not yet wired to any measured arrow. */
+const ENTEROCYTES_NOTE = 'Intestinal cells that package absorbed dietary fat into chylomicrons';
+
+function EnterocytesNode() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocytes" title={ENTEROCYTES_NOTE}>
+      <Glyph art={CELLS_ART} />
+      <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>Enterocytes</span>
+    </div>
+  );
+}
+
+/**
+ * VLDL's separate fate for its shed triglyceride: lipoprotein lipase (LPL)
+ * strips fatty acids from VLDL's TG as it becomes IDL/LDL, releasing them to
+ * muscle for energy and fat tissue for storage -- a different, real pathway
+ * from LDL's own cholesterol delivery above, so it gets its own arrow rather
+ * than merging with `LDL_UPTAKE_NOTE`. The fatty-acid glyph reuses
+ * `TriglycerideIcon` at small size (LPL frees fatty acids from triglycerides,
+ * so the same glyph stands in for both, per this page's existing icon-reuse
+ * convention). Muscle and Adipocytes reuse the same generic cell artwork as
+ * Peripheral cells and Enterocytes (`CELLS_ART`), for the same reason: no
+ * tissue-specific artwork exists yet.
+ */
+const LPL_NOTE = 'Lipoprotein lipase';
+const LPL_ARROW_NOTE = "Lipoprotein lipase releases fatty acids from VLDL's triglycerides for muscle energy and fat storage";
+const FATTY_ACID_ICON_SIZE = 20;
+
+function CellDestination({ label }: Readonly<{ label: string }>) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <Glyph art={CELLS_ART} />
+      <span className="mc-pathway-node-label" style={{ marginTop: 8 }}>{label}</span>
+    </div>
+  );
+}
+
+function LplBranch() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 36 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} title={LPL_NOTE}>
+        <span className="mc-pathway-bubble" data-node="lpl-bubble" style={{ width: HMGCR_DOCK_SIZE, height: HMGCR_DOCK_SIZE }}>
+          <Glyph art={ENZYME_ART} />
+        </span>
+        <span className="mc-pathway-node-label">LPL</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} data-node="fatty-acids" title={LPL_ARROW_NOTE}>
+        <TriglycerideIcon size={FATTY_ACID_ICON_SIZE} />
+        <TriglycerideIcon size={FATTY_ACID_ICON_SIZE} />
+        <TriglycerideIcon size={FATTY_ACID_ICON_SIZE} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <CellDestination label="Muscle" />
+        <CellDestination label="Adipocytes" />
+      </div>
     </div>
   );
 }
@@ -732,13 +819,13 @@ function TargetCellsNode() {
  * triglyceride and becomes IDL, then LDL -- one ApoB-100 particle
  * transforming, not three separate ones. Each stage keeps its own cargo
  * diagram, its TRIG and Chol circle counts both falling down the chain as
- * the particle sheds mass. Target cells sits centered below the row, since
- * it is LDL -- not VLDL -- that delivers cholesterol to it.
+ * the particle sheds mass. Peripheral cells sits centered below the row,
+ * since it is LDL -- not VLDL -- that delivers cholesterol to it.
  */
 function LipoproteinChain() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 'fit-content' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 44, paddingBottom: 26 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 76, paddingBottom: 26 }}>
         <ParticleNode id="vldl" label="VLDL" trigCount={3} cholCount={3} trigOverlap={3} />
         <ParticleNode id="idl" label="IDL" trigCount={2} cholCount={2} trigOverlap={3} />
         <ParticleNode id="ldl" label="LDL" trigCount={1} cholCount={1} />
@@ -848,6 +935,7 @@ export function LipidTransportView({
                   <ParticleNode id="hdl" label="HDL" holder="ApoA-I" trigCount={1} cholCount={1} />
                   <ParticleNode id="lpa" label="Lp(a)" holder="ApoB-100" extraApo="apo(a)" trigCount={1} cholCount={1} />
                 </div>
+                <LplBranch />
               </div>
             </section>
             <section className="mc-pathway-band" aria-label="Intestine">
@@ -859,6 +947,7 @@ export function LipidTransportView({
                   <span data-node="intestine">
                     <Glyph art={INTESTINE_ART} alt="Intestine" />
                   </span>
+                  <EnterocytesNode />
                   <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={3} />
                 </div>
               </div>
