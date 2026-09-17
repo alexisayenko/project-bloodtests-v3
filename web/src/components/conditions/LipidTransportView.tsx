@@ -455,12 +455,24 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [enterocyteApoB48Arrow, setEnterocyteApoB48Arrow] = useState<string | null>(null);
   const [cholToVldlArrow, setCholToVldlArrow] = useState<string | null>(null);
   const [liverTrigArrow, setLiverTrigArrow] = useState<string | null>(null);
+  const [trigToChylomicronArrow, setTrigToChylomicronArrow] = useState<string | null>(null);
+  const [apoB48ToChylomicronArrow, setApoB48ToChylomicronArrow] = useState<string | null>(null);
+  const [faSupplyArrow, setFaSupplyArrow] = useState<string | null>(null);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
     const organ = el.querySelector('.mc-lipid-organ')?.getBoundingClientRect();
     const vldl = el.querySelector('[data-node="vldl"]')?.getBoundingClientRect();
+    const nascentVldl = el.querySelector('[data-node="vldl-construction"]')?.getBoundingClientRect();
     setSecretion(
-      organ && vldl ? `M${vldl.left + vldl.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldl.left + vldl.width / 2 - base.left},${vldl.top - base.top - 4}` : null
+      nascentVldl && vldl
+        ? (() => {
+            const r = rectCenter(nascentVldl, base);
+            const s = rectCenter(vldl, base);
+            const from = onEdge(r, s, nascentVldl.height / 2 + 3);
+            const to = onEdge(s, r, vldl.height / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
+        : null
     );
     const idl = el.querySelector('[data-node="idl"]')?.getBoundingClientRect();
     const ldl = el.querySelector('[data-node="ldl"]')?.getBoundingClientRect();
@@ -557,6 +569,13 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         ? `M${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left},${vldlConstructionTrig.top - base.top - 4}`
         : null
     );
+    // Free fatty acids circulate in Blood Transport (adipose lipolysis, chylomicron remnants) before the liver takes them up -- this arrow crosses the zone boundary rather than starting inside Liver.
+    const faSupply = el.querySelector('[data-node="fa-supply"]')?.getBoundingClientRect();
+    setFaSupplyArrow(
+      faSupply && vldlConstructionTrig
+        ? `M${faSupply.left + faSupply.width / 2 - base.left},${faSupply.top - base.top - 2} L${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left + 14},${vldlConstructionTrig.bottom - base.top + 4}`
+        : null
+    );
     const enterocytes = el.querySelector('[data-node="enterocytes"]')?.getBoundingClientRect();
     const enterocyteTrig = el.querySelector('[data-node="enterocyte-trig"]')?.getBoundingClientRect();
     const enterocyteApoB48 = el.querySelector('[data-node="enterocyte-apob48"]')?.getBoundingClientRect();
@@ -578,6 +597,30 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
             const s = rectCenter(enterocyteApoB48, base);
             const from = onEdge(r, s, enterocytes.width / 2 + 3);
             const to = onEdge(s, r, enterocyteApoB48.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
+        : null
+    );
+    const chylomicronTrig = el.querySelector('[data-node="chylomicron-trig"]')?.getBoundingClientRect();
+    const chylomicronApo = el.querySelector('[data-node="chylomicron-apo"]')?.getBoundingClientRect();
+    setTrigToChylomicronArrow(
+      enterocyteTrig && chylomicronTrig
+        ? (() => {
+            const r = rectCenter(enterocyteTrig, base);
+            const s = rectCenter(chylomicronTrig, base);
+            const from = onEdge(r, s, enterocyteTrig.width / 2 + 3);
+            const to = onEdge(s, r, chylomicronTrig.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
+        : null
+    );
+    setApoB48ToChylomicronArrow(
+      enterocyteApoB48 && chylomicronApo
+        ? (() => {
+            const r = rectCenter(enterocyteApoB48, base);
+            const s = rectCenter(chylomicronApo, base);
+            const from = onEdge(r, s, enterocyteApoB48.width / 2 + 3);
+            const to = onEdge(s, r, chylomicronApo.width / 2 + 5);
             return `M${from.x},${from.y} L${to.x},${to.y}`;
           })()
         : null
@@ -606,8 +649,11 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {cholToVldlArrow && <path d={cholToVldlArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {liverTrigArrow && <path d={liverTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {faSupplyArrow && <path d={faSupplyArrow} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />}
       {enterocyteTrigArrow && <path d={enterocyteTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {enterocyteApoB48Arrow && <path d={enterocyteApoB48Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {trigToChylomicronArrow && <path d={trigToChylomicronArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {apoB48ToChylomicronArrow && <path d={apoB48ToChylomicronArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {particleBonds.map((d, i) => (
         <path key={i} d={d} fill="none" stroke="var(--navy)" strokeWidth={1.5} />
       ))}
@@ -847,6 +893,7 @@ function EnterocytesNode() {
 const LPL_NOTE = 'Lipoprotein lipase';
 const LPL_ARROW_NOTE = "Lipoprotein lipase releases fatty acids from VLDL's triglycerides for muscle energy and fat storage";
 const FATTY_ACID_ICON_SIZE = 20;
+const FATTY_ACID_STACK_OVERLAP = 6;
 
 function CellDestination({ label }: Readonly<{ label: string }>) {
   return (
@@ -866,10 +913,16 @@ function LplBranch() {
         </span>
         <span className="mc-pathway-node-label">LPL</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} data-node="fatty-acids" title={LPL_ARROW_NOTE}>
-        <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
-        <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
-        <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
+      <div
+        style={{ position: 'relative', width: FATTY_ACID_ICON_SIZE + FATTY_ACID_STACK_OVERLAP * 2, height: FATTY_ACID_ICON_SIZE + FATTY_ACID_STACK_OVERLAP * 2 }}
+        data-node="fatty-acids"
+        title={LPL_ARROW_NOTE}
+      >
+        {[0, 1, 2].map((i) => (
+          <span key={i} style={{ position: 'absolute', left: i * FATTY_ACID_STACK_OVERLAP, top: i * FATTY_ACID_STACK_OVERLAP, zIndex: i }}>
+            <FattyAcidIcon size={FATTY_ACID_ICON_SIZE} />
+          </span>
+        ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <CellDestination label="Muscle" />
@@ -990,12 +1043,7 @@ export function LipidTransportView({
                 <div className="mc-lipid-particles">
                   <LiverNode open={open} onToggle={toggleChip} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: 8, marginTop: 4 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }} title={VLDL_FATTY_ACID_SUPPLY_NOTE}>
-                    <FattyAcidIcon size={16} />
-                    <span className="mc-pathway-node-label" style={{ fontSize: 10 }}>fatty acids</span>
-                    <div style={{ borderLeft: '1.5px dashed var(--navy)', height: 16 }} />
-                  </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 4 }}>
                   <div title={VLDL_ASSEMBLY_NOTE}>
                     <ParticleNode id="vldl-construction" label="Nascent VLDL" trigCount={3} cholCount={3} />
                   </div>
@@ -1007,6 +1055,12 @@ export function LipidTransportView({
                 <h2 className="mc-pathway-title" title="VLDL sheds triglyceride and becomes IDL, then LDL">Blood Transport</h2>
               </div>
               <div className="mc-pathway-diagram">
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }} data-node="fa-supply" title={VLDL_FATTY_ACID_SUPPLY_NOTE}>
+                    <FattyAcidIcon size={16} />
+                    <span className="mc-pathway-node-label" style={{ fontSize: 10 }}>fatty acids</span>
+                  </div>
+                </div>
                 <LipoproteinChain />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, marginBottom: 24 }}>
                   <TargetCellsNode />
@@ -1027,8 +1081,9 @@ export function LipidTransportView({
                   <span data-node="intestine">
                     <Glyph art={INTESTINE_ART} alt="Intestine" />
                   </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <EnterocytesNode />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="enterocyte-trig" title={TRIG_SYNTH_NOTE}>
                         <TriglycerideIcon size={STANDALONE_CHOL_ICON_SIZE} />
                         <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>TRIG</span>
@@ -1038,7 +1093,6 @@ export function LipidTransportView({
                         <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>ApoB-48</span>
                       </div>
                     </div>
-                    <EnterocytesNode />
                   </div>
                   <ParticleNode id="chylomicron" label="Chylomicron" holder="ApoB-48" trigCount={4} cholCount={1} trigOverlap={4} />
                 </div>
