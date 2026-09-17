@@ -365,6 +365,8 @@ const LIVER_ART: GlyphArt = { src: '/pathways/liver.png?v=1', width: 256, height
 /** Citable note for the nascent-VLDL assembly node, drawing on the same source as HMG-CoA reductase. */
 const VLDL_ASSEMBLY_NOTE = "The liver assembles VLDL from triglyceride, cholesterol and ApoB-100 before secreting it into blood.";
 const VLDL_FATTY_ACID_SUPPLY_NOTE = 'Fatty acids the liver imports from blood (adipose lipolysis, chylomicron remnants) rather than makes itself, feeding VLDL triglyceride synthesis.';
+/** The liver's own triglyceride synthesis, feeding Nascent VLDL alongside the imported fatty acids above -- a plain descriptive tooltip, not a footnoted claim, same discipline level as its sibling TRIG_SYNTH_NOTE (enterocytes). */
+const LIVER_TRIG_SYNTH_NOTE = 'The liver esterifies fatty acids into triglyceride (DGAT, via the glycerol-3-phosphate pathway)';
 
 const HMGCR_SOURCES: readonly CitedSource[] = [
   {
@@ -410,6 +412,10 @@ function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle:
         <span className="mc-lipid-synth-chol" data-node="synth-chol">
           <CholesterolIcon size={STANDALONE_CHOL_ICON_SIZE} />
         </span>
+        <div className="mc-lipid-liver-apob" data-node="liver-apob" title={VLDL_ASSEMBLY_NOTE}>
+          <CarrierIcon size={STANDALONE_CHOL_ICON_SIZE} />
+          <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>ApoB-100</span>
+        </div>
       </div>
     </div>
   );
@@ -455,12 +461,12 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [enterocyteApoB48Arrow, setEnterocyteApoB48Arrow] = useState<string | null>(null);
   const [cholToVldlArrow, setCholToVldlArrow] = useState<string | null>(null);
   const [liverTrigArrow, setLiverTrigArrow] = useState<string | null>(null);
+  const [apoB100Arrow, setApoB100Arrow] = useState<string | null>(null);
   const [trigToChylomicronArrow, setTrigToChylomicronArrow] = useState<string | null>(null);
   const [apoB48ToChylomicronArrow, setApoB48ToChylomicronArrow] = useState<string | null>(null);
   const [faSupplyArrow, setFaSupplyArrow] = useState<string | null>(null);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
-    const organ = el.querySelector('.mc-lipid-organ')?.getBoundingClientRect();
     const vldl = el.querySelector('[data-node="vldl"]')?.getBoundingClientRect();
     const nascentVldl = el.querySelector('[data-node="vldl-construction"]')?.getBoundingClientRect();
     setSecretion(
@@ -564,16 +570,43 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
         : null
     );
     const vldlConstructionTrig = el.querySelector('[data-node="vldl-construction-trig"]')?.getBoundingClientRect();
+    const vldlConstructionApo = el.querySelector('[data-node="vldl-construction-apo"]')?.getBoundingClientRect();
+    // The liver's own TRIG synthesis is a standalone node (liver-trig) rather than the organ's bare bottom edge, since it also doubles as the landing point for the imported-fatty-acids arrow below.
+    const liverTrig = el.querySelector('[data-node="liver-trig"]')?.getBoundingClientRect();
+    const liverApob = el.querySelector('[data-node="liver-apob"]')?.getBoundingClientRect();
     setLiverTrigArrow(
-      organ && vldlConstructionTrig
-        ? `M${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left},${organ.bottom - base.top + 2} L${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left},${vldlConstructionTrig.top - base.top - 4}`
+      liverTrig && vldlConstructionTrig
+        ? (() => {
+            const r = rectCenter(liverTrig, base);
+            const s = rectCenter(vldlConstructionTrig, base);
+            const from = onEdge(r, s, liverTrig.width / 2 + 3);
+            const to = onEdge(s, r, vldlConstructionTrig.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
         : null
     );
-    // Free fatty acids circulate in Blood Transport (adipose lipolysis, chylomicron remnants) before the liver takes them up -- this arrow crosses the zone boundary rather than starting inside Liver.
+    setApoB100Arrow(
+      liverApob && vldlConstructionApo
+        ? (() => {
+            const r = rectCenter(liverApob, base);
+            const s = rectCenter(vldlConstructionApo, base);
+            const from = onEdge(r, s, liverApob.width / 2 + 3);
+            const to = onEdge(s, r, vldlConstructionApo.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
+        : null
+    );
+    // Free fatty acids circulate in Blood Transport (adipose lipolysis, chylomicron remnants) before the liver takes them up -- this arrow crosses the zone boundary rather than starting inside Liver, landing on liver-trig rather than jumping straight into the Nascent VLDL box.
     const faSupply = el.querySelector('[data-node="fa-supply"]')?.getBoundingClientRect();
     setFaSupplyArrow(
-      faSupply && vldlConstructionTrig
-        ? `M${faSupply.left + faSupply.width / 2 - base.left},${faSupply.top - base.top - 2} L${vldlConstructionTrig.left + vldlConstructionTrig.width / 2 - base.left + 14},${vldlConstructionTrig.bottom - base.top + 4}`
+      faSupply && liverTrig
+        ? (() => {
+            const r = rectCenter(faSupply, base);
+            const s = rectCenter(liverTrig, base);
+            const from = onEdge(r, s, faSupply.width / 2 + 3);
+            const to = onEdge(s, r, liverTrig.width / 2 + 5);
+            return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
         : null
     );
     const enterocytes = el.querySelector('[data-node="enterocytes"]')?.getBoundingClientRect();
@@ -649,6 +682,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {cholToVldlArrow && <path d={cholToVldlArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {liverTrigArrow && <path d={liverTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {apoB100Arrow && <path d={apoB100Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {faSupplyArrow && <path d={faSupplyArrow} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />}
       {enterocyteTrigArrow && <path d={enterocyteTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {enterocyteApoB48Arrow && <path d={enterocyteApoB48Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
@@ -1042,9 +1076,13 @@ export function LipidTransportView({
                 <div className="mc-lipid-particles">
                   <LiverNode open={open} onToggle={toggleChip} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 4, marginLeft: 100 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 20, marginLeft: 170 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} data-node="liver-trig" title={LIVER_TRIG_SYNTH_NOTE}>
+                    <Glyph art={{ ...TRIGLYCERIDE_ART, size: STANDALONE_CHOL_ICON_SIZE }} alt="Triglyceride" />
+                    <span className="mc-pathway-node-label" style={{ marginTop: 4 }}>TRIG</span>
+                  </div>
                   <div title={VLDL_ASSEMBLY_NOTE}>
-                    <ParticleNode id="vldl-construction" label="Nascent VLDL" trigCount={3} cholCount={3} />
+                    <ParticleNode id="vldl-construction" label="Nascent VLDL" trigCount={3} cholCount={3} trigOverlap={4} />
                   </div>
                 </div>
               </div>
