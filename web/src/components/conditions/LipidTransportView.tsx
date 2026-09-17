@@ -667,10 +667,10 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     setLiverToTrigArrow(
       liverOrgan && liverTrig
         ? (() => {
-            const r = rectCenter(liverOrgan, base);
+            // Starts from the liver's own bottom edge, not its center -- a center-based edge projection lands right next to HMG-CoA reductase (which sits near the middle of the liver artwork), wrongly implying the enzyme makes TRIG too.
+            const from = { x: liverOrgan.left + liverOrgan.width / 2 - base.left, y: liverOrgan.bottom - base.top - 3 };
             const s = rectCenter(liverTrig, base);
-            const from = onEdge(r, s, liverOrgan.width / 2 + 3);
-            const to = onEdge(s, r, liverTrig.width / 2 + 5);
+            const to = onEdge(s, from, liverTrig.width / 2 + 5);
             return `M${from.x},${from.y} L${to.x},${to.y}`;
           })()
         : null
