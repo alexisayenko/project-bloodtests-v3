@@ -475,6 +475,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [apoB48ToChylomicronArrow, setApoB48ToChylomicronArrow] = useState<string | null>(null);
   const [faSupplyArrow, setFaSupplyArrow] = useState<string | null>(null);
   const [liverToTrigArrow, setLiverToTrigArrow] = useState<string | null>(null);
+  const [liverToApobArrow, setLiverToApobArrow] = useState<string | null>(null);
   const [retentionArrows, setRetentionArrows] = useState<string[]>([]);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
@@ -628,11 +629,11 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
     setFaSupplyArrow(
       faSupply && liverOrgan
         ? (() => {
-            const r = rectCenter(faSupply, base);
-            const s = rectCenter(liverOrgan, base);
-            const from = onEdge(r, s, faSupply.width / 2 + 3);
-            const to = onEdge(s, r, liverOrgan.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
+            // Straight vertical: fatty acids rise from Blood Transport straight up into the liver, at the fa-supply icon's own x.
+            const x = faSupply.left + faSupply.width / 2 - base.left;
+            const fromY = faSupply.top - base.top - 3;
+            const toY = liverOrgan.bottom - base.top + 5;
+            return `M${x},${fromY} L${x},${toY}`;
           })()
         : null
     );
@@ -644,6 +645,17 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
             const from = onEdge(r, s, liverOrgan.width / 2 + 3);
             const to = onEdge(s, r, liverTrig.width / 2 + 5);
             return `M${from.x},${from.y} L${to.x},${to.y}`;
+          })()
+        : null
+    );
+    setLiverToApobArrow(
+      liverOrgan && liverApob
+        ? (() => {
+            // Straight vertical, same treatment as the fatty-acids arrow -- the liver produces ApoB-100 straight down from itself.
+            const x = liverApob.left + liverApob.width / 2 - base.left;
+            const fromY = liverOrgan.bottom - base.top - 3;
+            const toY = liverApob.top - base.top + 5;
+            return `M${x},${fromY} L${x},${toY}`;
           })()
         : null
     );
@@ -723,6 +735,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       {apoB100Arrow && <path d={apoB100Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {faSupplyArrow && <path d={faSupplyArrow} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />}
       {liverToTrigArrow && <path d={liverToTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
+      {liverToApobArrow && <path d={liverToApobArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {retentionArrows.map((d, i) => (
         <path key={i} d={d} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />
       ))}
@@ -812,13 +825,14 @@ function CellDestination({ label }: Readonly<{ label: string }>) {
 function LplBranch() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 36 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} title={LPL_NOTE}>
+      {/* Nudges (position: relative + left/top) taken from the debug drag overlay's readout. */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', left: 201, top: -234 }} title={LPL_NOTE}>
         <span data-node="lpl-bubble">
           <Glyph art={ENZYME_ART} />
         </span>
         <span className="mc-pathway-node-label">LPL</span>
       </div>
-      <span data-node="fatty-acids" title={LPL_ARROW_NOTE}>
+      <span data-node="fatty-acids" title={LPL_ARROW_NOTE} style={{ position: 'relative', left: 134, top: -119 }}>
         <Glyph art={{ ...FATTY_ACID_ART, size: FATTY_ACID_ICON_SIZE }} alt="Fatty acids" />
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -1169,6 +1183,7 @@ function DebugPanel({ drags, activeId }: Readonly<{ drags: Record<string, Return
         {ids.length > 0 && (
           <button
             type="button"
+            aria-label="Copy"
             onClick={() => {
               const text = ids
                 .map((id) => {
@@ -1193,7 +1208,6 @@ function DebugPanel({ drags, activeId }: Readonly<{ drags: Record<string, Return
             }}
           >
             <Copy size={12} />
-            Copy
           </button>
         )}
       </div>
