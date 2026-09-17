@@ -815,7 +815,7 @@ export function LipidTransportView({
               </div>
               <div className="mc-pathway-diagram">
                 <LipoproteinChain />
-                <div style={{ display: 'flex', gap: 44, marginTop: 32 }}>
+                <div style={{ display: 'flex', gap: 44, marginTop: 32, justifyContent: 'flex-end' }}>
                   <ParticleNode id="hdl" label="HDL" holder="ApoA-I" trigCount={1} cholCount={1} />
                   <ParticleNode id="lpa" label="Lp(a)" holder="ApoB-100" extraApo="apo(a)" trigCount={1} cholCount={1} />
                 </div>
