@@ -201,9 +201,8 @@
     "loinc": "2842-3",
     "longCommonName": "Prolactin [Mass/volume] in Serum or Plasma",
     "friendlyName": "Prolactin",
+    "shortName": "PRL",
     "unit": "ng/mL",
-    "aliasOf": "15081-3",
-    "aliasLabel": "Mass/volume variant",
     "lang": {
       "ru-RU": "Пролактин",
       "uk-UA": "Пролактин"

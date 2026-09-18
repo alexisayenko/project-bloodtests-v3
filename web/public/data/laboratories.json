@@ -421,7 +421,7 @@
       { "label": "Thyroid-stimulating hormone (TSH)", "price": 25, "covers": ["11580-8"] },
       { "label": "Total Cholesterol", "price": 10, "covers": ["2093-3"] },
       { "label": "Total Iron Binding Capacity (TIBC)", "price": 20, "covers": ["2500-7"] },
-      { "label": "Total Prolactin (PRL)", "price": 25, "covers": ["15081-3"] },
+      { "label": "Total Prolactin (PRL)", "price": 25, "covers": ["15081-3", "2842-3"] },
       { "label": "Total Protein (TP)", "price": 10, "covers": ["2885-2"] },
       { "label": "Total Testosterone (T)", "price": 35, "covers": ["14913-8"] },
       { "label": "Transferrin, Serum (TRF)", "price": 50, "covers": ["3034-6"] },
