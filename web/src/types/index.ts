@@ -1,3 +1,5 @@
+export type UnitSystem = 'si' | 'us';
+
 export interface Analysis {
   loinc: string;
   longCommonName: string;

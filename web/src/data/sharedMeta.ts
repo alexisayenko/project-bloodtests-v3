@@ -1,5 +1,7 @@
+import type { UnitSystem } from '../types';
+
 export type SharedMetaSettings = {
-  unitSystem?: 'si' | 'us';
+  unitSystem?: UnitSystem;
   sampleLimit?: number | 'all';
 };
 

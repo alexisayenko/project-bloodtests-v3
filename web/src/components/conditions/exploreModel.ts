@@ -5,7 +5,7 @@ import { displayedResult, namedLab } from './ui';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { INDEX_LOINCS, LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
-import type { Result } from '../../types';
+import type { Result, UnitSystem } from '../../types';
 
 /** The Monitoring Panels grid model's own shape -- see markers.ts's buildConditions(). */
 export type Condition = { name: string; tests: Observation[] };
@@ -146,7 +146,7 @@ function buildTestMarker(
   panel: string | string[],
   byDate: Map<string, ResultEntry>,
   band: Extract<RefBand, { kind: 'band' }>,
-  unitSystem: 'si' | 'us',
+  unitSystem: UnitSystem,
   override: RefBandOverride | undefined
 ): { marker: ExploreMarker; data: [string, number, string?][]; omitted: string[] } {
   const { refMinRaw, refMaxRaw, refFromUnit } = band;
@@ -244,7 +244,7 @@ function buildIndexMarkers(
 export function buildExploreModel(
   conditions: Condition[],
   allResults: ResultEntry[],
-  unitSystem: 'si' | 'us',
+  unitSystem: UnitSystem,
   currentPanel?: string,
   resultsByDate?: Record<string, Record<string, Result>>,
   profile: SubjectProfile = {}

@@ -25,7 +25,7 @@ import {
   type RowScheduling,
 } from './scheduled';
 import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
-import type { Result } from '../../types';
+import type { Result, UnitSystem } from '../../types';
 import { COLOR } from '../../styles/tokens';
 import { CARD_TABLE_TD, CARD_TABLE_TH, TABLE_CARD } from '../primitives/styles';
 import { Card } from '../primitives/Card';
@@ -469,7 +469,7 @@ export type ResultsTableProps = {
   visibleDates: string[];
   allResults: ResultEntry[];
   resultsByDate?: Record<string, Record<string, Result>>;
-  unitSystem: 'si' | 'us';
+  unitSystem: UnitSystem;
   selectedLoinc: string | null;
   onSelect: (loinc: string) => void;
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;

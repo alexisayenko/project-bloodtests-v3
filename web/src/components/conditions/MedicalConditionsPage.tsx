@@ -3,7 +3,7 @@ import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnosticReports';
 import type { IndexDef } from '../../data/computedIndices';
-import type { Result } from '../../types';
+import type { Result, UnitSystem } from '../../types';
 import { buildConditions, type Observation } from './markers';
 import { routeToHash, hashToRoute, allObservationsRoute, isRouteBlocked, DEFAULT_OBSERVATIONS_TAB, type Route } from './routing';
 import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadViewSettings, saveViewSettings, hasStoredViewSettings, seedViewSettings, popupPosition, type SelectedCell } from './ui';
@@ -54,7 +54,7 @@ export function MedicalConditionsPage() {
   const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
   const [initialSettings] = useState(loadViewSettings);
   const [hadStoredSettings] = useState(hasStoredViewSettings);
-  const [unitSystem, setUnitSystem] = useState<'si' | 'us'>(initialSettings.unitSystem);
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(initialSettings.unitSystem);
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
   const [compactPanels, setCompactPanels] = useState(initialSettings.compactPanels);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);

@@ -3,7 +3,7 @@ import { LabExplore } from '../../vendor/lab-explore/lab-explore';
 import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
 import { buildExploreModel, type Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
-import type { Result } from '../../types';
+import type { Result, UnitSystem } from '../../types';
 import type { MedicationRow } from '../../data/medications';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { SegmentedControl } from '../primitives';
@@ -34,7 +34,7 @@ export function LabExploreView({
 }: Readonly<{
   conditions: Condition[];
   allResults: ResultEntry[];
-  unitSystem: 'si' | 'us';
+  unitSystem: UnitSystem;
   /** Panel to pre-select markers from; omit for no default-panel bias (e.g. the cross-panel All Observations view). */
   currentPanel?: string;
   /** Enables computed-index markers; omit to keep the view to raw observations. */

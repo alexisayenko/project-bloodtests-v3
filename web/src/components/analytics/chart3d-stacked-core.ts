@@ -7,6 +7,7 @@ import {
   resizeCanvasBackingStore,
   type OrbitCamera3D,
 } from "./chart3d-camera";
+import { clamp } from "../../utils/math";
 
 const TAU = Math.PI * 2;
 const DEFAULT_YAW = -23 * DEG;
@@ -190,7 +191,7 @@ export const initStackedChart3D = (
       }
       const width = (maxX - minX) / zoom;
       if (Number.isNaN(width) || width <= 0) break;
-      xHalf = Math.min(X_HALF_MAX, Math.max(X_HALF_MIN, xHalf * ((X_FILL * W) / width)));
+      xHalf = clamp(xHalf * ((X_FILL * W) / width), X_HALF_MIN, X_HALF_MAX);
     }
     return xHalf;
   };
