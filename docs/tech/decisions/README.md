@@ -40,6 +40,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
 | [ADR-0023](adr-0023-product-purpose-and-clinical-boundary.md) | Product purpose, audience, and clinical boundary | accepted · 2026-09-18 |
 | [ADR-0024](adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md) | The panel date-range control is header-scoped and changes data only through an explicit binding | accepted · 2026-09-18 |
+| [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md) | MCHC printed in `%` is flagged, not accepted; the fix is the owner's data edit | accepted · 2026-09-19 |
 
 ## Where each one bites
 
@@ -133,6 +134,10 @@ Each record opens with `# ADR-NNNN: <title>` and a
   `web/src/components/conditions/scheduled.ts` and rendered as one
   Scheduled column per visit in the results tables and one stacked section
   per visit on `#plan` (`PlanVisitView.tsx`).
+- **MCHC in `%`** — 0025: a lab's `%` on `786-4` is a legacy label for g/dL,
+  and the app still flags it instead of adding `%` to `allowedUnits`; the
+  same goes for absolute differential counts printed without a range. See
+  [`../units.md`](../units.md#mchc-printed-in-).
 - **Product purpose and clinical boundary** — 0023: the three pillars
   (reduce complexity, show the whole picture, build understanding), the
   audience definition, the learning approach, and the clinical boundary

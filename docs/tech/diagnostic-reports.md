@@ -62,6 +62,12 @@ dot per report row (red errors, amber warnings, green none):
   known, the value never converted), and, lower-severity, a unit that
   resolves to neither a Latin spelling nor a UCUM code.
 
+  Two warnings can be a faithful reflection of the report: MCHC printed in
+  `%` (a legacy label for g/dL, [`units.md`](units.md#mchc-printed-in-)) and
+  absolute differential counts printed with no range. Neither is silenced by
+  code or "fixed" with an invented range
+  ([ADR-0025](decisions/adr-0025-mchc-percent-is-not-an-accepted-unit.md)).
+
 ## 4. Edit and cross-check
 
 The detail view allows inline editing of each observation's LOINC / value /

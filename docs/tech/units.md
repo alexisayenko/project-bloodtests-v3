@@ -88,6 +88,17 @@ Both sets are derived from the catalog's long common names by
 Under any other property, and with no analyte supplied, `U` and `IU` stay
 different scales, and one analyte's `IU` never meets another's.
 
+## MCHC printed in `%`
+
+Some labs print MCHC (`786-4`, `g/dL`) as `%`, meaning g per 100 mL of red
+cells, the same number. LOINC has no percent-property MCHC code to suggest, and
+`%` (ratio) is a different dimension from `g/dL`, so `Unit '%' unexpected for
+786-4 (expected g/dL)` stays and `%` is not added to `allowedUnits`, which
+holds only same-dimension scale and spelling variants. The remedy is the
+owner relabelling the stored unit to `g/dL`, value unchanged, never an app
+rule ([ADR-0025](decisions/adr-0025-mchc-percent-is-not-an-accepted-unit.md),
+[ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)).
+
 ## Display-time conversion
 
 `computedIndices.ts`'s `convertUnit` is the one conversion, and it folds a

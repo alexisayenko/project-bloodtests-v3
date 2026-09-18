@@ -50,6 +50,8 @@ That factor is not typed out, and this is the second half of the same principle.
 
 The catalog carries both codes of each pair and aliases the molar one to its mass primary, so a report using either spelling of the scale lands in the same panel row, the same badge and the same chart series. A file already written the wrong way round is repaired offline by rewriting its codes; the mechanics are in [the interchange format](../../tech/interchange-format.md#a-wrong-unit-here-is-usually-a-wrong-loinc).
 
+Not every mismatch has a sibling to point at. A lab that prints MCHC in `%` means g/dL under a code (`786-4`) with no percent variant in LOINC, so the warning stands and the owner corrects the stored unit; the app never widens `allowedUnits` across a dimension to quiet it ([ADR-0025](../../tech/decisions/adr-0025-mchc-percent-is-not-an-accepted-unit.md)).
+
 ## `unit` versus `rawUnit`
 
 A derived unit is now written down, and the two fields split the roles the interchange format already splits elsewhere:
