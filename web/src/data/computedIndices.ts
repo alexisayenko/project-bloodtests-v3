@@ -157,6 +157,7 @@ export const SI_US_UNIT: Record<string, { si: string; us: string }> = {
   T: { si: 'nmol/L', us: 'ng/dL' },
   FT3: { si: 'pmol/L', us: 'pg/mL' },
   FT4: { si: 'pmol/L', us: 'ng/dL' },
+  Cortisol: { si: 'nmol/L', us: 'ug/dL' },
 };
 
 export type Zone = 'ok' | 'warn' | 'bad';
