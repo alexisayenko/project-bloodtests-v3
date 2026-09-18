@@ -34,6 +34,11 @@ Data and formats:
   [`blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json)
   (JSON Schema draft 2020-12, source `web/public/schema/`, major version 3
   only), held to the exporter's output by `web/test/envelope-schema.test.ts`.
+- [`lab-data-import.md`](lab-data-import.md) — research note, not an ADR:
+  the legal basis (HIPAA, Cures Act, GDPR, EHDS, Ukraine's ЕСОЗ) and the
+  technology (SMART on FHIR public client, FHIR R4 lab queries, Apple Health /
+  Health Connect) for importing lab results directly instead of through the
+  chatbot prompt, with a FHIR → envelope mapping and a suggested spike.
 
 Sections and views:
 
