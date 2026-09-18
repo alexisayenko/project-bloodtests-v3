@@ -18,6 +18,7 @@ import {
   toggleRow,
   type ScheduledVisits,
 } from '../src/components/conditions/scheduled';
+import { installMemoryStorage } from './helpers/storage';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../src/data/analyteCatalog';
 import { testLoincs } from '../src/components/conditions/markers';
@@ -172,14 +173,10 @@ describe('addVisit and removeVisit', () => {
 });
 
 describe('the target month', () => {
-  const store = new Map<string, string>();
+  let store: Map<string, string>;
 
   beforeEach(() => {
-    store.clear();
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => void store.set(k, String(v)),
-    });
+    store = installMemoryStorage();
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -218,14 +215,10 @@ describe('the target month', () => {
 });
 
 describe('migrating the pre-redesign single-schedule shape', () => {
-  const store = new Map<string, string>();
+  let store: Map<string, string>;
 
   beforeEach(() => {
-    store.clear();
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => void store.set(k, String(v)),
-    });
+    store = installMemoryStorage();
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -283,15 +276,11 @@ describe('migrating the pre-redesign single-schedule shape', () => {
 });
 
 describe('the selected laboratory', () => {
-  const store = new Map<string, string>();
+  let store: Map<string, string>;
   const realLabId = LABORATORIES[0]!.id;
 
   beforeEach(() => {
-    store.clear();
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => void store.set(k, String(v)),
-    });
+    store = installMemoryStorage();
   });
   afterEach(() => vi.unstubAllGlobals());
 

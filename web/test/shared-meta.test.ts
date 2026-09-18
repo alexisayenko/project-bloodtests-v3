@@ -18,21 +18,7 @@ import {
   hasStoredViewSettings,
   seedViewSettings,
 } from '../src/components/conditions/ui';
-
-function installLocalStorageStub(): void {
-  const store = new Map<string, string>();
-  const stub = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, String(v)),
-    removeItem: (k: string) => void store.delete(k),
-    clear: () => store.clear(),
-    key: (i: number) => [...store.keys()][i] ?? null,
-    get length() {
-      return store.size;
-    },
-  };
-  Object.defineProperty(globalThis, 'localStorage', { value: stub, configurable: true, writable: true });
-}
+import { installMemoryStorage } from './helpers/storage';
 
 describe('parseSharedMeta', () => {
   it('reads a full valid meta', () => {
@@ -162,7 +148,7 @@ describe('panel allowlist', () => {
 
 describe('meta settings seeding', () => {
   beforeEach(() => {
-    installLocalStorageStub();
+    installMemoryStorage();
   });
 
   it('seeds over the defaults when the visitor has nothing stored', () => {
@@ -186,7 +172,7 @@ describe('meta settings seeding', () => {
 
 describe('shared meta storage', () => {
   beforeEach(() => {
-    installLocalStorageStub();
+    installMemoryStorage();
   });
 
   it('round-trips a meta so a return visit keeps the same presentation', () => {
@@ -209,14 +195,10 @@ describe('shared meta storage', () => {
 
   it('clears without a stored meta and without storage', () => {
     expect(() => clearSharedMeta()).not.toThrow();
-    Object.defineProperty(globalThis, 'localStorage', {
-      value: {
-        removeItem: () => {
-          throw new Error('storage unavailable');
-        },
+    vi.stubGlobal('localStorage', {
+      removeItem: () => {
+        throw new Error('storage unavailable');
       },
-      configurable: true,
-      writable: true,
     });
     expect(() => clearSharedMeta()).not.toThrow();
   });
@@ -224,7 +206,7 @@ describe('shared meta storage', () => {
 
 describe('a share link\'s meta does not outlive its link', () => {
   beforeEach(() => {
-    installLocalStorageStub();
+    installMemoryStorage();
   });
 
   it('applies the meta the link supplied', () => {
@@ -253,7 +235,7 @@ describe('an import does not disturb the shared meta on its own', () => {
   // provider; what is covered here is that a FAILED import leaves both
   // stores untouched.
   beforeEach(() => {
-    installLocalStorageStub();
+    installMemoryStorage();
   });
 
   it('a failed import leaves both the sessions and the meta alone', () => {

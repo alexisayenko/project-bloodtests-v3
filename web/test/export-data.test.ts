@@ -3,30 +3,13 @@ import { buildExportEnvelope, downloadExportFile } from '../src/utils/exportData
 import { parseUploadedResults } from '../src/data/parseUpload';
 import { SCHEMA_VERSION } from '../src/data/envelopeSchema';
 import type { Result, DiagnosticReport } from '../src/types';
+import { makeResult, makeSession } from './helpers/fixtures';
 
-const result = (partial: Partial<Result>): Result => ({
-  loinc: '2093-3',
-  rawName: 'Total Cholesterol',
-    section: '',
-  value: 186,
-  rawValue: '186',
-  valueQualifier: '',
-  unit: 'mg/dL',
-  refText: '< 200 Desirable',
-  refMin: null,
-  refMax: 200,
-  method: '',
-  ...partial,
-});
+const result = (partial: Partial<Result>): Result =>
+  makeResult({ loinc: '2093-3', rawName: 'Total Cholesterol', value: 186, unit: 'mg/dL', refText: '< 200 Desirable', refMax: 200, ...partial });
 
-const session = (partial: Partial<DiagnosticReport>): DiagnosticReport => ({
-  date: '2026-08-26',
-  place: 'Quest Diagnostics',
-  file: 'quest_2026-08-26',
-  items: [result({})],
-  itemCount: 1,
-  ...partial,
-});
+const session = (partial: Partial<DiagnosticReport>): DiagnosticReport =>
+  makeSession({ place: 'Quest Diagnostics', items: [result({})], ...partial });
 
 describe('buildExportEnvelope — normalized unit, printed rawUnit', () => {
   const source = {

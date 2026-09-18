@@ -1,18 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import Ajv2020 from 'ajv/dist/2020';
-import addFormats from 'ajv-formats';
 import { buildExportEnvelope } from '../src/utils/exportData';
 import { SCHEMA_VERSION, isAcceptedSchemaVersion } from '../src/data/envelopeSchema';
 import type { Result, DiagnosticReport } from '../src/types';
+import { makeResult, makeSession } from './helpers/fixtures';
+import { compileSchema } from './helpers/schema';
 
-const schema = JSON.parse(
-  readFileSync(new URL('../public/schema/bloodtests-3.schema.json', import.meta.url), 'utf8')
-) as object;
-
-const ajv = new Ajv2020({ allErrors: true });
-addFormats(ajv);
-const validate = ajv.compile(schema);
+const { schema, validate } = compileSchema('bloodtests-3.schema.json');
 
 interface SchemaError {
   instancePath: string;
@@ -31,33 +24,15 @@ function errorsFor(envelope: unknown): SchemaError[] {
   });
 }
 
-const result = (partial: Partial<Result>): Result => ({
-  loinc: '2093-3',
-  rawName: 'Total Cholesterol',
-    section: '',
-  value: 186.65,
-  rawValue: '186.65',
-  valueQualifier: '',
-  unit: 'mg/dL',
-  refText: '< 200 Desirable',
-  refMin: null,
-  refMax: 200,
-  method: 'CHOD-POD',
-  ...partial,
-});
+const result = (partial: Partial<Result>): Result =>
+  makeResult({ loinc: '2093-3', rawName: 'Total Cholesterol', value: 186.65, unit: 'mg/dL', refText: '< 200 Desirable', refMax: 200, method: 'CHOD-POD', ...partial });
 
-const session = (partial: Partial<DiagnosticReport>): DiagnosticReport => ({
-  date: '2026-08-26',
-  place: 'Quest Diagnostics',
-  file: 'quest_2026-08-26',
-  items: [result({})],
-  itemCount: 1,
-  ...partial,
-});
+const session = (partial: Partial<DiagnosticReport>): DiagnosticReport =>
+  makeSession({ place: 'Quest Diagnostics', items: [result({})], ...partial });
 
 describe('published JSON Schema — compiles', () => {
   it('is a valid draft 2020-12 schema with the published $id', () => {
-    expect((schema as { $id: string }).$id).toBe('https://blood.isayenko.net/schema/bloodtests-3.schema.json');
+    expect(schema.$id).toBe('https://blood.isayenko.net/schema/bloodtests-3.schema.json');
     expect(typeof validate).toBe('function');
   });
 });

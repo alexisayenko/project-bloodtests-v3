@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseStoredSessions } from '../src/data/resultsStorage';
+import { makeSession } from './helpers/fixtures';
 
 const item = {
   loinc: '718-7',
@@ -14,7 +15,7 @@ const item = {
   method: '',
 };
 
-const session = (items: unknown[]) => ({ date: '2026-01-10', place: 'Lab A', file: '2026-01-10__lab-a', items, itemCount: items.length });
+const session = (items: unknown[]) => makeSession({ date: '2026-01-10', place: 'Lab A', file: '2026-01-10__lab-a', items: items as never });
 
 describe('parseStoredSessions', () => {
   it('reads an old-shape stored session, taking `analysis` as the printed name', () => {

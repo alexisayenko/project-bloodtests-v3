@@ -15,6 +15,7 @@ import {
   updateRow,
   type Medications,
 } from '../src/data/medications';
+import { installMemoryStorage } from './helpers/storage';
 
 const base = emptyMedications(2026);
 
@@ -84,14 +85,10 @@ describe('addPastYear', () => {
 });
 
 describe('storage', () => {
-  const store = new Map<string, string>();
+  let store: Map<string, string>;
 
   beforeEach(() => {
-    store.clear();
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => void store.set(k, String(v)),
-    });
+    store = installMemoryStorage();
   });
   afterEach(() => vi.unstubAllGlobals());
 

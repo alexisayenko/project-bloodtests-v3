@@ -10,7 +10,8 @@ import { IMPORTED_LINKS_KEY } from '../src/data/sharedLink';
 import { SHARED_META_KEY } from '../src/data/sharedMeta';
 import { loadScheduled, SCHEDULED_KEY } from '../src/components/conditions/scheduled';
 import { VIEW_SETTINGS_KEY } from '../src/components/conditions/ui';
-import type { DiagnosticReport, Result } from '../src/types';
+import { makeResult, makeSession } from './helpers/fixtures';
+import { installMemoryStorage } from './helpers/storage';
 
 const NOW = new Date('2026-09-10T08:30:00Z');
 const APP = { commit: 'abc1234', builtAt: '2026-09-10T08:00:00Z' };
@@ -31,22 +32,9 @@ const SETTINGS = {
   'exploreEv:all:meds': '0',
 };
 
-const result: Result = {
-  loinc: '2093-3',
-  rawName: 'Total Cholesterol',
-    section: '',
-  value: 186,
-  rawValue: '186',
-  valueQualifier: '',
-  unit: 'mg/dL',
-  refText: '',
-  refMin: null,
-  refMax: 200,
-  method: '',
-};
-const session: DiagnosticReport = { date: '2026-08-26', place: 'Quest', file: 'quest_2026-08-26', items: [result], itemCount: 1 };
+const session = makeSession({ items: [makeResult({ loinc: '2093-3', rawName: 'Total Cholesterol', value: 186, unit: 'mg/dL', refMax: 200 })] });
 
-const store = new Map<string, string>();
+let store: Map<string, string>;
 
 function seed() {
   store.set(RESULTS_STORAGE_KEY, JSON.stringify([session]));
@@ -81,16 +69,7 @@ async function importFiles(files: Record<string, string>) {
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(NOW);
-  store.clear();
-  vi.stubGlobal('localStorage', {
-    get length() {
-      return store.size;
-    },
-    key: (i: number) => [...store.keys()][i] ?? null,
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, String(v)),
-    removeItem: (k: string) => void store.delete(k),
-  });
+  store = installMemoryStorage();
 });
 afterEach(() => {
   vi.unstubAllGlobals();

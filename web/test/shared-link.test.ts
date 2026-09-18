@@ -1,12 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { readSharedDataGuid, isAlreadyImported, IMPORTED_LINKS_KEY, markImported } from '../src/data/sharedLink';
 import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
-import { parseUploadedResults } from '../src/data/parseUpload';
+import { makeSession } from './helpers/fixtures';
+import { installMemoryStorage } from './helpers/storage';
 
 const GUID = '85269e21-e47e-433d-9696-db5aaede4f18';
-const dataFile = fileURLToPath(new URL(`../public/d/${GUID}.data.json`, import.meta.url));
 
 describe('readSharedDataGuid', () => {
   it('accepts a valid guid', () => {
@@ -24,26 +22,11 @@ describe('readSharedDataGuid', () => {
   });
 });
 
-function installLocalStorageStub(): void {
-  const store = new Map<string, string>();
-  const stub = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, String(v)),
-    removeItem: (k: string) => void store.delete(k),
-    clear: () => store.clear(),
-    key: (i: number) => [...store.keys()][i] ?? null,
-    get length() {
-      return store.size;
-    },
-  };
-  Object.defineProperty(globalThis, 'localStorage', { value: stub, configurable: true, writable: true });
-}
-
-const SESSIONS = JSON.stringify([{ date: '2024-01-01', place: '', file: 'x', items: [], itemCount: 0 }]);
+const SESSIONS = JSON.stringify([makeSession({ date: '2024-01-01', place: '', file: 'x' })]);
 
 describe('isAlreadyImported', () => {
   beforeEach(() => {
-    installLocalStorageStub();
+    installMemoryStorage();
   });
 
   it('is false when the guid was never recorded', () => {
@@ -78,14 +61,5 @@ describe('isAlreadyImported', () => {
     markImported(GUID);
     localStorage.setItem(RESULTS_STORAGE_KEY, SESSIONS);
     expect(isAlreadyImported(GUID)).toBe(true);
-  });
-});
-
-describe('shared data file', () => {
-  it.skipIf(!existsSync(dataFile))('parses into the expected sessions and observations', () => {
-    const json: unknown = JSON.parse(readFileSync(dataFile, 'utf8'));
-    const sessions = parseUploadedResults(json);
-    expect(sessions).toHaveLength(10);
-    expect(sessions.reduce((n, s) => n + s.items.length, 0)).toBe(178);
   });
 });

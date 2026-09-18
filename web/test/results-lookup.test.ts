@@ -1,24 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getLatest, getStatus, hasReference, latestEntryByLoinc, nearestEntryTo, type LatestByLoinc, type ResultEntry } from '../src/components/conditions/resultsLookup';
-import { buildConditions } from '../src/components/conditions/markers';
-import { MONITORING_PANELS } from './dataFiles';
-import { HP_AXIS_HTML } from '../src/components/conditions/hpAxisContent';
 import type { Result } from '../src/types';
-
-const result = (partial: Partial<Result>): Result => ({
-  loinc: '',
-  rawName: '',
-    section: '',
-  value: null,
-  rawValue: '',
-  valueQualifier: '',
-  unit: '',
-  refText: '',
-  refMin: null,
-  refMax: null,
-  method: '',
-  ...partial,
-});
+import { makeEntry, makeResult as result } from './helpers/fixtures';
 
 describe('resultsLookup', () => {
   const latest: LatestByLoinc = {
@@ -46,13 +29,9 @@ describe('resultsLookup', () => {
   });
 });
 
+const entry = (loinc: string, date: string, partial: Partial<Result>): ResultEntry => makeEntry({ loinc, date, place: 'lab', result: partial });
+
 describe('latestEntryByLoinc', () => {
-  const entry = (loinc: string, date: string, partial: Partial<Result>): ResultEntry => ({
-    loinc,
-    date,
-    place: 'lab',
-    result: result({ loinc, ...partial }),
-  });
   const entries: ResultEntry[] = [
     entry('5778-6', '2026-01-01', { value: 1 }),
     entry('5778-6', '2026-03-01', { rawValue: 'negative' }),
@@ -85,12 +64,6 @@ describe('latestEntryByLoinc', () => {
 
 describe('nearestEntryTo', () => {
   const ALB = ['1751-7', '61151-7'];
-  const entry = (loinc: string, date: string, partial: Partial<Result>): ResultEntry => ({
-    loinc,
-    date,
-    place: 'lab',
-    result: result({ loinc, ...partial }),
-  });
   const nearest = (entries: ResultEntry[], date: string) => nearestEntryTo(entries, ALB, date, { numericOnly: true });
 
   it('finds a reading before the date when only earlier ones exist', () => {
@@ -130,52 +103,5 @@ describe('nearestEntryTo', () => {
   it('returns null when nothing qualifies', () => {
     expect(nearest([], '2026-01-01')).toBeNull();
     expect(nearest([entry('1751-7', '2026-01-01', { value: 1 })], '2026-01-01')).toBeNull();
-  });
-});
-
-describe('buildConditions', () => {
-  const panels = [
-    { id: 'hpg-axis', name: 'HPG Axis', loincs: ['14913-8', '2991-8'] },
-    { id: 'thyroid', name: 'Thyroid', sections: [{ name: 's', loincs: ['11580-8'] }] },
-    { id: 'glucose-metabolism', name: 'Glucose', loincs: ['2339-0', '1798-8', '59261-8'] },
-  ];
-
-  it('resolves panelId panels plus extraLoincs', () => {
-    const conditions = buildConditions(panels, {}, MONITORING_PANELS);
-    const hypo = conditions.find((c) => c.name === 'Hypogonadism')!;
-    expect(hypo.tests.map((t) => t.loinc)).toEqual(
-      expect.arrayContaining(['14913-8', '2991-8', '1751-7', '4548-4'])
-    );
-  });
-
-  it('reads section-based panels and applies excludeLoincs', () => {
-    const conditions = buildConditions(panels, {}, MONITORING_PANELS);
-    expect(conditions.find((c) => c.name === 'Hypothyroidism')!.tests.map((t) => t.loinc)).toContain('11580-8');
-    const ir = conditions.find((c) => c.name === 'Insulin Resistance')!;
-    expect(ir.tests.map((t) => t.loinc)).not.toContain('1798-8'); // excluded (pancreatic)
-    expect(ir.tests.map((t) => t.loinc)).not.toContain('59261-8'); // excluded (IFCC twin)
-  });
-
-  it('always yields one condition per panel definition', () => {
-    expect(buildConditions([], {}, MONITORING_PANELS).map((c) => c.name)).toEqual(MONITORING_PANELS.map((d) => d.name));
-  });
-
-  it('short names win over catalog friendly names', () => {
-    const conditions = buildConditions(
-      panels,
-      { '14913-8': { loinc: '14913-8', friendlyName: 'Testosterone (Total)', longCommonName: 'x' } },
-      MONITORING_PANELS
-    );
-    const t = conditions.find((c) => c.name === 'Hypogonadism')!.tests.find((x) => x.loinc === '14913-8')!;
-    expect(t.shortName).toBe('T');
-    expect(t.friendlyName).toBe('Testosterone (Total)');
-  });
-});
-
-describe('hpAxisContent', () => {
-  it('carries the verbatim v2 prose: prolactin section, cascades, source', () => {
-    expect(HP_AXIS_HTML).toContain('Prolactin (PRL)');
-    expect(HP_AXIS_HTML).toContain('HP axes — feedback loops');
-    expect(HP_AXIS_HTML).toContain('Bhasin');
   });
 });

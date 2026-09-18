@@ -7,22 +7,7 @@ import {
   isNearOutOfRange,
   isOutOfRange,
 } from '../src/utils/format';
-import type { Result } from '../src/types';
-
-const result = (partial: Partial<Result>): Result => ({
-  loinc: '',
-  rawName: '',
-    section: '',
-  value: null,
-  rawValue: '',
-  valueQualifier: '',
-  unit: '',
-  refText: '',
-  refMin: null,
-  refMax: null,
-  method: '',
-  ...partial,
-});
+import { makeResult as result } from './helpers/fixtures';
 
 describe('fmtNum — adaptive precision by magnitude (v2 parity)', () => {
   it('scales decimals down as the value grows', () => {

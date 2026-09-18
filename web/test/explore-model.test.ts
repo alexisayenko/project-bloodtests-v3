@@ -6,30 +6,18 @@ import { INDEX_DEFS } from '../src/data/indexDefs';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import type { Result } from '../src/types';
+import { makeEntry, makeObservation, makeResult } from './helpers/fixtures';
 
 function obs(loinc: string, shortName: string, unit?: string): Observation {
-  return { shortName, friendlyName: shortName, longCommonName: '', loinc, unit };
+  return makeObservation({ shortName, loinc, unit });
 }
 
 function result(value: number | null, overrides: Partial<Result> = {}): Result {
-  return {
-    loinc: '',
-    rawName: '',
-        section: '',
-    value,
-    rawValue: value == null ? '' : String(value),
-    valueQualifier: '',
-    unit: '',
-    refText: '',
-    refMin: null,
-    refMax: null,
-    method: '',
-    ...overrides,
-  };
+  return makeResult({ value, ...overrides });
 }
 
 function entry(loinc: string, date: string, value: number | null, overrides: Partial<Result> = {}): ResultEntry {
-  return { loinc, date, place: 'Lab', result: { ...result(value, overrides), loinc } };
+  return makeEntry({ loinc, date, result: { value, ...overrides } });
 }
 
 describe('buildExploreModel — plottable two-sided-range markers', () => {

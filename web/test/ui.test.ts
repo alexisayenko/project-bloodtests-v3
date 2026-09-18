@@ -23,6 +23,8 @@ import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import type { Result } from '../src/types';
 import { INDEX_DEFS } from '../src/data/indexDefs';
+import { makeEntry, makeObservation } from './helpers/fixtures';
+import { installMemoryStorage } from './helpers/storage';
 
 describe('date labels', () => {
   it('renders the full "Mon D, YYYY"', () => {
@@ -178,23 +180,24 @@ describe('loadViewSettings', () => {
     expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: false });
   });
 
+  const stored = (raw: string) => installMemoryStorage().set(VIEW_SETTINGS_KEY, raw);
+
   it('defaults compactPanels to false when missing or not a boolean true', () => {
     for (const raw of ['{"unitSystem":"us"}', '{"compactPanels":"yes"}', '{"compactPanels":1}', '{"compactPanels":false}']) {
-      vi.stubGlobal('localStorage', { getItem: () => raw, setItem: () => {} });
+      stored(raw);
       expect(loadViewSettings().compactPanels).toBe(false);
     }
     vi.unstubAllGlobals();
   });
 
   it('keeps a stored compactPanels choice', () => {
-    vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"si","sampleLimit":5,"compactPanels":true}', setItem: () => {} });
+    stored('{"unitSystem":"si","sampleLimit":5,"compactPanels":true}');
     expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: true });
     vi.unstubAllGlobals();
   });
 
   it('saves compactPanels through saveViewSettings, coercing a non-boolean to false', () => {
-    const store = new Map<string, string>();
-    vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) });
+    const store = installMemoryStorage();
     saveViewSettings({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
     expect(JSON.parse(store.get(VIEW_SETTINGS_KEY)!)).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
     expect(loadViewSettings().compactPanels).toBe(true);
@@ -204,26 +207,26 @@ describe('loadViewSettings', () => {
   });
 
   it('gives a first-time visitor every default, sampleLimit included', () => {
-    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+    installMemoryStorage();
     expect(loadViewSettings()).toEqual(DEFAULT_VIEW_SETTINGS);
     expect(loadViewSettings().sampleLimit).toBe(5);
     vi.unstubAllGlobals();
   });
 
   it('keeps a stored choice and fills only what is missing', () => {
-    vi.stubGlobal('localStorage', { getItem: () => '{"sampleLimit":"all"}', setItem: () => {} });
+    stored('{"sampleLimit":"all"}');
     expect(loadViewSettings()).toEqual({ ...DEFAULT_VIEW_SETTINGS, sampleLimit: 'all' });
     vi.unstubAllGlobals();
   });
 
   it('ignores the retired dateOrder field a pre-existing payload still carries', () => {
-    vi.stubGlobal('localStorage', { getItem: () => '{"unitSystem":"us","sampleLimit":10,"dateOrder":"desc"}', setItem: () => {} });
+    stored('{"unitSystem":"us","sampleLimit":10,"dateOrder":"desc"}');
     expect(loadViewSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: false });
     vi.unstubAllGlobals();
   });
 
   it('never hands out the shared defaults object', () => {
-    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+    installMemoryStorage();
     loadViewSettings().sampleLimit = 'all';
     expect(DEFAULT_VIEW_SETTINGS.sampleLimit).toBe(5);
     vi.unstubAllGlobals();
@@ -238,14 +241,13 @@ describe('loadViewSettings', () => {
  * ммоль/л must never read "0.98, mg/dL".
  */
 function obs(loinc: string): Observation {
-  return {
+  return makeObservation({
     shortName: SHORT_NAMES[loinc]?.shortName ?? loinc,
     friendlyName: loinc,
-    longCommonName: '',
     loinc,
     unit: SHORT_NAMES[loinc]?.unit,
     also: ALSO_REFS[loinc],
-  };
+  });
 }
 
 function reading(loinc: string, value: number, unit: string): Pick<Result, 'loinc' | 'value' | 'rawValue' | 'unit'> {
@@ -253,15 +255,7 @@ function reading(loinc: string, value: number, unit: string): Pick<Result, 'loin
 }
 
 function entry(loinc: string, date: string, value: number, unit: string): ResultEntry {
-  return {
-    loinc,
-    date,
-    place: 'Lab',
-    result: {
-      loinc, rawName: '', section: '', value, rawValue: String(value), valueQualifier: '',
-      unit, refText: '', refMin: null, refMax: null, method: '',
-    },
-  };
+  return makeEntry({ loinc, date, result: { value, unit } });
 }
 
 describe('displayedResult', () => {

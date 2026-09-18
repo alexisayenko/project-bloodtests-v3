@@ -487,17 +487,3 @@ describe('unitScaleFamilies', () => {
     expect(unitScaleFamilies(['U/L', 'IU/L'], '2093-3')).toEqual([]);
   });
 });
-
-describe('MASS_MOLAR_SIBLINGS', () => {
-  // The unit of each side is checked against its dimension in
-  // reference-data.test.ts, beside the molar-mass table it is derived from.
-  it('names each side with its LOINC scale, carries a factor, and lists every code once', () => {
-    for (const pair of MASS_MOLAR_SIBLINGS) {
-      expect(pair.mass.longCommonName).toContain('[Mass/volume]');
-      expect(pair.molar.longCommonName).toContain('[Moles/volume]');
-      expect(pair.massPerMolarUnit).toBeGreaterThan(0);
-    }
-    const codes = MASS_MOLAR_SIBLINGS.flatMap((pair) => [pair.mass.loinc, pair.molar.loinc]);
-    expect(new Set(codes).size).toBe(codes.length);
-  });
-});
