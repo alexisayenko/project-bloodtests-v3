@@ -15,9 +15,9 @@ import { computeIndex } from '../src/data/computedIndices';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import { ALIAS_TO_PRIMARY } from '../src/data/analyteCatalog';
 import { LABORATORIES, LABORATORY_BY_ID, quoteSchedule } from '../src/data/labPricing';
-import { MEDICATIONS_KEY, loadMedications, type Medications } from '../src/data/medications';
+import { MEDICATIONS_KEY, loadMedications, type Medications } from '../src/data/storage/medications';
 import { buildConditions, panelRowLoincs } from '../src/components/conditions/markers';
-import { EMPTY_SCHEDULED_VISITS, SCHEDULED_KEY, addVisit, loadScheduled, type ScheduledVisits } from '../src/components/conditions/scheduled';
+import { EMPTY_SCHEDULED_VISITS, SCHEDULED_KEY, addVisit, loadScheduled, type ScheduledVisits } from '../src/data/storage/scheduledVisits';
 import { MONITORING_PANELS, PANELS } from './dataFiles';
 import type { DiagnosticReport, Result } from '../src/types';
 

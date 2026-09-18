@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { importResults, replaceStoredSessions } from '../src/data/importResults';
-import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
+import { RESULTS_STORAGE_KEY } from '../src/data/storage/resultsStorage';
 import { UploadParseError } from '../src/data/parseUpload';
 import type { DiagnosticReport } from '../src/types';
 import { makeEnvelope as envelope, makeReport } from './helpers/fixtures';

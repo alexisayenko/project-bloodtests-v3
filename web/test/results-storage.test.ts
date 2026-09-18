@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseStoredSessions } from '../src/data/resultsStorage';
+import { parseStoredSessions } from '../src/data/storage/resultsStorage';
 import { makeSession } from './helpers/fixtures';
 
 const item = {

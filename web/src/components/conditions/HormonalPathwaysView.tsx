@@ -31,7 +31,7 @@ import type { Result, UnitSystem } from '../../types';
 import { fmtNum, formatFullDate, isOutOfRange } from '../../utils/format';
 import { clamp } from '../../utils/math';
 import { panelDates, type Observation } from './markers';
-import { displayedResult } from './ui';
+import { displayedResult } from './resultCells';
 import { hasReference, nearestEntryTo, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
 import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, ENZYME_ART, SIZE, type GlyphArt, type Particle1, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';

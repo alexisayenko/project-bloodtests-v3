@@ -8,7 +8,7 @@ import {
   readSharedDataGuid,
   stripDataParam,
 } from './sharedLink';
-import { RESULTS_STORAGE_KEY as STORAGE_KEY, parseStoredSessions } from './resultsStorage';
+import { RESULTS_STORAGE_KEY as STORAGE_KEY, parseStoredSessions } from './storage/resultsStorage';
 import { importResults } from './importResults';
 import { applySharedMeta, clearSharedMeta, loadStoredSharedMeta, type SharedMeta } from './sharedMeta';
 

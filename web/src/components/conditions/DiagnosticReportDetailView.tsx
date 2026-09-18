@@ -5,7 +5,7 @@ import {
   groupHasErrors,
   type ValidationIssue,
 } from '../../data/validateDiagnosticReports';
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 import { formatFullDate } from '../../utils/format';
 import {
   applyFieldEdit,

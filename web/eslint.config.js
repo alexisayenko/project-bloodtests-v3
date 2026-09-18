@@ -41,10 +41,9 @@ export default defineConfig([
     rules: {
       'import-x/no-cycle': ['error', { ignoreExternal: true }],
       // Layering: data/ must not reach into components/, and primitives/ must
-      // not reach into conditions/. Known inversions exist today; this turns
-      // to 'error' in the layering commit that fixes them.
+      // not reach into conditions/.
       'import-x/no-restricted-paths': [
-        'warn',
+        'error',
         {
           zones: [
             { target: './src/data', from: './src/components' },

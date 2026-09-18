@@ -15,11 +15,6 @@ export const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3']);
 // Excluded from the raw-LOINC Indices table so each renders once, via its computed row.
 export const COMPUTED_LOINCS = new Set(INDEX_DEFS.map((d) => d.loinc).filter((x): x is string => !!x));
 
-// Reverse of MARKER_LOINC.
-export const LOINC_TO_MARKER: Record<string, string> = Object.fromEntries(
-  Object.entries(MARKER_LOINC).flatMap(([marker, loincs]) => loincs.map((loinc) => [loinc, marker]))
-);
-
 function getPanelLoincs(panel: Panel): string[] {
   if (panel.sections) return panel.sections.flatMap((section) => section.loincs);
   return panel.loincs ?? [];

@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { SAMPLE_LIMITS, type ViewSettings } from './ui';
+import { SAMPLE_LIMITS, type ViewSettings } from '../../data/storage/viewSettings';
 import type { UnitSystem } from '../../types';
 import { SegmentedControl } from '../primitives';
 

@@ -1,7 +1,7 @@
 import { Rocket, FileText, List, LayoutGrid, CalendarCheck, BookOpen, CircleUser, ChevronsLeft, Droplets, ChevronsRight, type LucideIcon } from 'lucide-react';
 import { PathwaysIcon, PillIcon, type IconComponent } from './customIcons';
 import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 import { COLOR } from '../../styles/tokens';
 
 const ICONS: Record<NavView, LucideIcon | IconComponent> = {

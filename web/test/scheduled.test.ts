@@ -17,7 +17,7 @@ import {
   toggleIndex,
   toggleRow,
   type ScheduledVisits,
-} from '../src/components/conditions/scheduled';
+} from '../src/data/storage/scheduledVisits';
 import { installMemoryStorage } from './helpers/storage';
 import { MARKER_LOINC } from '../src/data/computedIndices';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../src/data/analyteCatalog';

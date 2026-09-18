@@ -3,7 +3,7 @@ import type { InterchangeEnvelope, InterchangeObservation, InterchangeReport } f
 import { SCHEMA_VERSION } from './envelopeSchema';
 import { parseUploadedResults } from './parseUpload';
 import { newRowId } from './ids';
-import { loadMedications, saveMedications, type Medications } from './medications';
+import { loadMedications, saveMedications, type Medications } from './storage/medications';
 import { monthKey, monthKeyOf } from './months';
 import {
   addVisit,
@@ -12,7 +12,7 @@ import {
   setRowsScheduled,
   setScheduleMonth,
   type ScheduledVisits,
-} from '../components/conditions/scheduled';
+} from './storage/scheduledVisits';
 
 /** null = an open end of the reference range. */
 type Printed = readonly [loinc: string, rawName: string, unit: string, low: number | null, high: number | null];

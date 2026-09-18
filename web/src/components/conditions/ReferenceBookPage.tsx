@@ -10,7 +10,7 @@ import type { Observation } from './markers';
 import { PageHeader } from './PageHeader';
 import type { ResultEntry } from './resultsLookup';
 import type { Route } from './routing';
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 
 const HpAxisPage = lazy(() => import('../reference/HpAxisPage').then((m) => ({ default: m.HpAxisPage })));
 const TestosteronePage = lazy(() => import('../reference/TestosteronePage').then((m) => ({ default: m.TestosteronePage })));

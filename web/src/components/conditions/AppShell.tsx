@@ -3,7 +3,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { NavBar } from './NavBar';
 import { SideNav } from './SideNav';
 import { type Route } from './routing';
-import { loadSidebarCollapsed, saveSidebarCollapsed } from './sidebarCollapsed';
+import { loadSidebarCollapsed, saveSidebarCollapsed } from '../../data/storage/sidebarCollapsed';
 
 export function AppShell({
   route,

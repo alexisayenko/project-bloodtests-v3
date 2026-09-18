@@ -16,13 +16,13 @@ import {
 import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
-import { visibleDatesOf, type SelectedCell } from './ui';
+import { visibleDatesOf, type SelectedCell } from './resultCells';
 import { ResultsTable } from './ResultTables';
 import type { Condition } from './exploreModel';
-import type { IndexScheduling, RowScheduling } from './scheduled';
+import type { IndexScheduling, RowScheduling } from './scheduling';
 import type { ResultEntry } from './resultsLookup';
 import type { ObservationsTab } from './routing';
-import type { MedicationRow } from '../../data/medications';
+import type { MedicationRow } from '../../data/storage/medications';
 import { List, Search, Layers } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { EmptyState } from '../primitives';

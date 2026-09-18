@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { MARKER_LOINC } from '../../data/computedIndices';
-import { INDEX_DEFS } from '../../data/indexDefs';
-import { isMonthKey, monthKeyOf } from '../../data/months';
-import { LABORATORIES } from '../../data/labPricing';
-import { newRowId } from '../../data/ids';
-import { LOINC_TO_MARKER } from './markers';
+import { LOINC_TO_MARKER, MARKER_LOINC } from '../computedIndices';
+import { INDEX_DEFS } from '../indexDefs';
+import { isMonthKey, monthKeyOf } from '../months';
+import { LABORATORIES } from '../labPricing';
+import { newRowId } from '../ids';
 
 export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
 // `month` (ISO YYYY-MM, a calendar month, not an instant) labels a visit's schedule; it never partitions it.
@@ -34,20 +32,6 @@ function isLabId(value: unknown): value is string {
 function isStr(value: unknown): value is string {
   return typeof value === 'string';
 }
-
-/** One visit's Scheduled column wiring, handed to every table that renders it. */
-export type RowScheduling = {
-  scheduled: ScheduledVisit;
-  onToggle: (loincs: string[]) => void;
-  onSetMonth: (month: string | undefined) => void;
-  onRemove: () => void;
-};
-export type IndexScheduling = {
-  scheduled: ScheduledVisit;
-  onToggle: (key: string) => void;
-  onSetMonth: (month: string | undefined) => void;
-  onRemove: () => void;
-};
 
 type StoredFields = { loincs: string[]; indices: string[]; month?: string; selectedLabId?: string };
 
@@ -206,40 +190,4 @@ export function monthChoices(today: Date, count: number, selected?: string): str
   }
   if (isMonthKey(selected) && !months.includes(selected)) months.push(selected);
   return months.sort((a, b) => a.localeCompare(b));
-}
-
-export function useScheduled() {
-  const [scheduledVisits, setScheduledVisits] = useState<ScheduledVisits>(loadScheduled);
-
-  useEffect(() => {
-    saveScheduled(scheduledVisits);
-  }, [scheduledVisits]);
-
-  const onToggleRow = useCallback(
-    (visitId: string, loincs: string[]) => setScheduledVisits((s) => toggleRow(s, visitId, loincs)),
-    []
-  );
-  const onToggleIndex = useCallback((visitId: string, key: string) => setScheduledVisits((s) => toggleIndex(s, visitId, key)), []);
-  const onSetMonth = useCallback(
-    (visitId: string, month: string | undefined) => setScheduledVisits((s) => setScheduleMonth(s, visitId, month)),
-    []
-  );
-  const onSelectLab = useCallback(
-    (visitId: string, labId: string | undefined) => setScheduledVisits((s) => setSelectedLab(s, visitId, labId)),
-    []
-  );
-  const onAddVisit = useCallback(() => setScheduledVisits((s) => addVisit(s, newRowId())), []);
-  const onRemoveVisit = useCallback((visitId: string) => setScheduledVisits((s) => removeVisit(s, visitId)), []);
-  const onReload = useCallback(() => setScheduledVisits(loadScheduled()), []);
-
-  return {
-    scheduledVisits,
-    onToggleRow,
-    onToggleIndex,
-    onSetMonth,
-    onSelectLab,
-    onAddVisit,
-    onRemoveVisit,
-    onReload,
-  };
 }

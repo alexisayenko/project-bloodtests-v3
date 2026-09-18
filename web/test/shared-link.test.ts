@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readSharedDataGuid, isAlreadyImported, IMPORTED_LINKS_KEY, markImported } from '../src/data/sharedLink';
-import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
+import { RESULTS_STORAGE_KEY } from '../src/data/storage/resultsStorage';
 import { makeSession } from './helpers/fixtures';
 import { installMemoryStorage } from './helpers/storage';
 

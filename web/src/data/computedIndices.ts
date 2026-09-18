@@ -228,6 +228,11 @@ export interface IndexDef {
   fn: (m: Markers) => number | null;
 }
 
+/** Reverse of MARKER_LOINC. */
+export const LOINC_TO_MARKER: Record<string, string> = Object.fromEntries(
+  Object.entries(MARKER_LOINC).flatMap(([marker, loincs]) => loincs.map((loinc) => [loinc, marker]))
+);
+
 /**
  * MARKER_LOINC plus each code's catalog variants, derived through
  * ALSO_REFS / ALIAS_TO_PRIMARY (ADR-0010) rather than listed twice. Declared

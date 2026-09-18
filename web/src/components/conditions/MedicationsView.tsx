@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMedications, type MedicationRow } from '../../data/medications';
+import { useMedications } from '../../hooks/useMedications';
+import type { MedicationRow } from '../../data/storage/medications';
 import { newRowId } from '../../data/ids';
 import { MONTH_LABELS, monthKey } from '../../data/months';
 import { Clock, TrendingUp } from 'lucide-react';

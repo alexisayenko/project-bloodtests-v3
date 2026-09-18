@@ -4,7 +4,7 @@ import { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ResultsProvider, useResultsContext } from '../src/data/ResultsContext';
 import { storeSharedMeta, loadStoredSharedMeta, SHARED_META_KEY } from '../src/data/sharedMeta';
-import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
+import { RESULTS_STORAGE_KEY } from '../src/data/storage/resultsStorage';
 import type { DiagnosticReport } from '../src/types';
 import { makeEnvelope as envelope, makeReport, makeSession } from './helpers/fixtures';
 import { installMemoryStorage } from './helpers/storage';

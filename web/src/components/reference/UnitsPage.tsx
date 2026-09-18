@@ -12,9 +12,8 @@ import {
 import { MASS_MOLAR_SIBLINGS } from '../../data/massMolarSiblings';
 import { ALLOWED_UNITS, ANALYTE_BY_LOINC, DEFAULT_UNITS, loincsFoldingUAndIu, SHORT_NAMES } from '../../data/analyteCatalog';
 import { COLOR } from '../../styles/tokens';
-import { pressable } from '../conditions/ui';
 import type { Route } from '../conditions/routing';
-import { TABLE } from '../primitives/styles';
+import { TABLE, pressable } from '../primitives/styles';
 import { td, th } from './cells';
 import { EM_DASH, Mono, Scroller } from './parts';
 

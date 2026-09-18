@@ -2,7 +2,7 @@ import { useId, useMemo, useState, type ReactNode } from 'react';
 import type { DiagnosticReport } from '../../types';
 import { validateDiagnosticReports, groupHasErrors, groupHasWarnings } from '../../data/validateDiagnosticReports';
 import { parseUploadedResults } from '../../data/parseUpload';
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 import { formatFullDate } from '../../utils/format';
 import { CHATBOT_PROMPT } from '../../data/chatbotPrompt';
 import { FileText, CheckCircle2, Sparkles, ChevronRight, Trash2 } from 'lucide-react';

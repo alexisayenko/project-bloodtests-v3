@@ -14,8 +14,8 @@ import {
 } from '../conditions/markers';
 import { latestEntryByLoinc, type ResultEntry } from '../conditions/resultsLookup';
 import { routeToHash, type Route } from '../conditions/routing';
-import { namedLab, pressable } from '../conditions/ui';
-import { TABLE } from '../primitives/styles';
+import { namedLab } from '../conditions/resultCells';
+import { TABLE, pressable } from '../primitives/styles';
 import { td, th, wrapTd } from './cells';
 import { EM_DASH, LoincLink } from './parts';
 

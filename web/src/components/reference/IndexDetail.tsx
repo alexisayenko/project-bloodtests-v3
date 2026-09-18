@@ -1,7 +1,7 @@
 import type { IndexDef, IndexReference } from '../../data/computedIndices';
 import { COLOR } from '../../styles/tokens';
 import { isEchoRedundant } from '../conditions/markers';
-import { greenRangeOf } from '../conditions/ui';
+import { greenRangeOf } from '../conditions/resultCells';
 import { EvidenceBadge } from './parts';
 
 function ReferenceItem({ source }: Readonly<{ source: IndexReference }>) {

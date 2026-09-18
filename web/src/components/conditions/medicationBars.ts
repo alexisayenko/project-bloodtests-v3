@@ -1,4 +1,4 @@
-import type { MedicationRow } from '../../data/medications';
+import type { MedicationRow } from '../../data/storage/medications';
 
 /** One drawable span for the What's-in-range medication lane. */
 export type MedicationBar = {

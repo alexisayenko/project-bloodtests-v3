@@ -103,3 +103,27 @@ export const DANGER_CARD = {
   border: `1px solid color-mix(in srgb, ${COLOR.statusBad} 30%, ${COLOR.surface})`,
   background: `color-mix(in srgb, ${COLOR.statusBadBg} 35%, ${COLOR.surface})`,
 } as const;
+
+/** Makes a styled non-native element keyboard-activatable (Sonar S6848/S1082). */
+export function pressable(handler: (e: { currentTarget: HTMLElement }) => void) {
+  return {
+    role: 'button' as const,
+    tabIndex: 0,
+    onClick: handler,
+    onKeyDown: (e: { key: string; preventDefault: () => void; currentTarget: HTMLElement }) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handler(e);
+      }
+    },
+  };
+}
+
+/** Active bold is a text-shadow, not a fontWeight, so switching tabs never shifts neighbours. */
+export function tabStyle(active: boolean) {
+  return {
+    borderBottom: active ? `2px solid ${COLOR.accent}` : '2px solid transparent',
+    textShadow: active ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
+    color: active ? COLOR.accent : COLOR.textSecondary,
+  };
+}

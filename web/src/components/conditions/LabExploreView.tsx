@@ -4,7 +4,7 @@ import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
 import { buildExploreModel, type Condition } from './exploreModel';
 import type { ResultEntry } from './resultsLookup';
 import type { Result, UnitSystem } from '../../types';
-import type { MedicationRow } from '../../data/medications';
+import type { MedicationRow } from '../../data/storage/medications';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { SegmentedControl } from '../primitives';
 import { MedicationLane } from './MedicationLane';

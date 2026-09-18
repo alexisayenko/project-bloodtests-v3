@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ScheduledVisit } from './scheduled';
+import type { ScheduledVisit } from '../../data/storage/scheduledVisits';
 import { MonthSelect } from './ScheduleHeader';
 import { TabBar } from './TabBar';
 import { LABORATORIES, formatPrice, quoteSchedule, type LabQuote, type Laboratory } from '../../data/labPricing';
@@ -7,7 +7,7 @@ import { planCells, planRows, planRowLabel, type PlanCell } from '../../data/vis
 import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
 import { formatMonthFullYear } from '../../data/months';
 import type { Observation } from './markers';
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 import { CalendarCheck, Coins, CheckSquare } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, TABLE, TABLE_CARD } from '../primitives';
