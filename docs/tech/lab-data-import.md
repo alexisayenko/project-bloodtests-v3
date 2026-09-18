@@ -76,7 +76,12 @@ not move — the app records and compares, and owns no server.
   Verified. It is a state-to-state network, not a citizen API.
 - **xShare "Yellow Button"** is a Horizon Europe project piloting one-click
   EEHRxF export at eight sites — a project, not an EHDS obligation as the AI
-  answer had it. Verified as a project.
+  answer had it. Verified as a project. The technical spec to target is its
+  [IPS+ implementation guide](https://build.fhir.org/ig/hl7-eu/xshare-ips-plus/technical.html)
+  (HL7 Europe, FHIR R4.0.1): the International Patient Summary extended with
+  routine laboratory and microbiology data items, harmonized value sets and
+  FHIR→CDISC mappings, proposed as the EEHRxF representation the Yellow Button
+  exports — still a CI build (0.2.0 qa-preview), not a released version.
 - **National portals.** Cyprus: the GeSY Beneficiary Portal shows patient
   summary, prescriptions and medical history (gesy.org.cy); eHealth4U, the
   FHIR R4 national EHR with a lab-results section, is a *prototype* (PMC,
@@ -276,6 +281,9 @@ page itself.
   — MyHealth@EU: ePrescription and Patient Summary now, lab results later.
 - https://xshare-project.eu/the-xshare-button/ (snippet) — Yellow Button is
   a Horizon Europe project.
+- https://build.fhir.org/ig/hl7-eu/xshare-ips-plus/technical.html — IPS+ IG
+  (HL7 Europe, FHIR R4.0.1): IPS plus routine lab and microbiology items as the
+  Yellow Button's EEHRxF payload; CI build 0.2.0 qa-preview, changes regularly.
 - https://pmc.ncbi.nlm.nih.gov/articles/PMC13133457/ — eHealth4U is a FHIR R4
   prototype with a lab-results section (2026).
 - https://www.gesy.org.cy/en-us/home-en (snippet) — Beneficiary Portal shows
