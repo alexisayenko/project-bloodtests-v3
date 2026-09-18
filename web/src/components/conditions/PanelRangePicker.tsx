@@ -58,6 +58,56 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 2);
   }, []);
 
+  // Drag-scrolling state for the area above the horizontal line
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{
+    startX: number;
+    startScrollLeft: number;
+    hasMoved: boolean;
+  }>({ startX: 0, startScrollLeft: 0, hasMoved: false });
+
+  const handleDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    if (!timelineScrollRef.current) return;
+
+    dragRef.current = {
+      startX: e.clientX,
+      startScrollLeft: timelineScrollRef.current.scrollLeft,
+      hasMoved: false,
+    };
+    setIsDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleDragMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || !timelineScrollRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    if (Math.abs(dx) > 3) {
+      dragRef.current.hasMoved = true;
+    }
+    timelineScrollRef.current.scrollLeft = dragRef.current.startScrollLeft - dx;
+    checkScrollability();
+  };
+
+  const handleDragEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+
+    if (!dragRef.current.hasMoved) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const yearIndex = Math.floor(clickX / ITEM_WIDTH);
+      if (yearIndex >= 0 && yearIndex < years.length && years[yearIndex] != null) {
+        handleYearClick(years[yearIndex]!);
+      }
+    }
+  };
+
   // Close on Escape or click outside
   useEffect(() => {
     if (!isOpen) return;
@@ -219,7 +269,7 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
               style={{
                 overflowX: 'auto',
                 scrollbarWidth: 'none',
-                scrollBehavior: 'smooth',
+                scrollBehavior: isDragging ? 'auto' : 'smooth',
                 WebkitOverflowScrolling: 'touch',
                 padding: '24px 12px 12px',
                 position: 'relative',
@@ -233,6 +283,26 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                   height: 60,
                 }}
               >
+                {/* Drag-scroll area above horizontal line */}
+                <div
+                  onPointerDown={handleDragStart}
+                  onPointerMove={handleDragMove}
+                  onPointerUp={handleDragEnd}
+                  onPointerCancel={handleDragEnd}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 22,
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    zIndex: 6,
+                    touchAction: 'none',
+                    userSelect: 'none',
+                  }}
+                  title="Drag horizontally to scroll timeline"
+                />
+
                 {/* Horizontal Base Track */}
                 <div
                   style={{
