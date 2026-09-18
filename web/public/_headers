@@ -1,3 +1,9 @@
 /d/*
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: private, max-age=0, must-revalidate
+
+# Vite content-hashes every filename under /assets/, so a cached copy is safe
+# to keep indefinitely -- a rebuild always ships a new URL, never the same
+# one with different bytes.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
