@@ -36,9 +36,7 @@ export function applyFieldEdit(item: Result, field: EditableField, newValue: str
   return { ...item, value: Number.isNaN(numVal) ? null : numVal, rawValue: newValue };
 }
 
-// A confident derivation is applied immediately (draft-gated by Save/Cancel)
-// — the user shouldn't have to pick between codes the resolver already
-// decided between.
+// A confident derivation is applied straight into the draft (still gated by Save/Cancel).
 export function computeConfidentFixes(items: Result[], results: CrossCheckResult[]): Map<number, string> {
   const fixes = new Map<number, string>();
   results.forEach((r, i) => {
@@ -81,8 +79,6 @@ export function buildNlmSuggestionsByRow(
   return perRow;
 }
 
-// A row's resolved name: the printed code's friendly name from the local catalog
-// (its LOINC name if it has none), or NLM's name for a code the catalog lacks.
 export function resolvedNameOf(
   item: Result,
   check: CrossCheckResult | undefined,
@@ -94,8 +90,7 @@ export function resolvedNameOf(
   return undefined;
 }
 
-// Catalog expanded with unit-variant aliases (ALSO_REFS): labs report
-// e.g. SHBG as 13967-5 (nmol/L) while the catalog keys it as 2942-1.
+// Expanded with unit-variant aliases, since labs report e.g. SHBG under 13967-5 while the catalog keys 2942-1.
 export function buildExpandedCatalog(analysesCatalog: Record<string, Analysis>): Analysis[] {
   const base = Object.values(analysesCatalog);
   const byCode = new Map(base.map((a) => [a.loinc, a]));
@@ -132,10 +127,7 @@ export function getDotTitle(itemIssues: ValidationIssue[], mismatchMsg: string |
   return messages.join('; ') || 'OK';
 }
 
-// The row's unit contradicts what its code measures and the sibling table
-// knows the code on the printed scale. The repair is the code — the value and
-// the unit are what the lab printed (ADR-0003) — and it is offered, never
-// applied: which of the two the lab got wrong is a judgement, not a derivation.
+// The repair is the code, never the printed value or unit (ADR-0003), and it is offered, never auto-applied.
 export function unitRepairFor(item: Result): UnitRepairSuggestion | undefined {
   if (!item.loinc || !item.unit) return undefined;
   const { check } = normalizeObservationUnit({ loinc: item.loinc, unit: item.unit });
@@ -167,8 +159,7 @@ function crossCheckChips(
   return rowNlmSuggestions ?? [];
 }
 
-// Show the unit only where it disambiguates: on a known unit-variant code,
-// or when two chips share a name.
+// The unit is shown only where it disambiguates.
 export function getUnitLabel(suggestion: SuggestionChip, chipSuggestions: SuggestionChip[]): string {
   if (!suggestion.unit) return '';
   const disambiguates =

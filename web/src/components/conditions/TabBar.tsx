@@ -1,8 +1,6 @@
 import { pressable } from './ui';
 
-// An in-page tab strip, sitting under a view's heading. The top nav is NOT one
-// of these: it has its own spacing (.mc-nav), font size and blocked state. The
-// look lives in `.mc-tab`, since hover and focus need selectors.
+// Not used by the top nav, which has its own spacing, sizes and blocked state.
 export function TabBar<T extends string>({
   tabs,
   active,

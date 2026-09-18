@@ -117,8 +117,7 @@ export function DiagnosticReportsView({
     setAddError(null);
     setAddedCount(null);
     setIsAdding(true);
-    // Let the browser paint the "Adding…" state before the synchronous
-    // JSON.parse/parseUploadedResults work freezes the main thread.
+    // Let the browser paint "Adding…" before the synchronous parse freezes the main thread.
     await new Promise((r) => setTimeout(r, 50));
     try {
       let json: unknown;

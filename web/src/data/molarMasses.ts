@@ -1,19 +1,7 @@
 import data from '../../public/data/molar-masses.json';
 
-/**
- * The single source of truth for mass↔molar conversion.
- *
- * `web/public/data/molar-masses.json` stores molar masses, not factors: each
- * entry carries a molecular formula, the mass computed from it and the atomic
- * weights it was computed with, and the sources every one of those was verified
- * against. This module turns a molar mass into the factor a given unit pair
- * needs, so nothing in the app writes a conversion factor by hand and "38.666
- * mg/dL per mmol/L" cannot drift from "cholesterol is 386.664 g/mol".
- *
- * Deliberately dependency-free: `massMolarSiblings.ts` builds on it, and
- * `unitNormalization.ts` builds on that, so it cannot reach back for their unit
- * parsing without a cycle.
- */
+// molar-masses.json stores molar masses, never factors; every factor is derived
+// here (ADR-0011). Dependency-free on purpose: unitNormalization builds on this.
 
 export interface AtomicWeight {
   element: string;
@@ -31,12 +19,7 @@ export interface MolarMassSource {
   retrieved: string;
 }
 
-/**
- * `compound` — a single molecular species, so the molar mass is exact.
- * `element` — measured as the element itself, so it is an atomic weight.
- * `conventional` — no single true molar mass exists and clinical practice
- * agrees on a stand-in; the entry's `note` says what the convention is.
- */
+/** `conventional`: no single true molar mass exists; the entry's `note` names the clinical stand-in. */
 export type MolarMassBasis = 'compound' | 'element' | 'conventional';
 
 export interface MolarMassEntry {
@@ -67,13 +50,7 @@ export const MOLAR_MASS_BY_ID: Record<string, MolarMassEntry> = Object.fromEntri
   MOLAR_MASSES.map((m) => [m.id, m])
 );
 
-/**
- * Recompute a formula's molar mass from `ATOMIC_WEIGHTS`. The stored
- * `molarMassGPerMol` is exactly this, and the conformance suite checks it —
- * the function exists so the check has something to check against, and so a
- * Reference Book page can show the arithmetic rather than assert the result.
- * Returns undefined for a formula naming an element the table does not carry.
- */
+/** Recomputed from `ATOMIC_WEIGHTS` so the conformance suite can check the stored mass against it. */
 export function molarMassFromFormula(formula: string): number | undefined {
   const tokens = formula.match(/[A-Z][a-z]?\d*/g);
   if (tokens?.join('') !== formula) return undefined;
@@ -114,12 +91,7 @@ function baseAmountOf(amount: string): 'mol' | 'g' | undefined {
   return undefined;
 }
 
-/**
- * A concentration unit's multiplier onto its dimension's base scale (g/L for a
- * mass concentration, mol/L for a molar one), plus which of the two it is.
- * Anything else — a unit with no volume, an activity, a count — is undefined,
- * so nothing converts on a unit this does not fully understand.
- */
+// Multiplier onto g/L or mol/L; undefined for anything not fully understood, so nothing converts on a guess.
 function concentrationScale(unit: string): { kind: 'mass' | 'substance'; scale: number } | undefined {
   const [amount, volume, ...rest] = unit.split('/');
   if (rest.length > 0 || !amount || !volume) return undefined;
@@ -143,15 +115,7 @@ function scaleOf(unit: string, kind: 'mass' | 'substance'): number {
   return parsed.scale;
 }
 
-/**
- * How much of `toUnit` one unit of `fromUnit` is, when both express the SAME
- * dimension (g/L → mg/dL is 100). Pure SI arithmetic — no molar mass is
- * involved and none is needed — but it belongs beside the functions above so
- * that a caller rescaling a concentration never writes the factor out by hand
- * either. Undefined when either unit is not a concentration this module fully
- * understands, or when the two are of different dimensions (that is the
- * mass↔molar case, and it needs `massPerMolarUnit` and a molar mass).
- */
+/** Same-dimension rescale (g/L → mg/dL is 100); undefined across mass↔molar, which needs `massPerMolarUnit`. */
 export function concentrationRatio(fromUnit: string, toUnit: string): number | undefined {
   const from = concentrationScale(fromUnit);
   const to = concentrationScale(toUnit);
@@ -159,20 +123,12 @@ export function concentrationRatio(fromUnit: string, toUnit: string): number | u
   return from.scale / to.scale;
 }
 
-/**
- * How much of `massUnit` one unit of `molarUnit` is — the number a mass value
- * is divided by to reach the molar scale. Cholesterol in mg/dL and mmol/L
- * gives 38.666.
- */
+/** The number a mass value is divided by to reach the molar scale (cholesterol mg/dL→mmol/L: 38.666). */
 export function massPerMolarUnit(id: string, massUnit: string, molarUnit: string): number {
   return (molarMassOf(id) * scaleOf(molarUnit, 'substance')) / scaleOf(massUnit, 'mass');
 }
 
-/**
- * The reciprocal: how much of `molarUnit` one unit of `massUnit` is — the
- * number a mass value is multiplied by. Testosterone in ng/dL and nmol/L gives
- * 0.034670.
- */
+/** The reciprocal: the number a mass value is multiplied by (testosterone ng/dL→nmol/L: 0.034670). */
 export function molarPerMassUnit(id: string, massUnit: string, molarUnit: string): number {
   return scaleOf(massUnit, 'mass') / (molarMassOf(id) * scaleOf(molarUnit, 'substance'));
 }

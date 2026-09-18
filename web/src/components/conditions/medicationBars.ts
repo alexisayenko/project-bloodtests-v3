@@ -1,6 +1,6 @@
 import type { MedicationRow } from '../../data/medications';
 
-/** One drawable span for the What's-in-range medication lane (task-0053). */
+/** One drawable span for the What's-in-range medication lane. */
 export type MedicationBar = {
   id: string;
   brand: string;
@@ -29,13 +29,7 @@ function compoundsLine(row: MedicationRow): string {
     .join(', ');
 }
 
-/**
- * One bar per contiguous run of taken months in one row -- a course stopped
- * and later resumed draws as two separate bars rather than one spanning the
- * gap. `months` is read already sorted (toggleMonth/parseRow keep it that
- * way) but sorted again here defensively since nothing enforces that on a
- * caller-supplied row.
- */
+/** One bar per contiguous run of months; sorted again here since nothing enforces order on a caller-supplied row. */
 function rowBars(row: MedicationRow, color: string): MedicationBar[] {
   const months = [...row.months].sort((a, b) => a.localeCompare(b));
   const detail = compoundsLine(row);
@@ -65,14 +59,7 @@ function rowBars(row: MedicationRow, color: string): MedicationBar[] {
   return bars;
 }
 
-/**
- * Bars for the What's-in-range medication lane -- one entry per named
- * medication row with at least one taken month, in `rows`' own order (the
- * Medications page's row order). `colorOf` is asked for a color once per
- * row that actually produces a bar, so an unnamed or never-taken row (which
- * MedicationsView itself never persists/shows once unnamed, but a caller
- * could still pass one) never burns a palette slot.
- */
+/** `colorOf` is asked once per row that actually produces a bar, so an empty row never burns a palette slot. */
 export function buildMedicationBars(rows: MedicationRow[], colorOf: (index: number) => string): MedicationBar[] {
   let colorIndex = 0;
   return rows

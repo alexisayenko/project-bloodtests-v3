@@ -20,11 +20,7 @@ export type TextFilterControl = {
 };
 
 export type ControlsBarProps = ControlsProps & {
-  /**
-   * Omitted by Panel Detail, where the picker renders disabled rather than
-   * absent: a control that vanishes between views makes the bar jump, and a
-   * disabled one says the capability exists but you are already in one panel.
-   */
+  /** Omitted by Panel Detail, where the picker renders disabled rather than absent so the bar never jumps. */
   panelFilter?: PanelFilterControl;
   markerQuery: TextFilterControl;
 };
@@ -34,8 +30,7 @@ const NO_PANELS = 'No monitoring panels to filter by.';
 
 const SAMPLE_LIMITS: readonly (number | 'all')[] = [5, 10, 15, 'all'];
 
-// The tooltip hangs on the group, not the control: a disabled control receives
-// no mouse events, so a title on it would never show.
+// On the group, not the control: a disabled control receives no mouse events.
 function ControlGroup({
   label,
   disabled = false,
@@ -55,9 +50,7 @@ function ControlGroup({
 /** The panel picker's "no filter" value, shared with the view that holds the state. */
 export const ALL_PANELS = '';
 
-// Shared table controls -- unit system and samplings shown (one setting across
-// the panel Analysis tables and All Observations alike), plus the two row
-// filters, which are per-view session state passed in from the view.
+// Holds no state: the filters are per-view session state, the unit/sample settings the shell's.
 export function ControlsBar({
   unitSystem,
   setUnitSystem,

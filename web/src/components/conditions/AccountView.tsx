@@ -35,21 +35,16 @@ async function currentLocalFiles(sessions: DiagnosticReport[]): Promise<Record<s
   });
 }
 
-// A browser that never received the cloud's data (never signed in with it locally, or never
-// imported it) still has empty local storage. Pushing that on sign-out would silently replace a
-// populated cloud document with nothing -- so an empty local backup never overwrites one.
+// An empty local backup never overwrites a populated cloud document on sign-out.
 function isEmptyBackup(backup: BackupContents): boolean {
   return !backup.reports?.count && !backup.medications?.rows.length && !backup.scheduled?.visits.length;
 }
 
-/** Supabase sign-in/out with the ADR-0018 one-time cutover: sign-in resolves cloud-vs-local (cloud wins if a document exists,
- * otherwise today's local data becomes the first cloud copy), sign-out pushes latest local state up then wipes it -- unless
- * local is empty and the cloud document isn't, in which case the push is skipped so signing out never erases real cloud data.
- *
- * Unlike Firebase's popup sign-in (which resolved synchronously with a user credential), Supabase's OAuth sign-in is
- * redirect-based: the page navigates away to the provider and back, and the session only becomes available once Supabase's
- * client picks it up on return. The 'SIGNED_IN' auth event (as opposed to 'INITIAL_SESSION', fired for an already-signed-in
- * returning visit) marks that moment, so cloud sync is wired to it specifically -- once per fresh sign-in, not on every load. */
+/**
+ * One-time cutover (ADR-0018): sign-in pulls the cloud copy if one exists, else pushes local up; sign-out
+ * pushes then wipes. OAuth is redirect-based, so sync is wired to the 'SIGNED_IN' event, never
+ * 'INITIAL_SESSION', which fires for an already-signed-in returning visit.
+ */
 function AccountAuthCard({
   sessions,
   onImportAll,
@@ -167,7 +162,7 @@ function AccountAuthCard({
   );
 }
 
-/** "Database details": subject/sex/birth-year/notes written into every export. Always expanded here — no collapse toggle. */
+/** Subject/sex/birth-year/notes written into every export. */
 function DatabaseDetailsCard() {
   const [meta, setMeta] = useState<EnvelopeMeta>(() => loadEnvelopeMeta());
 
@@ -253,7 +248,7 @@ function DatabaseDetailsCard() {
 
 const HOLD_TO_CLEAR_MS = 2000;
 
-/** "Clear all data": a press-and-hold trigger (mouse, touch and keyboard) instead of a confirm() dialog — the hold itself is the confirmation. */
+/** The hold itself is the confirmation; no confirm() dialog. */
 function HoldToClearButton({
   onConfirm,
   disabled,

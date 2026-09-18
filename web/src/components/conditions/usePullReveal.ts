@@ -28,12 +28,7 @@ export interface PullReveal {
 
 const clamp = (value: number, lo: number, hi: number) => Math.min(Math.max(value, lo), hi);
 
-/**
- * Drag-to-reveal for one axis: the thing sits at a SLIVER, follows the finger
- * while pulled, and on release either settles open (pulled past COMMIT) or
- * springs back. `full` is the extent when fully open -- a measured header
- * height or a fixed column width -- and may be 0 before it has been measured.
- */
+/** `full` may be 0 before the header has been measured. */
 export function usePullReveal(full: number, axis: 'x' | 'y'): PullReveal {
   const [open, setOpen] = useState(false);
   const [dragReveal, setDragReveal] = useState<number | null>(null);
@@ -45,13 +40,7 @@ export function usePullReveal(full: number, axis: 'x' | 'y'): PullReveal {
     gesture.current.axis = axis;
   });
 
-  /**
-   * A handle parked at the top edge of the screen must not carry a blocking
-   * `touch-action`, or a page scroll started on it goes nowhere. So the gesture
-   * is claimed one move at a time, and only in the direction that actually
-   * moves the panel -- which needs a non-passive listener React will not give
-   * us through `onTouchMove`.
-   */
+  /** Claims each move only in the panel's own direction, so a page scroll begun on the handle still scrolls. */
   const claimTouch = useCallback((e: TouchEvent) => {
     const state = gesture.current;
     const touch = e.touches[0];
@@ -86,8 +75,7 @@ export function usePullReveal(full: number, axis: 'x' | 'y'): PullReveal {
     gesture.current.live = false;
     if (dragReveal === null) return;
     e.currentTarget.releasePointerCapture(e.pointerId);
-    // A 5px sliver is a poor drag target, so a tap on it is accepted as a
-    // shortcut for the whole gesture.
+    // A tap on the sliver is accepted as the whole gesture.
     if (travelled.current < TAP_SLOP) setOpen(!open);
     else setOpen(dragReveal >= SLIVER + (full - SLIVER) * COMMIT);
     setDragReveal(null);

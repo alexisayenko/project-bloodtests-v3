@@ -95,8 +95,6 @@ function IndexResultPopupBody({
 }: Readonly<{ def: IndexDef; date: string; value: number; resultsByDate: Record<string, Record<string, Result>> }>) {
   const profile: SubjectProfile = { sex: loadEnvelopeMeta().sex };
   const z = indexZone(def, value, profile);
-  // Same date as the calculated value -- more precise than IndexPopupBody's
-  // "latest lab-reported" fallback, since here we already know which draw.
   const reported = def.loinc ? resultsByDate[date]?.[def.loinc] : undefined;
   return (
     <>
@@ -235,13 +233,9 @@ export function Popup({
           border: `1.5px solid ${COLOR.accent}`,
           borderRadius: 12,
           padding: 18,
-          // Already capped to the viewport by popupPosition, which sized the box
-          // it placed -- rendering the untrimmed constant here would put the
-          // right edge back off a narrow screen.
+          // popupPosition's width, not the constant, or the right edge goes back off a narrow screen.
           width: popup.width,
-          // Cap to whatever room is actually left on the anchored side, not just
-          // the viewport height -- otherwise a popup opened partway down the
-          // page can still try to render taller than the space below it.
+          // Capped to the room left on the anchored side, not the viewport height.
           maxHeight: popup.top != null ? `calc(100vh - ${popup.top}px - 8px)` : `calc(100vh - ${popup.bottom}px - 8px)`,
           overflowY: 'auto',
           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',

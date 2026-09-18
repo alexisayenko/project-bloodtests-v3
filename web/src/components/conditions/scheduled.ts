@@ -6,26 +6,10 @@ import { LABORATORIES } from '../../data/labPricing';
 import { newRowId } from '../../data/ids';
 import { LOINC_TO_MARKER } from './markers';
 
-// Which observations (by LOINC) and computed indices (by key) are marked for
-// a draw -- one list per scheduled visit, each with its own target month and
-// laboratory, persisted together so they survive a refresh.
 export const SCHEDULED_KEY = 'bloodtests_scheduled_v1';
-// `month` (ISO YYYY-MM) LABELS a visit's schedule -- "these are the tests I
-// plan to order for March 2027". It does not partition it: changing the month
-// leaves every checked row checked. Stored as YYYY-MM because it is a calendar
-// month, not an instant: it sorts lexicographically, needs no timezone, and is
-// what an <input type="month"> would have produced anyway.
-// Stored schedules and backups may still carry a `lab` key from when the
-// schedule was costed at one laboratory; it is ignored like any unknown field.
-// `selectedLabId` is a distinct, newer field -- the one laboratory the owner is
-// actually going to for this visit, used to swap row labels to that lab's own
-// product names. It does not collide with the retired `lab` key's name, so an
-// old backup's stray `lab` value stays correctly ignored rather than being
-// picked up as a selection.
+// `month` (ISO YYYY-MM, a calendar month, not an instant) labels a visit's schedule; it never partitions it.
+// A stray `lab` key from an old backup is ignored like any unknown field and must not be read as `selectedLabId`.
 export type ScheduledVisit = { id: string; loincs: string[]; indices: string[]; month?: string; selectedLabId?: string };
-// The stored shape: a list of independent visits. Before this existed, storage
-// held exactly one such object with no `id` and no wrapping list -- see the
-// migration in parseScheduled.
 export type ScheduledVisits = { visits: ScheduledVisit[] };
 export const EMPTY_SCHEDULED_VISITS: ScheduledVisits = { visits: [] };
 
@@ -33,13 +17,7 @@ function emptyVisit(id: string): ScheduledVisit {
   return { id, loincs: [], indices: [] };
 }
 
-/**
- * Chronological order by target month (ISO `YYYY-MM`, so a plain string
- * compare works) -- a visit with no month yet sorts last. The one ordering
- * every consumer of `ScheduledVisits.visits` renders in, so the `#plan` tabs
- * and a results table's Scheduled columns never disagree on which visit
- * comes first.
- */
+/** The one ordering every consumer renders in, so `#plan` tabs and Scheduled columns never disagree; no month sorts last. */
 export function sortVisitsByMonth(visits: readonly ScheduledVisit[]): ScheduledVisit[] {
   return [...visits].sort((a, b) => {
     if (a.month === b.month) return 0;
@@ -71,7 +49,6 @@ export type IndexScheduling = {
   onRemove: () => void;
 };
 
-/** Fields shared by the pre-redesign single-schedule shape and one stored visit. */
 type StoredFields = { loincs: string[]; indices: string[]; month?: string; selectedLabId?: string };
 
 function parseStoredFields(value: Record<string, unknown>): StoredFields {
@@ -102,7 +79,7 @@ export function loadScheduled(): ScheduledVisits {
   }
 }
 
-/** Whether a payload from outside (a backup) has the stored shape at all, before parseScheduled forgives its entries -- either the current visits list or the pre-redesign single schedule. */
+/** Shape check for a backup payload, before parseScheduled forgives its entries. */
 export function isScheduledShape(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -110,14 +87,7 @@ export function isScheduledShape(value: unknown): boolean {
   return Array.isArray(v.loincs) && Array.isArray(v.indices);
 }
 
-/**
- * A stored schedule read back; anything missing or malformed reads as empty.
- * A payload from before multiple visits existed -- one schedule object with no
- * `visits` array -- migrates transparently into a list of exactly one visit,
- * carrying its loincs/indices/month/selectedLabId over as-is under a fresh id;
- * an old payload that was itself fully empty migrates to an empty list rather
- * than manufacturing a pointless visit.
- */
+/** A single-schedule payload (no `visits` array) migrates to one visit under a fresh id, or to none if it was empty. */
 export function parseScheduled(raw: string | null): ScheduledVisits {
   try {
     if (raw) {
@@ -142,9 +112,7 @@ export function saveScheduled(scheduled: ScheduledVisits): void {
   }
 }
 
-// A row's identity for scheduling is its analyte, not one lab's code: every
-// LOINC the same marker is reported under travels together, so a row keyed
-// under an alternate code still reads as scheduled.
+// A row's scheduling identity is its analyte, not one lab's code, so every LOINC of a marker travels together.
 function withSiblings(loincs: string[]): string[] {
   return Array.from(
     new Set(
@@ -175,9 +143,7 @@ function union(a: string[], b: string[]): string[] {
   return Array.from(new Set([...a, ...b]));
 }
 
-// An index is scheduled exactly when every marker it needs is: derived afresh
-// from the observation list whenever an observation toggles, so a stored
-// index never outlives its inputs.
+// Re-derived on every observation toggle, so a stored index never outlives its inputs.
 function deriveIndices(loincs: string[]): string[] {
   return INDEX_DEFS.filter((def) =>
     def.inputKeys.every((inputKey) => (MARKER_LOINC[inputKey] ?? []).some((loinc) => loincs.includes(loinc)))
@@ -188,12 +154,10 @@ function updateVisit(scheduled: ScheduledVisits, visitId: string, fn: (visit: Sc
   return { visits: scheduled.visits.map((v) => (v.id === visitId ? fn(v) : v)) };
 }
 
-/** Adds a fresh, empty visit -- no month, no rows -- to the end of the list. */
 export function addVisit(scheduled: ScheduledVisits, id: string): ScheduledVisits {
   return { visits: [...scheduled.visits, emptyVisit(id)] };
 }
 
-/** Drops a visit entirely, unscheduling everything it had. The others are untouched. */
 export function removeVisit(scheduled: ScheduledVisits, visitId: string): ScheduledVisits {
   return { visits: scheduled.visits.filter((v) => v.id !== visitId) };
 }
@@ -217,7 +181,6 @@ export function toggleIndex(scheduled: ScheduledVisits, visitId: string, key: st
   });
 }
 
-/** Select-all over the observation rows on screen, for one visit: one row's rule applied to all of them at once. */
 export function setRowsScheduled(scheduled: ScheduledVisits, visitId: string, rows: string[][], on: boolean): ScheduledVisits {
   return updateVisit(scheduled, visitId, (visit) => {
     const all = withSiblings(rows.flat());

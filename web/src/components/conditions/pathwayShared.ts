@@ -154,11 +154,7 @@ export function keepSources(infos: readonly ReferenceInfo[], sources: readonly C
   };
 }
 
-/**
- * Several calculated estimates of one quantity as one reference block: the
- * zones once when every method shares them, otherwise each method's own,
- * labelled by method.
- */
+/** Zones shown once when every method shares them, otherwise each method's own, labelled. */
 export function combinedZones(calculated: readonly ReferenceInfo[], methods: readonly string[]): ReferenceInfo {
   const [first, ...rest] = calculated;
   const sameZones =
@@ -304,17 +300,8 @@ function styleSnapshot(el: HTMLElement): Pick<NodeDragState, 'left' | 'top' | 'm
 }
 
 /**
- * DEV-ONLY drag debugging (temporary, session-only tool -- no persistence):
- * while `enabled`, every `[data-node]` element inside `root` becomes
- * mouse-draggable. Dragging applies a purely visual `transform:
- * translate(dx, dy)` to the element -- it never touches `left`/`top`/margin,
- * so a reload always resets it -- and dispatches `MC_NUDGE_EVENT` on `root`
- * each frame so a `useMeasuredLayout` consumer (e.g. the arrow overlay)
- * re-measures and tracks the node in real time, since a bare `transform`
- * fires no ResizeObserver on its own. Each node's accumulated (dx, dy) is
- * kept across repeated drags within the session, logged to the console on
- * mouseup, and returned for an on-page readout; `reset()` clears every
- * transform and the accumulated state, used when Debug mode is turned off.
+ * Dev-only, session-only: drags apply a purely visual `transform`, never
+ * `left`/`top`/margin, so a reload always resets them.
  */
 export function useNodeDrag(root: RefObject<HTMLDivElement | null>, enabled: boolean) {
   const [drags, setDrags] = useState<Record<string, NodeDragState>>({});
@@ -407,24 +394,13 @@ export interface GlyphArt {
 
 export const ENZYME_ART: GlyphArt = { src: '/pathways/enzyme-icon.png?v=2', width: 96, height: 96, box: [12, 12, 84, 83], size: SIZE.molecular };
 
-/** Triglyceride glyph, cropped to its non-transparent bounding box. `size` is overridden per call site, since Glyph bakes its render size into the art object. Lives here (rather than Particle3.tsx, a components-only file) since react-refresh requires a file to export only components; LipidTransportView's own standalone TRIG glyphs (the liver's and enterocytes' own triglyceride synthesis, which sit outside any particle) import it from here too. */
+/** Lives here rather than Particle3.tsx because react-refresh wants that file to export only components. */
 export const TRIGLYCERIDE_ART: GlyphArt = { src: '/pathways/triglyceride.png?v=1', width: 675, height: 449, box: [6, 6, 669, 443], size: SIZE.molecular };
 
-/**
- * particle1: the simplest reusable pathway node config -- a single bare
- * glyph with a caption, for a molecular-scale actor. Covers every kind of
- * bare, no-tile node currently hand-coded across both pathway pages: an
- * enzyme (HMG-CoA reductase, LPL, aromatase, 5α-reductase), a carrier
- * (SHBG, Albumin), a signal (T, DHT, E2), a receptor (androgen/estrogen),
- * or a standalone byproduct with no carrier of its own (LPL's released
- * fatty acids). particle2/particle3 (docked-compound and multi-compound
- * lipoprotein nodes) are out of scope here -- see `ParticleNode` in
- * `Particle3.tsx` for the latter.
- */
+/** The simplest pathway node: one bare glyph with a caption. Multi-compound lipoprotein nodes are `ParticleNode` in Particle3.tsx. */
 export interface Particle1 {
-  /** Caption text, e.g. "HMG-CoA reductase". */
   name: string;
   type: 'enzyme' | 'carrier' | 'signal' | 'receptor' | 'byproduct';
-  /** White circular backdrop for contrast when the node sits on top of busy illustrative artwork (e.g. HMG-CoA reductase on the liver image). Omit/false for a node on plain background. */
+  /** White circular backdrop for contrast over busy artwork. */
   backdrop?: boolean;
 }

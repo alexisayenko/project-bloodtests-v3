@@ -190,7 +190,6 @@ const indexBadge = (key: string, targets: readonly string[]): BadgeSpec => {
   return { id: key, name: def?.shortName ?? key, measure: idx(key), meaning: def?.meaning ?? '', targets };
 };
 
-
 const LDL_METHODS: MethodsSpec = {
   reported: MARKERS.LDL,
   fallback: 'ldlmh',

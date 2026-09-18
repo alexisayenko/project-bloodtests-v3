@@ -159,28 +159,13 @@ export function Glyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string 
   );
 }
 
-/**
- * White circular backdrop so a bare glyph reads over busy illustrative
- * artwork (e.g. HMG-CoA reductase on the liver image) -- an inline-style
- * equivalent of Lipid Transport's own `.mc-lipid-enzyme-backdrop` class,
- * kept as inline styles here rather than a shared CSS class so this
- * cross-page component carries no dependency on Lipid Transport's own CSS
- * branding, and `LipidTransportView.tsx` (which still references that
- * class by name) needs no change when this lands.
- */
+/** Inline rather than `.mc-lipid-enzyme-backdrop`, so this cross-page component depends on no page's CSS. */
 const PARTICLE1_BACKDROP_STYLE: CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, borderRadius: '50%',
   background: '#fff', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.15)',
 };
 
-/**
- * particle1: a single bare glyph with a caption -- the simplest reusable
- * pathway node (see `Particle1` in `pathwayShared.ts`). Reuses the same
- * `.mc-pathway-enzyme`/`.mc-pathway-enzyme-col` layout Hormonal Pathways'
- * own `Enzyme` node already used, caption beside the glyph; a node whose
- * kind wants a different caption layout (e.g. below, like a receptor)
- * isn't migrated to this shape yet.
- */
+/** Caption beside the glyph only; a node wanting its caption below is not on this shape yet. */
 export function Particle1Node({
   particle,
   art,

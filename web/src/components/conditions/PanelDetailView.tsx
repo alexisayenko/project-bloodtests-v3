@@ -25,9 +25,7 @@ import type { MedicationRow } from '../../data/medications';
 import { EmptyState } from '../primitives';
 import { getPanelMeta } from './panelMeta';
 
-// Neither chart tab is the default one, so both are split out of the initial
-// bundle: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit,
-// "Charts" pulls the 3D canvas engine. Each loads on its first visit.
+// Lazy: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit, "Charts" the 3D canvas engine.
 const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
 const PanelChartsView = lazy(() => import('../analytics/PanelChartsView').then((m) => ({ default: m.PanelChartsView })));
 
@@ -80,14 +78,13 @@ export function PanelDetailView({
   indexScheduling: IndexScheduling[];
   onAddVisit: () => void;
   onBack: () => void;
-  /** Medication history for the "What's in range" tab's lane (task-0053). */
+  /** Medication history for the "What's in range" tab's lane. */
   medications: MedicationRow[];
 }>) {
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
   const meta = getPanelMeta(name);
   const PanelIcon = meta.icon;
-  // Session-only, like All Observations' copy: a stored filter would go on
-  // hiding rows in a later session with nothing on screen to explain the gap.
+  // Session-only: a stored filter would go on hiding rows with nothing on screen explaining why.
   const [query, setQuery] = useState('');
 
   const observations = tests.filter((t) => !INDEX_LOINCS.has(t.loinc));

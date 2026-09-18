@@ -24,21 +24,13 @@ export function getLatest(latestByLoinc: LatestByLoinc, loincs: string[]): { res
 }
 
 export type LatestEntryOptions = {
-  /**
-   * Only a numeric `value` counts as a reading. Off, a text-only result
-   * ("negative", printed in `rawValue`) also counts.
-   */
+  /** Off, a text-only result ("negative", in `rawValue`) also counts. */
   numericOnly: boolean;
 };
 
 const DEFAULT_LATEST_ENTRY_OPTIONS: LatestEntryOptions = { numericOnly: false };
 
-/**
- * The newest entry recorded under each LOINC exactly as the lab printed it —
- * deliberately not folded through the alias maps; `getLatest` folds a badge's
- * codes at read time instead. A draw that lists a marker without a reading is
- * not a test, so it never wins the slot. On a date tie the first entry stays.
- */
+/** Unaliased on purpose; `getLatest` folds a badge's codes at read time. A draw without a reading never wins. */
 export function latestEntryByLoinc(
   entries: readonly ResultEntry[],
   { numericOnly }: LatestEntryOptions = DEFAULT_LATEST_ENTRY_OPTIONS,
@@ -52,14 +44,7 @@ export function latestEntryByLoinc(
   return map;
 }
 
-/**
- * The entry across any of the given LOINCs whose date lies closest to `date`,
- * on either side, excluding `date` itself -- the date-anchored sibling of
- * `getLatest`/`latestEntryByLoinc`, for a fallback that should prefer the
- * patient's own nearest measurement (e.g. albumin on another draw) over a
- * fixed constant. A same-date reading is the caller's to use first. On an
- * equal distance the earlier date wins; on the same date the first entry stays.
- */
+/** Closest on either side, `date` itself excluded (a same-date reading is the caller's); ties go to the earlier date. */
 export function nearestEntryTo(
   entries: readonly ResultEntry[],
   loincs: readonly string[],

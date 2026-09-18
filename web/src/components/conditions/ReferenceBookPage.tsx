@@ -60,10 +60,6 @@ import { PageHeader } from './PageHeader';
 import { TABLE, TABLE_TD, TABLE_TH } from '../primitives/styles';
 import { TestosteronePage } from './reference/TestosteronePage';
 
-// Reference Book — one page per computed index, carrying the full clinical
-// prose (meaning + evidence standing) and its cited sources with verbatim
-// quotes, ported from project-bloodtests-v2's index catalog (ADR-0007).
-
 const EVIDENCE_BADGE: Record<string, { background: string; color: string }> = {
   guideline: { background: COLOR.accentSoft, color: COLOR.accent },
   consensus: { background: COLOR.statusOkBg, color: COLOR.statusOkText },
@@ -185,10 +181,7 @@ function IndexDetail({ def }: Readonly<{ def: IndexDef }>) {
   );
 }
 
-// Scoped styles for the v2 cascade notation (the original CSS lived in the
-// pre-v2 homepage project and did not survive; this is a minimal equivalent).
-// The one literal is the notation's own annotation colour: it distinguishes
-// two prolactin asides and belongs to the diagram, not to the app palette.
+// The one colour literal is the notation's own annotation colour, part of the diagram, not the app palette.
 const HP_AXIS_CSS = `
 .hp-axis { max-width: 780px; font-size: 14px; color: var(--text); line-height: 1.55; }
 .hp-axis .na-sys { margin: 20px 0 8px; font-size: 15px; }
@@ -228,9 +221,7 @@ const SIBLING_UNITS = new Map(MASS_MOLAR_SIBLINGS.map((p) => [p.molarMass, { mas
 
 const GLUCOSE_EXAMPLE_MGDL = 95;
 
-// T3 and DHEA-S are tabulated for a computed index's arithmetic rather than for
-// a LOINC sibling pair, so no pair supplies the units they are reported in --
-// the index engine's own table does.
+// T3 and DHEA-S have no sibling pair; the index engine's own table supplies their units.
 function unitsOf(id: string) {
   return SIBLING_UNITS.get(id) ?? INDEX_UNIT_PAIRS[id];
 }
@@ -243,8 +234,7 @@ function sixFigures(value: number): string {
   return String(Number(value.toPrecision(6)));
 }
 
-// Stated in whichever direction reads larger than one — "88.4 µmol/L per mg/dL"
-// rather than the same fact as "0.011312 mg/dL per µmol/L".
+// Stated in whichever direction reads larger than one.
 function factorOf(entry: MolarMassEntry): string | undefined {
   const units = unitsOf(entry.id);
   if (!units) return undefined;
@@ -474,10 +464,7 @@ const READABLE_CATALOG_UNITS = new Set(CATALOG_UNITS.map((unit) => toLatinUnit(u
 
 const GLUCOSE_SIBLING = MASS_MOLAR_SIBLINGS.find((pair) => pair.mass.loinc === '2345-7') ?? MASS_MOLAR_SIBLINGS[0];
 
-// ALT and insulin stand for the two properties on this page: the
-// catalytic-activity code and the arbitrary-unit code people recognise. Every
-// verdict in the table below is COMPUTED against them rather than described, so
-// the page cannot claim behaviour the code does not have.
+// Every verdict in the table is computed against these codes, so the page cannot claim behaviour the code lacks.
 const ALT_LOINC = '1742-6';
 const INSULIN_LOINC = '20448-7';
 
@@ -495,9 +482,7 @@ interface UnitSource {
   supports: string;
 }
 
-// Every source here was read on the date below. Two of them (Clinical Chemistry
-// and the LOINC Users' Guide) refuse automated fetchers while being free to read
-// in a browser, which is why the page links them rather than quoting them.
+// Clinical Chemistry and the LOINC Users' Guide refuse automated fetchers, so they are linked rather than quoted.
 const SOURCES_RETRIEVED = '2026-09-09';
 
 const UNIT_SOURCES: UnitSource[] = [
@@ -915,11 +900,8 @@ const FILTER_INPUT = {
 
 const wrapTd = { ...td, whiteSpace: 'normal' } as const;
 
-// Under table-layout: auto a cell's max-width is ignored; its width caps the
-// column only while min-content fits inside it, which overflow-wrap: anywhere
-// guarantees even for an unbroken "25-Hydroxyvitamin D3+25-Hydroxyvitamin D2".
-// That same near-zero min-content lets a squeezed table crush the column, hence
-// the min-width.
+// Under table-layout: auto, width caps the column only with overflow-wrap: anywhere, whose near-zero
+// min-content then needs the min-width so a squeezed table cannot crush it.
 const LONG_NAME_WIDTH = 340;
 const longNameTd = {
   ...wrapTd,
@@ -937,8 +919,7 @@ const nameTd = { ...wrapTd, minWidth: 160 } as const;
 
 const sortableTh = { ...th, padding: 0 } as const;
 
-// The whole header cell is the target -- the span carries the padding so a
-// 375px tap anywhere in it sorts, and so the cell is reachable by keyboard.
+// The span carries the padding so the whole header cell is the tap target.
 const sortableLabel = {
   display: 'flex',
   alignItems: 'center',
@@ -987,11 +968,7 @@ function LoincLink({ loinc }: Readonly<{ loinc: string }>) {
   );
 }
 
-/**
- * A real anchor, so the hash is visible on hover and a middle-click opens it,
- * but navigation goes through the app's own router: a bare hash link would
- * change the URL and fire `hashchange`, which the shell does not listen for.
- */
+/** A real anchor, but navigation goes through the router: the shell does not listen for `hashchange`. */
 function PanelLinks({ panels, navigate }: Readonly<{ panels: string[]; navigate: (r: Route) => void }>) {
   return (
     <>
@@ -1280,8 +1257,6 @@ function LoincDatabasePage({
   const rows = useMemo(() => {
     const panelsByLoinc = buildPanelsByLoinc(buildConditions(panels, ANALYTE_BY_LOINC, monitoringPanels));
     return ANALYTES.map((analyte) => {
-      // The property bracket and specimen clause have columns of their own, so the
-      // LOINC name under each code shows neither.
       const trimmedName = trimmedLongName(analyte.longCommonName);
       const shortName = SHORT_NAMES[analyte.loinc]?.shortName;
       const latest = lastTested[analyte.loinc];
@@ -1309,9 +1284,7 @@ function LoincDatabasePage({
     });
   }, [panels, monitoringPanels, lastTested]);
 
-  // The catalog's translations stand in for the printed names All Observations
-  // passes: here there are no uploaded reports, but a Cyrillic name should still
-  // find its row.
+  // Catalog translations stand in for printed names, so a Cyrillic name still finds its row.
   const primaryCount = useMemo(() => ANALYTES.filter((a) => !a.aliasOf).length, []);
 
   const matched = rows.filter((row) => observationMatchesQuery(row.observation, query, Object.values(row.analyte.lang)));

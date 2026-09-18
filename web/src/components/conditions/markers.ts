@@ -8,21 +8,14 @@ export type { LoincRef, MonitoringPanelDef } from '../../types';
 
 export type Observation = { shortName: string; friendlyName: string; longCommonName: string; loinc: string; unit?: string; also?: LoincRef[] };
 
-// Computed/derived values (ratios, estimates) rather than direct measurements. TC/HDL
-// ratio and % Iron Saturation are also independently reportable by a lab (LOINCs
-// 9830-1, 2502-3) but are shown via COMPUTED_LOINCS's own formula instead once one
-// applies -- kept here only so they never show as raw badges in the grid. eGFR
-// (48642-3) has no computed twin (needs age, which v3 doesn't have) and stays
-// purely lab-reported.
+// Lab-reportable codes that a computed index supersedes, so they never show as raw badges; eGFR (48642-3)
+// has no computed twin (needs age) and stays lab-reported.
 export const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3']);
 
-// LOINCs that a computed index (see computedIndices.ts) can independently
-// duplicate from a lab report -- excluded from the raw-LOINC Indices table so
-// each one renders once, via its computed row, not twice.
+// Excluded from the raw-LOINC Indices table so each renders once, via its computed row.
 export const COMPUTED_LOINCS = new Set(INDEX_DEFS.map((d) => d.loinc).filter((x): x is string => !!x));
 
-// Reverse of MARKER_LOINC, for looking up an observation's SI/US conversion by
-// whichever LOINC it happens to be recorded under.
+// Reverse of MARKER_LOINC.
 export const LOINC_TO_MARKER: Record<string, string> = Object.fromEntries(
   Object.entries(MARKER_LOINC).flatMap(([marker, loincs]) => loincs.map((loinc) => [loinc, marker]))
 );
@@ -37,23 +30,12 @@ export function primaryLoinc(loinc: string): string {
   return ALIAS_TO_PRIMARY[loinc] ?? loinc;
 }
 
-/**
- * The row keys a panel covers, for filtering an alias-folded table by panel.
- * buildConditions maps LOINCs one-to-one on purpose, so a panel names whichever
- * code of an alias group it means (Insulin Resistance keeps HbA1c's NGSP code
- * and drops the IFCC one); rows fold onto the primary, so both sides must fold
- * before matching or a reading recorded under the other code is lost.
- */
+/** Rows fold onto the primary, so the panel's codes must fold too or a reading under an alias is lost. */
 export function panelRowLoincs(tests: Observation[]): Set<string> {
   return new Set(tests.flatMap(testLoincs).map(primaryLoinc));
 }
 
-/**
- * All Observations' free-text filter. Matched against the short name, the
- * friendly name, the LOINC name (longCommonName), every LOINC the row answers for
- * and every raw name a lab actually printed for it -- the raw names are what make
- * "Гемоглобин" and "HGB" find the same row on Cyrillic reports.
- */
+/** Matches printed raw names too, so "Гемоглобин" and "HGB" find the same row. */
 export function observationMatchesQuery(test: Observation, query: string, rawNames: readonly string[] = []): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -87,10 +69,7 @@ export function indexMatchesQuery(def: IndexDef, query: string): boolean {
   return [def.friendlyName, def.shortName, def.key].some((s) => s.toLowerCase().includes(q));
 }
 
-/**
- * A panel's results-table date columns, newest first: every date carrying one
- * of the panel's observations or an input of one of its computed indices.
- */
+/** Newest first; includes dates carrying only an input of one of the panel's indices. */
 export function panelDates(name: string, tests: readonly Observation[], allResults: readonly { loinc: string; date: string }[]): string[] {
   const computedInputLoincs = new Set(
     INDEX_DEFS.filter((d) => d.panels.includes(name)).flatMap((d) => d.inputKeys.flatMap((inputKey) => MARKER_LOINC[inputKey] ?? []))
@@ -109,10 +88,7 @@ export function testLoincs(test: Observation): string[] {
   return [test.loinc, ...(test.also?.map((ref) => ref.loinc) ?? [])];
 }
 
-// True when echoing `shortName` beside `friendlyName` would add nothing: the
-// friendly name already contains it (ignoring case and punctuation, so "25OH"
-// matches "(25-OH)"), or each word of the short name abbreviates a word of the
-// friendly name in order ("Vit D" ⊂ "Vitamin D (25-OH)").
+// True when the friendly name already contains or abbreviates the short name ("Vit D" ⊂ "Vitamin D (25-OH)").
 export function isEchoRedundant(friendlyName: string, shortName: string): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
   if (norm(friendlyName).includes(norm(shortName))) return true;
@@ -127,7 +103,6 @@ export function isEchoRedundant(friendlyName: string, shortName: string): boolea
   return true;
 }
 
-
 /** Which Monitoring Panels name a LOINC outright — one-to-one, as buildConditions resolves it. */
 export function buildPanelsByLoinc(conditions: readonly { name: string; tests: Observation[] }[]): Record<string, string[]> {
   const byLoinc: Record<string, string[]> = {};
@@ -140,13 +115,7 @@ export function buildPanelsByLoinc(conditions: readonly { name: string; tests: O
   return byLoinc;
 }
 
-/**
- * A code's panel standing. buildConditions maps LOINCs one-to-one on purpose, so
- * a variant code names no panel of its own even when the analyte it folds into
- * sits in several -- reporting that as "no panels" would contradict what the user
- * sees, since rows fold through primaryLoinc before a panel matches them. So an
- * unlisted variant reports its primary's panels and says whose they are.
- */
+/** An unlisted variant reports its primary's panels and says whose they are, matching what the folded rows show. */
 export function panelMembershipOf(
   panelsByLoinc: Record<string, string[]>,
   loinc: string
@@ -158,10 +127,7 @@ export function panelMembershipOf(
   return { panels: panelsByLoinc[primary] ?? [], via: primary };
 }
 
-/**
- * The Monitoring Panels grid model: each definition from monitoring-panels.json
- * resolved against the lab groups in panels.json and the analyte catalog.
- */
+/** Resolves monitoring-panels.json over panels.json and the catalog, mapping LOINCs one-to-one (no alias folding). */
 export function buildConditions(
   panels: Panel[],
   analysesCatalog: Record<string, Analysis>,

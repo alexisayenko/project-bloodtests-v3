@@ -13,7 +13,7 @@ export type MonthSelectProps = {
   onSetMonth: (month: string | undefined) => void;
 };
 
-/** A visit's target-month picker: this month plus the next 23, styled as a small inline field. Shared by ScheduleHeader (in a results table) and PlanVisitView (in the "Planned for" pill), so both edit the same underlying month. */
+/** Shared by ScheduleHeader and PlanVisitView's "Planned for" pill, so both edit the same month. */
 export function MonthSelect({ ariaLabel, month, onSetMonth }: Readonly<MonthSelectProps>) {
   return (
     <select
@@ -39,11 +39,7 @@ export type ScheduleHeaderProps = {
   onRemove: () => void;
 };
 
-/**
- * One scheduled visit's column header: its target month and a remove button
- * for the visit itself. The select carries no visible text, so it names
- * itself through aria-label.
- */
+/** Controls only; the select names itself through aria-label. */
 export function ScheduleHeader({ month, onSetMonth, onRemove }: Readonly<ScheduleHeaderProps>) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>

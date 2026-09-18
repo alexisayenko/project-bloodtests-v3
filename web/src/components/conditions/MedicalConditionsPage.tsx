@@ -18,12 +18,7 @@ import { clearAllData, restoreBackup, type BackupContents } from '../../data/bac
 import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 
-// Monitoring Panels (PanelsGridView) is the app's default/entry route, so it
-// stays a static import -- the first paint must not wait on an extra chunk.
-// Every other top-level section is reached by navigating away from it first,
-// so lazy-loading them keeps their code (and their own dependencies, e.g.
-// AccountView's Supabase client) out of the initial bundle without adding any
-// visible delay to the route a fresh visit actually lands on.
+// PanelsGridView is the entry route and stays a static import; every other section is lazy so the first paint never waits on it.
 const ReferenceBookPage = lazy(() => import('./ReferenceBookPage').then((m) => ({ default: m.ReferenceBookPage })));
 const AllObservationsView = lazy(() => import('./AllObservationsView').then((m) => ({ default: m.AllObservationsView })));
 const ProfileView = lazy(() => import('./ProfileView').then((m) => ({ default: m.ProfileView })));
@@ -47,13 +42,9 @@ type PopupPayload = {
 
 const REPORTS_ROUTE: Route = { view: 'reports' };
 
-// The Monitoring Panels grid's scroll position across a visit to Panel Detail
-// and back -- in memory rather than storage, since a full reload is a fresh
-// visit and should start at the top, not resume a scroll from before.
+// In memory, not storage: a full reload is a fresh visit and should start at the top.
 let savedPanelsScrollY: number | null = null;
 
-// The app shell: owns the route, the flattened results, the shared table
-// settings and the popup, and renders one view component per section.
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels, monitoringPanels } = useData();
   const { sessions, loadGroupItems, loadGenerated, uploadFile, updateGroup, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
@@ -67,8 +58,7 @@ export function MedicalConditionsPage() {
   const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
   const [compactPanels, setCompactPanels] = useState(initialSettings.compactPanels);
   const [allResults, setAllResults] = useState<ResultEntry[]>([]);
-  // One scheduling state for the whole shell: a row toggled in All Observations
-  // is the same row in Panel Detail, so both views read and write this.
+  // One scheduling state for the whole shell, since Panel Detail remounts per panel.
   const {
     scheduledVisits,
     onToggleRow,
@@ -79,22 +69,15 @@ export function MedicalConditionsPage() {
     onRemoveVisit,
     onReload: reloadScheduled,
   } = useScheduled();
-  // Read-only here: the What's-in-range lane (task-0053) just needs the
-  // current rows to draw from -- editing still lives entirely on the
-  // Medications page's own useMedications() instance.
   const { medications } = useMedications();
-  // Chronological order, once, for every consumer -- the `#plan` tabs and a
-  // results table's Scheduled columns must never disagree on visit order.
+  // Sorted once for every consumer, so `#plan` tabs and Scheduled columns never disagree on visit order.
   const sortedVisits = useMemo(() => sortVisitsByMonth(scheduledVisits.visits), [scheduledVisits.visits]);
 
   useEffect(() => {
     saveViewSettings({ unitSystem, sampleLimit, compactPanels });
   }, [unitSystem, sampleLimit, compactPanels]);
 
-  // A share link's settings seed the controls only for a visitor who has none
-  // of their own stored yet; once they pick anything, that choice is theirs.
-  // Adjusted during render (React's prop-change pattern) rather than in an
-  // effect, so the first paint after the meta arrives already uses the seed.
+  // Share-link settings seed only a visitor with none stored; adjusted during render so the first paint uses the seed.
   const [seededFrom, setSeededFrom] = useState<typeof sharedMeta>(null);
   if (!hadStoredSettings && sharedMeta?.settings && sharedMeta !== seededFrom) {
     const seeded = seedViewSettings(sharedMeta.settings);
@@ -113,10 +96,7 @@ export function MedicalConditionsPage() {
   const validationIssues = useMemo(() => validateDiagnosticReports(sessions), [sessions]);
   const hasValidationErrors = hasErrors(validationIssues);
 
-  // A section blocked by validation errors falls back to the reports list,
-  // adjusted during render so the blocked view never paints. The URL follows
-  // in an effect that replaces the history entry rather than pushing one, so
-  // Back never lands on the blocked hash only to be redirected again.
+  // Redirected during render so the blocked view never paints; the URL is replaced, not pushed, so Back cannot loop.
   const [redirectCount, setRedirectCount] = useState(0);
   if (isRouteBlocked(route, hasValidationErrors)) {
     setRoute(REPORTS_ROUTE);
@@ -128,10 +108,7 @@ export function MedicalConditionsPage() {
   }, [redirectCount]);
 
   useEffect(() => {
-    // The single source of truth for the current route is always the URL, so
-    // back/forward -- browser buttons or in-app links -- stay in sync by
-    // construction, and any open popup (a transient overlay, not a page) is
-    // always dropped on navigation instead of surviving over the new view.
+    // The URL is the single source of truth for the route; a popup never survives navigation.
     const onPopState = () => {
       setPopup(null);
       setRoute(hashToRoute(window.location.hash));
@@ -147,12 +124,7 @@ export function MedicalConditionsPage() {
     setRoute(next);
   };
 
-  // Restores the grid's scroll position when a transition lands back on
-  // Monitoring Panels from Panel Detail -- keyed off the route itself so it
-  // fires the same way whether Back came from the in-page chevron (a push,
-  // through navigate above) or the browser's own Back button (a pop, straight
-  // to setRoute in the popstate handler below). Deferred a frame so the grid
-  // has already committed and laid out before we scroll it.
+  // Keyed off the route itself so chevron and browser Back restore alike; deferred a frame so the grid has laid out.
   const prevRouteRef = useRef(route);
   useEffect(() => {
     const prev = prevRouteRef.current;
@@ -186,7 +158,6 @@ export function MedicalConditionsPage() {
 
   const latestByLoinc = useMemo(() => latestEntryByLoinc(allResults, { numericOnly: true }), [allResults]);
 
-  // Per-date lookup for computed indices: { date: { loinc: Result } }.
   const resultsByDate = useMemo(() => {
     const map: Record<string, Record<string, Result>> = {};
     for (const { loinc, date, result } of allResults) {
@@ -197,8 +168,6 @@ export function MedicalConditionsPage() {
   }, [allResults]);
 
   const openPopupFrom = (payload: PopupPayload, e: { currentTarget: HTMLElement }) => {
-    // 'result' and 'indexResult' are both simple value cards (name + date + one
-    // colored value line) -- same narrow width as 'observation'.
     const width = payload.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH;
     setPopup({ ...payload, ...popupPosition(e.currentTarget.getBoundingClientRect(), width) });
   };
@@ -215,8 +184,7 @@ export function MedicalConditionsPage() {
 
   const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
 
-  // The schedule and the table controls live in this shell's state, so a clear
-  // or restore that rewrites storage underneath has to read them back.
+  // A clear or restore rewrites storage underneath this state, so it has to be read back.
   const reloadStoredState = () => {
     reloadScheduled();
     const stored = loadViewSettings();
@@ -240,9 +208,6 @@ export function MedicalConditionsPage() {
   };
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit };
-  // One RowScheduling/IndexScheduling per visit, in the same order, so a
-  // results table renders one Scheduled column per visit and the tables never
-  // cross-wire a toggle into the wrong visit's column.
   const rowSchedulings: RowScheduling[] = sortedVisits.map((visit) => ({
     scheduled: visit,
     onToggle: (loincs: string[]) => onToggleRow(visit.id, loincs),

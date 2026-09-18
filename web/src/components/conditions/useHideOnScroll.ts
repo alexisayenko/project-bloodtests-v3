@@ -5,12 +5,7 @@ const THRESHOLD = 10;
 /** Within this far from the top the bar is always shown, whatever the last direction was. */
 const TOP_ZONE = 4;
 
-/**
- * Whether a fixed bar should be off-screen: true once the page has been
- * scrolled down past the threshold, false again on the first scroll back up
- * and always at the top of the page. Reads scroll position in a rAF so a
- * momentum flick costs one measurement per frame, not one per event.
- */
+/** Reads scroll position in a rAF, so a momentum flick costs one measurement per frame, not per event. */
 export function useHideOnScroll(threshold: number = THRESHOLD): boolean {
   const [hidden, setHidden] = useState(false);
   const lastY = useRef(0);

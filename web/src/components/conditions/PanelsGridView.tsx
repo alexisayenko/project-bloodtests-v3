@@ -28,10 +28,7 @@ const SECTION_LABEL = { fontSize: 13, fontWeight: 600, color: COLOR.text, lineHe
 const CHIP_ROW = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 10 } as const;
 const CHIP_ROW_COMPACT = { ...CHIP_ROW, gap: 6, marginTop: 0 } as const;
 
-/**
- * Newest-first scan for the first draw with a computable value. A value with no
- * band for this subject stays neutral: borderline would still read as a concern.
- */
+/** A value with no band for this subject stays neutral: borderline would still read as a concern. */
 function latestTone(
   def: IndexDef,
   datesDesc: string[],

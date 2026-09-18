@@ -14,8 +14,7 @@ export function AppShell({
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(loadSidebarCollapsed);
 
-  // The footer renders outside the shell, so the width variable is switched on
-  // the root element, where the sidebar, the page and the footer all read it.
+  // On the root element, since the footer outside the shell reads the same width variable.
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.toggleAttribute('data-sidebar-collapsed', collapsed);
@@ -30,8 +29,7 @@ export function AppShell({
     saveSidebarCollapsed(next);
   };
 
-  // Every slot keeps its place whichever shell is showing, so crossing the
-  // breakpoint (a phone rotated to landscape) never remounts the page below.
+  // Every slot keeps its place across the breakpoint, so rotating a phone never remounts the page.
   return (
     <div className="mc-shell">
       <div className="mc-shell-body">

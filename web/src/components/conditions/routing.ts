@@ -1,6 +1,4 @@
-// Top-level sections (the nav menu), each its own URL hash, so the browser's
-// back/forward always works. Panel detail nests under Monitoring Panels.
-// Popups are transient overlays, not routes -- they never touch history.
+// Each section is its own URL hash; popups are overlays, not routes, and never touch history.
 export const OBSERVATIONS_TAB_IDS = ['analysis', 'trends', 'in-range'] as const;
 export type ObservationsTab = (typeof OBSERVATIONS_TAB_IDS)[number];
 export const DEFAULT_OBSERVATIONS_TAB: ObservationsTab = 'analysis';
@@ -47,8 +45,7 @@ export function isNavItemBlocked(view: NavView, hasValidationErrors: boolean): b
   return isRouteBlocked({ view }, hasValidationErrors);
 }
 
-// The default tab and an unknown segment both collapse to bare #all, so one
-// view has one canonical hash.
+// The default tab and an unknown segment both collapse to bare #all, so one view has one canonical hash.
 export function allObservationsRoute(tab: string): Route {
   const known = OBSERVATIONS_TAB_IDS.find((id) => id === tab);
   return known && known !== DEFAULT_OBSERVATIONS_TAB ? { view: 'all', tab: known } : { view: 'all' };

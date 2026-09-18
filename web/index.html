@@ -10,14 +10,7 @@
   <link rel="icon" type="image/png" href="./favicon.png" />
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <title>Paneloom</title>
-  <!-- Manrope was loaded via a CSS @import in index.css, which is inherently
-       render-blocking (a stylesheet can't defer its own @import). Moved here
-       with the standard preload+swap pattern so it stops blocking first
-       paint. display=optional means the browser never blocks text on it
-       anyway -- the fallback stack in index.css's body rule renders
-       immediately, and Manrope swaps in only if it's already cached/fetched
-       by the time layout happens, so there's no risk of a late, jarring
-       font swap either. -->
+  <!-- Preload+swap keeps the font off the render-blocking path; display=optional avoids a late swap. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -37,11 +30,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=optional"
     />
   </noscript>
-  <!-- Monitoring Panels (the default route) can't render until both of these
-       resolve; DataContext only fetches them once its own module runs, which
-       waits for the JS bundle to parse and execute first, adding ~260ms of
-       serial latency to the critical path. Preloading here lets the browser
-       start both fetches in parallel with the JS download instead. -->
+  <!-- The default route needs both; preloading starts the fetches in parallel with the JS bundle. -->
   <link rel="preload" as="fetch" href="/data/panels.json" crossorigin />
   <link rel="preload" as="fetch" href="/data/monitoring-panels.json" crossorigin />
 </head>
