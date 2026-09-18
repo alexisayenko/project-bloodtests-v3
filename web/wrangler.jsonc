@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "bloodtests",
+	"name": "paneloom",
 	"main": "./worker/index.ts",
 	"compatibility_date": "2026-08-25",
 	"assets": {
