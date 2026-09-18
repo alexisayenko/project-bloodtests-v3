@@ -542,11 +542,11 @@ export function LipidTransportView({
   onUnitSystemChange: (unitSystem: UnitSystem) => void;
 }>) {
   const layoutRef = useRef<HTMLDivElement>(null);
-  const [debugOn, setDebug] = useState(false);
+  const [debugOn, setDebugOn] = useState(false);
   const debug = import.meta.env.DEV && debugOn;
   const { drags, activeId, reset: resetDrags } = useNodeDrag(layoutRef, debug);
   const toggleDebug = useCallback(() => {
-    setDebug((prev) => {
+    setDebugOn((prev) => {
       if (prev) resetDrags();
       return !prev;
     });

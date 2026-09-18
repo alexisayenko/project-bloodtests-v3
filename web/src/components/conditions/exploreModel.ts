@@ -139,6 +139,59 @@ function placeOnBandScale(
   return convertValue(value, fromUcum, toUcumUnit, loinc)?.value;
 }
 
+/** The reading-side inputs to {@link buildTestMarker}, grouped to keep its own parameter count down. */
+type BandConfig = {
+  band: Extract<RefBand, { kind: 'band' }>;
+  unitSystem: UnitSystem;
+  override: RefBandOverride | undefined;
+};
+
+/** One pass over `byDate`: places every reading on the band's scale, dropping what can't be placed. */
+function buildSeriesData(
+  byDate: Map<string, ResultEntry>,
+  unit: string,
+  unitMarker: string | undefined,
+  convert: (value: number, from: string | null | undefined) => number
+): { data: [string, number, string?][]; omitted: string[]; refBands: Record<string, { refMin: number; refMax: number }> } {
+  const data: [string, number, string?][] = [];
+  const omitted: string[] = [];
+  const refBands: Record<string, { refMin: number; refMax: number }> = {};
+  for (const [date, e] of byDate) {
+    const placed = placeOnBandScale(e.result.value!, e.result.unit, unit, e.loinc, unitMarker);
+    if (placed === undefined) {
+      omitted.push((e.result.unit ?? '').trim());
+      continue;
+    }
+    const lab = namedLab(e.place);
+    data.push(lab ? [date, placed, lab] : [date, placed]);
+    if (e.result.refMax != null) {
+      const rMin = e.result.refMin != null ? convert(e.result.refMin, e.result.unit) : 0;
+      const rMax = convert(e.result.refMax, e.result.unit);
+      if (rMax > rMin) refBands[date] = { refMin: rMin, refMax: rMax };
+    }
+  }
+  data.sort((a, b) => a[0].localeCompare(b[0]));
+  return { data, omitted, refBands };
+}
+
+/** The per-date ref bands (when they vary) and the curated-override fields (when one applies). */
+function buildMarkerExtras(
+  refBands: Record<string, { refMin: number; refMax: number }>,
+  override: RefBandOverride | undefined,
+  convert: (value: number, from: string | null | undefined) => number,
+  refFromUnit: string | null | undefined
+): Partial<ExploreMarker> {
+  return {
+    ...(Object.keys(refBands).length > 0 ? { refBands } : {}),
+    ...(override
+      ? {
+          goodAbove: convert(override.refMax, refFromUnit),
+          goodNote: `${override.reference.organization} ${override.reference.document}: protective threshold (curated band, not lab-printed)`,
+        }
+      : {}),
+  };
+}
+
 /** `omitted` names the printed unit of every reading that could not be placed on the band's scale. */
 function buildTestMarker(
   loinc: string,
@@ -146,10 +199,9 @@ function buildTestMarker(
   label: string,
   panel: string | string[],
   byDate: Map<string, ResultEntry>,
-  band: Extract<RefBand, { kind: 'band' }>,
-  unitSystem: UnitSystem,
-  override: RefBandOverride | undefined
+  bandConfig: BandConfig
 ): { marker: ExploreMarker; data: [string, number, string?][]; omitted: string[] } {
+  const { band, unitSystem, override } = bandConfig;
   const { refMinRaw, refMaxRaw, refFromUnit } = band;
   const unitMarker = LOINC_TO_MARKER[loinc];
   // The band is what every reading is normalized against, so its displayed unit is the series' unit.
@@ -159,25 +211,7 @@ function buildTestMarker(
   const convert = (value: number, from: string | null | undefined): number =>
     placeOnBandScale(value, from, unit, loinc, unitMarker) ?? value;
 
-  const data: [string, number, string?][] = [];
-  const omitted: string[] = [];
-  const refBands: Record<string, { refMin: number; refMax: number }> = {};
-  for (const [date, e] of byDate) {
-    const placed = placeOnBandScale(e.result.value!, e.result.unit, unit, e.loinc, unitMarker);
-    if (placed === undefined) omitted.push((e.result.unit ?? '').trim());
-    else {
-      const lab = namedLab(e.place);
-      data.push(lab ? [date, placed, lab] : [date, placed]);
-      if (e.result.refMax != null) {
-        const rMin = e.result.refMin != null ? convert(e.result.refMin, e.result.unit) : 0;
-        const rMax = convert(e.result.refMax, e.result.unit);
-        if (rMax > rMin) {
-          refBands[date] = { refMin: rMin, refMax: rMax };
-        }
-      }
-    }
-  }
-  data.sort((a, b) => a[0].localeCompare(b[0]));
+  const { data, omitted, refBands } = buildSeriesData(byDate, unit, unitMarker, convert);
 
   const marker: ExploreMarker = {
     label,
@@ -187,13 +221,7 @@ function buildTestMarker(
     panel,
     data,
     warn: false,
-    ...(Object.keys(refBands).length > 0 ? { refBands } : {}),
-    ...(override
-      ? {
-          goodAbove: convert(override.refMax, refFromUnit),
-          goodNote: `${override.reference.organization} ${override.reference.document}: protective threshold (curated band, not lab-printed)`,
-        }
-      : {}),
+    ...buildMarkerExtras(refBands, override, convert, refFromUnit),
   };
 
   return { marker, data, omitted };
@@ -261,6 +289,52 @@ function buildIndexMarkers(
 }
 
 /**
+ * Two unit variants of the same analyte (e.g. Prolactin in mIU/L and ng/mL) share a
+ * shortName; a badge naming only the shortName would be indistinguishable from its twin.
+ */
+function buildShortNameLabel(seen: Map<string, { test: Observation; panels: string[] }>): (test: Observation) => string {
+  const shortNameCounts = new Map<string, number>();
+  for (const { test } of seen.values()) shortNameCounts.set(test.shortName, (shortNameCounts.get(test.shortName) ?? 0) + 1);
+  return (test: Observation): string =>
+    (shortNameCounts.get(test.shortName) ?? 0) > 1 && test.unit ? `${test.shortName} (${test.unit})` : test.shortName;
+}
+
+type TestMarkerResult =
+  | { kind: 'skip' }
+  | { kind: 'not-taken'; entry: ExploreNotTaken }
+  | { kind: 'marker'; loinc: string; marker: ExploreMarker; omittedEntry?: ExploreNotTaken; selectable: boolean };
+
+/** One test's fate in the explore model: not taken, degenerate (dropped silently), or a plottable marker. */
+function resolveTestMarker(
+  loinc: string,
+  test: Observation,
+  label: string,
+  panels: string[],
+  allResults: ResultEntry[],
+  unitSystem: UnitSystem,
+  currentPanel: string | undefined
+): TestMarkerResult {
+  const panel = singleOrArray(panels);
+  const byDate = collectByDate(testLoincs(test), allResults);
+  if (byDate.size === 0) return { kind: 'not-taken', entry: { key: loinc, label, panel } };
+
+  const override = REF_BAND_OVERRIDES[loinc];
+  const refBand = resolveRefBand(byDate, override);
+  if (refBand.kind === 'degenerate') return { kind: 'skip' };
+  if (refBand.kind === 'no-upper-bound')
+    return { kind: 'not-taken', entry: { key: loinc, label, panel, reason: 'no upper bound' } };
+
+  const { marker, data, omitted } = buildTestMarker(loinc, test, label, panel, byDate, { band: refBand, unitSystem, override });
+  if (data.length === 0) return { kind: 'not-taken', entry: { key: loinc, label, panel, reason: omittedReason(omitted) } };
+
+  // Partly plottable: the gap is named rather than left to look like a missing draw.
+  const omittedEntry = omitted.length > 0 ? { key: `${loinc}:omitted`, label, panel, reason: omittedReason(omitted) } : undefined;
+  // Default selection: the current panel's own two-sided-range markers with more than one reading.
+  const selectable = currentPanel != null && panels.includes(currentPanel) && data.length > 1 && refBand.refMinRaw != null;
+  return { kind: 'marker', loinc, marker, omittedEntry, selectable };
+}
+
+/**
  * Builds the <lab-explore> view-model. Deliberately generic: no event
  * overlays, extra markers or data-quality flagging (every marker is warn: false).
  */
@@ -276,44 +350,18 @@ export function buildExploreModel(
   const markers: Record<string, ExploreMarker> = {};
   const notTaken: ExploreNotTaken[] = [];
   const defaultSelection: string[] = [];
-
-  // Two unit variants of the same analyte (e.g. Prolactin in mIU/L and ng/mL) share a
-  // shortName; a badge naming only the shortName would be indistinguishable from its twin.
-  const shortNameCounts = new Map<string, number>();
-  for (const { test } of seen.values()) shortNameCounts.set(test.shortName, (shortNameCounts.get(test.shortName) ?? 0) + 1);
-  const labelFor = (test: Observation): string =>
-    (shortNameCounts.get(test.shortName) ?? 0) > 1 && test.unit ? `${test.shortName} (${test.unit})` : test.shortName;
+  const labelFor = buildShortNameLabel(seen);
 
   for (const [loinc, { test, panels }] of seen) {
-    const panel = singleOrArray(panels);
-    const byDate = collectByDate(testLoincs(test), allResults);
-    const label = labelFor(test);
-
-    if (byDate.size === 0) {
-      notTaken.push({ key: loinc, label, panel });
+    const result = resolveTestMarker(loinc, test, labelFor(test), panels, allResults, unitSystem, currentPanel);
+    if (result.kind === 'skip') continue;
+    if (result.kind === 'not-taken') {
+      notTaken.push(result.entry);
       continue;
     }
-
-    const override = REF_BAND_OVERRIDES[loinc];
-    const refBand = resolveRefBand(byDate, override);
-    if (refBand.kind === 'degenerate') continue;
-    if (refBand.kind === 'no-upper-bound') {
-      notTaken.push({ key: loinc, label, panel, reason: 'no upper bound' });
-      continue;
-    }
-
-    const { marker, data, omitted } = buildTestMarker(loinc, test, label, panel, byDate, refBand, unitSystem, override);
-    if (data.length === 0) {
-      notTaken.push({ key: loinc, label, panel, reason: omittedReason(omitted) });
-      continue;
-    }
-    markers[loinc] = marker;
-    // Partly plottable: the gap is named rather than left to look like a missing draw.
-    if (omitted.length > 0) notTaken.push({ key: `${loinc}:omitted`, label, panel, reason: omittedReason(omitted) });
-
-    // Default selection: the current panel's own two-sided-range markers with more than one reading.
-    if (currentPanel != null && panels.includes(currentPanel) && data.length > 1 && refBand.refMinRaw != null)
-      defaultSelection.push(loinc);
+    markers[result.loinc] = result.marker;
+    if (result.omittedEntry) notTaken.push(result.omittedEntry);
+    if (result.selectable) defaultSelection.push(result.loinc);
   }
 
   if (resultsByDate) {

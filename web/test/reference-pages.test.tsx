@@ -69,7 +69,7 @@ describe('ReferenceBookPage', () => {
   it('renders the FSH page with its attributed figures', async () => {
     const el = await open('fsh');
     expect(heading(el)).toBe('FSH');
-    expect(el.querySelectorAll('img').length).toBe(2);
+    expect(el.querySelectorAll('img')).toHaveLength(2);
     expect(el.textContent).toContain('1XWD');
   });
 

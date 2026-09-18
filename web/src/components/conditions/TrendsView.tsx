@@ -37,7 +37,35 @@ function formatCommonName(longCommonName: string | undefined, fallback: string):
       return `${beforeBracket} in ${specimen}`;
     }
   }
-  return longCommonName.replace(/\s*\[[^[\]]*\]/g, '').replace(/\s{2,}/g, ' ').trim() || fallback;
+  // No leading \s* here: any space left behind by stripping "[...]" collapses via the \s{2,} pass below.
+  return longCommonName.replace(/\[[^[\]]*\]/g, '').replace(/\s{2,}/g, ' ').trim() || fallback;
+}
+
+function formatChartModeLabel(mode: 'normalized' | 'absolute' | 'log'): string {
+  if (mode === 'normalized') return 'Normalized values';
+  if (mode === 'absolute') return 'Absolute numbers';
+  return 'Logarithmic scale';
+}
+
+function formatRangeStr(min: number | null, max: number | null, refText: string | null | undefined): string {
+  if (min != null && max != null) return `${fmtNum(min)} – ${fmtNum(max)}`;
+  if (min != null) return `> ${fmtNum(min)}`;
+  if (max != null) return `< ${fmtNum(max)}`;
+  return refText ?? '—';
+}
+
+function buildObservationRow(r: ResultEntry, loinc: string | undefined, unitSystem: UnitSystem) {
+  const markerKey = LOINC_TO_MARKER[loinc ?? ''];
+  const disp = displayedResult(markerKey, r.result, unitSystem);
+  const scale = r.result.value && disp.value ? disp.value / r.result.value : 1;
+  const min = r.result.refMin != null ? r.result.refMin * scale : null;
+  const max = r.result.refMax != null ? r.result.refMax * scale : null;
+  const hasNumericRange = min != null || max != null;
+  const rangeStr = formatRangeStr(min, max, r.result.refText);
+  const valStr = disp.value != null ? fmtNum(disp.value) : (r.result.rawValue || '—');
+  const hasRef = hasReference(r.result);
+  const outOfRange = isOutOfRange(r.result);
+  return { disp, rangeStr, hasNumericRange, valStr, hasRef, outOfRange };
 }
 
 /** `ts` is epoch seconds UTC (the `MedicationBar` convention); back to the "YYYY-MM" key `formatMonthYear` reads. */
@@ -241,7 +269,8 @@ export function TrendsView({
     if (!isTestosterone) return null;
     const isUs = unitSystem === 'us';
     const factor = isUs ? molarPerMassUnit('testosterone', 'ng/dL', 'nmol/L') : 1;
-    const conv = isUs ? (factor > 0 ? 1 / factor : 28.84) : 1;
+    const usConv = factor > 0 ? 1 / factor : 28.84;
+    const conv = isUs ? usConv : 1;
     const min = Math.round(9.2 * conv * (isUs ? 1 : 10)) / (isUs ? 1 : 10);
     const max = Math.round(31.8 * conv * (isUs ? 1 : 10)) / (isUs ? 1 : 10);
     return {
@@ -302,7 +331,7 @@ export function TrendsView({
 
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 2 }}>
                   <span style={{ fontSize: 20, fontWeight: 700, color: COLOR.navy, letterSpacing: -0.5 }}>
-                    {latestValue != null ? latestValue : '—'}
+                    {latestValue ?? '—'}
                   </span>
                   <span
                     style={{
@@ -453,7 +482,7 @@ export function TrendsView({
               options={['normalized', 'absolute', 'log'] as const}
               value={chartMode}
               onChange={setChartMode}
-              format={(v) => (v === 'normalized' ? 'Normalized values' : v === 'absolute' ? 'Absolute numbers' : 'Logarithmic scale')}
+              format={formatChartModeLabel}
             />
           </div>
         </div>
@@ -527,31 +556,17 @@ export function TrendsView({
               </tr>
             ) : (
               observationResults.map((r, i) => {
-                const markerKey = LOINC_TO_MARKER[currentObservation?.loinc ?? ''];
-                const disp = displayedResult(markerKey, r.result, unitSystem);
-                const scale = r.result.value && disp.value ? disp.value / r.result.value : 1;
-                const min = r.result.refMin != null ? r.result.refMin * scale : null;
-                const max = r.result.refMax != null ? r.result.refMax * scale : null;
-                const hasNumericRange = min != null || max != null;
-
-                const rangeStr =
-                  min != null && max != null
-                    ? `${fmtNum(min)} – ${fmtNum(max)}`
-                    : min != null
-                    ? `> ${fmtNum(min)}`
-                    : max != null
-                    ? `< ${fmtNum(max)}`
-                    : r.result.refText ?? '—';
-
-                const valStr = disp.value != null ? fmtNum(disp.value) : (r.result.rawValue || '—');
+                const { disp, rangeStr, hasNumericRange, valStr, hasRef, outOfRange } = buildObservationRow(
+                  r,
+                  currentObservation?.loinc,
+                  unitSystem
+                );
                 const valUnit = disp.value != null && displayUnit && (
                   <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {displayUnit}</span>
                 );
                 const rangeUnit = hasNumericRange && displayUnit && (
                   <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {displayUnit}</span>
                 );
-                const hasRef = hasReference(r.result);
-                const outOfRange = isOutOfRange(r.result);
 
                 return (
                   <tr

@@ -89,30 +89,53 @@ function legacyAllRoute(tab: string | undefined): Route {
   return { view: 'panel', name: ALL_OBSERVATIONS_PANEL };
 }
 
+function parseReferenceHash(value: string): Route | undefined {
+  if (value === 'reference') return { view: 'reference' };
+  if (value.startsWith('reference/')) return { view: 'reference', key: value.slice('reference/'.length) };
+  return undefined;
+}
+
+function parseReportsHash(value: string): Route | undefined {
+  if (value === 'reports') return { view: 'reports' };
+  if (value.startsWith('reports/')) return { view: 'report', file: value.slice('reports/'.length) };
+  return undefined;
+}
+
+// The views with no associated data and no prefixed variant -- an exact hash match only.
+const BARE_VIEW_HASHES: Partial<Record<string, Route['view']>> = {
+  pathways: 'pathways',
+  lipids: 'lipids',
+  profile: 'profile',
+  medications: 'medications',
+  plan: 'plan',
+  account: 'account',
+};
+
+function parseBareViewHash(value: string): Route | undefined {
+  const view = BARE_VIEW_HASHES[value];
+  return view ? { view } as Route : undefined;
+}
+
+function parsePanelsHash(rest: string): Route {
+  const slash = rest.indexOf('/');
+  if (slash === -1) return { view: 'panel', name: rest };
+  const name = rest.slice(0, slash);
+  const rawTab = rest.slice(slash + 1);
+  // Legacy per-panel "in-range" bookmarks fold into the merged Trends tab.
+  const tab = rawTab === 'in-range' ? 'trends' : rawTab;
+  return panelRoute(name, tab);
+}
+
 export function hashToRoute(hash: string): Route {
   const value = decodeURIComponent(hash.replace(/^#/, ''));
   if (!value || value === 'panels') return { view: 'panels' };
-  if (value === 'reference') return { view: 'reference' };
-  if (value.startsWith('reference/')) return { view: 'reference', key: value.slice('reference/'.length) };
   if (value === 'all') return legacyAllRoute(undefined);
   if (value.startsWith('all/')) return legacyAllRoute(value.slice('all/'.length));
-  if (value === 'reports') return { view: 'reports' };
-  if (value.startsWith('reports/')) return { view: 'report', file: value.slice('reports/'.length) };
-  if (value === 'pathways') return { view: 'pathways' };
-  if (value === 'lipids') return { view: 'lipids' };
-  if (value === 'profile') return { view: 'profile' };
-  if (value === 'medications') return { view: 'medications' };
-  if (value === 'plan') return { view: 'plan' };
-  if (value === 'account') return { view: 'account' };
-  if (value.startsWith('panels/')) {
-    const rest = value.slice('panels/'.length);
-    const slash = rest.indexOf('/');
-    if (slash === -1) return { view: 'panel', name: rest };
-    const name = rest.slice(0, slash);
-    const rawTab = rest.slice(slash + 1);
-    // Legacy per-panel "in-range" bookmarks fold into the merged Trends tab.
-    const tab = rawTab === 'in-range' ? 'trends' : rawTab;
-    return panelRoute(name, tab);
-  }
-  return { view: 'panel', name: value }; // back-compat with pre-nav-menu links
+  if (value.startsWith('panels/')) return parsePanelsHash(value.slice('panels/'.length));
+  return (
+    parseReferenceHash(value) ??
+    parseReportsHash(value) ??
+    parseBareViewHash(value) ??
+    { view: 'panel', name: value } // back-compat with pre-nav-menu links
+  );
 }

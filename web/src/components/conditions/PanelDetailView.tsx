@@ -22,7 +22,7 @@ import { visibleDatesOf } from './resultCells';
 import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
-import { ResultsTable } from './ResultTables';
+import { ResultsTable, type Relation } from './ResultTables';
 import { usePopupContext } from './PopupContext';
 import { indexInputLoincs } from '../../data/storage/scheduledVisits';
 import type { Condition } from './exploreModel';
@@ -66,6 +66,181 @@ function emptyMessage(panelName: string | undefined, query: string): string {
   if (q) return `Nothing matches “${q}”.`;
   if (panelName) return `No uploaded observations belong to ${panelName}.`;
   return 'Nothing to show.';
+}
+
+// Approximate report counts per calendar year for the header date picker.
+function countReportsByYear(dates: string[]): Record<number, number> {
+  const counts: Record<number, number> = {};
+  for (const d of dates) {
+    const y = Number(d.slice(0, 4));
+    if (!Number.isNaN(y)) {
+      counts[y] = (counts[y] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+function filterAllRows(
+  allRows: Observation[],
+  activePanel: Condition | null,
+  query: string,
+  rawNames: Record<string, string[]>
+): Observation[] {
+  const covered = activePanel ? panelRowLoincs(activePanel.tests) : null;
+  return allRows.filter(
+    (row) => (!covered || covered.has(row.loinc)) && observationMatchesQuery(row, query, rawNamesOf(rawNames, row))
+  );
+}
+
+// The picked panel's indices, else every index the offered (allowlist-narrowed) panels declare.
+function filterIndexDefsForPanels(
+  activePanel: Condition | null,
+  panelOptions: Condition[],
+  query: string
+): (typeof INDEX_DEFS)[number][] {
+  const names = new Set(activePanel ? [activePanel.name] : panelOptions.map((c) => c.name));
+  return INDEX_DEFS.filter((def) => def.panels.some((p) => names.has(p)) && indexMatchesQuery(def, query));
+}
+
+function trendsConditions(isAll: boolean, conditions: Condition[], name: string, tests: Observation[]): Condition[] {
+  return isAll ? conditions : [{ name, tests }];
+}
+
+function trendsCurrentPanel(isAll: boolean, name: string): string | undefined {
+  return isAll ? undefined : name;
+}
+
+type AllObservationsTabProps = {
+  allRows: Observation[];
+  controls: ControlsProps;
+  panelOptions: Condition[];
+  activePanel: Condition | null;
+  onPanelFilterChange: (name: string) => void;
+  query: string;
+  onQueryChange: (query: string) => void;
+  allFiltered: boolean;
+  allVisibleRows: Observation[];
+  dates: string[];
+  allVisibleIndexDefs: (typeof INDEX_DEFS)[number][];
+  visibleDates: string[];
+  allResults: ResultEntry[];
+  resultsByDate: Record<string, Record<string, Result>>;
+};
+
+// The All Observations pseudo-panel's Results tab — ported from the retired AllObservationsView.
+function buildAllObservationsAnalysisTab({
+  allRows,
+  controls,
+  panelOptions,
+  activePanel,
+  onPanelFilterChange,
+  query,
+  onQueryChange,
+  allFiltered,
+  allVisibleRows,
+  dates,
+  allVisibleIndexDefs,
+  visibleDates,
+  allResults,
+  resultsByDate,
+}: AllObservationsTabProps): ReactNode {
+  if (allRows.length === 0) {
+    return <EmptyState>No results uploaded yet.</EmptyState>;
+  }
+  return (
+    <>
+      <ControlsBar
+        {...controls}
+        panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: onPanelFilterChange }}
+        markerQuery={{ value: query, onChange: onQueryChange }}
+      />
+      <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 16 }}>
+        {allFiltered ? `${allVisibleRows.length} of ${allRows.length}` : allRows.length} observations across{' '}
+        {dates.length} lab reports
+      </div>
+      {allVisibleRows.length === 0 && allVisibleIndexDefs.length === 0 ? (
+        <EmptyState>{emptyMessage(activePanel?.name, query)}</EmptyState>
+      ) : (
+        <ResultsTable
+          label="Observations"
+          rows={allVisibleRows}
+          defs={allVisibleIndexDefs}
+          visibleDates={visibleDates}
+          allResults={allResults}
+          resultsByDate={resultsByDate}
+          unitSystem={controls.unitSystem}
+          preferRaw
+        />
+      )}
+    </>
+  );
+}
+
+type PanelAnalysisTabProps = {
+  name: string;
+  controls: ControlsProps;
+  query: string;
+  onQueryChange: (query: string) => void;
+  dates: string[];
+  nothingMatches: boolean;
+  visibleObservations: Observation[];
+  visibleIndices: Observation[];
+  visibleComputed: (typeof INDEX_DEFS)[number][];
+  visibleDates: string[];
+  allResults: ResultEntry[];
+  resultsByDate: Record<string, Record<string, Result>>;
+  inputsOf: Relation | undefined;
+  usedBy: Relation | undefined;
+};
+
+// A single panel's Results tab.
+function buildPanelAnalysisTab({
+  name,
+  controls,
+  query,
+  onQueryChange,
+  dates,
+  nothingMatches,
+  visibleObservations,
+  visibleIndices,
+  visibleComputed,
+  visibleDates,
+  allResults,
+  resultsByDate,
+  inputsOf,
+  usedBy,
+}: PanelAnalysisTabProps): ReactNode {
+  return (
+    <div>
+      {/* No panelFilter: the picker renders disabled, since this view is already one panel. */}
+      <ControlsBar {...controls} markerQuery={{ value: query, onChange: onQueryChange }} />
+      {dates.length === 0 ? (
+        <EmptyState>No results recorded for this panel yet.</EmptyState>
+      ) : (
+        <>
+          {nothingMatches && (
+            <EmptyState>
+              Nothing in {name} matches “{query.trim()}”.
+            </EmptyState>
+          )}
+          {(visibleObservations.length > 0 || visibleIndices.length > 0 || visibleComputed.length > 0) && (
+            <ResultsTable
+              label="Observations"
+              rows={visibleObservations}
+              indices={visibleIndices}
+              defs={visibleComputed}
+              visibleDates={visibleDates}
+              allResults={allResults}
+              resultsByDate={resultsByDate}
+              unitSystem={controls.unitSystem}
+              inputsOf={inputsOf}
+              usedBy={usedBy}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
 }
 
 export function PanelDetailView({
@@ -134,102 +309,54 @@ export function PanelDetailView({
   );
   const visibleDates = visibleDatesOf(dates, controls.sampleLimit);
 
-  // Approximate report counts per calendar year for the header date picker
-  const yearCounts = useMemo(() => {
-    const counts: Record<number, number> = {};
-    for (const d of dates) {
-      const y = Number(d.slice(0, 4));
-      if (!Number.isNaN(y)) {
-        counts[y] = (counts[y] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }, [dates]);
+  const yearCounts = useMemo(() => countReportsByYear(dates), [dates]);
 
   // All Observations' cross-panel rows, filter and index scope — ported from the retired AllObservationsView.
   const allRows = useMemo(() => buildRows(allResults, analysesCatalog), [allResults, analysesCatalog]);
   const activePanel = panelOptions.find((c) => c.name === panelFilter) ?? null;
-  const allVisibleRows = useMemo(() => {
-    const covered = activePanel ? panelRowLoincs(activePanel.tests) : null;
-    return allRows.filter(
-      (row) =>
-        (!covered || covered.has(row.loinc)) && observationMatchesQuery(row, query, rawNamesOf(rawNames, row))
-    );
-  }, [allRows, activePanel, query, rawNames]);
-  // The picked panel's indices, else every index the offered (allowlist-narrowed) panels declare.
-  const allVisibleIndexDefs = useMemo(() => {
-    const names = new Set(activePanel ? [activePanel.name] : panelOptions.map((c) => c.name));
-    return INDEX_DEFS.filter((def) => def.panels.some((p) => names.has(p)) && indexMatchesQuery(def, query));
-  }, [activePanel, panelOptions, query]);
+  const allVisibleRows = useMemo(
+    () => filterAllRows(allRows, activePanel, query, rawNames),
+    [allRows, activePanel, query, rawNames]
+  );
+  const allVisibleIndexDefs = useMemo(
+    () => filterIndexDefsForPanels(activePanel, panelOptions, query),
+    [activePanel, panelOptions, query]
+  );
   const allFiltered = !!activePanel || query.trim() !== '';
 
-  let analysisTab: ReactNode;
-  if (isAll) {
-    if (allRows.length === 0) {
-      analysisTab = <EmptyState>No results uploaded yet.</EmptyState>;
-    } else {
-      analysisTab = (
-        <>
-          <ControlsBar
-            {...controls}
-            panelFilter={{ options: panelOptions, value: activePanel?.name ?? ALL_PANELS, onChange: setPanelFilter }}
-            markerQuery={{ value: query, onChange: setQuery }}
-          />
-          <div style={{ color: COLOR.textMuted, fontSize: 13, marginBottom: 16 }}>
-            {allFiltered ? `${allVisibleRows.length} of ${allRows.length}` : allRows.length} observations across{' '}
-            {dates.length} lab reports
-          </div>
-          {allVisibleRows.length === 0 && allVisibleIndexDefs.length === 0 ? (
-            <EmptyState>{emptyMessage(activePanel?.name, query)}</EmptyState>
-          ) : (
-            <ResultsTable
-              label="Observations"
-              rows={allVisibleRows}
-              defs={allVisibleIndexDefs}
-              visibleDates={visibleDates}
-              allResults={allResults}
-              resultsByDate={resultsByDate}
-              unitSystem={controls.unitSystem}
-              preferRaw
-            />
-          )}
-        </>
-      );
-    }
-  } else {
-    analysisTab = (
-      <div>
-        {/* No panelFilter: the picker renders disabled, since this view is already one panel. */}
-        <ControlsBar
-          {...controls}
-          markerQuery={{ value: query, onChange: setQuery }}
-        />
-        {dates.length === 0 ? (
-          <EmptyState>No results recorded for this panel yet.</EmptyState>
-        ) : (
-          <>
-            {nothingMatches && (
-              <EmptyState>Nothing in {name} matches “{query.trim()}”.</EmptyState>
-            )}
-            {(visibleObservations.length > 0 || visibleIndices.length > 0 || visibleComputed.length > 0) && (
-              <ResultsTable
-                label="Observations"
-                rows={visibleObservations}
-                indices={visibleIndices}
-                defs={visibleComputed}
-                visibleDates={visibleDates}
-                allResults={allResults}
-                resultsByDate={resultsByDate}
-                unitSystem={controls.unitSystem}
-                inputsOf={inputsOf}
-                usedBy={usedBy}
-              />
-            )}
-          </>
-        )}
-      </div>
-    );
-  }
+  const analysisTab: ReactNode = isAll
+    ? buildAllObservationsAnalysisTab({
+        allRows,
+        controls,
+        panelOptions,
+        activePanel,
+        onPanelFilterChange: setPanelFilter,
+        query,
+        onQueryChange: setQuery,
+        allFiltered,
+        allVisibleRows,
+        dates,
+        allVisibleIndexDefs,
+        visibleDates,
+        allResults,
+        resultsByDate,
+      })
+    : buildPanelAnalysisTab({
+        name,
+        controls,
+        query,
+        onQueryChange: setQuery,
+        dates,
+        nothingMatches,
+        visibleObservations,
+        visibleIndices,
+        visibleComputed,
+        visibleDates,
+        allResults,
+        resultsByDate,
+        inputsOf,
+        usedBy,
+      });
 
   return (
     <>
@@ -257,8 +384,8 @@ export function PanelDetailView({
       {tab === 'analysis' && analysisTab}
       {tab === 'trends' && (
         <TrendsView
-          conditions={isAll ? conditions : [{ name, tests }]}
-          currentPanel={isAll ? undefined : name}
+          conditions={trendsConditions(isAll, conditions, name, tests)}
+          currentPanel={trendsCurrentPanel(isAll, name)}
           allResults={allResults}
           unitSystem={controls.unitSystem}
           resultsByDate={resultsByDate}

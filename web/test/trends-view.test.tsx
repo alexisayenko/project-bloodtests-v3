@@ -67,7 +67,7 @@ describe('TrendsView alias/companion LOINC folding', () => {
 
     // Result History Table: both the primary- and alias-coded readings should appear.
     const rows = container.querySelectorAll('tbody tr');
-    expect(rows.length).toBe(2);
+    expect(rows).toHaveLength(2);
     const loincCells = [...rows].map((r) => r.querySelector('td')?.nextElementSibling?.textContent ?? '');
     expect(loincCells.some((t) => t.includes('99001-1'))).toBe(true);
     expect(loincCells.some((t) => t.includes('99002-2'))).toBe(true);

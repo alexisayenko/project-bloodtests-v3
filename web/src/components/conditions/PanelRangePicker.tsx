@@ -11,6 +11,101 @@ export interface PanelRangePickerProps {
   yearCounts: Record<number, number>;
 }
 
+type EdgeType = 'start' | 'end';
+
+function resolveEdgeType(isStart: boolean, isEnd: boolean): EdgeType | null {
+  if (isStart) return 'start';
+  if (isEnd) return 'end';
+  return null;
+}
+
+function getCountBadge(count: number): { label: string; fontWeight: number; color: string } {
+  if (count > 0) {
+    return { label: String(count), fontWeight: 600, color: COLOR.navy };
+  }
+  return { label: '', fontWeight: 400, color: 'transparent' };
+}
+
+function formatYearTickTitle(year: number, count: number): string {
+  return `${year}: ${count} report${count === 1 ? '' : 's'}`;
+}
+
+function getYearLabelStyle(isSelected: boolean): { color: string; fontWeight: number } {
+  if (isSelected) {
+    return { color: COLOR.navy, fontWeight: 600 };
+  }
+  return { color: COLOR.textMuted, fontWeight: 400 };
+}
+
+function getHandleStyle(isThisDragging: boolean): React.CSSProperties {
+  return {
+    width: 16,
+    height: 16,
+    borderRadius: '50%',
+    background: isThisDragging ? '#0070e0' : '#1a88f8',
+    border: '2.5px solid #ffffff',
+    boxShadow: isThisDragging
+      ? '0 0 0 3px rgba(26, 136, 248, 0.35), 0 2px 6px rgba(26, 136, 248, 0.5)'
+      : '0 1px 4px rgba(26, 136, 248, 0.4)',
+    cursor: 'ew-resize',
+    touchAction: 'none',
+    transform: isThisDragging ? 'scale(1.2)' : 'scale(1)',
+    transition: isThisDragging ? 'none' : 'transform 0.12s ease, box-shadow 0.12s ease',
+    zIndex: 10,
+  };
+}
+
+interface YearRangeHandleProps {
+  edgeType: EdgeType;
+  year: number;
+  isThisDragging: boolean;
+  minAvailableYear: number;
+  maxAvailableYear: number;
+  startYear: number;
+  endYear: number;
+  onDragStart: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onDragMove: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onDragEnd: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onEdgeKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+}
+
+/** Drag handle for one end of the range; also supports Arrow key stepping (Sonar S6819 clickable-needs-keyboard). */
+function YearRangeHandle({
+  edgeType,
+  year,
+  isThisDragging,
+  minAvailableYear,
+  maxAvailableYear,
+  startYear,
+  endYear,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+  onEdgeKeyDown,
+}: Readonly<YearRangeHandleProps>) {
+  const edgeLabel = edgeType === 'start' ? 'Start' : 'End';
+  const ariaMin = edgeType === 'start' ? minAvailableYear : startYear;
+  const ariaMax = edgeType === 'start' ? endYear : maxAvailableYear;
+  return (
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label={`${edgeLabel} year: ${year}`}
+      aria-valuemin={ariaMin}
+      aria-valuemax={ariaMax}
+      aria-valuenow={year}
+      onPointerDown={onDragStart}
+      onPointerMove={onDragMove}
+      onPointerUp={onDragEnd}
+      onPointerCancel={onDragEnd}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={onEdgeKeyDown}
+      style={getHandleStyle(isThisDragging)}
+      title={`Drag to adjust ${edgeType} year (${year})`}
+    />
+  );
+}
+
 export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>) {
   const years = useMemo(() => {
     const list = Object.keys(yearCounts).map(Number).sort((a, b) => a - b);
@@ -21,7 +116,7 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
     // Pad slightly to give room on the timeline if fewer than 4 years
     if (list.length < 4) {
       const min = list[0]!;
-      const max = list[list.length - 1]!;
+      const max = list.at(-1)!;
       const result: number[] = [];
       for (let y = min - 1; y <= max + 1; y++) {
         result.push(y);
@@ -32,13 +127,13 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
   }, [yearCounts]);
 
   const minAvailableYear = years[0]!;
-  const maxAvailableYear = years[years.length - 1]!;
+  const maxAvailableYear = years.at(-1)!;
 
   // Presentational interactive state (unbound per ADR-0024)
   const [isOpen, setIsOpen] = useState(false);
   const [startYear, setStartYear] = useState<number>(() => {
     // Default to last 3-4 years or available range
-    if (years.length >= 4) return years[years.length - 4]!;
+    if (years.length >= 4) return years.at(-4)!;
     return minAvailableYear;
   });
   const [endYear, setEndYear] = useState<number>(maxAvailableYear);
@@ -107,6 +202,30 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
       // ignore
+    }
+  };
+
+  // Arrow-key stepping for the drag handles, matching the ARIA slider pattern.
+  const handleEdgeKeyDown = (edge: 'start' | 'end', e: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentYear = edge === 'start' ? startYear : endYear;
+    const idx = years.indexOf(currentYear);
+    if (idx === -1) return;
+
+    let direction = 0;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      direction = -1;
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      direction = 1;
+    }
+    if (direction === 0) return;
+
+    e.preventDefault();
+    const targetYear = years[idx + direction];
+    if (targetYear == null) return;
+    if (edge === 'start') {
+      setStartYear(Math.min(targetYear, endYear));
+    } else {
+      setEndYear(Math.max(targetYear, startYear));
     }
   };
 
@@ -207,12 +326,10 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
       } else {
         setEndYear(year);
       }
+    } else if (year >= startYear) {
+      setEndYear(year);
     } else {
-      if (year >= startYear) {
-        setEndYear(year);
-      } else {
-        setStartYear(year);
-      }
+      setStartYear(year);
     }
   };
 
@@ -379,10 +496,12 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                   const isStart = year === startYear;
                   const isEnd = year === endYear;
                   const isSelected = isStart || isEnd;
-                  const edgeType: 'start' | 'end' | null = isStart ? 'start' : isEnd ? 'end' : null;
+                  const edgeType = resolveEdgeType(isStart, isEnd);
                   const isThisDragging = edgeType != null && draggingHandle === edgeType;
 
                   const xPos = idx * ITEM_WIDTH + ITEM_WIDTH / 2;
+                  const countBadge = getCountBadge(count);
+                  const yearLabelStyle = getYearLabelStyle(isSelected);
 
                   return (
                     <div
@@ -402,19 +521,19 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                         userSelect: 'none',
                         zIndex: isSelected ? 8 : 3,
                       }}
-                      title={`${year}: ${count} report${count === 1 ? '' : 's'}`}
+                      title={formatYearTickTitle(year, count)}
                     >
                       {/* Count above tick */}
                       <span
                         style={{
                           fontSize: 12,
-                          fontWeight: count > 0 ? 600 : 400,
-                          color: count > 0 ? COLOR.navy : 'transparent',
+                          fontWeight: countBadge.fontWeight,
+                          color: countBadge.color,
                           lineHeight: 1,
                           height: 14,
                         }}
                       >
-                        {count > 0 ? count : ''}
+                        {countBadge.label}
                       </span>
 
                       {/* Tick or Circular Handle */}
@@ -429,34 +548,18 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                         }}
                       >
                         {isSelected && edgeType ? (
-                          <div
-                            role="slider"
-                            tabIndex={0}
-                            aria-label={`${edgeType === 'start' ? 'Start' : 'End'} year: ${year}`}
-                            aria-valuemin={edgeType === 'start' ? minAvailableYear : startYear}
-                            aria-valuemax={edgeType === 'start' ? endYear : maxAvailableYear}
-                            aria-valuenow={year}
-                            onPointerDown={(e) => handleEdgeDragStart(edgeType, e)}
-                            onPointerMove={(e) => handleEdgeDragMove(edgeType, e)}
-                            onPointerUp={handleEdgeDragEnd}
-                            onPointerCancel={handleEdgeDragEnd}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: '50%',
-                              background: isThisDragging ? '#0070e0' : '#1a88f8',
-                              border: '2.5px solid #ffffff',
-                              boxShadow: isThisDragging
-                                ? '0 0 0 3px rgba(26, 136, 248, 0.35), 0 2px 6px rgba(26, 136, 248, 0.5)'
-                                : '0 1px 4px rgba(26, 136, 248, 0.4)',
-                              cursor: 'ew-resize',
-                              touchAction: 'none',
-                              transform: isThisDragging ? 'scale(1.2)' : 'scale(1)',
-                              transition: isThisDragging ? 'none' : 'transform 0.12s ease, box-shadow 0.12s ease',
-                              zIndex: 10,
-                            }}
-                            title={`Drag to adjust ${edgeType} year (${year})`}
+                          <YearRangeHandle
+                            edgeType={edgeType}
+                            year={year}
+                            isThisDragging={isThisDragging}
+                            minAvailableYear={minAvailableYear}
+                            maxAvailableYear={maxAvailableYear}
+                            startYear={startYear}
+                            endYear={endYear}
+                            onDragStart={(e) => handleEdgeDragStart(edgeType, e)}
+                            onDragMove={(e) => handleEdgeDragMove(edgeType, e)}
+                            onDragEnd={handleEdgeDragEnd}
+                            onEdgeKeyDown={(e) => handleEdgeKeyDown(edgeType, e)}
                           />
                         ) : (
                           <div
@@ -475,8 +578,8 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                           position: 'absolute',
                           bottom: 0,
                           fontSize: 12,
-                          color: isSelected ? COLOR.navy : COLOR.textMuted,
-                          fontWeight: isSelected ? 600 : 400,
+                          color: yearLabelStyle.color,
+                          fontWeight: yearLabelStyle.fontWeight,
                         }}
                       >
                         {year}
