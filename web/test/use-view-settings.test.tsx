@@ -13,7 +13,9 @@ let store: Map<string, string>;
 
 function Harness({ initial }: Readonly<{ initial: SharedMeta | null }>) {
   const [meta, set] = useState(initial);
+  // eslint-disable-next-line react-hooks/globals -- captures the setter and the hook's return for the test to drive; test-only, never compiled
   setMeta = set;
+  // eslint-disable-next-line react-hooks/globals -- see above
   latest = useViewSettings(meta);
   return null;
 }

@@ -9,6 +9,7 @@ let latest: { route: Route; navigate: (next: Route) => void };
 let frames: FrameRequestCallback[] = [];
 
 function Harness({ blocked }: Readonly<{ blocked: boolean }>) {
+  // eslint-disable-next-line react-hooks/globals -- captures the hook's return for assertions; test-only, never compiled
   latest = useHashRoute(blocked);
   return null;
 }

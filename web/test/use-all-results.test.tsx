@@ -13,7 +13,9 @@ type Loader = (sessionId: string) => Promise<Result[]>;
 
 function Harness({ initial, loadGroupItems }: Readonly<{ initial: DiagnosticReport[]; loadGroupItems: Loader }>) {
   const [sessions, set] = useState(initial);
+  // eslint-disable-next-line react-hooks/globals -- captures the setter and the hook's return for the test to drive; test-only, never compiled
   setSessions = set;
+  // eslint-disable-next-line react-hooks/globals -- see above
   latest = useAllResults(sessions, loadGroupItems);
   return null;
 }
