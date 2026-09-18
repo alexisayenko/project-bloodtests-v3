@@ -35,7 +35,7 @@ export function SegmentedControl<T extends string | number>({
         // Force layout so the "no transition" style commits before it is
         // cleared, otherwise the browser can coalesce it away and the
         // first placement animates in from the fieldset's origin.
-        void thumb.offsetWidth;
+        thumb.getBoundingClientRect();
         hasMountedRef.current = true;
       }
     };
