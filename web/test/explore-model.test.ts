@@ -371,6 +371,40 @@ describe('buildExploreModel — mass/molar histories on one scale', () => {
   });
 });
 
+describe('buildExploreModel — shortName collisions (unit variants)', () => {
+  // Prolactin's two unit variants (mIU/L and ng/mL) are separate, unfolded rows sharing the
+  // shortName "PRL" -- the picker badge must tell them apart or they read as one test twice.
+  it('appends the unit to the label when two markers in view share a shortName', () => {
+    const mIU = obs('MIU_LOINC', 'PRL', 'mIU/L');
+    const ngML = obs('NGML_LOINC', 'PRL', 'ng/mL');
+    const allResults = [
+      entry('MIU_LOINC', '2024-01-01', 300, { unit: 'mIU/L', refMin: 40, refMax: 400 }),
+      entry('NGML_LOINC', '2024-06-01', 20, { unit: 'ng/mL', refMin: 2, refMax: 20 }),
+    ];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [mIU, ngML] }], allResults, 'si', 'PanelA');
+
+    expect(model.markers['MIU_LOINC']?.label).toBe('PRL (mIU/L)');
+    expect(model.markers['NGML_LOINC']?.label).toBe('PRL (ng/mL)');
+  });
+
+  it('leaves a shortName alone when it does not collide with anything else in view', () => {
+    const test = obs('SOLOSHORT', 'PRL', 'mIU/L');
+    const allResults = [entry('SOLOSHORT', '2024-01-01', 300, { unit: 'mIU/L', refMin: 40, refMax: 400 })];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
+
+    expect(model.markers['SOLOSHORT']?.label).toBe('PRL');
+  });
+
+  it('disambiguates a notTaken chip the same way as a plotted marker', () => {
+    const mIU = obs('MIU_NT', 'PRL', 'mIU/L');
+    const ngML = obs('NGML_NT', 'PRL', 'ng/mL'); // never taken
+    const allResults = [entry('MIU_NT', '2024-01-01', 300, { unit: 'mIU/L', refMin: 40, refMax: 400 })];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [mIU, ngML] }], allResults, 'si', 'PanelA');
+
+    expect(model.notTaken).toContainEqual({ key: 'NGML_NT', label: 'PRL (ng/mL)', panel: 'PanelA' });
+  });
+});
+
 describe('buildExploreModel — title', () => {
   it('names the view honestly, matching the ported explore-types.ts rationale', () => {
     const model = buildExploreModel([], [], 'si', 'PanelA');

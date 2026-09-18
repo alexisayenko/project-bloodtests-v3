@@ -143,6 +143,7 @@ function placeOnBandScale(
 function buildTestMarker(
   loinc: string,
   test: Observation,
+  label: string,
   panel: string | string[],
   byDate: Map<string, ResultEntry>,
   band: Extract<RefBand, { kind: 'band' }>,
@@ -179,7 +180,7 @@ function buildTestMarker(
   data.sort((a, b) => a[0].localeCompare(b[0]));
 
   const marker: ExploreMarker = {
-    label: test.shortName,
+    label,
     unit,
     refMin: refMinRaw != null ? convert(refMinRaw, refFromUnit) : 0,
     refMax: convert(refMaxRaw, refFromUnit),
@@ -276,12 +277,20 @@ export function buildExploreModel(
   const notTaken: ExploreNotTaken[] = [];
   const defaultSelection: string[] = [];
 
+  // Two unit variants of the same analyte (e.g. Prolactin in mIU/L and ng/mL) share a
+  // shortName; a badge naming only the shortName would be indistinguishable from its twin.
+  const shortNameCounts = new Map<string, number>();
+  for (const { test } of seen.values()) shortNameCounts.set(test.shortName, (shortNameCounts.get(test.shortName) ?? 0) + 1);
+  const labelFor = (test: Observation): string =>
+    (shortNameCounts.get(test.shortName) ?? 0) > 1 && test.unit ? `${test.shortName} (${test.unit})` : test.shortName;
+
   for (const [loinc, { test, panels }] of seen) {
     const panel = singleOrArray(panels);
     const byDate = collectByDate(testLoincs(test), allResults);
+    const label = labelFor(test);
 
     if (byDate.size === 0) {
-      notTaken.push({ key: loinc, label: test.shortName, panel });
+      notTaken.push({ key: loinc, label, panel });
       continue;
     }
 
@@ -289,19 +298,18 @@ export function buildExploreModel(
     const refBand = resolveRefBand(byDate, override);
     if (refBand.kind === 'degenerate') continue;
     if (refBand.kind === 'no-upper-bound') {
-      notTaken.push({ key: loinc, label: test.shortName, panel, reason: 'no upper bound' });
+      notTaken.push({ key: loinc, label, panel, reason: 'no upper bound' });
       continue;
     }
 
-    const { marker, data, omitted } = buildTestMarker(loinc, test, panel, byDate, refBand, unitSystem, override);
+    const { marker, data, omitted } = buildTestMarker(loinc, test, label, panel, byDate, refBand, unitSystem, override);
     if (data.length === 0) {
-      notTaken.push({ key: loinc, label: test.shortName, panel, reason: omittedReason(omitted) });
+      notTaken.push({ key: loinc, label, panel, reason: omittedReason(omitted) });
       continue;
     }
     markers[loinc] = marker;
     // Partly plottable: the gap is named rather than left to look like a missing draw.
-    if (omitted.length > 0)
-      notTaken.push({ key: `${loinc}:omitted`, label: test.shortName, panel, reason: omittedReason(omitted) });
+    if (omitted.length > 0) notTaken.push({ key: `${loinc}:omitted`, label, panel, reason: omittedReason(omitted) });
 
     // Default selection: the current panel's own two-sided-range markers with more than one reading.
     if (currentPanel != null && panels.includes(currentPanel) && data.length > 1 && refBand.refMinRaw != null)
