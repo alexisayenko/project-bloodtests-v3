@@ -9,8 +9,9 @@ export type { LoincRef, MonitoringPanelDef } from '../../types';
 export type Observation = { shortName: string; friendlyName: string; longCommonName: string; loinc: string; unit?: string; also?: LoincRef[] };
 
 // Lab-reportable codes that a computed index supersedes, so they never show as raw badges; eGFR (48642-3)
-// has no computed twin (needs age) and stays lab-reported.
-export const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3']);
+// and ACR (9318-7) have no computed twin (eGFR needs age, ACR needs a paired urine albumin/creatinine) and
+// stay lab-reported.
+export const INDEX_LOINCS = new Set(['9830-1', '2502-3', '48642-3', '9318-7']);
 
 // Excluded from the raw-LOINC Indices table so each renders once, via its computed row.
 export const COMPUTED_LOINCS = new Set(INDEX_DEFS.map((d) => d.loinc).filter((x): x is string => !!x));
