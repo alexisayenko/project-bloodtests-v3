@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { ALIAS_TO_PRIMARY, ALSO_REFS } from '../../data/analyteCatalog';
+import { INDEX_DEFS } from '../../data/indexDefs';
 import { fmtNum } from '../../utils/format';
+import { clamp } from '../../utils/math';
 import type { IndexBands, IndexDef } from '../../data/computedIndices';
+import { panelDates, type Observation } from './markers';
+import type { ResultEntry } from './resultsLookup';
 
 /** The pieces the pathway pages share: measures, chips' values, reference and source blocks, the date stepper. */
 
@@ -77,6 +81,86 @@ export function labReference({ low, high, unit }: LabRange): ReferenceInfo {
 }
 
 export const CARD_WIDTH = 300;
+
+export const indexDefOf = (key: string) => INDEX_DEFS.find((d) => d.key === key);
+
+export interface AxisPageState {
+  /** The panel's results-table dates, oldest first. */
+  dates: string[];
+  /** The stepped-to date, defaulting to the latest. */
+  date: string | undefined;
+  pickDate: (index: number) => void;
+  /** The one open chip card, effects card or badge. */
+  open: string | null;
+  setOpen: (id: string | null) => void;
+  hovered: string | null;
+  setHovered: (id: string | null) => void;
+  /** Where the open chip's floating card sits, relative to the layout root. */
+  cardAt: { left: number; top: number } | null;
+  toggleChip: (id: string, chip: HTMLElement) => void;
+  /** `open` when it is a badge, null while a chip's card is what is open. */
+  badgeOpen: string | null;
+}
+
+/** The state every axis page keeps: one panel's dates, the one thing open, and where its card goes. */
+export function useAxisPage({
+  panelName,
+  panelTests,
+  allResults,
+  rootRef,
+  keepSelector,
+  isCardId,
+}: {
+  panelName: string;
+  panelTests: readonly Observation[];
+  allResults: readonly ResultEntry[];
+  rootRef: RefObject<HTMLDivElement | null>;
+  /** What a pointer-down may land on without closing what is open. */
+  keepSelector: string;
+  /** Whether an open id names a chip's floating card rather than a badge. */
+  isCardId: (id: string | null) => boolean;
+}): AxisPageState {
+  const [open, setOpen] = useState<string | null>(null);
+  const [cardAt, setCardAt] = useState<{ left: number; top: number } | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const dates = useMemo(() => panelDates(panelName, panelTests, allResults).reverse(), [panelName, panelTests, allResults]);
+  const date = picked && dates.includes(picked) ? picked : dates.at(-1);
+  const pickDate = useCallback((index: number) => setPicked(dates[index] ?? null), [dates]);
+
+  const placeCard = useCallback(
+    (chip: Element) => {
+      const layout = rootRef.current;
+      if (!layout) return null;
+      const a = chip.getBoundingClientRect();
+      const box = layout.getBoundingClientRect();
+      const left = clamp(a.left + a.width / 2 - box.left - CARD_WIDTH / 2, 0, Math.max(box.width - CARD_WIDTH, 0));
+      return { left, top: a.bottom - box.top + 6 };
+    },
+    [rootRef]
+  );
+
+  const toggleChip = useCallback(
+    (id: string, chip: HTMLElement) => {
+      if (open === id) {
+        setOpen(null);
+        return;
+      }
+      setCardAt(placeCard(chip));
+      setOpen(id);
+    },
+    [open, placeCard]
+  );
+
+  const close = useCallback(() => setOpen(null), []);
+  const replaceCard = useCallback(() => {
+    const chip = rootRef.current?.querySelector(`[data-caption="${open}"], [data-effects="${open}"]`);
+    if (chip) setCardAt(placeCard(chip));
+  }, [open, placeCard, rootRef]);
+  useDismiss(open, close, keepSelector, replaceCard);
+
+  return { dates, date, pickDate, open, setOpen, hovered, setHovered, cardAt, toggleChip, badgeOpen: isCardId(open) ? null : open };
+}
 
 /** Closes whatever is open on Escape or on a pointer-down outside `keep`, and re-runs `onResize` while open. */
 export function useDismiss(open: string | null, close: () => void, keep: string, onResize?: () => void): void {

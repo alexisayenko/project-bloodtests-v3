@@ -8,14 +8,8 @@ import { ZONE_BG, greenRangeOf, cellBg } from './resultCells';
 import { pressable } from '../primitives/styles';
 import { formatMonthYear } from '../../data/months';
 import { getLatest, hasReference, type LatestByLoinc, type ResultEntry } from './resultsLookup';
+import { usePopupContext } from './PopupContext';
 import { COLOR } from '../../styles/tokens';
-
-export type PopupPosition = { left: number; width: number; top?: number; bottom?: number };
-export type PopupState =
-  | ({ kind: 'observation'; test: Observation } & PopupPosition)
-  | ({ kind: 'index'; def: IndexDef } & PopupPosition)
-  | ({ kind: 'result'; test: Observation; entry: ResultEntry } & PopupPosition)
-  | ({ kind: 'indexResult'; def: IndexDef; date: string; value: number } & PopupPosition);
 
 function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: LatestByLoinc; loincs: string[] }>) {
   const current = getLatest(latestByLoinc, loincs);
@@ -196,18 +190,15 @@ function IndexPopupBody({
 }
 
 export function Popup({
-  popup,
   latestByLoinc,
   resultsByDate,
-  onClose,
   onLearnMore,
 }: Readonly<{
-  popup: PopupState | null;
   latestByLoinc: LatestByLoinc;
   resultsByDate: Record<string, Record<string, Result>>;
-  onClose: () => void;
   onLearnMore: (key: string) => void;
 }>) {
+  const { popup, closePopup: onClose } = usePopupContext();
   if (!popup) return null;
 
   let body: ReactNode;

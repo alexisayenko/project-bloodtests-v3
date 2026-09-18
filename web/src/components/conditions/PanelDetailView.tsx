@@ -1,7 +1,6 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import type { Result } from '../../types';
-import type { IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import {
   COMPUTED_LOINCS,
@@ -15,13 +14,13 @@ import {
   type Observation,
 } from './markers';
 import { pressable } from '../primitives/styles';
-import { visibleDatesOf, type SelectedCell } from './resultCells';
+import { visibleDatesOf } from './resultCells';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
 import { ResultsTable } from './ResultTables';
+import { usePopupContext } from './PopupContext';
 import { indexInputLoincs } from '../../data/storage/scheduledVisits';
-import type { IndexScheduling, RowScheduling } from './scheduling';
 import type { ResultEntry } from './resultsLookup';
 import type { MedicationRow } from '../../data/storage/medications';
 import { EmptyState } from '../primitives';
@@ -49,17 +48,6 @@ export function PanelDetailView({
   allResults,
   resultsByDate,
   controls,
-  selectedLoinc,
-  onSelect,
-  onOpenPopup,
-  onOpenIndexPopup,
-  selectedCell,
-  onSelectCell,
-  onOpenResultPopup,
-  onOpenIndexResultPopup,
-  scheduling,
-  indexScheduling,
-  onAddVisit,
   onBack,
   medications,
 }: Readonly<{
@@ -68,21 +56,11 @@ export function PanelDetailView({
   allResults: ResultEntry[];
   resultsByDate: Record<string, Record<string, Result>>;
   controls: ControlsProps;
-  selectedLoinc: string | null;
-  onSelect: (loinc: string) => void;
-  onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
-  onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
-  selectedCell: SelectedCell;
-  onSelectCell: (loinc: string, date: string) => void;
-  onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
-  onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
-  scheduling: RowScheduling[];
-  indexScheduling: IndexScheduling[];
-  onAddVisit: () => void;
   onBack: () => void;
   /** Medication history for the "What's in range" tab's lane. */
   medications: MedicationRow[];
 }>) {
+  const { selectedLoinc } = usePopupContext();
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
   const meta = getPanelMeta(name);
   const PanelIcon = meta.icon;
@@ -108,19 +86,6 @@ export function PanelDetailView({
   const dates = useMemo(() => panelDates(name, tests, allResults), [name, tests, allResults]);
 
   const visibleDates = visibleDatesOf(dates, controls.sampleLimit);
-
-  const tableProps = {
-    visibleDates,
-    allResults,
-    unitSystem: controls.unitSystem,
-    selectedLoinc,
-    onSelect,
-    onOpenPopup,
-    selectedCell,
-    onSelectCell,
-    onOpenResultPopup,
-    scheduling,
-  };
 
   return (
     <>
@@ -158,12 +123,10 @@ export function PanelDetailView({
                   rows={visibleObservations}
                   indices={visibleIndices}
                   defs={visibleComputed}
-                  {...tableProps}
+                  visibleDates={visibleDates}
+                  allResults={allResults}
                   resultsByDate={resultsByDate}
-                  onOpenIndexPopup={onOpenIndexPopup}
-                  onOpenIndexResultPopup={onOpenIndexResultPopup}
-                  indexScheduling={indexScheduling}
-                  onAddVisit={onAddVisit}
+                  unitSystem={controls.unitSystem}
                   inputsOf={inputsOf}
                   usedBy={usedBy}
                 />

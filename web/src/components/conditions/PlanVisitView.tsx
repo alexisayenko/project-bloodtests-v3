@@ -7,6 +7,8 @@ import { planCells, planRows, planRowLabel, type PlanCell } from '../../data/vis
 import { ANALYTE_BY_LOINC, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
 import { formatMonthFullYear } from '../../data/months';
 import type { Observation } from './markers';
+import { usePopupContext } from './PopupContext';
+import { useSchedulingContext } from './SchedulingContext';
 import { pressable } from '../primitives/styles';
 import { CalendarCheck, Coins, CheckSquare } from 'lucide-react';
 import { PageHeader } from './PageHeader';
@@ -248,17 +250,9 @@ function VisitPlanCard({
   );
 }
 
-export function PlanVisitView({
-  visits,
-  onOpenPopup,
-  onSelectLab,
-  onSetMonth,
-}: Readonly<{
-  visits: ScheduledVisit[];
-  onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
-  onSelectLab: (visitId: string, labId: string | undefined) => void;
-  onSetMonth: (visitId: string, month: string | undefined) => void;
-}>) {
+export function PlanVisitView() {
+  const { sortedVisits: visits, onSelectLab, onSetMonth } = useSchedulingContext();
+  const { openPopup } = usePopupContext();
   // Visits come and go, so a stale id is expected and falls back below.
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const activeIndex = visits.findIndex((v) => v.id === selectedId);
@@ -299,7 +293,7 @@ export function PlanVisitView({
             key={activeVisit.id}
             visit={activeVisit}
             index={activeVisitIndex}
-            onOpenPopup={onOpenPopup}
+            onOpenPopup={openPopup}
             onSelectLab={(labId) => onSelectLab(activeVisit.id, labId)}
             onSetMonth={(month) => onSetMonth(activeVisit.id, month)}
           />
