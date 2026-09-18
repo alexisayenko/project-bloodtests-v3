@@ -63,9 +63,10 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [allResults, currentObservation]);
 
-  // Primary cards (top 4-6 key markers in this panel)
+  // Primary marker cards (scrollable row of markers in this panel)
   const primaryCards = useMemo(() => {
-    return tests.slice(0, 6).map((test) => {
+    const list = availableTests.length > 0 ? availableTests : tests;
+    return list.map((test) => {
       const results = allResults
         .filter((r) => r.loinc === test.loinc && r.result.value != null)
         .sort((a, b) => b.date.localeCompare(a.date));
@@ -87,7 +88,7 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
         sparkPoints,
       };
     });
-  }, [tests, allResults]);
+  }, [availableTests, tests, allResults]);
 
   // Guideline reference range popup toggle
   const [showGuidelineInfo, setShowGuidelineInfo] = useState(false);
@@ -168,92 +169,132 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* 1. Key Marker Summary Cards (Carousel/Row) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: 12,
-        }}
-      >
-        {primaryCards.map(({ test, latestValue, unit, deltaPct, sparkPoints }) => {
-          const isSelected = test.loinc === currentObservation?.loinc;
-          return (
-            <Card
-              key={test.loinc}
-              padding="14px 16px"
-              {...pressable(() => setSelectedLoinc(test.loinc))}
-              style={{
-                cursor: 'pointer',
-                border: isSelected ? `2px solid ${COLOR.primary}` : `1px solid ${COLOR.borderSubtle}`,
-                background: isSelected ? '#f5fafd' : COLOR.surfaceCard,
-                borderRadius: RADIUS.card,
-                boxShadow: isSelected ? '0 2px 8px rgba(14, 90, 102, 0.1)' : '0 1px 3px rgba(0,0,0,0.04)',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div
+      {/* 1. Key Marker Summary Cards (Narrower & Scrollable Row with Edge Shading) */}
+      <div style={{ position: 'relative', margin: '0 -4px' }}>
+        {/* Scrollable track */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            overflowX: 'auto',
+            padding: '4px 6px 12px 6px',
+            scrollbarWidth: 'none',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {primaryCards.map(({ test, latestValue, unit, deltaPct, sparkPoints }) => {
+            const isSelected = test.loinc === currentObservation?.loinc;
+            return (
+              <Card
+                key={test.loinc}
+                padding="10px 14px"
+                {...pressable(() => setSelectedLoinc(test.loinc))}
                 style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: isSelected ? COLOR.primary : COLOR.navy,
-                  marginBottom: 6,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  flex: '0 0 160px',
+                  width: 160,
+                  cursor: 'pointer',
+                  border: isSelected ? `2px solid ${COLOR.primary}` : `1px solid ${COLOR.borderSubtle}`,
+                  background: isSelected ? '#f5fafd' : COLOR.surfaceCard,
+                  borderRadius: RADIUS.card,
+                  boxShadow: isSelected ? '0 2px 8px rgba(14, 90, 102, 0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  transition: 'all 0.15s ease',
+                  userSelect: 'none',
                 }}
-                title={test.friendlyName}
               >
-                {test.friendlyName}
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-                <span style={{ fontSize: 24, fontWeight: 700, color: COLOR.navy, letterSpacing: -0.5 }}>
-                  {latestValue != null ? latestValue : '—'}
-                </span>
-                <span style={{ fontSize: 12, color: COLOR.textMuted }}>{unit}</span>
-
-                {deltaPct != null && (
-                  <span
-                    style={{
-                      marginLeft: 'auto',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: deltaPct > 0 ? COLOR.statusWarnText : COLOR.statusOkText,
-                    }}
-                  >
-                    {deltaPct > 0 ? `↑ ${deltaPct}%` : `↓ ${Math.abs(deltaPct)}%`}
-                  </span>
-                )}
-              </div>
-
-              {/* Sparkline */}
-              {sparkPoints.length > 1 && (
-                <div style={{ height: 18, marginTop: 4 }}>
-                  <svg width="100%" height="18" viewBox="0 0 100 18" preserveAspectRatio="none">
-                    <polyline
-                      fill="none"
-                      stroke={isSelected ? COLOR.primary : '#38a3a5'}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      points={sparkPoints
-                        .map((val, idx) => {
-                          const x = (idx / (sparkPoints.length - 1)) * 96 + 2;
-                          const min = Math.min(...sparkPoints);
-                          const max = Math.max(...sparkPoints);
-                          const range = max - min || 1;
-                          const y = 16 - ((val - min) / range) * 12;
-                          return `${x},${y}`;
-                        })
-                        .join(' ')}
-                    />
-                  </svg>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: isSelected ? COLOR.primary : COLOR.navy,
+                    marginBottom: 4,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={test.friendlyName}
+                >
+                  {test.friendlyName}
                 </div>
-              )}
-            </Card>
-          );
-        })}
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 2 }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: COLOR.navy, letterSpacing: -0.5 }}>
+                    {latestValue != null ? latestValue : '—'}
+                  </span>
+                  <span style={{ fontSize: 11, color: COLOR.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {unit}
+                  </span>
+
+                  {deltaPct != null && (
+                    <span
+                      style={{
+                        marginLeft: 'auto',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: deltaPct > 0 ? COLOR.statusWarnText : COLOR.statusOkText,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {deltaPct > 0 ? `↑ ${deltaPct}%` : `↓ ${Math.abs(deltaPct)}%`}
+                    </span>
+                  )}
+                </div>
+
+                {/* Sparkline */}
+                {sparkPoints.length > 1 ? (
+                  <div style={{ height: 16, marginTop: 4 }}>
+                    <svg width="100%" height="16" viewBox="0 0 100 16" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke={isSelected ? COLOR.primary : '#38a3a5'}
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={sparkPoints
+                          .map((val, idx) => {
+                            const x = (idx / (sparkPoints.length - 1)) * 96 + 2;
+                            const min = Math.min(...sparkPoints);
+                            const max = Math.max(...sparkPoints);
+                            const range = max - min || 1;
+                            const y = 14 - ((val - min) / range) * 11;
+                            return `${x},${y}`;
+                          })
+                          .join(' ')}
+                      />
+                    </svg>
+                  </div>
+                ) : (
+                  <div style={{ height: 16, marginTop: 4 }} />
+                )}
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Right Scroll Gradient Shading */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 8,
+            width: 40,
+            background: 'linear-gradient(to right, rgba(246, 249, 250, 0), rgba(246, 249, 250, 0.95))',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Left Scroll Gradient Shading */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 8,
+            width: 24,
+            background: 'linear-gradient(to left, rgba(246, 249, 250, 0), rgba(246, 249, 250, 0.95))',
+            pointerEvents: 'none',
+          }}
+        />
       </div>
 
       {/* 2. Interactive Analyte Timeline Chart */}
