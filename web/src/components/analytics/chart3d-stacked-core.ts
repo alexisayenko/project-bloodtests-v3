@@ -1,36 +1,5 @@
-// Adapted from project-moodtracker's web/chart3d-stacked.js
-// (initStackedChart3D). The camera (yaw/pitch/zoom, projection) is ported
-// verbatim via chart3d-camera.ts; everything below -- ribbons, depth
-// slotting, per-series normalization, the painter's-algorithm sort -- is
-// the same algorithm, generalized from a fixed 8-series layout to an
-// arbitrary, dynamic list of series (blood-test biomarkers instead of
-// mood/energy/health metrics), and stripped of moodtracker-specific
-// concerns that don't apply here:
-//   - No localStorage persistence (moodtracker.stackedChartPrefs.v1) --
-//     the host React component owns opacity mode / series selection as
-//     plain state and calls back into this engine.
-//   - No DOM controls wired in-engine (opacity/window/pan/edit/debug
-//     buttons) -- the host component renders its own controls and calls
-//     `setOpacityMode`/`setRange`/`resetView` on
-//     the returned handle.
-//   - No edit-mode drag-to-reorder of series/depth slots or "hidden but
-//     shown" series -- which biomarkers appear is entirely decided by what
-//     the caller includes in `update()`, so there is no separate hidden
-//     state to track here.
-//
-// Kept, because it's the actually hard, already-solved part: each series is
-// normalized against its OWN observed min/max within the shared visible
-// time range (mirrors buildHealthSeries in the source -- the same shape of
-// problem: wildly different units/scales plotted on one chart), the ribbon
-// face/edge/point rendering, PATH_STEPS subdivision, the depth-sorted
-// painter's algorithm, and the time window (all, or an explicit range
-// clamped to the data extent).
-//
-// One departure from the source: the time axis follows the canvas width.
-// Height and depth keep the source's min(W, H)-based scales, but the room's
-// x half-extent is stretched on every draw until the projected room spans
-// X_FILL of the canvas width (see fitXHalf), so a wide card isn't mostly
-// empty and a narrow one doesn't overflow.
+// Ported from project-moodtracker's chart3d-stacked.js, generalized from 8
+// fixed slots to N series; the host component owns state and controls.
 
 import {
   DEG,

@@ -31,15 +31,12 @@ export function markImported(guid: string): void {
     if (!list.includes(guid)) list.push(guid);
     localStorage.setItem(IMPORTED_LINKS_KEY, JSON.stringify(list));
   } catch {
-    // storage unavailable -- the link would just be re-fetched next visit
+    // storage unavailable
   }
 }
 
-// Import attempts already started in this page's lifetime, keyed by guid. The
-// URL param is only stripped once an import has actually succeeded, so a
-// StrictMode synthetic remount re-reads the same guid; this set makes the
-// second pass reuse the first pass's in-flight promise instead of starting a
-// second fetch (and, more importantly, instead of losing the first one).
+// The URL param is stripped only after a successful import, so a StrictMode
+// remount re-reads the guid; it must reuse the in-flight promise, not lose it.
 const inFlight = new Map<string, Promise<SharedPayload>>();
 
 export function fetchSharedDataOnce(guid: string): Promise<SharedPayload> {
@@ -57,7 +54,7 @@ export function stripDataParam(): void {
     url.searchParams.delete('data');
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
   } catch {
-    // no History API -- the param just stays visible
+    // no History API
   }
 }
 
@@ -67,8 +64,7 @@ export async function fetchSharedData(guid: string): Promise<unknown> {
   return res.json();
 }
 
-// A per-link presentation config. Optional in every sense: a missing file, a
-// non-200, or unparsable JSON all mean "no meta" and never fail the import.
+// A missing, non-200 or unparsable meta means "no meta" and never fails the import.
 export async function fetchSharedMeta(guid: string): Promise<SharedMeta | null> {
   try {
     const res = await fetch(`/d/${guid}.meta.json`);

@@ -25,8 +25,7 @@ export const BACKUP_VERSION = 1;
 
 export const CHART_PREFIX_KEYS = ['exploreSel:', 'hpgChartView:', 'hpgAutoscale:', 'exploreEv:'];
 
-// Every whole key that holds user data; with CHART_PREFIX_KEYS this is what
-// Clear all data removes, so export, clear and import read one list.
+// The one list export, clear and import all read.
 export const USER_DATA_KEYS = [
   RESULTS_STORAGE_KEY,
   ENVELOPE_META_KEY,
@@ -56,8 +55,7 @@ export function backupFilename(now = new Date()): string {
   return `blood-tests-backup-${datePart(now)}.zip`;
 }
 
-// A stored object keeps its structure; a bare flag like the chart's "1" stays
-// the string it was stored as, so writing it back is JSON.stringify or as-is.
+// A bare flag like the chart's "1" stays the string it was stored as.
 function storedValue(raw: string): unknown {
   try {
     const parsed: unknown = JSON.parse(raw);

@@ -9,7 +9,6 @@ import type {
   InterchangeReport,
 } from '../data/envelopeTypes';
 
-/** `generatedAt` is optional in the format but this exporter always stamps it. */
 type StampedEnvelope = InterchangeEnvelope & { generatedAt: string };
 
 function resultToObservation(result: Result): InterchangeObservation {
@@ -26,14 +25,8 @@ function resultToObservation(result: Result): InterchangeObservation {
     obs.rawValue = result.rawValue;
   }
 
-  // `unit` is ours, `rawUnit` is the report's: the printed spelling is folded to
-  // its UCUM code and written to `unit`, and the string the lab printed goes to
-  // `rawUnit` untouched. Only the spelling is normalized — no value is
-  // converted (ADR-0003) — so the number beside it still means what it did.
-  // A unit the curated tables cannot place leaves `unit` ABSENT rather than
-  // filled with the printed string: the field would otherwise claim a
-  // normalization that did not happen. `rawUnit` still carries it, and the
-  // validator already flags such a row.
+  // Only the spelling is normalized, never the value (ADR-0003); an unplaceable
+  // unit leaves `unit` absent rather than claim a normalization that did not happen.
   if (result.unit) {
     const ucum = ucumUnitFor(result.unit);
     if (ucum) {
@@ -64,7 +57,6 @@ async function computeSha256Hash(data: InterchangeReport[]): Promise<string> {
   const dataBuffer = encoder.encode(jsonString);
   const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
 
-  // Convert to hex string
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 

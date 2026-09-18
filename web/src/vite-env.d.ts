@@ -1,18 +1,14 @@
 /// <reference types="vite/client" />
 
-// <lab-explore> is a plain custom element (see src/vendor/lab-explore/) --
-// its .model property is set imperatively, not via a JSX prop, so this only
-// needs to type-check as a bare host tag. React 19's automatic JSX runtime
-// resolves IntrinsicElements from React's own JSX namespace (react/jsx-runtime
-// re-exports it from "react"), not a bare global JSX namespace, so this
-// augments the "react" module rather than `declare global`. `export {}` makes
-// this file a module, so the augmentation merges instead of replacing "react".
 // Injected by vite.config.ts `define` at build time.
 declare global {
   const __BUILD_COMMIT__: string;
   const __BUILD_TIME__: string;
 }
 
+// React 19 resolves IntrinsicElements from the "react" module's JSX namespace,
+// not a global one, so the custom element is declared here; `export {}` keeps
+// this a module so the augmentation merges rather than replaces.
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {

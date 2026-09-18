@@ -1,6 +1,4 @@
-// A calendar month is stored as an ISO `YYYY-MM` key: it sorts
-// lexicographically and needs no timezone. Every month label is read off the
-// string itself rather than through a Date, so no locale or zone can move it.
+// Labels are read off the `YYYY-MM` string, never through a Date, so no zone can move them.
 
 export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 

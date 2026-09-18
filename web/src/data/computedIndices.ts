@@ -3,24 +3,12 @@ import { ALIAS_TO_PRIMARY, ALSO_REFS, DEFAULT_UNITS } from './analyteCatalog';
 import { concentrationRatio, massPerMolarUnit, molarPerMassUnit } from './molarMasses';
 import { toLatinUnit } from './unitNormalization';
 
-/**
- * Client-side computed indices — ratios/estimates derived from other
- * observations, not reported directly by any lab. Ported from
- * project-bloodtests-v2's engine/src/indices/{definitions,build,free-testosterone}.ts
- * and engine/src/{flag,convert}.ts. Age/sex-dependent indices (eGFR x3, FIB-4)
- * are intentionally NOT ported; eGFR stays the lab-reported LOINC value it
- * already was. The definitions themselves (formulas, cut-points, prose,
- * sources) live in `indexDefs.ts`.
- */
+// Engine for client-side computed indices; the definitions (formulas, cut-points,
+// prose, sources) live in `indexDefs.ts`. eGFR/FIB-4 deliberately not computed.
 
 export type Markers = Record<string, number | undefined>;
 
-/**
- * Input key (v2 marker id) -> candidate v3 LOINC codes, for every marker any ported
- * index needs. Some analytes are reported under different LOINCs across labs/eras
- * (same list as MedicalConditionsPage's ALSO_REFS) -- listed primary-first, tried
- * in order, first one with data on the draw's date wins.
- */
+/** Input key -> candidate LOINCs, primary first; the first with data on the draw's date wins. */
 export const MARKER_LOINC: Record<string, string[]> = {
   TC: ['2093-3'],
   'HDL-C': ['2085-9'],
@@ -47,19 +35,9 @@ export const MARKER_LOINC: Record<string, string[]> = {
   TIBC: ['2500-7'],
 };
 
-// ---- unit conversion, ported from engine/src/convert.ts + build.ts's
-// UNIT_CONVERSIONS. v2 wrote each factor out as a literal; here every one is
-// DERIVED from the molar-mass reference data, so an index can no longer
-// disagree with the mass/molar sibling table about what a mole of glucose
-// weighs (it did: v2 used 18.018, the sibling table 18.016, and 180.156 g/mol
-// makes it 18.0156). ----
+// Every factor below is DERIVED from molar-masses.json, never typed as a literal.
 
-/**
- * The mass/molar unit pair each conversion below works in, as data: the
- * Reference Book's conversion table states the same pairs, and for an analyte
- * tabulated for an index rather than for a LOINC sibling pair (T3, DHEA-S)
- * this is the only place they are written down.
- */
+/** The unit pair each conversion works in; the Reference Book reads these rather than restating them. */
 export const INDEX_UNIT_PAIRS: Record<string, { mass: string; molar: string }> = {
   cholesterol: { mass: 'mg/dL', molar: 'mmol/L' },
   triglyceride: { mass: 'mg/dL', molar: 'mmol/L' },
@@ -125,29 +103,19 @@ const UNIT_CONVERSIONS: UnitConv[] = [
   { marker: 'FT3', from: 'pmol/L', to: 'pg/mL', conv: (x) => x / FT3_PGML_TO_PMOLL },
   { marker: 'FT4', from: 'ng/dL', to: 'pmol/L', conv: (x) => x * FT4_NGDL_TO_PMOLL },
   { marker: 'FT4', from: 'pmol/L', to: 'ng/dL', conv: (x) => x / FT4_NGDL_TO_PMOLL },
-  // Testosterone: nmol/L (molar, e.g. LOINC 14913-8) <-> ng/dL (the mass unit
-  // cft/tlh/te2/dhtt's formulas expect).
   { marker: 'T', from: 'nmol/L', to: 'ng/dL', conv: (x) => x / T_NGDL_TO_NMOLL },
   { marker: 'T', from: 'ng/dL', to: 'nmol/L', conv: (x) => x * T_NGDL_TO_NMOLL },
-  // Testosterone: ng/mL (e.g. LOINC 2986-8) <-> ng/dL -- same mass unit, dL = 100 mL.
   ...rescaleBoth('T', 'ng/mL', 'ng/dL'),
-  // Testosterone: ng/mL <-> nmol/L directly (ng/mL -> ng/dL -> nmol/L combined).
   { marker: 'T', from: 'ng/mL', to: 'nmol/L', conv: (x) => x * rescale('ng/mL', 'ng/dL') * T_NGDL_TO_NMOLL },
   { marker: 'T', from: 'nmol/L', to: 'ng/mL', conv: (x) => x / T_NGDL_TO_NMOLL / rescale('ng/mL', 'ng/dL') },
-  // Free testosterone (2991-8): printed pg/mL or ng/dL, or pmol/L; ftpct reads
-  // it in pmol/L to divide by total T in nmol/L.
   { marker: 'FT', from: 'pg/mL', to: 'pmol/L', conv: (x) => x * FT_PGML_TO_PMOLL },
   { marker: 'FT', from: 'pmol/L', to: 'pg/mL', conv: (x) => x / FT_PGML_TO_PMOLL },
   { marker: 'FT', from: 'ng/dL', to: 'pmol/L', conv: (x) => x * FT_NGDL_TO_PMOLL },
   { marker: 'FT', from: 'pmol/L', to: 'ng/dL', conv: (x) => x / FT_NGDL_TO_PMOLL },
-  // Cortisol: the [Moles/volume] sibling code 14675-3 reports nmol/L, while
-  // cortdhea's formula works from the mass code's ug/dL.
   { marker: 'Cortisol', from: 'nmol/L', to: 'ug/dL', conv: (x) => x / CORTISOL_UGDL_TO_NMOLL },
   { marker: 'Cortisol', from: 'ug/dL', to: 'nmol/L', conv: (x) => x * CORTISOL_UGDL_TO_NMOLL },
-  // Apolipoproteins: mass-only analytes labs print either as mg/dL or as g/L.
   ...rescaleBoth('ApoB', 'g/L', 'mg/dL'),
   ...rescaleBoth('ApoA1', 'g/L', 'mg/dL'),
-  // Albumin: printed g/dL (the catalog's unit) or g/L; the Vermeulen indices read g/dL.
   ...rescaleBoth('ALB', 'g/L', 'g/dL'),
   ...Object.entries(MGDL_TO_MMOLL).flatMap(([marker, f]): UnitConv[] => [
     { marker, from: 'mg/dL', to: 'mmol/L', conv: f },
@@ -156,14 +124,9 @@ const UNIT_CONVERSIONS: UnitConv[] = [
 ];
 
 /**
- * The value expressed in `to`, or undefined when no verified conversion covers
- * the pair -- the caller then has to keep the value in its own printed unit
- * rather than relabel it (ADR-0003).
- *
- * Printed spellings are folded to their Latin form first (unitNormalization's
- * own curated tables), so "ммоль/л" converts exactly like "mmol/L". Without
- * that fold a Cyrillic spelling silently matched no rule: the number stayed as
- * printed while the display went on labelling it with the target unit.
+ * Undefined when no verified conversion covers the pair — the caller keeps the
+ * printed unit rather than relabelling (ADR-0003). Spellings fold to Latin first
+ * so "ммоль/л" converts like "mmol/L".
  */
 export function convertUnit(
   value: number,
@@ -184,12 +147,7 @@ export function toUnit(value: number, marker: string, from: string | null | unde
   return convertUnit(value, marker, from, to) ?? value;
 }
 
-/**
- * The SI/US toggle only touches observations we have a verified conversion
- * factor for (the markers above with an entry in UNIT_CONVERSIONS) -- every
- * other observation keeps showing its as-reported value/unit unchanged rather
- * than an invented conversion.
- */
+/** Only markers with a verified UNIT_CONVERSIONS entry; everything else stays as reported. */
 export const SI_US_UNIT: Record<string, { si: string; us: string }> = {
   TC: { si: 'mmol/L', us: 'mg/dL' },
   'HDL-C': { si: 'mmol/L', us: 'mg/dL' },
@@ -200,8 +158,6 @@ export const SI_US_UNIT: Record<string, { si: string; us: string }> = {
   FT3: { si: 'pmol/L', us: 'pg/mL' },
   FT4: { si: 'pmol/L', us: 'ng/dL' },
 };
-
-// ---- 3-zone coloring, ported verbatim from engine/src/flag.ts's `zone()` ----
 
 export type Zone = 'ok' | 'warn' | 'bad';
 
@@ -221,11 +177,7 @@ export type SubjectProfile = { sex?: 'female' | 'male' };
 
 export type IndexBands = { cut: [number, number]; hi?: boolean };
 
-/**
- * The band an index is judged against for this subject, or null when none
- * applies: an index with `bandsBySex` has no band until the subject's sex is
- * known and one is sourced for it, rather than falling back to the other sex's.
- */
+/** A `bandsBySex` index has no band until sex is known — never the other sex's. */
 export function indexBands(def: IndexDef, profile: SubjectProfile = {}): IndexBands | null {
   if (def.bandsBySex) return profile.sex ? (def.bandsBySex[profile.sex] ?? null) : null;
   return def.cut ? { cut: def.cut, hi: def.hi } : null;
@@ -252,7 +204,6 @@ export interface IndexDef {
   key: string;
   friendlyName: string;
   shortName: string;
-  /** Monitoring Panel names (MedicalConditionsPage's PANEL_DEFS) this index appears under. */
   panels: string[];
   formula: string;
   /** [good, warn] cut-points. */
@@ -262,13 +213,9 @@ export interface IndexDef {
   /** Bands that differ by sex; when set, `cut` and `hi` are ignored (see `indexBands`). */
   bandsBySex?: Partial<Record<'female' | 'male', IndexBands>>;
   unit?: string;
-  /** Input keys (v2 marker ids) -- keys into MARKER_LOINC. */
+  /** Keys into MARKER_LOINC. */
   inputKeys: string[];
-  /**
-   * Inputs the formula uses when present and replaces with a stated default
-   * when absent (albumin in the Vermeulen equation), so they never gate the
-   * index and are not among its scheduled inputs.
-   */
+  /** Replaced by a stated default when absent, so they never gate the index nor get scheduled. */
   optionalInputKeys?: string[];
   inputUnits?: Partial<Record<string, string>>;
   level: 'consensus' | 'heuristic';
@@ -282,17 +229,9 @@ export interface IndexDef {
 }
 
 /**
- * Every LOINC a marker's reading can arrive under: the codes MARKER_LOINC
- * declares, then each one's unit/method variants as the analyte catalog
- * records them. The variants are DERIVED from `analyses.json` through
- * ALSO_REFS / ALIAS_TO_PRIMARY (ADR-0010) rather than listed here a second
- * time, so a code added to the catalog reaches the indices with no edit -- and
- * a molar-coded reading (cholesterol under 14647-2, glucose under 15074-8)
- * feeds the same index its mass primary would, which before this it silently
- * did not: the whole Cardiovascular Risk set and HOMA-IR simply never appeared
- * for a history reported in mmol/L.
- *
- * Declared codes come first, so a draw carrying both keeps today's precedence.
+ * MARKER_LOINC plus each code's catalog variants, derived through
+ * ALSO_REFS / ALIAS_TO_PRIMARY (ADR-0010) rather than listed twice. Declared
+ * codes come first so a draw carrying both keeps their precedence.
  */
 export const MARKER_CANDIDATE_LOINCS: Record<string, string[]> = Object.fromEntries(
   Object.entries(MARKER_LOINC).map(([marker, declared]) => {
@@ -306,12 +245,7 @@ export const MARKER_CANDIDATE_LOINCS: Record<string, string[]> = Object.fromEntr
   })
 );
 
-/**
- * The unit a marker's declared primary code is reported in, from the catalog.
- * It is the yardstick for an input whose formula declares no unit of its own:
- * a ratio like TC/HDL does not care which unit it is computed in, but it does
- * care that both sides are on the SAME one, and this is that one.
- */
+// The yardstick for an input whose formula declares no unit: a ratio only needs both sides on the SAME one.
 const MARKER_REFERENCE_UNIT: Record<string, string | undefined> = Object.fromEntries(
   Object.entries(MARKER_LOINC).map(([marker, declared]) => [
     marker,
@@ -319,25 +253,10 @@ const MARKER_REFERENCE_UNIT: Record<string, string | undefined> = Object.fromEnt
   ])
 );
 
-/**
- * One marker's value on this draw, expressed in the unit the formula needs.
- *
- * Nothing here is written back: the returned number is a local, derived
- * quantity handed straight to an index's `fn`. The stored `Result` keeps the
- * value and unit the lab printed (ADR-0003) -- conversion for computation is
- * exactly the display-time conversion that ADR allows for.
- *
- * An input that cannot be placed in the expected unit is left OUT rather than
- * passed through as printed, because a number on the wrong scale would
- * silently produce a wrong index and no index at all is the honest answer.
- *
- * The one exception is the case this function inherits: a value under the
- * marker's PRIMARY code with no formula-declared unit is used as printed, as
- * it always was -- DHT is reported in pg/mL against a ng/dL code and dhtt's
- * formula rescales it itself. A variant code gets no such benefit of the
- * doubt: it was reached through the alias map precisely because it is on
- * another scale, so it is placed on the reference one or declined.
- */
+// Derived for computation only, never written back (ADR-0003). An input that
+// cannot be placed in the expected unit is left OUT rather than passed as
+// printed — except a PRIMARY-code value with no formula-declared unit (DHT in
+// pg/mL, which dhtt rescales itself); a variant code gets no such benefit.
 function markerValue(
   inputKey: string,
   resultsByLoinc: Record<string, Result>,
@@ -369,7 +288,6 @@ export function markersForIndex(def: IndexDef, resultsByLoinc: Record<string, Re
 export function computeIndex(def: IndexDef, resultsByLoinc: Record<string, Result>): number | null {
   const v = def.fn(markersForIndex(def, resultsByLoinc));
   if (v == null || !Number.isFinite(v)) return null;
-  // Quantize to 2dp before display formatting -- matches v2's historical display
-  // (e.g. AIP 0.4475 -> 0.45 -> "0.45", not fmtNum's raw "0.448").
+  // Quantize to 2dp before display formatting (AIP 0.4475 -> "0.45", not fmtNum's "0.448").
   return Math.round(v * 100) / 100;
 }

@@ -4,15 +4,10 @@ import { StackedBiomarkerChart3D, type StackedEntry } from './StackedBiomarkerCh
 import { MAX_SERIES } from './palette';
 import type { BiomarkerNames, LoincEntry } from './types';
 
-// How many biomarkers the 3D view starts with before the user has touched
-// the picker -- entries are expected sorted by point count descending, so
-// this is "the N biomarkers with the most history", a reasonable default
-// rather than an empty chart on first visit.
+// Entries arrive sorted by point count descending, so this picks the N with the most history.
 const DEFAULT_SELECTION_COUNT = 4;
 
-// Selection is an ordered map loinc -> palette slot: a biomarker keeps its
-// slot until unchecked, and a newly checked one takes the lowest free slot,
-// so toggling one series never recolors the others.
+// loinc -> palette slot; a slot is kept until unchecked so toggling one series never recolors the others.
 type Selection = Map<string, number>;
 
 const lowestFreeColorIndex = (selection: Selection) => {

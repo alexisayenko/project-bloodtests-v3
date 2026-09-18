@@ -40,15 +40,12 @@ function checkLoinc(item: Result): Issue | null {
 function checkUnitDimension(item: Result, normalization: UnitNormalization): Issue | null {
   if (!item.loinc || !LOINC_RE.test(item.loinc)) return null;
 
-  // Only a different quantity is a problem: another scale of the same one (g/L
-  // for a g/dL code) is a spelling the catalog's unit list merely omits, and a
-  // unit the tables cannot place carries its own warning below.
+  // Another scale of the same quantity (g/L on a g/dL code) is no mismatch.
   const { check } = normalization;
   if (check.kind !== 'dimension-mismatch') return null;
 
   if (check.suggestedLoinc) {
-    // The value is right and the code is wrong: converting the number
-    // would invent a reading no lab printed (ADR-0003).
+    // The code is wrong, not the value: never convert the printed number (ADR-0003).
     return {
       level: 'warning',
       message: `Unit '${item.unit}' measures a different quantity than ${item.loinc} — ${check.suggestedLoinc} is the same analyte on that scale (change the code, not the value)`,

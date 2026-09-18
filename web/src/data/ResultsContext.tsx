@@ -33,20 +33,15 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     try {
       return parseStoredSessions(localStorage.getItem(STORAGE_KEY));
     } catch {
-      // storage unavailable — start fresh
       return [];
     }
   });
-  // localStorage loads synchronously in the useState initializer above,
-  // so there is nothing to wait for.
   const loading = false;
   const [error, setError] = useState<string | null>(null);
   const [sharedLinkError, setSharedLinkError] = useState<string | null>(null);
   const [sharedMeta, setSharedMeta] = useState<SharedMeta | null>(loadStoredSharedMeta);
 
-  // Merge incoming sessions into what's already loaded (an incoming session
-  // replaces an existing one with the same `file` id) — generated test data
-  // adds to whatever is there rather than clobbering it.
+  // An incoming session replaces an existing one with the same `file` id.
   const mergeSessions = useCallback((incoming: DiagnosticReport[]) => {
     setSessions((prev) => {
       const byFile = new Map(prev.map((g) => [g.file, g]));
@@ -57,9 +52,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     });
   }, []);
 
-  // Read-only share link: ?data=<guid> pulls /d/<guid>.data.json through the
-  // same parse+replace path as an upload, so it persists and works offline
-  // afterwards, plus an optional /d/<guid>.meta.json presentation config.
+  // Share link: imported through the same replace path as an upload.
   useEffect(() => {
     const guid = readSharedDataGuid(window.location.search);
     if (!guid) return;
@@ -68,9 +61,8 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
       return;
     }
 
-    // `cancelled` only suppresses state updates after unmount — the import
-    // itself (parse, persist, mark) always completes, so StrictMode's
-    // mount/unmount/mount cycle can't drop an already-fetched result.
+    // `cancelled` only suppresses the error state; the import itself always
+    // completes, so StrictMode's remount can't drop a fetched result.
     let cancelled = false;
     fetchSharedDataOnce(guid)
       .then(({ data, meta }) => {
@@ -108,8 +100,7 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
 
     try {
       setSessions(importResults(json));
-      // The import replaces the stored sessions, so a share link's presentation
-      // config no longer has any link to belong to.
+      // A replacing import leaves a share link's meta nothing to belong to.
       clearSharedMeta();
       setSharedMeta(null);
     } catch (e) {
@@ -117,8 +108,6 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     }
   }, []);
 
-  // Synthetic data (e.g. Profile's "Generate Test Data") — persisted exactly
-  // like a real upload, so the rest of the app can't tell the difference.
   const loadGenerated = useCallback((groups: DiagnosticReport[]) => {
     setError(null);
     mergeSessions(groups);

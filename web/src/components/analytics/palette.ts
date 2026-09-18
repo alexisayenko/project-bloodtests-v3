@@ -1,9 +1,4 @@
-// Small, fixed, colorblind-safe categorical palette (Okabe-Ito with its
-// yellow darkened to an amber that stays readable on white, and black
-// appended as an 8th slot) -- v3 has no existing categorical/series palette
-// to reuse. Each selected biomarker owns one slot (`colorIndex`, assigned by
-// the host page) for as long as it stays selected, so toggling a neighbour
-// never recolors it.
+// Okabe-Ito (colorblind-safe), its yellow darkened to read on white, black appended as an 8th slot.
 export const PALETTE: readonly (readonly [number, number, number])[] = [
   [230, 159, 0],
   [86, 180, 233],

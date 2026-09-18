@@ -28,7 +28,7 @@ export function loadEnvelopeMeta(): EnvelopeMeta {
     const raw = localStorage.getItem(ENVELOPE_META_KEY);
     if (raw) return sanitizeEnvelopeMeta(JSON.parse(raw));
   } catch {
-    // corrupt/incompatible local storage -- ignore and start fresh
+    // corrupt storage reads as empty
   }
   return {};
 }
@@ -37,6 +37,6 @@ export function saveEnvelopeMeta(meta: EnvelopeMeta): void {
   try {
     localStorage.setItem(ENVELOPE_META_KEY, JSON.stringify(sanitizeEnvelopeMeta(meta)));
   } catch {
-    // storage unavailable -- metadata just won't persist
+    // storage unavailable
   }
 }

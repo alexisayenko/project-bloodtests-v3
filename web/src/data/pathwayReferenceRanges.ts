@@ -2,12 +2,8 @@ import file from '../../public/data/pathway-reference-ranges.json';
 import { MOLAR_MASS_BY_ID, concentrationRatio, massPerMolarUnit, molarPerMassUnit } from './molarMasses';
 import { sameUnitScale, toLatinUnit } from './unitNormalization';
 
-/**
- * Curated reference ranges for the Hormonal Pathways view, read from
- * `pathway-reference-ranges.json` (ADR-0010). Each figure stays as its source
- * printed it; a display in another unit is derived here through the unit
- * helpers and the molar-mass table (ADR-0011), never through a typed factor.
- */
+// Each figure stays as its source printed it; another unit is derived at
+// display time through the molar-mass table, never a typed factor (ADR-0011).
 
 export interface PathwayRange {
   population: string;
@@ -51,11 +47,7 @@ export function pathwayRangesFor(loincs: readonly string[]): PathwayRangeMarker 
 const isMass = (unit: string) => concentrationRatio(unit, 'g/L') !== undefined;
 const isMolar = (unit: string) => concentrationRatio(unit, 'mol/L') !== undefined;
 
-/**
- * `value` in `from` expressed in `to`, or undefined when no exact path exists:
- * the same unit under another spelling, a same-dimension rescale, or a
- * mass↔molar step over a tabulated molar mass.
- */
+/** Undefined when no exact path exists — a guess is never returned. */
 export function convertConcentration(value: number, from: string, to: string, molarMass?: string): number | undefined {
   const latinFrom = toLatinUnit(from) ?? from;
   const latinTo = toLatinUnit(to) ?? to;
@@ -73,10 +65,7 @@ export interface PlacedRange extends PathwayRange {
   placed: boolean;
 }
 
-/**
- * One row per population: in `unit` when any of that population's rows
- * converts to it, otherwise its first row exactly as the source printed it.
- */
+/** One row per population; unplaceable ones stay in the source's own unit. */
 export function rangesInUnit(marker: PathwayRangeMarker, unit: string | undefined): PlacedRange[] {
   const populations = [...new Set(marker.ranges.map((r) => r.population))];
   return populations.map((population) => {
@@ -95,11 +84,7 @@ export function rangesInUnit(marker: PathwayRangeMarker, unit: string | undefine
 
 const within = (value: number, r: PlacedRange) => (r.low == null || value >= r.low) && (r.high == null || value <= r.high);
 
-/**
- * ok inside every placed range, warn inside only some (the population is not
- * known, so the ranges disagree about this value), bad inside none; undefined
- * when no range is in the value's unit.
- */
+/** warn = the populations' ranges disagree about this value. */
 export function rangeStatus(value: number, ranges: readonly PlacedRange[]): 'ok' | 'warn' | 'bad' | undefined {
   const placed = ranges.filter((r) => r.placed);
   if (placed.length === 0) return undefined;

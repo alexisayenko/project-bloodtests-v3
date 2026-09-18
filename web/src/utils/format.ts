@@ -1,9 +1,6 @@
 import type { Result } from '../types';
 
-// Adaptive precision by magnitude — fewer decimals as the value grows.
-// Only used when there's no rawValue to show as-printed; see
-// docs/ui-ux/style-guide.md#numbers. Ported from project-bloodtests-v2's
-// engine/src/format.ts (fmtNum).
+// Only used when there is no rawValue to show as printed (docs/ui-ux/style-guide.md#numbers).
 function decimalsFor(a: number): number {
   if (a >= 100) return 0;
   if (a >= 10) return 1;

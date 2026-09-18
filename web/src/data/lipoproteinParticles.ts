@@ -1,10 +1,6 @@
 import file from '../../public/data/lipoprotein-particles.json';
 
-/**
- * Lipoprotein particle reference data, read from `lipoprotein-particles.json`
- * (ADR-0010). Every figure stays as its source printed it; the range and the
- * midpoint the glyph fills are derived here and never stored.
- */
+// Every figure stays as its source printed it; ranges and midpoints are derived, never stored.
 
 export interface Interval {
   min?: number;
@@ -59,7 +55,7 @@ export interface ShareRange {
   sources: string[];
 }
 
-/** The span of every figure printed for one component, or undefined when none is sourced. */
+/** Undefined when no figure is sourced. */
 export function shareRange(particle: LipoproteinParticle, component: Component): ShareRange | undefined {
   const figures = particle.composition[component];
   if (!figures?.length) return undefined;

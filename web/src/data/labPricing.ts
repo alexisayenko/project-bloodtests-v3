@@ -28,9 +28,9 @@ export const LABORATORY_BY_ID: Readonly<Record<string, Laboratory>> = Object.fro
 export type LabQuote = {
   total: number;
   currency: string;
-  /** Each price line charged, once, in the laboratory's own order. */
+  /** Each line once, in the laboratory's own order. */
   charged: PriceLine[];
-  /** Scheduled codes, folded to their primary, that no price line covers. */
+  /** Primary codes no line covers. */
   unpriced: string[];
 };
 
@@ -38,7 +38,7 @@ export function primaryOf(loinc: string): string {
   return ALIAS_TO_PRIMARY[loinc] ?? loinc;
 }
 
-/** The cheapest line covering each primary code; on a tie the laboratory's earlier line wins. */
+/** On a tie the laboratory's earlier line wins. */
 export function cheapestLineByCode(lab: Laboratory): Map<string, PriceLine> {
   const cheapest = new Map<string, PriceLine>();
   for (const line of lab.prices) {
@@ -50,12 +50,7 @@ export function cheapestLineByCode(lab: Laboratory): Map<string, PriceLine> {
   return cheapest;
 }
 
-/**
- * Costs a schedule at one laboratory: each scheduled code, folded to its
- * primary, takes the cheapest line covering it, and a line covering several
- * scheduled codes is still charged once. This is per-code cheapest, not the
- * cheapest combination of lines overall.
- */
+/** Per-code cheapest, each line charged once — not the cheapest combination overall. */
 export function quoteSchedule(loincs: readonly string[], lab: Laboratory): LabQuote {
   const cheapest = cheapestLineByCode(lab);
   const chosen = new Set<PriceLine>();

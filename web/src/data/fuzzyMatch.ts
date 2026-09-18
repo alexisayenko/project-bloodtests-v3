@@ -1,8 +1,5 @@
-// Domain-free approximate token matching: Damerau-Levenshtein distance plus a
-// length-bucketed vocabulary index, tuned for lab typos (CORTIZOL, Thyroxin).
+// Domain-free Damerau-Levenshtein token matching, tuned for lab typos.
 
-// Two tokens count as equal when identical, or within Damerau-Levenshtein
-// distance 1 for length ≥ 5 (both sides), or distance 2 for length ≥ 9.
 // Short tokens get no slack — "hb" must never equal "hgb" by accident.
 const FUZZY1_MIN_LEN = 5;
 const FUZZY2_MIN_LEN = 9;
@@ -17,7 +14,6 @@ function fuzzyCap(a: string, b: string): number {
   return capForShorterLength(Math.min(a.length, b.length));
 }
 
-// One row of the OSA Damerau-Levenshtein matrix.
 function editDistanceRow(
   a: string,
   b: string,
@@ -39,8 +35,7 @@ function editDistanceRow(
   return { row, rowMin };
 }
 
-// Optimal-string-alignment Damerau-Levenshtein, early-exiting once a whole
-// row exceeds the cap.
+// Optimal-string-alignment variant; exits early once a whole row exceeds the cap.
 function editDistanceWithin(a: string, b: string, cap: number): boolean {
   if (cap <= 0) return false;
   if (Math.abs(a.length - b.length) > cap) return false;
@@ -59,8 +54,7 @@ export function tokensFuzzyEqual(a: string, b: string): boolean {
   return a === b || editDistanceWithin(a, b, fuzzyCap(a, b));
 }
 
-// Vocabulary grouped by token length, so a fuzzy lookup only compares against
-// tokens whose length is within the allowed edit distance.
+// Length buckets let a lookup skip tokens further than the cap by length alone.
 export function groupVocabByLength(vocab: Iterable<string>): Map<number, string[]> {
   const byLen = new Map<number, string[]>();
   for (const t of vocab) {

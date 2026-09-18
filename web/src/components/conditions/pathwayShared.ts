@@ -239,14 +239,10 @@ export function associationFor(el: HTMLElement, base: DOMRect, badge: string, ta
   return [{ badge, paths, rings }];
 }
 
-/**
- * Runs `measure` on the root once laid out and again whenever the root or any
- * `[data-node]` inside it resizes, an image inside it loads, or fonts settle --
- * one animation frame at most per burst.
- */
-/** Dispatched on a `useMeasuredLayout` root to force its next-frame recompute outside the triggers it watches on its own -- e.g. a debug drag's `transform`, which fires no ResizeObserver. */
+/** Forces a `useMeasuredLayout` recompute for changes it cannot observe, e.g. a debug drag's `transform`, which fires no ResizeObserver. */
 const MC_NUDGE_EVENT = 'mc-pathway-nudge';
 
+/** Re-measures on root or `[data-node]` resize, image load or fonts settling, one frame at most per burst. */
 export function useMeasuredLayout(root: RefObject<HTMLDivElement | null>, layoutKey: string, measure: (el: HTMLDivElement) => void): void {
   const latest = useRef(measure);
   useEffect(() => {
@@ -287,7 +283,6 @@ export function useMeasuredLayout(root: RefObject<HTMLDivElement | null>, layout
   }, [root, layoutKey]);
 }
 
-/** One dragged node's accumulated offset, plus a one-time snapshot of whichever positioning fields are actually set (inline if set, else computed), taken at drag start. */
 interface NodeDragState {
   dx: number;
   dy: number;

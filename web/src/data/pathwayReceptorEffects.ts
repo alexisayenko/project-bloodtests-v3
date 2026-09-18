@@ -1,11 +1,5 @@
 import file from '../../public/data/pathway-receptor-effects.json';
 
-/**
- * What activating each Hormonal Pathways receptor node does in adult men, read
- * from `pathway-receptor-effects.json` (ADR-0010). Every effect carries at
- * least one cited source with the source's own words.
- */
-
 export interface EffectCitation {
   source: string;
   quotes: string[];
@@ -52,7 +46,7 @@ export interface NumberedEffects {
   sources: ReceptorEffectSource[];
 }
 
-/** The receptor's effects with [n] numbers local to its card, sources numbered by first citation. */
+/** [n] numbers are local to the receptor's card, in order of first citation. */
 export function numberedEffects(receptor: PathwayReceptor): NumberedEffects {
   const sources: ReceptorEffectSource[] = [];
   const cite = (id: string) => {
