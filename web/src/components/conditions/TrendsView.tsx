@@ -568,8 +568,10 @@ export function TrendsView({
                         onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
                         title={`Open LOINC ${r.loinc} on loinc.org`}
                       >
-                        {r.result.rawName}
+                        {r.loinc}
                       </a>
+                      <span> · </span>
+                      {r.result.rawName}
                     </td>
                     <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 600 }}>
                       {hasRef ? (
