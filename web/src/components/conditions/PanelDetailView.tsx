@@ -1,7 +1,6 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import type { Result } from '../../types';
-import type { IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import {
   COMPUTED_LOINCS,
@@ -15,17 +14,19 @@ import {
   type Observation,
 } from './markers';
 import { pressable } from '../primitives/styles';
-import { visibleDatesOf, type SelectedCell } from './resultCells';
+import { visibleDatesOf } from './resultCells';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
 import { ResultsTable } from './ResultTables';
+import { usePopupContext } from './PopupContext';
 import { indexInputLoincs } from '../../data/storage/scheduledVisits';
-import type { IndexScheduling, RowScheduling } from './scheduling';
 import type { ResultEntry } from './resultsLookup';
 import type { MedicationRow } from '../../data/storage/medications';
 import { EmptyState } from '../primitives';
 import { getPanelMeta } from './panelMeta';
+
+import { PanelRangePicker } from './PanelRangePicker';
 
 // Lazy: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit, "Charts" the 3D canvas engine.
 const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
@@ -49,17 +50,6 @@ export function PanelDetailView({
   allResults,
   resultsByDate,
   controls,
-  selectedLoinc,
-  onSelect,
-  onOpenPopup,
-  onOpenIndexPopup,
-  selectedCell,
-  onSelectCell,
-  onOpenResultPopup,
-  onOpenIndexResultPopup,
-  scheduling,
-  indexScheduling,
-  onAddVisit,
   onBack,
   medications,
 }: Readonly<{
@@ -68,21 +58,11 @@ export function PanelDetailView({
   allResults: ResultEntry[];
   resultsByDate: Record<string, Record<string, Result>>;
   controls: ControlsProps;
-  selectedLoinc: string | null;
-  onSelect: (loinc: string) => void;
-  onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
-  onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
-  selectedCell: SelectedCell;
-  onSelectCell: (loinc: string, date: string) => void;
-  onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
-  onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
-  scheduling: RowScheduling[];
-  indexScheduling: IndexScheduling[];
-  onAddVisit: () => void;
   onBack: () => void;
   /** Medication history for the "What's in range" tab's lane. */
   medications: MedicationRow[];
 }>) {
+  const { selectedLoinc } = usePopupContext();
   const [detailTab, setDetailTab] = useState<DetailTab>('analysis');
   const meta = getPanelMeta(name);
   const PanelIcon = meta.icon;
@@ -109,32 +89,38 @@ export function PanelDetailView({
 
   const visibleDates = visibleDatesOf(dates, controls.sampleLimit);
 
-  const tableProps = {
-    visibleDates,
-    allResults,
-    unitSystem: controls.unitSystem,
-    selectedLoinc,
-    onSelect,
-    onOpenPopup,
-    selectedCell,
-    onSelectCell,
-    onOpenResultPopup,
-    scheduling,
-  };
+  // Approximate report counts per calendar year for the header date picker
+  const yearCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    for (const d of dates) {
+      const y = Number(d.slice(0, 4));
+      if (!Number.isNaN(y)) {
+        counts[y] = (counts[y] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [dates]);
 
   return (
     <>
-      <header className="mc-detail-head">
-        <span {...pressable(onBack)} className="mc-detail-back" aria-label="Back to Monitoring Panels" title="Back to Monitoring Panels">
-          <ChevronLeft size={20} strokeWidth={2.2} aria-hidden="true" />
-        </span>
-        <span className="mc-detail-icon" style={{ background: meta.iconBg, color: meta.color }}>
-          <PanelIcon size={26} color="currentColor" strokeWidth={2} aria-hidden="true" />
-        </span>
-        <div style={{ minWidth: 0 }}>
-          <h1 className="mc-detail-title">{name}</h1>
-          {meta.description && <p className="mc-detail-desc">{meta.description}</p>}
+      <header className="mc-detail-head" style={{ justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+          <span {...pressable(onBack)} className="mc-detail-back" aria-label="Back to Monitoring Panels" title="Back to Monitoring Panels">
+            <ChevronLeft size={20} strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <span className="mc-detail-icon" style={{ background: meta.iconBg, color: meta.color }}>
+            <PanelIcon size={26} color="currentColor" strokeWidth={2} aria-hidden="true" />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <h1 className="mc-detail-title">{name}</h1>
+            {meta.description && <p className="mc-detail-desc">{meta.description}</p>}
+          </div>
         </div>
+        {detailTab === 'trends' && (
+          <div style={{ flexShrink: 0, marginLeft: 16 }}>
+            <PanelRangePicker yearCounts={yearCounts} />
+          </div>
+        )}
       </header>
       <TabBar tabs={DETAIL_TABS} active={detailTab} onChange={setDetailTab} />
 
@@ -158,12 +144,10 @@ export function PanelDetailView({
                   rows={visibleObservations}
                   indices={visibleIndices}
                   defs={visibleComputed}
-                  {...tableProps}
+                  visibleDates={visibleDates}
+                  allResults={allResults}
                   resultsByDate={resultsByDate}
-                  onOpenIndexPopup={onOpenIndexPopup}
-                  onOpenIndexResultPopup={onOpenIndexResultPopup}
-                  indexScheduling={indexScheduling}
-                  onAddVisit={onAddVisit}
+                  unitSystem={controls.unitSystem}
                   inputsOf={inputsOf}
                   usedBy={usedBy}
                 />
@@ -172,7 +156,7 @@ export function PanelDetailView({
           )}
         </div>
       )}
-      {detailTab === 'trends' && <TrendsView />}
+      {detailTab === 'trends' && <TrendsView name={name} tests={tests} allResults={allResults} />}
       {detailTab === 'in-range' && (
         <Suspense fallback={chartFallback}>
           <LabExploreView

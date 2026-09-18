@@ -1,6 +1,8 @@
 import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 import { formatMonthYear } from '../../data/months';
-import { DASH, type Association, type GlyphArt, type Measure, type Particle1, type ReferenceInfo } from './pathwayShared';
+import type { UnitSystem } from '../../types';
+import { DASH, type Association, type GlyphArt, type Measure, type Particle1, type ReferenceInfo, type Status } from './pathwayShared';
+import { SegmentedControl } from '../primitives';
 import { pressable } from '../primitives/styles';
 
 /** A diagram chip's value, its share of total T on a line of its own. */
@@ -101,6 +103,104 @@ export function DateStepper({ dates, index, onChange }: Readonly<{ dates: readon
         ›
       </button>
     </fieldset>
+  );
+}
+
+/** The ‹ date › stepper over one panel's dates beside the SI / US switch; a page's own controls follow as children. */
+export function AxisToolbar({
+  dates,
+  date,
+  onPickDate,
+  unitSystem,
+  onUnitSystemChange,
+  children,
+}: Readonly<{
+  dates: readonly string[];
+  date: string | undefined;
+  onPickDate: (index: number) => void;
+  unitSystem: UnitSystem;
+  onUnitSystemChange: (unitSystem: UnitSystem) => void;
+  children?: ReactNode;
+}>) {
+  return (
+    <div className="mc-pathway-toolbar">
+      <DateStepper dates={dates} index={date ? dates.indexOf(date) : -1} onChange={onPickDate} />
+      <div className="mc-pathway-check">
+        <span aria-hidden="true">Unit system</span>
+        <SegmentedControl
+          label="Unit system"
+          options={['si', 'us'] as const}
+          value={unitSystem}
+          onChange={onUnitSystemChange}
+          format={(sys) => sys.toUpperCase()}
+        />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export interface BadgeFace {
+  status: Status;
+  value: ReactNode;
+}
+
+/** The badge column: each badge a toggle with a status dot and value, expanding in place to the page's own body. */
+export function BadgeColumn<B extends { id: string; name: string }>({
+  badges,
+  scopePrefix,
+  open,
+  setOpen,
+  setHovered,
+  renderFace,
+  renderBody,
+  leading,
+}: Readonly<{
+  badges: readonly B[];
+  /** Citation anchors in a badge's body are scoped `<scopePrefix>-<badge id>`. */
+  scopePrefix: string;
+  open: string | null;
+  setOpen: (id: string | null) => void;
+  setHovered: (id: string | null) => void;
+  renderFace: (badge: B) => BadgeFace;
+  /** Called only while the badge is open. */
+  renderBody: (badge: B, scope: string) => ReactNode;
+  /** Rendered above the badges, e.g. a chart. */
+  leading?: ReactNode;
+}>) {
+  return (
+    <aside className="mc-pathway-badges" aria-label="Measures and ratios">
+      {leading}
+      {badges.map((b) => {
+        const expanded = open === b.id;
+        const face = renderFace(b);
+        return (
+          <div
+            key={b.id}
+            className={expanded ? 'mc-pathway-badge mc-pathway-badge-open' : 'mc-pathway-badge'}
+            data-badge={b.id}
+            onMouseEnter={() => setHovered(b.id)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <button
+              type="button"
+              className="mc-pathway-badge-toggle"
+              aria-expanded={expanded}
+              onClick={() => setOpen(expanded ? null : b.id)}
+              onFocus={() => setHovered(b.id)}
+              onBlur={() => setHovered(null)}
+            >
+              <span className="mc-pathway-badge-head">
+                <span className="mc-pathway-badge-name">{b.name}</span>
+                <span className={`mc-pathway-dot mc-pathway-dot-${face.status}`} />
+              </span>
+              <span className="mc-pathway-badge-value">{face.value}</span>
+            </button>
+            {expanded && renderBody(b, `${scopePrefix}-${b.id}`)}
+          </div>
+        );
+      })}
+    </aside>
   );
 }
 

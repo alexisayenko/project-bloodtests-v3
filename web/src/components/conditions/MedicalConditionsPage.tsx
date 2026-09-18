@@ -1,25 +1,21 @@
-import { useMemo, useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useMemo, lazy, Suspense } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnosticReports';
-import type { IndexDef } from '../../data/computedIndices';
-import type { Result, UnitSystem } from '../../types';
-import { buildConditions, type Observation } from './markers';
-import { routeToHash, hashToRoute, allObservationsRoute, isRouteBlocked, DEFAULT_OBSERVATIONS_TAB, type Route } from './routing';
-import { POPUP_WIDTH, INDEX_POPUP_WIDTH, popupPosition } from './popupGeometry';
-import { loadViewSettings, saveViewSettings, hasStoredViewSettings, seedViewSettings } from '../../data/storage/viewSettings';
-import type { SelectedCell } from './resultCells';
+import { buildConditions } from './markers';
+import { allObservationsRoute, DEFAULT_OBSERVATIONS_TAB } from './routing';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { AppShell } from './AppShell';
-import { Popup, type PopupPosition, type PopupState } from './Popup';
+import { Popup } from './Popup';
+import { PopupProvider, usePopupState } from './PopupContext';
+import { SchedulingProvider, useSchedulingState } from './SchedulingContext';
 import { PanelsGridView } from './PanelsGridView';
 import { EmptyState } from '../primitives';
-import { useScheduled } from '../../hooks/useScheduled';
-import { sortVisitsByMonth } from '../../data/storage/scheduledVisits';
-import type { IndexScheduling, RowScheduling } from './scheduling';
+import { useHashRoute } from '../../hooks/useHashRoute';
+import { useViewSettings } from '../../hooks/useViewSettings';
+import { useAllResults } from '../../hooks/useAllResults';
 import { useMedications } from '../../hooks/useMedications';
 import { clearAllData, restoreBackup, type BackupContents } from '../../data/backupRestore';
-import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
 
 // PanelsGridView is the entry route and stays a static import; every other section is lazy so the first paint never waits on it.
@@ -39,56 +35,20 @@ const DiagnosticReportDetailView = lazy(() =>
 
 const routeFallback = <EmptyState style={{ minHeight: 400 }}>Loading…</EmptyState>;
 
-/** A popup's own content, before the opener anchors it to the clicked element. */
-type PopupPayload = {
-  [K in PopupState['kind']]: Omit<Extract<PopupState, { kind: K }>, keyof PopupPosition>;
-}[PopupState['kind']];
-
-const REPORTS_ROUTE: Route = { view: 'reports' };
-
-// In memory, not storage: a full reload is a fresh visit and should start at the top.
-let savedPanelsScrollY: number | null = null;
-
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels, monitoringPanels } = useData();
   const { sessions, loadGroupItems, loadGenerated, uploadFile, updateGroup, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
-  const [popup, setPopup] = useState<PopupState | null>(null);
-  const [selectedLoinc, setSelectedLoinc] = useState<string | null>(null);
-  const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
-  const [route, setRoute] = useState<Route>(() => hashToRoute(window.location.hash));
-  const [initialSettings] = useState(loadViewSettings);
-  const [hadStoredSettings] = useState(hasStoredViewSettings);
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>(initialSettings.unitSystem);
-  const [sampleLimit, setSampleLimit] = useState<number | 'all'>(initialSettings.sampleLimit);
-  const [compactPanels, setCompactPanels] = useState(initialSettings.compactPanels);
-  const [allResults, setAllResults] = useState<ResultEntry[]>([]);
-  // One scheduling state for the whole shell, since Panel Detail remounts per panel.
-  const {
-    scheduledVisits,
-    onToggleRow,
-    onToggleIndex,
-    onSetMonth,
-    onSelectLab,
-    onAddVisit,
-    onRemoveVisit,
-    onReload: reloadScheduled,
-  } = useScheduled();
+
+  const validationIssues = useMemo(() => validateDiagnosticReports(sessions), [sessions]);
+  const hasValidationErrors = hasErrors(validationIssues);
+
+  const { route, navigate } = useHashRoute(hasValidationErrors);
+  const popup = usePopupState(route);
+  const { scheduling, reload: reloadScheduled } = useSchedulingState();
+  const settings = useViewSettings(sharedMeta);
+  const { unitSystem, setUnitSystem, sampleLimit, setSampleLimit, compactPanels, setCompactPanels } = settings;
+  const { allResults, latestByLoinc, resultsByDate } = useAllResults(sessions, loadGroupItems);
   const { medications } = useMedications();
-  // Sorted once for every consumer, so `#plan` tabs and Scheduled columns never disagree on visit order.
-  const sortedVisits = useMemo(() => sortVisitsByMonth(scheduledVisits.visits), [scheduledVisits.visits]);
-
-  useEffect(() => {
-    saveViewSettings({ unitSystem, sampleLimit, compactPanels });
-  }, [unitSystem, sampleLimit, compactPanels]);
-
-  // Share-link settings seed only a visitor with none stored; adjusted during render so the first paint uses the seed.
-  const [seededFrom, setSeededFrom] = useState<typeof sharedMeta>(null);
-  if (!hadStoredSettings && sharedMeta?.settings && sharedMeta !== seededFrom) {
-    const seeded = seedViewSettings(sharedMeta.settings);
-    setSeededFrom(sharedMeta);
-    setUnitSystem(seeded.unitSystem);
-    setSampleLimit(seeded.sampleLimit);
-  }
 
   const conditions = useMemo(
     () => buildConditions(panels, analysesCatalog, monitoringPanels),
@@ -97,104 +57,10 @@ export function MedicalConditionsPage() {
   const allowedPanels = panelAllowlist(sharedMeta);
   const shownConditions = useMemo(() => visiblePanels(conditions, allowedPanels), [conditions, allowedPanels]);
 
-  const validationIssues = useMemo(() => validateDiagnosticReports(sessions), [sessions]);
-  const hasValidationErrors = hasErrors(validationIssues);
-
-  // Redirected during render so the blocked view never paints; the URL is replaced, not pushed, so Back cannot loop.
-  const [redirectCount, setRedirectCount] = useState(0);
-  if (isRouteBlocked(route, hasValidationErrors)) {
-    setRoute(REPORTS_ROUTE);
-    setPopup(null);
-    setRedirectCount((n) => n + 1);
-  }
-  useEffect(() => {
-    if (redirectCount > 0) window.history.replaceState(null, '', routeToHash(REPORTS_ROUTE));
-  }, [redirectCount]);
-
-  useEffect(() => {
-    // The URL is the single source of truth for the route; a popup never survives navigation.
-    const onPopState = () => {
-      setPopup(null);
-      setRoute(hashToRoute(window.location.hash));
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  const navigate = (next: Route) => {
-    if (route.view === 'panels' && next.view === 'panel') savedPanelsScrollY = window.scrollY;
-    window.history.pushState(null, '', routeToHash(next));
-    setPopup(null);
-    setRoute(next);
-  };
-
-  // Keyed off the route itself so chevron and browser Back restore alike; deferred a frame so the grid has laid out.
-  const prevRouteRef = useRef(route);
-  useEffect(() => {
-    const prev = prevRouteRef.current;
-    prevRouteRef.current = route;
-    if (prev.view === 'panel' && route.view === 'panels' && savedPanelsScrollY != null) {
-      const y = savedPanelsScrollY;
-      savedPanelsScrollY = null;
-      requestAnimationFrame(() => window.scrollTo(0, y));
-    }
-  }, [route]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function buildAllResults() {
-      const all: ResultEntry[] = [];
-      for (const session of sessions) {
-        const items = session.items ?? (await loadGroupItems(session.file));
-        for (const item of items) {
-          all.push({ loinc: item.loinc, date: session.date, place: session.place, result: item });
-        }
-      }
-      if (!cancelled) setAllResults(all);
-    }
-
-    buildAllResults();
-    return () => {
-      cancelled = true;
-    };
-  }, [sessions, loadGroupItems]);
-
-  const latestByLoinc = useMemo(() => latestEntryByLoinc(allResults, { numericOnly: true }), [allResults]);
-
-  const resultsByDate = useMemo(() => {
-    const map: Record<string, Record<string, Result>> = {};
-    for (const { loinc, date, result } of allResults) {
-      map[date] ??= {};
-      map[date]![loinc] = result;
-    }
-    return map;
-  }, [allResults]);
-
-  const openPopupFrom = (payload: PopupPayload, e: { currentTarget: HTMLElement }) => {
-    const width = payload.kind === 'index' ? INDEX_POPUP_WIDTH : POPUP_WIDTH;
-    setPopup({ ...payload, ...popupPosition(e.currentTarget.getBoundingClientRect(), width) });
-  };
-
-  const openPopup = (test: Observation, e: { currentTarget: HTMLElement }) => openPopupFrom({ kind: 'observation', test }, e);
-
-  const openIndexPopup = (def: IndexDef, e: { currentTarget: HTMLElement }) => openPopupFrom({ kind: 'index', def }, e);
-
-  const openResultPopup = (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) =>
-    openPopupFrom({ kind: 'result', test, entry }, e);
-
-  const openIndexResultPopup = (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) =>
-    openPopupFrom({ kind: 'indexResult', def, date, value }, e);
-
-  const onSelectCell = (loinc: string, date: string) => setSelectedCell({ loinc, date });
-
   // A clear or restore rewrites storage underneath this state, so it has to be read back.
   const reloadStoredState = () => {
     reloadScheduled();
-    const stored = loadViewSettings();
-    setUnitSystem(stored.unitSystem);
-    setSampleLimit(stored.sampleLimit);
-    setCompactPanels(stored.compactPanels);
+    settings.reload();
   };
 
   const onClearAll = () => {
@@ -212,18 +78,6 @@ export function MedicalConditionsPage() {
   };
 
   const controls = { unitSystem, setUnitSystem, sampleLimit, setSampleLimit };
-  const rowSchedulings: RowScheduling[] = sortedVisits.map((visit) => ({
-    scheduled: visit,
-    onToggle: (loincs: string[]) => onToggleRow(visit.id, loincs),
-    onSetMonth: (month: string | undefined) => onSetMonth(visit.id, month),
-    onRemove: () => onRemoveVisit(visit.id),
-  }));
-  const indexSchedulings: IndexScheduling[] = sortedVisits.map((visit) => ({
-    scheduled: visit,
-    onToggle: (key: string) => onToggleIndex(visit.id, key),
-    onSetMonth: (month: string | undefined) => onSetMonth(visit.id, month),
-    onRemove: () => onRemoveVisit(visit.id),
-  }));
 
   const panelsGrid = (
     <PanelsGridView
@@ -233,8 +87,8 @@ export function MedicalConditionsPage() {
       compact={compactPanels}
       onCompactChange={setCompactPanels}
       onOpenDetail={(name) => navigate({ view: 'panel', name })}
-      onOpenPopup={openPopup}
-      onOpenIndexPopup={openIndexPopup}
+      onOpenPopup={popup.openPopup}
+      onOpenIndexPopup={popup.openIndexPopup}
     />
   );
 
@@ -265,18 +119,7 @@ export function MedicalConditionsPage() {
             panelOptions={shownConditions}
             analysesCatalog={analysesCatalog}
             controls={controls}
-            selectedLoinc={selectedLoinc}
-            onSelect={setSelectedLoinc}
-            onOpenPopup={openPopup}
-            onOpenIndexPopup={openIndexPopup}
-            selectedCell={selectedCell}
-            onSelectCell={onSelectCell}
-            onOpenResultPopup={openResultPopup}
-            onOpenIndexResultPopup={openIndexResultPopup}
             resultsByDate={resultsByDate}
-            scheduling={rowSchedulings}
-            indexScheduling={indexSchedulings}
-            onAddVisit={onAddVisit}
             tab={route.tab ?? DEFAULT_OBSERVATIONS_TAB}
             onTabChange={(tab) => navigate(allObservationsRoute(tab))}
             medications={medications.rows}
@@ -330,10 +173,10 @@ export function MedicalConditionsPage() {
       case 'account':
         return <AccountView sessions={sessions} onClearAll={onClearAll} onImportAll={onImportAll} />;
       case 'plan':
-        return <PlanVisitView visits={sortedVisits} onOpenPopup={openPopup} onSelectLab={onSelectLab} onSetMonth={onSetMonth} />;
+        return <PlanVisitView />;
       case 'reference':
         return (
-          <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} onOpenPopup={openPopup} />
+          <ReferenceBookPage indexKey={route.key} navigate={navigate} allResults={allResults} onOpenPopup={popup.openPopup} />
         );
       case 'panel':
         return (
@@ -344,17 +187,6 @@ export function MedicalConditionsPage() {
             allResults={allResults}
             resultsByDate={resultsByDate}
             controls={controls}
-            selectedLoinc={selectedLoinc}
-            onSelect={setSelectedLoinc}
-            onOpenPopup={openPopup}
-            onOpenIndexPopup={openIndexPopup}
-            selectedCell={selectedCell}
-            onSelectCell={onSelectCell}
-            onOpenResultPopup={openResultPopup}
-            onOpenIndexResultPopup={openIndexResultPopup}
-            scheduling={rowSchedulings}
-            indexScheduling={indexSchedulings}
-            onAddVisit={onAddVisit}
             onBack={() => navigate({ view: 'panels' })}
             medications={medications.rows}
           />
@@ -374,14 +206,12 @@ export function MedicalConditionsPage() {
           Errors in diagnostic reports must be resolved before accessing other sections.
         </div>
       )}
-      <Suspense fallback={routeFallback}>{view}</Suspense>
-      <Popup
-        popup={popup}
-        latestByLoinc={latestByLoinc}
-        resultsByDate={resultsByDate}
-        onClose={() => setPopup(null)}
-        onLearnMore={(key) => navigate({ view: 'reference', key })}
-      />
+      <PopupProvider value={popup}>
+        <SchedulingProvider value={scheduling}>
+          <Suspense fallback={routeFallback}>{view}</Suspense>
+          <Popup latestByLoinc={latestByLoinc} resultsByDate={resultsByDate} onLearnMore={(key) => navigate({ view: 'reference', key })} />
+        </SchedulingProvider>
+      </PopupProvider>
     </AppShell>
   );
 }

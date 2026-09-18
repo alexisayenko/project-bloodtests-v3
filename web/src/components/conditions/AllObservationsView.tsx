@@ -1,6 +1,5 @@
 import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import type { Analysis, Result } from '../../types';
-import type { IndexDef } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import {
   ALIAS_TO_PRIMARY,
@@ -16,10 +15,9 @@ import {
 import { ALL_PANELS, ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
-import { visibleDatesOf, type SelectedCell } from './resultCells';
+import { visibleDatesOf } from './resultCells';
 import { ResultsTable } from './ResultTables';
 import type { Condition } from './exploreModel';
-import type { IndexScheduling, RowScheduling } from './scheduling';
 import type { ResultEntry } from './resultsLookup';
 import type { ObservationsTab } from './routing';
 import type { MedicationRow } from '../../data/storage/medications';
@@ -75,18 +73,7 @@ export function AllObservationsView({
   panelOptions,
   analysesCatalog,
   controls,
-  selectedLoinc,
-  onSelect,
-  onOpenPopup,
-  onOpenIndexPopup,
-  selectedCell,
-  onSelectCell,
-  onOpenResultPopup,
-  onOpenIndexResultPopup,
   resultsByDate,
-  scheduling,
-  indexScheduling,
-  onAddVisit,
   tab,
   onTabChange,
   medications,
@@ -97,20 +84,8 @@ export function AllObservationsView({
   panelOptions: Condition[];
   analysesCatalog: Record<string, Analysis>;
   controls: ControlsProps;
-  selectedLoinc: string | null;
-  onSelect: (loinc: string) => void;
-  onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
-  onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
-  selectedCell: SelectedCell;
-  onSelectCell: (loinc: string, date: string) => void;
-  onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
-  onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
   /** Passed to LabExploreView without a currentPanel, which fans each index out across all its panels. */
   resultsByDate: Record<string, Record<string, Result>>;
-  /** Shared with Panel Detail, so a row toggled in either view is the same row. One entry per scheduled visit. */
-  scheduling: RowScheduling[];
-  indexScheduling: IndexScheduling[];
-  onAddVisit: () => void;
   /** Owned by the route (`#all/<tab>`), so a tab is linkable and back/forward returns to it. */
   tab: ObservationsTab;
   onTabChange: (tab: ObservationsTab) => void;
@@ -172,17 +147,6 @@ export function AllObservationsView({
                 allResults={allResults}
                 resultsByDate={resultsByDate}
                 unitSystem={controls.unitSystem}
-                selectedLoinc={selectedLoinc}
-                onSelect={onSelect}
-                onOpenPopup={onOpenPopup}
-                onOpenIndexPopup={onOpenIndexPopup}
-                selectedCell={selectedCell}
-                onSelectCell={onSelectCell}
-                onOpenResultPopup={onOpenResultPopup}
-                onOpenIndexResultPopup={onOpenIndexResultPopup}
-                scheduling={scheduling}
-                indexScheduling={indexScheduling}
-                onAddVisit={onAddVisit}
                 preferRaw
               />
             )}
