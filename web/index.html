@@ -10,6 +10,33 @@
   <link rel="icon" type="image/png" href="./favicon.png" />
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <title>Paneloom</title>
+  <!-- Manrope was loaded via a CSS @import in index.css, which is inherently
+       render-blocking (a stylesheet can't defer its own @import). Moved here
+       with the standard preload+swap pattern so it stops blocking first
+       paint. display=optional means the browser never blocks text on it
+       anyway -- the fallback stack in index.css's body rule renders
+       immediately, and Manrope swaps in only if it's already cached/fetched
+       by the time layout happens, so there's no risk of a late, jarring
+       font swap either. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="preload"
+    as="style"
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=optional"
+  />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=optional"
+    media="print"
+    onload="this.media='all'"
+  />
+  <noscript>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=optional"
+    />
+  </noscript>
 </head>
 <body>
   <div id="root"></div>

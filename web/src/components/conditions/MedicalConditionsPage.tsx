@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnosticReports';
@@ -6,27 +6,39 @@ import type { IndexDef } from '../../data/computedIndices';
 import type { Result } from '../../types';
 import { buildConditions, type Observation } from './markers';
 import { routeToHash, hashToRoute, allObservationsRoute, isRouteBlocked, DEFAULT_OBSERVATIONS_TAB, type Route } from './routing';
-import { ReferenceBookPage } from './ReferenceBookPage';
 import { POPUP_WIDTH, INDEX_POPUP_WIDTH, loadViewSettings, saveViewSettings, hasStoredViewSettings, seedViewSettings, popupPosition, type SelectedCell } from './ui';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { AppShell } from './AppShell';
 import { Popup, type PopupPosition, type PopupState } from './Popup';
-import { AllObservationsView } from './AllObservationsView';
-import { ProfileView } from './ProfileView';
-import { MedicationsView } from './MedicationsView';
-import { HormonalPathwaysView } from './HormonalPathwaysView';
-import { LipidTransportView } from './LipidTransportView';
-import { AccountView } from './AccountView';
-import { PlanVisitView } from './PlanVisitView';
-import { PanelDetailView } from './PanelDetailView';
 import { PanelsGridView } from './PanelsGridView';
-import { DiagnosticReportsView } from './DiagnosticReportsView';
-import { DiagnosticReportDetailView } from './DiagnosticReportDetailView';
+import { EmptyState } from '../primitives';
 import { useScheduled, sortVisitsByMonth, type IndexScheduling, type RowScheduling } from './scheduled';
 import { useMedications } from '../../data/medications';
 import { clearAllData, restoreBackup, type BackupContents } from '../../data/backupRestore';
 import { latestEntryByLoinc, type ResultEntry } from './resultsLookup';
 import { COLOR } from '../../styles/tokens';
+
+// Monitoring Panels (PanelsGridView) is the app's default/entry route, so it
+// stays a static import -- the first paint must not wait on an extra chunk.
+// Every other top-level section is reached by navigating away from it first,
+// so lazy-loading them keeps their code (and their own dependencies, e.g.
+// AccountView's Supabase client) out of the initial bundle without adding any
+// visible delay to the route a fresh visit actually lands on.
+const ReferenceBookPage = lazy(() => import('./ReferenceBookPage').then((m) => ({ default: m.ReferenceBookPage })));
+const AllObservationsView = lazy(() => import('./AllObservationsView').then((m) => ({ default: m.AllObservationsView })));
+const ProfileView = lazy(() => import('./ProfileView').then((m) => ({ default: m.ProfileView })));
+const MedicationsView = lazy(() => import('./MedicationsView').then((m) => ({ default: m.MedicationsView })));
+const HormonalPathwaysView = lazy(() => import('./HormonalPathwaysView').then((m) => ({ default: m.HormonalPathwaysView })));
+const LipidTransportView = lazy(() => import('./LipidTransportView').then((m) => ({ default: m.LipidTransportView })));
+const AccountView = lazy(() => import('./AccountView').then((m) => ({ default: m.AccountView })));
+const PlanVisitView = lazy(() => import('./PlanVisitView').then((m) => ({ default: m.PlanVisitView })));
+const PanelDetailView = lazy(() => import('./PanelDetailView').then((m) => ({ default: m.PanelDetailView })));
+const DiagnosticReportsView = lazy(() => import('./DiagnosticReportsView').then((m) => ({ default: m.DiagnosticReportsView })));
+const DiagnosticReportDetailView = lazy(() =>
+  import('./DiagnosticReportDetailView').then((m) => ({ default: m.DiagnosticReportDetailView }))
+);
+
+const routeFallback = <EmptyState style={{ minHeight: 400 }}>Loading…</EmptyState>;
 
 /** A popup's own content, before the opener anchors it to the clicked element. */
 type PopupPayload = {
@@ -393,7 +405,7 @@ export function MedicalConditionsPage() {
           Errors in diagnostic reports must be resolved before accessing other sections.
         </div>
       )}
-      {view}
+      <Suspense fallback={routeFallback}>{view}</Suspense>
       <Popup
         popup={popup}
         latestByLoinc={latestByLoinc}
