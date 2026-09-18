@@ -558,7 +558,19 @@ export function TrendsView({
                     }}
                   >
                     <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 500 }}>{r.date}</td>
-                    <td style={{ padding: '12px 16px', color: COLOR.text }}>{r.result.rawName}</td>
+                    <td style={{ padding: '12px 16px', color: COLOR.text }}>
+                      <a
+                        href={`https://loinc.org/${r.loinc}/`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: COLOR.link, textDecoration: 'none' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                        onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                        title={`Open LOINC ${r.loinc} on loinc.org`}
+                      >
+                        {r.result.rawName}
+                      </a>
+                    </td>
                     <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 600 }}>
                       {hasRef ? (
                         <StatusValue tone={outOfRange ? 'bad' : 'ok'} bg={cellBg(hasRef, outOfRange, false)}>
