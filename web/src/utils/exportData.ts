@@ -51,7 +51,7 @@ function resultToObservation(result: Result): InterchangeObservation {
   return obs;
 }
 
-async function computeSha256Hash(data: InterchangeReport[]): Promise<string> {
+export async function computeSha256Hash(data: InterchangeReport[]): Promise<string> {
   const jsonString = JSON.stringify(data);
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(jsonString);

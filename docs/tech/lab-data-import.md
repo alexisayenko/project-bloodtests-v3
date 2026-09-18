@@ -17,7 +17,7 @@ the same `parseUpload` path. The envelope is already FHIR-shaped
 [ADR-0008](decisions/adr-0008-fhir-shaped-envelope-not-fhir.md)), so the
 mapping is a flattening, not a redesign; the boundary in
 [ADR-0023](decisions/adr-0023-product-purpose-and-clinical-boundary.md) does
-not move — the app records and compares, and owns no server.
+not move — the app records and compares, and owns no database (its one Worker route is the sync proxy of ADR-0026).
 
 ## Legal basis by region
 
@@ -205,7 +205,7 @@ the cross-check where offered. A `rawValue` rebuilt from `comparator` +
 - **What leaves the device.** The OAuth redirect and the FHIR reads, both to
   the lab; nothing to a third party. The privacy paragraph in
   [`README.md`](README.md#data-privacy-in-one-paragraph) gains a third opt-in
-  exception beside the NLM lookup and Supabase.
+  exception beside the NLM lookup and the GitHub-backed sync.
 - **Stored as printed.** Nothing converted on the way in; the import writes a
   `3.x` envelope through `parseUpload` and nothing else, so export and share
   links are untouched.

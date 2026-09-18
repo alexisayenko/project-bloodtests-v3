@@ -185,7 +185,7 @@ docs/
 │   ├── pathway-pages.md                # Hormonal Pathways and Lipid Transport
 │   ├── medications.md                  # Medications table
 │   ├── reference-book.md               # Reference Book pages
-│   ├── account-and-sync.md             # auth, Supabase sync, backup, clear
+│   ├── account-and-sync.md             # auth, GitHub-backed sync, backup, clear
 │   ├── share-links-and-deploy.md       # Worker, CI deploy, share links
 │   ├── testing.md                      # suites and CI jobs
 │   └── sync-architecture-options.md    # sync/multi-user design-space survey (not an ADR)

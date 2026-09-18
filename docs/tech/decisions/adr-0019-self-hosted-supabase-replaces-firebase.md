@@ -1,7 +1,9 @@
 # ADR-0019: Self-hosted Supabase replaces Firebase for cloud sync
 
 Status: accepted · 2026-09-14 · supersedes
-[ADR-0018](adr-0018-firebase-storage-provisional.md)
+[ADR-0018](adr-0018-firebase-storage-provisional.md) · superseded by
+[ADR-0026](adr-0026-github-backed-cloud-storage.md) for the data store
+(Supabase Auth stands)
 
 The storage-mode shape stands, unchanged since ADR-0015: an opt-in
 cloud-sync mode beside the unchanged local-only default, syncing the

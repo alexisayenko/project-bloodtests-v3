@@ -22,7 +22,10 @@ actually shipped.
 The ADR chain above records the backend/auth choice actually made and
 superseded three times (bespoke Bearer-token server →
 self-hosted-then-cloud Supabase → Firebase, explicitly provisional →
-self-hosted Supabase again, ADR-0019, current). Before and
+self-hosted Supabase again, ADR-0019, whose data store
+[ADR-0026](decisions/adr-0026-github-backed-cloud-storage.md) then replaced
+with a private GitHub repo behind the Worker, keeping Supabase for auth;
+current). Before and
 around that chain, a wider set of options was raised. The ones ADR-0015
 already documents in full are only summarized here to keep one place as
 the source of truth:

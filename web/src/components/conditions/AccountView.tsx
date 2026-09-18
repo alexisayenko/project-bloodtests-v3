@@ -65,13 +65,12 @@ function AccountAuthCard({
     setTimeout(() => setNotice(null), 4000);
   }
 
-  async function syncAfterSignIn(uid: string) {
-    const cloudFiles = await pullCloudFiles(uid);
-    if (cloudFiles) {
+  async function syncAfterSignIn() {
+    const cloudFiles = await pullCloudFiles();
+    if (cloudFiles && !isEmptyBackup(readBackup(cloudFiles))) {
       await onImportAll(readBackup(cloudFiles));
       flashNotice('✓ Synced from cloud.');
-    } else {
-      await pushCloudFiles(uid, await currentLocalFiles(sessions));
+    } else if (await pushCloudFiles(await currentLocalFiles(sessions))) {
       flashNotice('✓ Backed up to cloud.');
     }
   }
@@ -82,7 +81,7 @@ function AccountAuthCard({
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== 'SIGNED_IN' || !session) return;
       setError(null);
-      syncAfterSignIn(session.user.id).catch(() => setError('Something went wrong. Please try again.'));
+      syncAfterSignIn().catch(() => setError('Something went wrong. Please try again.'));
     });
     return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,11 +104,11 @@ function AccountAuthCard({
     setSigningOut(true);
     try {
       const localFiles = await currentLocalFiles(sessions);
-      const cloudFiles = await pullCloudFiles(user.id);
+      const cloudFiles = await pullCloudFiles();
       const localIsEmpty = isEmptyBackup(readBackup(localFiles));
       const cloudHasData = cloudFiles !== null && !isEmptyBackup(readBackup(cloudFiles));
       if (!(localIsEmpty && cloudHasData)) {
-        await pushCloudFiles(user.id, localFiles);
+        await pushCloudFiles(localFiles);
       }
       await signOutUser();
       onClearAll();

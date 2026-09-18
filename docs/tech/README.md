@@ -66,10 +66,11 @@ Sections and views:
 - [`medications.md`](medications.md) — the Medications table and its
   storage.
 - [`reference-book.md`](reference-book.md) — the Reference Book's pages.
-- [`account-and-sync.md`](account-and-sync.md) — auth, Supabase sync,
-  Database details, backup and restore, Clear all data
+- [`account-and-sync.md`](account-and-sync.md) — auth, GitHub-backed sync
+  through the Worker, Database details, backup and restore, Clear all data
   ([ADR-0018](decisions/adr-0018-firebase-storage-provisional.md),
-  [ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)).
+  [ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md),
+  [ADR-0026](decisions/adr-0026-github-backed-cloud-storage.md)).
 
 Infrastructure:
 
@@ -80,7 +81,7 @@ Infrastructure:
   CI jobs.
 - [`sync-architecture-options.md`](sync-architecture-options.md) — a
   reference doc, not an ADR: the cross-device sync / multi-user design-space
-  survey behind ADR-0015 → ADR-0019, including options never written up as an
+  survey behind ADR-0015 → ADR-0026, including options never written up as an
   ADR.
 - [`decisions/README.md`](decisions/README.md) — the ADR index
   (`adr-NNNN-<slug>.md`, numbered independently of v2), with a per-ADR row
@@ -94,7 +95,7 @@ its own origin (`panels.json`, `monitoring-panels.json`, a share link's
 payload and meta) and, on explicit opt-in, two others: the "Check online
 (NLM)" LOINC lookup, which sends test names — never values — to
 clinicaltables.nlm.nih.gov and is the whole of `web/src/data/loincNlm.ts`,
-and Supabase auth and sync once the user signs in. The format itself carries
+and Supabase auth and the Worker's GitHub-backed sync once the user signs in. The format itself carries
 no identity — see [`interchange-format.md#subject`](interchange-format.md#subject).
 
 ## Known limitations

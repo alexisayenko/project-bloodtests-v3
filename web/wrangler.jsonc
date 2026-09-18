@@ -7,6 +7,10 @@
 		"directory": "./dist",
 		"binding": "ASSETS"
 	},
+	"vars": {
+		"GITHUB_REPO": "alexisayenko/data-storage",
+		"ALLOWED_EMAILS": "alex.isayenko@gmail.com"
+	},
 	"workers_dev": true,
 	"preview_urls": true,
 	"routes": [

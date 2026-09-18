@@ -12,10 +12,12 @@ A personal, longitudinal medical record, not a diagnostic tool. Two
 non-negotiables:
 
 - **The user's data stays under the user's control.** The app owns no
-  server: results live in the browser's `localStorage` by default. Three
+  database: results live in the browser's `localStorage` by default. Three
   things can leave it, each explicit — a deliberately generated share link,
   an opt-in, values-free LOINC name lookup at NLM, and an opt-in cloud copy
-  on the project's self-hosted Supabase when the user signs in.
+  in a private GitHub repo, written by the app's Worker when the user signs
+  in (ADR-0026). That Worker is the one server the app owns: a stateless
+  auth-checking proxy holding a repo-scoped token, storing nothing itself.
 - **Nothing shown is invented or silently altered.** A printed value is
   stored and displayed exactly as the lab wrote it; a converted or derived
   number is computed at display time, kept visibly separate (`canonical`,
@@ -41,14 +43,18 @@ Monetization: undecided (`docs/business/README.md`).
 ## Tech stack
 
 - React 19 + TypeScript + Vite; everything in `web/`.
-- No server the app owns: reference data is static JSON under
+- No database the app owns: reference data is static JSON under
   `web/public/data/`; uploads are parsed client-side into `localStorage`.
 - Deployed as a Cloudflare Worker serving static assets at `paneloom.com`
   (`web/wrangler.jsonc`, `web/worker/index.ts`; `blood.isayenko.net`
   301-redirects there), published by CI on every push to `main`.
-- Opt-in cloud sync: `@supabase/supabase-js` against a self-hosted Supabase
-  at `api.paneloom.com`, one row per signed-in user, PKCE flow
-  (`web/src/supabase/`). Signing in and out is the whole interface.
+- Opt-in cloud sync: identity from `@supabase/supabase-js` against a
+  self-hosted Supabase Auth at `api.paneloom.com` (PKCE flow,
+  `web/src/supabase/`); data as per-report JSON files in the private repo
+  `alexisayenko/data-storage`, read and written only by the Worker's
+  `/api/data` (`web/worker/githubData.ts`), which checks the Supabase token
+  and an email allowlist and holds the GitHub token. Signing in and out is
+  the whole interface.
 - Charts: uPlot through the vendored `lab-explore` / `chart-kit`
   (`web/src/vendor/`), route-lazy.
 - Vitest, eslint, GitHub Actions, SonarCloud, Lighthouse.
@@ -70,7 +76,7 @@ Monetization: undecided (`docs/business/README.md`).
 | `web/src/hooks/useHashRoute.ts` | hash routing, blocked-route redirect, grid scroll restore |
 | `web/src/hooks/useAllResults.ts` | flattens sessions into `allResults` / `latestByLoinc` / `resultsByDate`, loading a session's items on demand |
 | `web/src/components/conditions/PopupContext.tsx`, `SchedulingContext.tsx` | popup and scheduling state shared by `PanelDetailView`, `ResultTables`, `Popup`, `PlanVisitView` |
-| `web/src/supabase/` | auth, config, sync |
+| `web/src/supabase/`, `web/src/data/reportFiles.ts`, `web/worker/githubData.ts` | auth, config, the sync client; per-report file split / merge; the Worker's `/api/data` |
 | `web/src/components/conditions/MedicalConditionsPage.tsx` | the app shell: route, results, shared settings, popups; every section a `React.lazy` sibling view |
 | `web/src/components/conditions/*View.tsx`, `ReferenceBookPage.tsx` | the views (grid, panel detail, all observations, reports, report detail, profile, plan, medications, pathways, lipids, account, reference) |
 | `web/src/components/conditions/{markers,routing,resultCells,popupGeometry,scheduling,resultsLookup,statusFilter,reportDetailHelpers,pathwayShared}.ts` | pure helpers and view contracts |
@@ -94,7 +100,9 @@ Monetization: undecided (`docs/business/README.md`).
 - The envelope's `schema` is a `"major.minor"` string; any `"3.x"` is read,
   nothing else — ADR-0009, ADR-0012.
 - No login stays local; signing in switches storage mode with two cutover
-  moments and no ongoing sync — ADR-0018, ADR-0019.
+  moments and no ongoing sync — ADR-0018, ADR-0019; the cloud store is a
+  private GitHub repo behind the Worker, never a browser-held token —
+  ADR-0026.
 - Artwork illustrates; any geometry read as a quantity is a circle count or
   drawn from cited data — ADR-0022.
 - Both pathway pages run on one shared overlay engine; wiring is hand-coded
@@ -169,8 +177,8 @@ What each suite covers, and what is deliberately untested:
 - [medications.md](docs/tech/medications.md) — row shape, grid, storage
 - [reference-book.md](docs/tech/reference-book.md) — the Reference Book's
   pages
-- [account-and-sync.md](docs/tech/account-and-sync.md) — auth card, Supabase
-  sync, Database details, export / import / clear
+- [account-and-sync.md](docs/tech/account-and-sync.md) — auth card, GitHub
+  sync via the Worker, Database details, export / import / clear
 - [share-links-and-deploy.md](docs/tech/share-links-and-deploy.md) — Worker,
   CI deploy, Lighthouse, share links and their meta
 - [testing.md](docs/tech/testing.md) — suites and CI jobs

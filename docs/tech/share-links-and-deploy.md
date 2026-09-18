@@ -26,6 +26,13 @@ that `npm run deploy` runs locally — authenticated by the
 two pushes cannot overtake each other. A manual `wrangler deploy` from `web/`
 still works and is still needed for share links (below).
 
+The Worker also serves `/api/data`, the cloud-sync proxy to a private GitHub
+repo ([`account-and-sync.md`](account-and-sync.md#the-worker), ADR-0026). It
+needs two secrets, `GITHUB_TOKEN` and `SUPABASE_JWT_SECRET` (set once with
+`wrangler secret put <NAME>` from `web/`; a deploy keeps them), and two vars in
+`wrangler.jsonc`, `GITHUB_REPO` and `ALLOWED_EMAILS` — see
+[Setup](account-and-sync.md#setup). Unset `ALLOWED_EMAILS` denies everyone.
+
 A `lighthouse` job `needs: deploy` so it audits the code that is actually
 live, targeting `paneloom.com` directly since there is no staging
 environment, with Lighthouse's `desktop` preset (`.lighthouserc.json`'s

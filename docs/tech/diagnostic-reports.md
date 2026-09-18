@@ -121,7 +121,7 @@ clinicaltables.nlm.nih.gov (results unit-selected the same way via
 and lives alone in `web/src/data/loincNlm.ts`, so the privacy exception is a
 file you can open by name. The app's other requests are its own origin's
 `panels.json` / `monitoring-panels.json` and share-link payloads, and, when
-the user signs in, Supabase auth and sync
+the user signs in, Supabase auth and the Worker's GitHub-backed sync
 ([`account-and-sync.md`](account-and-sync.md)).
 
 ## 5. Export and clear
