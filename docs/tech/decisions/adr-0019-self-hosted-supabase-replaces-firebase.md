@@ -112,12 +112,10 @@ plumbing that talks to it:
   returning visit and must not re-trigger a sync — this is what keeps the
   cutover "once per fresh sign-in" under the new redirect-based flow,
   matching ADR-0018's policy rather than changing it.
-- **Firebase's own code is left in place, unused.** `web/src/firebase/*`
-  is untouched and still in the repo; it is simply no longer used by
-  `AccountView` / `TopBar` / `ProfileView` as of this ADR. Whether and
-  when to remove it is a separate, not-yet-made decision — this ADR
-  states the current state (present but dead) and decides nothing about
-  its future.
+- **Firebase's own code was left in place, unused, then removed.**
+  `web/src/firebase/*`, `hooks/useAuthUser.ts`, their two tests and the
+  `firebase` dependency were deleted on 2026-09-18 once nothing imported
+  them (see the history note below).
 
 **What carries over from ADR-0018 unchanged, and is not re-argued here:**
 the local-only default and its zero-friction path; the one-time-cutover
@@ -216,6 +214,8 @@ not-yet-decided question in those repos.
   cleaned up before any real usage. Apple sign-in was confirmed working
   by Alex directly. Both providers are confirmed live, not just
   implemented.
+- 2026-09-18: Firebase's code, hook, tests and the `firebase` dependency
+  deleted — zero importers remained.
 - 2026-09-14: Firebase's own code (`web/src/firebase/*`) left in the repo
   untouched — no longer referenced by `AccountView`, `TopBar` or
   `ProfileView`, but not deleted. See "What would force revisiting" above

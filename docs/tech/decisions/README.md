@@ -119,8 +119,8 @@ Each record opens with `# ADR-NNNN: <title>` and a
   Supabase — a second, independent instance kept apart from any other
   project's Supabase — with Supabase Auth (Google/Apple, PKCE flow) and
   a `public.user_backups` table under RLS standing in for Firestore's
-  per-person document; implemented, with Firebase's own code left in the
-  repo unused rather than deleted. The storage-mode shape and the
+  per-person document; implemented, Firebase's own code since removed
+  (2026-09-18). The storage-mode shape and the
   one-time-cutover migration model carry over from 0015 unchanged, and
   0018's own two-tier sign-in policy (cloud wins; sign-out pushes then
   wipes local, unless local is empty and cloud isn't) carries over from

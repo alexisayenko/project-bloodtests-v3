@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLang } from '../../i18n/LangContext';
 import { useData } from '../../data/DataContext';
-import { getAnalysisName } from '../../utils/analysis';
 import {
   initStackedChart3D,
   parseObservationDate,
@@ -23,7 +21,6 @@ interface Props {
 
 /** "Compare in 3D" view: stacked-ribbon 3D chart, one depth plane per selected biomarker. */
 export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
-  const { lang } = useLang();
   const { analysesCatalog } = useData();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<StackedChart3DHandle | null>(null);
@@ -54,13 +51,13 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
 
   const series = useMemo<StackedSeriesInput[]>(() => entries.map((entry) => ({
     id: entry.loinc,
-    label: nameFor?.(entry.loinc) ?? getAnalysisName(entry.loinc, analysesCatalog, lang),
+    label: nameFor?.(entry.loinc) ?? analysesCatalog[entry.loinc]?.friendlyName ?? entry.loinc,
     color: PALETTE[entry.colorIndex],
     points: entry.results
       .filter((r) => r.result.value != null && Number.isFinite(r.result.value))
       .map((r) => ({ t: parseObservationDate(r.date), value: r.result.value as number }))
       .filter((p) => Number.isFinite(p.t)),
-  })), [entries, nameFor, analysesCatalog, lang]);
+  })), [entries, nameFor, analysesCatalog]);
 
   useEffect(() => {
     handleRef.current?.update(series);

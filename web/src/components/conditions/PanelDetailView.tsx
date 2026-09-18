@@ -20,7 +20,6 @@ import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
 import { ResultsTable } from './ResultTables';
 import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
-import { LangProvider } from '../../i18n/LangContext';
 import type { ResultEntry } from './resultsLookup';
 import type { MedicationRow } from '../../data/medications';
 import { EmptyState } from '../primitives';
@@ -188,11 +187,9 @@ export function PanelDetailView({
         </Suspense>
       )}
       {detailTab === 'charts' && (
-        <LangProvider>
-          <Suspense fallback={chartFallback}>
-            <PanelChartsView tests={tests} allResults={allResults} />
-          </Suspense>
-        </LangProvider>
+        <Suspense fallback={chartFallback}>
+          <PanelChartsView tests={tests} allResults={allResults} />
+        </Suspense>
       )}
     </>
   );
