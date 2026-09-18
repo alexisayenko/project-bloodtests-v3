@@ -569,8 +569,8 @@ export class LabExplore extends HTMLElement {
         if (p[2]) labMap[p[0]] = p[2];
       }
       const abs = this.#gdates.map((d) => (d in map ? map[d]! : null));
-      const refMins = this.#gdates.map((d) => (d in map ? (mk.refBands?.[d]?.refMin ?? mk.refMin) : null));
-      const refMaxs = this.#gdates.map((d) => (d in map ? (mk.refBands?.[d]?.refMax ?? mk.refMax) : null));
+      const refMins = this.#gdates.map((d) => (d in map ? (mk.refBands?.[d]?.refMin ?? mk.refMin ?? null) : null));
+      const refMaxs = this.#gdates.map((d) => (d in map ? (mk.refBands?.[d]?.refMax ?? mk.refMax ?? null) : null));
       this.#abs.push(abs);
       this.#labs.push(this.#gdates.map((d) => labMap[d]));
       this.#refMins.push(refMins);
@@ -582,6 +582,11 @@ export class LabExplore extends HTMLElement {
               if (v == null) return null;
               const rMin = refMins[di] ?? mk.refMin;
               const rMax = refMaxs[di] ?? mk.refMax;
+              // No band at all (bandless marker, e.g. a computed index with no
+              // per-sex range): nothing to normalize against, so don't fabricate
+              // a point -- leave the gap. Distinct from a real band that happens
+              // to have zero/negative width, which keeps the `: 50` fallback below.
+              if (rMin == null || rMax == null) return null;
               const rng = rMax - rMin;
               return rng > 0 ? Math.round(((v - rMin) / rng) * 1000) / 10 : 50;
             })
@@ -697,7 +702,10 @@ export class LabExplore extends HTMLElement {
         // its ⚠, right against the figure it is casting doubt on.
         const w = mk.warn ? `<span class="u-tip-warn" title="⚠">⚠</span> ` : "";
         const labNote = lab ? ` <span class="muted">· ${esc(lab)}</span>` : "";
-        const refNote = rMax > rMin ? ` <span class="muted">(ref: ${fmtVal(rMin)}–${fmtVal(rMax)}${mk.unit ? " " + esc(mk.unit) : ""})</span>` : "";
+        const refNote =
+          rMin != null && rMax != null && rMax > rMin
+            ? ` <span class="muted">(ref: ${fmtVal(rMin)}–${fmtVal(rMax)}${mk.unit ? " " + esc(mk.unit) : ""})</span>`
+            : "";
         const pctNote = normalized
           ? ` <span class="muted">(${esc(norm)}%${mk.warn ? " ⚠" : ""})</span>`
           : "";

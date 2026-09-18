@@ -230,7 +230,20 @@ function buildIndexMarkers(
     }
     const band = refBandFor(def, profile);
     if (!band) {
-      notTaken.push({ key, label: def.shortName, panel, reason: profile.sex ? 'no range' : 'sex not set' });
+      if (!profile.sex) {
+        notTaken.push({ key, label: def.shortName, panel, reason: 'sex not set' });
+        continue;
+      }
+      // Sex is known but no band applies: selectable in absolute mode (no band
+      // needed there), just never normalized -- refMin/refMax stay undefined
+      // rather than fabricated, so `<lab-explore>` can't compute a "% of range".
+      markers[key] = {
+        label: def.shortName,
+        unit: def.unit,
+        panel,
+        data,
+        warn: false,
+      };
       continue;
     }
     markers[key] = {

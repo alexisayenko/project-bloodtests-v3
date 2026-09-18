@@ -10,9 +10,14 @@ export interface ExploreMarker {
   /** badge/legend/tooltip label (short name preferred) */
   label: string;
   unit?: string;
-  /** band the series normalizes to: value → (v - refMin) / (refMax - refMin) × 100 % */
-  refMin: number;
-  refMax: number;
+  /**
+   * band the series normalizes to: value → (v - refMin) / (refMax - refMin) × 100 %.
+   * Absent for a marker with no real reference band at all (e.g. a computed
+   * index with no per-sex range) -- plottable in absolute mode, which never
+   * needs a band, but never normalized: doing so would fabricate a number.
+   */
+  refMin?: number;
+  refMax?: number;
   /**
    * picker group(s). Usually one panel, but a marker genuinely belonging to
    * more than one (e.g. Albumin under both Fatty Liver and Kidney Function)
