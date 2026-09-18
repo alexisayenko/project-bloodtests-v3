@@ -370,7 +370,7 @@ export function useNodeDrag(root: RefObject<HTMLDivElement | null>, enabled: boo
       const target = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-node]') : null;
       if (!target) return;
       e.preventDefault();
-      const id = target.getAttribute('data-node')!;
+      const id = target.dataset.node!;
       const prior = dragsRef.current[id];
       current = { id, el: target, startX: e.clientX, startY: e.clientY, baseDx: prior?.dx ?? 0, baseDy: prior?.dy ?? 0, snapshot: styleSnapshot(target) };
       setActiveId(id);

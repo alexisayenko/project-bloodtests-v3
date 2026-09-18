@@ -329,8 +329,8 @@ export const FattyAcidClusterIcon: IconComponent = ({ size = 48, color = '#c9a22
     aria-hidden="true"
     {...rest}
   >
-    {FATTY_ACID_SCATTER.map(({ x, y, r }, i) => (
-      <g key={i} transform={`translate(${x} ${y}) rotate(${r})`}>
+    {FATTY_ACID_SCATTER.map(({ x, y, r }) => (
+      <g key={`${x}-${y}-${r}`} transform={`translate(${x} ${y}) rotate(${r})`}>
         <path d="M0 0 4 -5 8 0 12 -5 16 0" />
         <circle cx="0" cy="0" r="1.8" fill={color} stroke="none" />
       </g>

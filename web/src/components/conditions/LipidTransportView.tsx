@@ -457,12 +457,168 @@ const onEdge = (from: Point, to: Point, radius: number): Point => {
   return { x: from.x + (dx / dist) * radius, y: from.y + (dy / dist) * radius };
 };
 
+/** A straight arrow between two rects' own centers, each end pulled back to that rect's own edge -- `fromExtra`/`toExtra` pad past the edge, `dim` picks which rect dimension the radius is measured from. Null-safe: returns null when either rect is missing, so call sites need no guard. */
+function edgeToEdgeArrow(
+  from: DOMRect | undefined,
+  to: DOMRect | undefined,
+  base: DOMRect,
+  fromExtra = 3,
+  toExtra = 5,
+  dim: 'width' | 'height' = 'width'
+): string | null {
+  if (!from || !to) return null;
+  const r = rectCenter(from, base);
+  const s = rectCenter(to, base);
+  const fromRadius = (dim === 'width' ? from.width : from.height) / 2 + fromExtra;
+  const toRadius = (dim === 'width' ? to.width : to.height) / 2 + toExtra;
+  const start = onEdge(r, s, fromRadius);
+  const end = onEdge(s, r, toRadius);
+  return `M${start.x},${start.y} L${end.x},${end.y}`;
+}
+
+/** LDL's own uptake path: down from its own ApoB-100, then across into Peripheral cells. */
+function ldlUptakeArrow(ldl: DOMRect | undefined, targetCells: DOMRect | undefined, ldlApo: DOMRect | undefined, base: DOMRect): string | null {
+  if (!ldl || !targetCells || !ldlApo) return null;
+  const x = ldlApo.left + ldlApo.width / 2 - base.left;
+  const y0 = ldl.bottom - base.top;
+  const y1 = targetCells.top + targetCells.height / 2 - base.top;
+  const x1 = targetCells.left - base.left;
+  return `M${x},${y0} L${x},${y1} L${x1},${y1}`;
+}
+
+/** VLDL -> IDL -> LDL is one particle transforming, so each hop is a short horizontal arrow through the gap between the two boxes, at the holder apoprotein's own height -- never crossing either particle's TRIG/Chol circles, which sit to the sides of that gap, not in it. */
+function chainHopArrows(
+  vldl: DOMRect | undefined,
+  idl: DOMRect | undefined,
+  ldl: DOMRect | undefined,
+  vldlApo: DOMRect | undefined,
+  idlApo: DOMRect | undefined,
+  base: DOMRect
+): { id: string; d: string }[] {
+  const chain: { id: string; d: string }[] = [];
+  if (vldl && idl && vldlApo) {
+    const y = vldlApo.top + vldlApo.height / 2 - base.top;
+    chain.push({ id: 'vldl-idl', d: `M${vldl.right - base.left},${y} L${idl.left - base.left},${y}` });
+  }
+  if (idl && ldl && idlApo) {
+    const y = idlApo.top + idlApo.height / 2 - base.top;
+    chain.push({ id: 'idl-ldl', d: `M${idl.right - base.left},${y} L${ldl.left - base.left},${y}` });
+  }
+  return chain;
+}
+
+/** LDL, IDL and Lp(a) each get a dashed arrow (a zone-crossing, like faSupplyArrow) from their own ApoB-100 down to the artery-wall strip's own drawn gap in the endothelium -- never from VLDL, which the diagram omits per RETENTION_SOURCES' size ceiling. */
+function computeRetentionArrows(
+  idlApo: DOMRect | undefined,
+  ldlApo: DOMRect | undefined,
+  lpaApo: DOMRect | undefined,
+  arteryGap: DOMRect | undefined,
+  base: DOMRect
+): { id: string; d: string }[] {
+  if (!arteryGap) return [];
+  const apos: readonly (readonly [string, DOMRect | undefined])[] = [
+    ['idl', idlApo],
+    ['ldl', ldlApo],
+    ['lpa', lpaApo],
+  ];
+  return apos.flatMap(([id, apo]) => {
+    const d = edgeToEdgeArrow(apo, arteryGap, base, 3, 3);
+    return d ? [{ id, d }] : [];
+  });
+}
+
+/** VLDL's separate fate for its shed triglyceride: a path down to LPL's own bubble, then straight down again to the fatty-acid glyph directly below it, then on to Muscle and Adipocytes -- one continuous arrow, kept apart from the LDL-uptake one above. */
+function lplArrowPath(
+  vldl: DOMRect | undefined,
+  lplBubble: DOMRect | undefined,
+  fattyAcids: DOMRect | undefined,
+  lplMuscle: DOMRect | undefined,
+  lplAdipocytes: DOMRect | undefined,
+  base: DOMRect
+): string | null {
+  if (!vldl || !lplBubble || !fattyAcids) return null;
+  const segments = [
+    `M${vldl.left - base.left + 20},${vldl.bottom - base.top + 2} L${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.top - base.top - 4}`,
+    `M${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.bottom - base.top + 2} L${fattyAcids.left + fattyAcids.width / 2 - base.left},${fattyAcids.top - base.top - 2}`,
+  ];
+  const toMuscle = edgeToEdgeArrow(fattyAcids, lplMuscle, base);
+  if (toMuscle) segments.push(toMuscle);
+  const toAdipocytes = edgeToEdgeArrow(fattyAcids, lplAdipocytes, base);
+  if (toAdipocytes) segments.push(toAdipocytes);
+  return segments.join(' ');
+}
+
+/** Every particle (VLDL, IDL, LDL, chylomicron, HDL, Lp(a)) gets its own TRIG/Chol bonds to its holder apoprotein and a dashed outline hugging its actual icons. */
+function particleBondsAndOutlines(
+  el: Element,
+  base: DOMRect
+): { bonds: { id: string; d: string }[]; outlines: { id: string; x: number; y: number; w: number; h: number }[] } {
+  const bonds: { id: string; d: string }[] = [];
+  const outlines: { id: string; x: number; y: number; w: number; h: number }[] = [];
+  for (const id of ['vldl', 'idl', 'ldl', 'chylomicron', 'hdl', 'lpa', 'vldl-construction']) {
+    const trig = el.querySelector(`[data-node="${id}-trig"]`)?.getBoundingClientRect();
+    const apo = el.querySelector(`[data-node="${id}-apo"]`)?.getBoundingClientRect();
+    const chol = el.querySelector(`[data-node="${id}-chol"]`)?.getBoundingClientRect();
+    if (!trig || !apo || !chol) continue;
+    const a = rectCenter(apo, base);
+    const c = rectCenter(chol, base);
+    const t = rectCenter(trig, base);
+    const apoRadius = apo.width / 2 + 3;
+    const cholEdge = onEdge(c, a, chol.width / 2 + 2);
+    const apoFromC = onEdge(a, c, apoRadius);
+    const trigEdge = onEdge(t, a, trig.width / 2 + 2);
+    const apoFromT = onEdge(a, t, apoRadius);
+    const bond = `M${cholEdge.x},${cholEdge.y} L${apoFromC.x},${apoFromC.y} M${trigEdge.x},${trigEdge.y} L${apoFromT.x},${apoFromT.y}`;
+    // ApoB-100's own caption is wider than its icon, so it can overhang the icon's own bounds -- include it so the box never clips it.
+    const apoCaption = el.querySelector(`[data-node="${id}-apo"]`)?.closest('.mc-pathway-anchor')?.querySelector('.mc-pathway-caption')?.getBoundingClientRect();
+    const left = Math.min(chol.left, apo.left, trig.left, apoCaption?.left ?? Infinity) - base.left;
+    const right = Math.max(chol.right, apo.right, apoCaption?.right ?? -Infinity) - base.left;
+    const top = Math.min(chol.top, apo.top, trig.top) - base.top;
+    bonds.push({ id, d: bond });
+    const pad = 10;
+    outlines.push({ id, x: left - pad, y: top - pad, w: right - left + pad * 2, h: apo.bottom - base.top + 26 - (top - pad) });
+  }
+  return { bonds, outlines };
+}
+
+/** Free fatty acids circulate in Blood Transport (adipose lipolysis, chylomicron remnants) before the liver takes them up -- this arrow crosses the zone boundary and lands on the liver itself, which then hands off to its own TRIG synthesis (liver-trig) as a separate step, rather than jumping straight to liver-trig. Straight vertical: fatty acids rise from Blood Transport straight up into the liver, at the fa-supply icon's own x. */
+function faSupplyArrowPath(faSupply: DOMRect | undefined, liverOrgan: DOMRect | undefined, base: DOMRect): string | null {
+  if (!faSupply || !liverOrgan) return null;
+  const x = faSupply.left + faSupply.width / 2 - base.left;
+  const fromY = faSupply.top - base.top - 3;
+  const toY = liverOrgan.bottom - base.top + 5;
+  return `M${x},${fromY} L${x},${toY}`;
+}
+
+/** Starts from the liver's own bottom edge, not its center -- a center-based edge projection lands right next to HMG-CoA reductase (which sits near the middle of the liver artwork), wrongly implying the enzyme makes TRIG too. */
+function liverToTrigArrowPath(liverOrgan: DOMRect | undefined, liverTrig: DOMRect | undefined, base: DOMRect): string | null {
+  if (!liverOrgan || !liverTrig) return null;
+  const from = { x: liverOrgan.left + liverOrgan.width / 2 - base.left, y: liverOrgan.bottom - base.top - 3 };
+  const s = rectCenter(liverTrig, base);
+  const to = onEdge(s, from, liverTrig.width / 2 + 5);
+  return `M${from.x},${from.y} L${to.x},${to.y}`;
+}
+
+/** Straight vertical, same treatment as the fatty-acids arrow -- the liver produces ApoB-100 straight down from itself. */
+function liverToApobArrowPath(liverOrgan: DOMRect | undefined, liverApob: DOMRect | undefined, base: DOMRect): string | null {
+  if (!liverOrgan || !liverApob) return null;
+  const x = liverApob.left + liverApob.width / 2 - base.left;
+  const fromY = liverOrgan.bottom - base.top - 3;
+  const toY = liverApob.top - base.top + 5;
+  return `M${x},${fromY} L${x},${toY}`;
+}
+
+/** A region with no sourced area in Data mode is not drawn, so its particle's outline is ringed instead. */
+function presentTargets(el: Element, targets: readonly string[]): string[] {
+  return [...new Set(targets.map((t) => (el.querySelector(`[data-node="${t}"]`) ? t : t.split('-')[0])))];
+}
+
 function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root: RefObject<HTMLDivElement | null>; active: string | null; focused: string | null; layoutKey: string }>) {
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
   const [secretion, setSecretion] = useState<string | null>(null);
   const [ldlUptake, setLdlUptake] = useState<string | null>(null);
-  const [chainArrows, setChainArrows] = useState<string[]>([]);
+  const [chainArrows, setChainArrows] = useState<{ id: string; d: string }[]>([]);
   const [lplArrow, setLplArrow] = useState<string | null>(null);
   const [particleBonds, setParticleBonds] = useState<{ id: string; d: string }[]>([]);
   const [particleOutlines, setParticleOutlines] = useState<{ id: string; x: number; y: number; w: number; h: number }[]>([]);
@@ -477,272 +633,61 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [faSupplyArrow, setFaSupplyArrow] = useState<string | null>(null);
   const [liverToTrigArrow, setLiverToTrigArrow] = useState<string | null>(null);
   const [liverToApobArrow, setLiverToApobArrow] = useState<string | null>(null);
-  const [retentionArrows, setRetentionArrows] = useState<string[]>([]);
+  const [retentionArrows, setRetentionArrows] = useState<{ id: string; d: string }[]>([]);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
     const vldl = el.querySelector('[data-node="vldl"]')?.getBoundingClientRect();
     const nascentVldl = el.querySelector('[data-node="vldl-construction"]')?.getBoundingClientRect();
-    setSecretion(
-      nascentVldl && vldl
-        ? (() => {
-            const r = rectCenter(nascentVldl, base);
-            const s = rectCenter(vldl, base);
-            const from = onEdge(r, s, nascentVldl.height / 2 + 3);
-            const to = onEdge(s, r, vldl.height / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
+    setSecretion(edgeToEdgeArrow(nascentVldl, vldl, base, 3, 5, 'height'));
     const idl = el.querySelector('[data-node="idl"]')?.getBoundingClientRect();
     const ldl = el.querySelector('[data-node="ldl"]')?.getBoundingClientRect();
     const targetCells = el.querySelector('[data-node="target-cells"]')?.getBoundingClientRect();
-    // VLDL -> IDL -> LDL is one particle transforming, so each hop (and LDL's own handoff to Peripheral cells, now beside it in the same row) is drawn as a short horizontal arrow through the gap between the two boxes, at the holder apoprotein's own height -- never crossing either particle's TRIG/Chol circles, which sit to the sides of that gap, not in it.
     const vldlApo = el.querySelector('[data-node="vldl-apo"]')?.getBoundingClientRect();
     const idlApo = el.querySelector('[data-node="idl-apo"]')?.getBoundingClientRect();
     const ldlApo = el.querySelector('[data-node="ldl-apo"]')?.getBoundingClientRect();
-    setLdlUptake(
-      ldl && targetCells && ldlApo
-        ? (() => {
-            const x = ldlApo.left + ldlApo.width / 2 - base.left;
-            const y0 = ldl.bottom - base.top;
-            const y1 = targetCells.top + targetCells.height / 2 - base.top;
-            const x1 = targetCells.left - base.left;
-            return `M${x},${y0} L${x},${y1} L${x1},${y1}`;
-          })()
-        : null
-    );
-    const chain: string[] = [];
-    if (vldl && idl && vldlApo) {
-      const y = vldlApo.top + vldlApo.height / 2 - base.top;
-      chain.push(`M${vldl.right - base.left},${y} L${idl.left - base.left},${y}`);
-    }
-    if (idl && ldl && idlApo) {
-      const y = idlApo.top + idlApo.height / 2 - base.top;
-      chain.push(`M${idl.right - base.left},${y} L${ldl.left - base.left},${y}`);
-    }
-    setChainArrows(chain);
-    // Retention: LDL, IDL and Lp(a) each get a dashed arrow (a zone-crossing, like faSupplyArrow below) from their own ApoB-100 down to the artery-wall strip's own drawn gap in the endothelium -- never from VLDL, which the diagram omits per RETENTION_SOURCES' size ceiling.
+    setLdlUptake(ldlUptakeArrow(ldl, targetCells, ldlApo, base));
+    setChainArrows(chainHopArrows(vldl, idl, ldl, vldlApo, idlApo, base));
     const lpaApo = el.querySelector('[data-node="lpa-apo"]')?.getBoundingClientRect();
     const arteryGap = el.querySelector(`[data-node="${ARTERY_GAP}"]`)?.getBoundingClientRect();
-    setRetentionArrows(
-      arteryGap
-        ? [idlApo, ldlApo, lpaApo].flatMap((apo) => {
-            if (!apo) return [];
-            const from = rectCenter(apo, base);
-            const to = rectCenter(arteryGap, base);
-            const start = onEdge(from, to, apo.width / 2 + 3);
-            const end = onEdge(to, from, arteryGap.width / 2 + 3);
-            return [`M${start.x},${start.y} L${end.x},${end.y}`];
-          })
-        : []
-    );
-    // VLDL's separate fate for its shed triglyceride: a path down to LPL's own bubble, then straight down again to the fatty-acid glyph directly below it, then on to Muscle and Adipocytes -- one continuous arrow, kept apart from the LDL-uptake one above.
+    setRetentionArrows(computeRetentionArrows(idlApo, ldlApo, lpaApo, arteryGap, base));
     const lplBubble = el.querySelector('[data-node="lpl-bubble"]')?.getBoundingClientRect();
     const fattyAcids = el.querySelector('[data-node="fatty-acids"]')?.getBoundingClientRect();
     const lplMuscle = el.querySelector('[data-node="lpl-muscle"]')?.getBoundingClientRect();
     const lplAdipocytes = el.querySelector('[data-node="lpl-adipocytes"]')?.getBoundingClientRect();
-    setLplArrow(
-      vldl && lplBubble && fattyAcids
-        ? [
-            `M${vldl.left - base.left + 20},${vldl.bottom - base.top + 2} L${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.top - base.top - 4}`,
-            `M${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.bottom - base.top + 2} L${fattyAcids.left + fattyAcids.width / 2 - base.left},${fattyAcids.top - base.top - 2}`,
-            ...(lplMuscle
-              ? [
-                  (() => {
-                    const r = rectCenter(fattyAcids, base);
-                    const s = rectCenter(lplMuscle, base);
-                    const from = onEdge(r, s, fattyAcids.width / 2 + 3);
-                    const to = onEdge(s, r, lplMuscle.width / 2 + 5);
-                    return `M${from.x},${from.y} L${to.x},${to.y}`;
-                  })(),
-                ]
-              : []),
-            ...(lplAdipocytes
-              ? [
-                  (() => {
-                    const r = rectCenter(fattyAcids, base);
-                    const s = rectCenter(lplAdipocytes, base);
-                    const from = onEdge(r, s, fattyAcids.width / 2 + 3);
-                    const to = onEdge(s, r, lplAdipocytes.width / 2 + 5);
-                    return `M${from.x},${from.y} L${to.x},${to.y}`;
-                  })(),
-                ]
-              : []),
-          ].join(' ')
-        : null
-    );
-    // Every particle (VLDL, IDL, LDL, chylomicron, HDL, Lp(a)) gets its own TRIG/Chol bonds to its holder apoprotein and a dashed outline hugging its actual icons.
-    const bonds: { id: string; d: string }[] = [];
-    const outlines: { id: string; x: number; y: number; w: number; h: number }[] = [];
-    for (const id of ['vldl', 'idl', 'ldl', 'chylomicron', 'hdl', 'lpa', 'vldl-construction']) {
-      const trig = el.querySelector(`[data-node="${id}-trig"]`)?.getBoundingClientRect();
-      const apo = el.querySelector(`[data-node="${id}-apo"]`)?.getBoundingClientRect();
-      const chol = el.querySelector(`[data-node="${id}-chol"]`)?.getBoundingClientRect();
-      if (!trig || !apo || !chol) continue;
-      const a = rectCenter(apo, base);
-      const c = rectCenter(chol, base);
-      const t = rectCenter(trig, base);
-      const apoRadius = apo.width / 2 + 3;
-      const cholEdge = onEdge(c, a, chol.width / 2 + 2);
-      const apoFromC = onEdge(a, c, apoRadius);
-      const trigEdge = onEdge(t, a, trig.width / 2 + 2);
-      const apoFromT = onEdge(a, t, apoRadius);
-      const bond = `M${cholEdge.x},${cholEdge.y} L${apoFromC.x},${apoFromC.y} M${trigEdge.x},${trigEdge.y} L${apoFromT.x},${apoFromT.y}`;
-      // ApoB-100's own caption is wider than its icon, so it can overhang the icon's own bounds -- include it so the box never clips it.
-      const apoCaption = el.querySelector(`[data-node="${id}-apo"]`)?.closest('.mc-pathway-anchor')?.querySelector('.mc-pathway-caption')?.getBoundingClientRect();
-      const left = Math.min(chol.left, apo.left, trig.left, apoCaption?.left ?? Infinity) - base.left;
-      const right = Math.max(chol.right, apo.right, apoCaption?.right ?? -Infinity) - base.left;
-      const top = Math.min(chol.top, apo.top, trig.top) - base.top;
-      bonds.push({ id, d: bond });
-      const pad = 10;
-      outlines.push({ id, x: left - pad, y: top - pad, w: right - left + pad * 2, h: apo.bottom - base.top + 26 - (top - pad) });
-    }
+    setLplArrow(lplArrowPath(vldl, lplBubble, fattyAcids, lplMuscle, lplAdipocytes, base));
+    const { bonds, outlines } = particleBondsAndOutlines(el, base);
     setParticleBonds(bonds);
     setParticleOutlines(outlines);
     const reductase = el.querySelector('[data-node="reductase-bubble"]')?.getBoundingClientRect();
     const synthChol = el.querySelector('[data-node="synth-chol"]')?.getBoundingClientRect();
-    setSynthArrow(
-      reductase && synthChol
-        ? (() => {
-            const r = rectCenter(reductase, base);
-            const s = rectCenter(synthChol, base);
-            const from = onEdge(r, s, reductase.width / 2 + 3);
-            const to = onEdge(s, r, synthChol.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
+    setSynthArrow(edgeToEdgeArrow(reductase, synthChol, base));
     const vldlConstructionChol = el.querySelector('[data-node="vldl-construction-chol"]')?.getBoundingClientRect();
-    setCholToVldlArrow(
-      synthChol && vldlConstructionChol
-        ? (() => {
-            const r = rectCenter(synthChol, base);
-            const s = rectCenter(vldlConstructionChol, base);
-            const from = onEdge(r, s, synthChol.width / 2 + 3);
-            const to = onEdge(s, r, vldlConstructionChol.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
+    setCholToVldlArrow(edgeToEdgeArrow(synthChol, vldlConstructionChol, base));
     const vldlConstructionTrig = el.querySelector('[data-node="vldl-construction-trig"]')?.getBoundingClientRect();
     const vldlConstructionApo = el.querySelector('[data-node="vldl-construction-apo"]')?.getBoundingClientRect();
     // The liver's own TRIG synthesis is a standalone node (liver-trig) rather than the organ's bare bottom edge, since it also doubles as the landing point for the imported-fatty-acids arrow below.
     const liverTrig = el.querySelector('[data-node="liver-trig"]')?.getBoundingClientRect();
     const liverApob = el.querySelector('[data-node="liver-apob"]')?.getBoundingClientRect();
-    setLiverTrigArrow(
-      liverTrig && vldlConstructionTrig
-        ? (() => {
-            const r = rectCenter(liverTrig, base);
-            const s = rectCenter(vldlConstructionTrig, base);
-            const from = onEdge(r, s, liverTrig.width / 2 + 3);
-            const to = onEdge(s, r, vldlConstructionTrig.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
-    setApoB100Arrow(
-      liverApob && vldlConstructionApo
-        ? (() => {
-            const r = rectCenter(liverApob, base);
-            const s = rectCenter(vldlConstructionApo, base);
-            const from = onEdge(r, s, liverApob.width / 2 + 3);
-            const to = onEdge(s, r, vldlConstructionApo.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
+    setLiverTrigArrow(edgeToEdgeArrow(liverTrig, vldlConstructionTrig, base));
+    setApoB100Arrow(edgeToEdgeArrow(liverApob, vldlConstructionApo, base));
     // Free fatty acids circulate in Blood Transport (adipose lipolysis, chylomicron remnants) before the liver takes them up -- this arrow crosses the zone boundary and lands on the liver itself, which then hands off to its own TRIG synthesis (liver-trig) as a separate step, rather than jumping straight to liver-trig.
     const faSupply = el.querySelector('[data-node="fa-supply"]')?.getBoundingClientRect();
     const liverOrgan = el.querySelector('[data-node="liver"]')?.getBoundingClientRect();
-    setFaSupplyArrow(
-      faSupply && liverOrgan
-        ? (() => {
-            // Straight vertical: fatty acids rise from Blood Transport straight up into the liver, at the fa-supply icon's own x.
-            const x = faSupply.left + faSupply.width / 2 - base.left;
-            const fromY = faSupply.top - base.top - 3;
-            const toY = liverOrgan.bottom - base.top + 5;
-            return `M${x},${fromY} L${x},${toY}`;
-          })()
-        : null
-    );
-    setLiverToTrigArrow(
-      liverOrgan && liverTrig
-        ? (() => {
-            // Starts from the liver's own bottom edge, not its center -- a center-based edge projection lands right next to HMG-CoA reductase (which sits near the middle of the liver artwork), wrongly implying the enzyme makes TRIG too.
-            const from = { x: liverOrgan.left + liverOrgan.width / 2 - base.left, y: liverOrgan.bottom - base.top - 3 };
-            const s = rectCenter(liverTrig, base);
-            const to = onEdge(s, from, liverTrig.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
-    setLiverToApobArrow(
-      liverOrgan && liverApob
-        ? (() => {
-            // Straight vertical, same treatment as the fatty-acids arrow -- the liver produces ApoB-100 straight down from itself.
-            const x = liverApob.left + liverApob.width / 2 - base.left;
-            const fromY = liverOrgan.bottom - base.top - 3;
-            const toY = liverApob.top - base.top + 5;
-            return `M${x},${fromY} L${x},${toY}`;
-          })()
-        : null
-    );
+    setFaSupplyArrow(faSupplyArrowPath(faSupply, liverOrgan, base));
+    setLiverToTrigArrow(liverToTrigArrowPath(liverOrgan, liverTrig, base));
+    setLiverToApobArrow(liverToApobArrowPath(liverOrgan, liverApob, base));
     const enterocytes = el.querySelector('[data-node="enterocytes"]')?.getBoundingClientRect();
     const enterocyteTrig = el.querySelector('[data-node="enterocyte-trig"]')?.getBoundingClientRect();
     const enterocyteApoB48 = el.querySelector('[data-node="enterocyte-apob48"]')?.getBoundingClientRect();
-    setEnterocyteTrigArrow(
-      enterocytes && enterocyteTrig
-        ? (() => {
-            const r = rectCenter(enterocytes, base);
-            const s = rectCenter(enterocyteTrig, base);
-            const from = onEdge(r, s, enterocytes.width / 2 + 3);
-            const to = onEdge(s, r, enterocyteTrig.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
-    setEnterocyteApoB48Arrow(
-      enterocytes && enterocyteApoB48
-        ? (() => {
-            const r = rectCenter(enterocytes, base);
-            const s = rectCenter(enterocyteApoB48, base);
-            const from = onEdge(r, s, enterocytes.width / 2 + 3);
-            const to = onEdge(s, r, enterocyteApoB48.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
+    setEnterocyteTrigArrow(edgeToEdgeArrow(enterocytes, enterocyteTrig, base));
+    setEnterocyteApoB48Arrow(edgeToEdgeArrow(enterocytes, enterocyteApoB48, base));
     const chylomicronTrig = el.querySelector('[data-node="chylomicron-trig"]')?.getBoundingClientRect();
     const chylomicronApo = el.querySelector('[data-node="chylomicron-apo"]')?.getBoundingClientRect();
-    setTrigToChylomicronArrow(
-      enterocyteTrig && chylomicronTrig
-        ? (() => {
-            const r = rectCenter(enterocyteTrig, base);
-            const s = rectCenter(chylomicronTrig, base);
-            const from = onEdge(r, s, enterocyteTrig.width / 2 + 3);
-            const to = onEdge(s, r, chylomicronTrig.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
-    setApoB48ToChylomicronArrow(
-      enterocyteApoB48 && chylomicronApo
-        ? (() => {
-            const r = rectCenter(enterocyteApoB48, base);
-            const s = rectCenter(chylomicronApo, base);
-            const from = onEdge(r, s, enterocyteApoB48.width / 2 + 3);
-            const to = onEdge(s, r, chylomicronApo.width / 2 + 5);
-            return `M${from.x},${from.y} L${to.x},${to.y}`;
-          })()
-        : null
-    );
+    setTrigToChylomicronArrow(edgeToEdgeArrow(enterocyteTrig, chylomicronTrig, base));
+    setApoB48ToChylomicronArrow(edgeToEdgeArrow(enterocyteApoB48, chylomicronApo, base));
     const box = el.querySelector('.mc-lipid-particles')?.getBoundingClientRect();
     if (box) setVeil({ w: box.right - base.left, h: box.bottom - base.top });
-    // A region with no sourced area in Data mode is not drawn, so its particle's outline is ringed instead.
-    const present = (targets: readonly string[]) => [
-      ...new Set(targets.map((t) => (el.querySelector(`[data-node="${t}"]`) ? t : t.split('-')[0]))),
-    ];
-    setAssociations(BADGES.flatMap((b) => associationFor(el, base, b.id, present(b.targets))));
+    setAssociations(BADGES.flatMap((b) => associationFor(el, base, b.id, presentTargets(el, b.targets))));
   });
   return (
     <svg className="mc-pathway-overlay" aria-hidden="true">
@@ -753,8 +698,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       </defs>
       {secretion && <path d={secretion} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {ldlUptake && <path d={ldlUptake} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
-      {chainArrows.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />
+      {chainArrows.map((c) => (
+        <path key={c.id} d={c.d} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />
       ))}
       {lplArrow && <path d={lplArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {synthArrow && <path d={synthArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
@@ -764,8 +709,8 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
       {faSupplyArrow && <path d={faSupplyArrow} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />}
       {liverToTrigArrow && <path d={liverToTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {liverToApobArrow && <path d={liverToApobArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
-      {retentionArrows.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />
+      {retentionArrows.map((r) => (
+        <path key={r.id} d={r.d} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" markerEnd="url(#mc-lipid-head)" />
       ))}
       {enterocyteTrigArrow && <path d={enterocyteTrigArrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}
       {enterocyteApoB48Arrow && <path d={enterocyteApoB48Arrow} fill="none" stroke="currentColor" strokeWidth={1.25} markerEnd="url(#mc-lipid-head)" />}

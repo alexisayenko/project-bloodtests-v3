@@ -149,6 +149,15 @@ function padCompoundKeys(
   return next ?? null;
 }
 
+/** Splices out the removed compound's synthetic key so `compoundKeys` never drifts out of sync with `compounds`. */
+function withCompoundKeyRemoved(
+  keys: Readonly<Record<string, readonly string[]>>,
+  rowId: string,
+  index: number
+): Record<string, readonly string[]> {
+  return { ...keys, [rowId]: (keys[rowId] ?? []).filter((_, idx) => idx !== index) };
+}
+
 export function MedicationsView() {
   const {
     medications,
@@ -168,11 +177,10 @@ export function MedicationsView() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { years, rows } = medications;
 
-  const [compoundKeysState, setCompoundKeys] = useState<Record<string, readonly string[]>>({});
-  let compoundKeys = compoundKeysState;
+  const [compoundKeys, setCompoundKeys] = useState<Record<string, readonly string[]>>({});
   const paddedCompoundKeys = padCompoundKeys(compoundKeys, rows);
+  const effectiveCompoundKeys = paddedCompoundKeys ?? compoundKeys;
   if (paddedCompoundKeys) {
-    compoundKeys = paddedCompoundKeys;
     setCompoundKeys(paddedCompoundKeys);
   }
 
@@ -306,7 +314,7 @@ export function MedicationsView() {
                     const rolloverMonth = (monthIndex + 12) % 12;
                     return row.months.includes(monthKey(rolloverYear, rolloverMonth));
                   };
-                  const rowCompoundKeys = compoundKeys[row.id] ?? [];
+                  const rowCompoundKeys = effectiveCompoundKeys[row.id] ?? [];
                   return (
                     <tr key={row.id}>
                       <td style={nameCellStyle(cell)}>
@@ -352,7 +360,7 @@ export function MedicationsView() {
                                   size="xs"
                                   aria-label={`Remove compound ${i + 1}`}
                                   onClick={() => {
-                                    setCompoundKeys((prev) => ({ ...prev, [row.id]: (prev[row.id] ?? []).filter((_, idx) => idx !== i) }));
+                                    setCompoundKeys((prev) => withCompoundKeyRemoved(prev, row.id, i));
                                     onRemoveCompound(row.id, i);
                                   }}
                                   style={removeCompoundButton}

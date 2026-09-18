@@ -1,6 +1,7 @@
 import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 import { formatMonthYear } from '../../data/months';
 import { DASH, type Association, type GlyphArt, type Measure, type Particle1, type ReferenceInfo } from './pathwayShared';
+import { pressable } from './ui';
 
 /** A diagram chip's value, its share of total T on a line of its own. */
 export function ChipValue({ measure }: Readonly<{ measure: Measure }>) {
@@ -201,7 +202,12 @@ export function Particle1Node({
 }>) {
   return (
     <div className="mc-pathway-enzyme-col">
-      <div className="mc-pathway-enzyme" data-node={dataNode} title={title} onClick={onClick}>
+      <div
+        className="mc-pathway-enzyme"
+        data-node={dataNode}
+        title={title}
+        {...(onClick ? pressable((e) => onClick(e as unknown as Parameters<typeof onClick>[0])) : { onClick })}
+      >
         {particle.backdrop ? (
           <span style={PARTICLE1_BACKDROP_STYLE}>
             <Glyph art={art} alt={alt} />
