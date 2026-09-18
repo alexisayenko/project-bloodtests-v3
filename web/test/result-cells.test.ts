@@ -1,22 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   buildRowCells,
   cellBg,
-  formatFullDate,
   greenRangeOf,
   isCellArmed,
-  loadViewSettings,
-  saveViewSettings,
-  VIEW_SETTINGS_KEY,
   mostCommon,
   namedLab,
-  DEFAULT_VIEW_SETTINGS,
   displayedResult,
-  popupPosition,
-  pressable,
   sharedUnit,
   visibleDatesOf,
-} from '../src/components/conditions/ui';
+} from '../src/components/conditions/resultCells';
 import { COLOR } from '../src/styles/tokens';
 import { ALSO_REFS, SHORT_NAMES } from '../src/data/analyteCatalog';
 import type { Observation } from '../src/components/conditions/markers';
@@ -24,14 +17,6 @@ import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import type { Result } from '../src/types';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import { makeEntry, makeObservation } from './helpers/fixtures';
-import { installMemoryStorage } from './helpers/storage';
-
-describe('date labels', () => {
-  it('renders the full "Mon D, YYYY"', () => {
-    expect(formatFullDate('2026-08-25')).toBe('Aug 25, 2026');
-    expect(formatFullDate('2024-12-01')).toBe('Dec 1, 2024');
-  });
-});
 
 describe('greenRangeOf', () => {
   it('lower-is-better indices get "< cut0"', () => {
@@ -89,147 +74,6 @@ describe('visibleDatesOf', () => {
 
   it('takes the most recent N, then runs them oldest to newest', () => {
     expect(visibleDatesOf(dates, 2)).toEqual(['2026-02-01', '2026-03-01']);
-  });
-});
-
-describe('pressable', () => {
-  it('wires click and keyboard activation to the same handler', () => {
-    const handler = vi.fn();
-    const props = pressable(handler);
-    expect(props.role).toBe('button');
-    expect(props.tabIndex).toBe(0);
-
-    const el = {} as HTMLElement;
-    props.onClick({ currentTarget: el });
-    props.onKeyDown({ key: 'Enter', preventDefault: vi.fn(), currentTarget: el });
-    props.onKeyDown({ key: ' ', preventDefault: vi.fn(), currentTarget: el });
-    expect(handler).toHaveBeenCalledTimes(3);
-  });
-
-  it('ignores other keys', () => {
-    const handler = vi.fn();
-    pressable(handler).onKeyDown({ key: 'Escape', preventDefault: vi.fn(), currentTarget: {} as HTMLElement });
-    expect(handler).not.toHaveBeenCalled();
-  });
-});
-
-describe('popupPosition', () => {
-  const rect = (partial: Partial<DOMRect>): DOMRect => ({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0, toJSON: () => ({}), ...partial });
-
-  it('anchors below the element when there is room', () => {
-    vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800 });
-    const p = popupPosition(rect({ left: 400, width: 100, top: 100, bottom: 130 }), 260);
-    expect(p.top).toBe(138);
-    expect(p.bottom).toBeUndefined();
-    vi.unstubAllGlobals();
-  });
-
-  it('flips above when the element is near the bottom', () => {
-    vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800 });
-    const p = popupPosition(rect({ left: 400, width: 100, top: 700, bottom: 730 }), 260);
-    expect(p.bottom).toBe(800 - 700 + 8);
-    expect(p.top).toBeUndefined();
-    vi.unstubAllGlobals();
-  });
-
-  it('clamps the left edge into the viewport', () => {
-    vi.stubGlobal('window', { innerWidth: 300, innerHeight: 800 });
-    const p = popupPosition(rect({ left: 0, width: 10, top: 10, bottom: 30 }), 260);
-    expect(p.left).toBe(8);
-    vi.unstubAllGlobals();
-  });
-
-  it('keeps the right edge in the viewport for an element near it', () => {
-    vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800 });
-    const p = popupPosition(rect({ left: 960, width: 40, top: 100, bottom: 130 }), 260);
-    expect(p.left).toBe(1000 - 260 - 8);
-    vi.unstubAllGlobals();
-  });
-
-  it('narrows a popup wider than the viewport instead of overflowing it', () => {
-    vi.stubGlobal('window', { innerWidth: 375, innerHeight: 812 });
-    const p = popupPosition(rect({ left: 20, width: 100, top: 100, bottom: 130 }), 380);
-    expect(p.width).toBe(375 - 16);
-    expect(p.left).toBe(8);
-    expect(p.left + p.width).toBe(375 - 8);
-    vi.unstubAllGlobals();
-  });
-
-  it('leaves a popup that already fits at its full width', () => {
-    vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800 });
-    const p = popupPosition(rect({ left: 400, width: 100, top: 100, bottom: 130 }), 380);
-    expect(p.width).toBe(380);
-    expect(p.left).toBe(450 - 190);
-    vi.unstubAllGlobals();
-  });
-
-  it('never returns a negative left, whatever the anchor', () => {
-    vi.stubGlobal('window', { innerWidth: 320, innerHeight: 800 });
-    for (const left of [0, 150, 310]) {
-      const p = popupPosition(rect({ left, width: 10, top: 100, bottom: 130 }), 380);
-      expect(p.left).toBeGreaterThanOrEqual(8);
-      expect(p.left + p.width).toBeLessThanOrEqual(320 - 8);
-    }
-    vi.unstubAllGlobals();
-  });
-});
-
-describe('loadViewSettings', () => {
-  it('falls back to defaults when storage is unavailable', () => {
-    // node environment: localStorage is undefined → the try/catch default path
-    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: false });
-  });
-
-  const stored = (raw: string) => installMemoryStorage().set(VIEW_SETTINGS_KEY, raw);
-
-  it('defaults compactPanels to false when missing or not a boolean true', () => {
-    for (const raw of ['{"unitSystem":"us"}', '{"compactPanels":"yes"}', '{"compactPanels":1}', '{"compactPanels":false}']) {
-      stored(raw);
-      expect(loadViewSettings().compactPanels).toBe(false);
-    }
-    vi.unstubAllGlobals();
-  });
-
-  it('keeps a stored compactPanels choice', () => {
-    stored('{"unitSystem":"si","sampleLimit":5,"compactPanels":true}');
-    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: true });
-    vi.unstubAllGlobals();
-  });
-
-  it('saves compactPanels through saveViewSettings, coercing a non-boolean to false', () => {
-    const store = installMemoryStorage();
-    saveViewSettings({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
-    expect(JSON.parse(store.get(VIEW_SETTINGS_KEY)!)).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: true });
-    expect(loadViewSettings().compactPanels).toBe(true);
-    saveViewSettings({ unitSystem: 'us', sampleLimit: 10, compactPanels: 'on' as unknown as boolean });
-    expect(loadViewSettings().compactPanels).toBe(false);
-    vi.unstubAllGlobals();
-  });
-
-  it('gives a first-time visitor every default, sampleLimit included', () => {
-    installMemoryStorage();
-    expect(loadViewSettings()).toEqual(DEFAULT_VIEW_SETTINGS);
-    expect(loadViewSettings().sampleLimit).toBe(5);
-    vi.unstubAllGlobals();
-  });
-
-  it('keeps a stored choice and fills only what is missing', () => {
-    stored('{"sampleLimit":"all"}');
-    expect(loadViewSettings()).toEqual({ ...DEFAULT_VIEW_SETTINGS, sampleLimit: 'all' });
-    vi.unstubAllGlobals();
-  });
-
-  it('ignores the retired dateOrder field a pre-existing payload still carries', () => {
-    stored('{"unitSystem":"us","sampleLimit":10,"dateOrder":"desc"}');
-    expect(loadViewSettings()).toEqual({ unitSystem: 'us', sampleLimit: 10, compactPanels: false });
-    vi.unstubAllGlobals();
-  });
-
-  it('never hands out the shared defaults object', () => {
-    installMemoryStorage();
-    loadViewSettings().sampleLimit = 'all';
-    expect(DEFAULT_VIEW_SETTINGS.sampleLimit).toBe(5);
-    vi.unstubAllGlobals();
   });
 });
 

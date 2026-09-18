@@ -1,7 +1,6 @@
-import type { FC, SVGProps } from 'react';
+import type { IconComponent } from '../primitives/icons';
 
-/** Lucide-compatible icon component type. */
-export type IconComponent = FC<SVGProps<SVGSVGElement> & { size?: number; strokeWidth?: number; color?: string }>;
+export type { IconComponent } from '../primitives/icons';
 
 /** Exact vector extracted from the design mockup. */
 export const LiverIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (

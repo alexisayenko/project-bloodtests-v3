@@ -5,11 +5,12 @@ import { CarrierIcon, CholesterolIcon } from './customIcons';
 import { SegmentedControl } from '../primitives';
 import { ParticleNode } from './Particle3';
 import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
-import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
+import { MARKER_CANDIDATE_LOINCS, computeIndex, indexBands, indexZone } from '../../data/computedIndices';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import { convertConcentration } from '../../data/pathwayReferenceRanges';
-import type { Result } from '../../types';
+import type { Result, UnitSystem } from '../../types';
 import { fmtNum, isOutOfRange } from '../../utils/format';
+import { clamp } from '../../utils/math';
 import { panelDates, type Observation } from './markers';
 import { hasReference, type ResultEntry } from './resultsLookup';
 import {
@@ -38,8 +39,6 @@ import {
 } from './pathwayShared';
 import { ArtworkNote, AssociationLayer, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
 
-type UnitSystem = 'si' | 'us';
-
 /** The monitoring panel whose results-table dates this page steps through. */
 const PANEL_NAME = 'Cardiovascular Risk';
 
@@ -47,7 +46,7 @@ const PANEL_NAME = 'Cardiovascular Risk';
 
 interface MarkerSpec {
   kind: 'marker';
-  loinc: string;
+  loincs: string[];
   display?: { si: string; us: string; molarMass: string };
 }
 
@@ -59,15 +58,17 @@ interface IndexSpec {
 const CHOLESTEROL_UNITS = { si: 'mmol/L', us: 'mg/dL', molarMass: 'cholesterol' } as const;
 const TRIGLYCERIDE_UNITS = { si: 'mmol/L', us: 'mg/dL', molarMass: 'triglyceride' } as const;
 
+const indexInput = (marker: string) => MARKER_CANDIDATE_LOINCS[marker] ?? [];
+
 const MARKERS = {
-  TC: { kind: 'marker', loinc: '2093-3', display: CHOLESTEROL_UNITS },
-  TG: { kind: 'marker', loinc: '2571-8', display: TRIGLYCERIDE_UNITS },
-  HDL: { kind: 'marker', loinc: '2085-9', display: CHOLESTEROL_UNITS },
-  LDL: { kind: 'marker', loinc: '13457-7', display: CHOLESTEROL_UNITS },
-  VLDL: { kind: 'marker', loinc: '13458-5', display: CHOLESTEROL_UNITS },
-  APOB: { kind: 'marker', loinc: '1884-6' },
-  APOA1: { kind: 'marker', loinc: '1869-7' },
-  LPA: { kind: 'marker', loinc: '10835-7' },
+  TC: { kind: 'marker', loincs: indexInput('TC'), display: CHOLESTEROL_UNITS },
+  TG: { kind: 'marker', loincs: indexInput('TRIG'), display: TRIGLYCERIDE_UNITS },
+  HDL: { kind: 'marker', loincs: indexInput('HDL-C'), display: CHOLESTEROL_UNITS },
+  LDL: { kind: 'marker', loincs: indexInput('LDL-C'), display: CHOLESTEROL_UNITS },
+  VLDL: { kind: 'marker', loincs: withVariants('13458-5'), display: CHOLESTEROL_UNITS },
+  APOB: { kind: 'marker', loincs: indexInput('ApoB') },
+  APOA1: { kind: 'marker', loincs: indexInput('ApoA1') },
+  LPA: { kind: 'marker', loincs: withVariants('10835-7') },
 } as const satisfies Record<string, MarkerSpec>;
 
 const idx = (key: string): IndexSpec => ({ kind: 'index', key });
@@ -101,8 +102,7 @@ function snapshotOf(
   const resultsByLoinc = (date && resultsByDate[date]) || {};
   return {
     marker: (spec) => {
-      const codes = withVariants(spec.loinc);
-      const hit = onDate.find((e) => codes.includes(e.loinc));
+      const hit = onDate.find((e) => spec.loincs.includes(e.loinc));
       if (hit?.result.value == null) return EMPTY;
       const unit = hit.result.unit ?? '';
       const shown = place(hit.result.value, unit, spec.display, unitSystem);
@@ -924,7 +924,7 @@ export function LipidTransportView({
     if (!layout) return null;
     const a = chip.getBoundingClientRect();
     const box = layout.getBoundingClientRect();
-    const left = Math.min(Math.max(a.left + a.width / 2 - box.left - CARD_WIDTH / 2, 0), Math.max(box.width - CARD_WIDTH, 0));
+    const left = clamp(a.left + a.width / 2 - box.left - CARD_WIDTH / 2, 0, Math.max(box.width - CARD_WIDTH, 0));
     return { left, top: a.bottom - box.top + 6 };
   }, []);
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { SLIVER, usePullReveal } from './usePullReveal';
-import { LABEL_COL_WIDTH, RESULT_TABLE } from './ui';
+import { LABEL_COL_WIDTH, RESULT_TABLE } from './resultCells';
 
 /** Invisible drag target around the column sliver: 5px is nowhere near a thumb-sized handle. */
 const GRAB = 22;

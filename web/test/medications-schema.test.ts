@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addCompound, addRow, emptyMedications, toggleMonth, updateCompound, updateRow, type Medications } from '../src/data/medications';
+import { addCompound, addRow, emptyMedications, toggleMonth, updateCompound, updateRow, type Medications } from '../src/data/storage/medications';
 import { compileSchema, schemaErrors } from './helpers/schema';
 
 // Documentation only, mirroring envelope-schema.test.ts: this checks the

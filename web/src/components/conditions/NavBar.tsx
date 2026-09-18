@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { NAV_ITEMS, type Route } from './routing';
-import { pressable, tabStyle } from './ui';
+import { pressable, tabStyle } from '../primitives/styles';
 import { useHideOnScroll } from './useHideOnScroll';
 import { COLOR } from '../../styles/tokens';
 

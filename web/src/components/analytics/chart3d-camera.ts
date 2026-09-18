@@ -1,5 +1,7 @@
 // Ported from project-moodtracker's web/chart3d-camera.js; `destroy()` is the one addition.
 
+import { clamp } from '../../utils/math';
+
 export const DEG = Math.PI / 180;
 
 export interface ProjectedPoint {
@@ -68,9 +70,9 @@ export const createOrbitCamera3D = (
   let pitch = defaultPitch;
   let zoom = defaultZoom;
 
-  const clampYaw = (y: number) => Math.min(yawMax, Math.max(yawMin, y));
-  const clampPitch = (p: number) => Math.min(pitchMax, Math.max(pitchMin, p));
-  const clampZoom = (z: number) => Math.min(zoomMax, Math.max(zoomMin, z));
+  const clampYaw = (y: number) => clamp(y, yawMin, yawMax);
+  const clampPitch = (p: number) => clamp(p, pitchMin, pitchMax);
+  const clampZoom = (z: number) => clamp(z, zoomMin, zoomMax);
 
   // `depth` is camera-space Z (smaller = nearer); callers do their own painter's sort.
   const project: ProjectFn = (x, y, z, cx, cy, sx, sy, sz, refScale) => {

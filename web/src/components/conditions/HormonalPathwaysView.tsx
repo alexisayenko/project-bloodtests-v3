@@ -27,10 +27,11 @@ import {
   rangesInUnit,
 } from '../../data/pathwayReferenceRanges';
 import { numberedEffects, receptorById } from '../../data/pathwayReceptorEffects';
-import type { Result } from '../../types';
-import { fmtNum, isOutOfRange } from '../../utils/format';
+import type { Result, UnitSystem } from '../../types';
+import { fmtNum, formatFullDate, isOutOfRange } from '../../utils/format';
+import { clamp } from '../../utils/math';
 import { panelDates, type Observation } from './markers';
-import { displayedResult, formatFullDate } from './ui';
+import { displayedResult } from './resultCells';
 import { hasReference, nearestEntryTo, type ResultEntry } from './resultsLookup';
 import { PageHeader } from './PageHeader';
 import { CARD_WIDTH, DASH, EMPTY, NO_REFERENCE, formatBounds, labReference, useDismiss, valueText, combinedZones, keepSources, mergeReferences, withVariants, zoneReference, associationFor, ENZYME_ART, SIZE, type GlyphArt, type Particle1, roundedPath, useMeasuredLayout, type Association, type CitedSource, type LabRange, type Measure, type ReferenceInfo } from './pathwayShared';
@@ -70,9 +71,6 @@ type IndexKey = 'cft' | 'cftlh' | 'biot' | 'tlh' | 'dhtt' | 'te2';
 type MeasureKey = MarkerKey | IndexKey | 'shbgBound' | 'albBound';
 type Snapshot = Record<MeasureKey, Measure>;
 
-/** Measured Free Testosterone — a direct immunoassay, not an index input, so (like FSH) it has no MARKER_LOINC entry of its own. */
-const FT_LOINC = '2991-8';
-
 const MARKER_CODES: Record<MarkerKey, string[]> = {
   LH: MARKER_CANDIDATE_LOINCS['LH'] ?? [],
   FSH: withVariants(FSH_LOINC),
@@ -81,7 +79,7 @@ const MARKER_CODES: Record<MarkerKey, string[]> = {
   ALB: MARKER_CANDIDATE_LOINCS['ALB'] ?? [],
   E2: MARKER_CANDIDATE_LOINCS['E2'] ?? [],
   DHT: MARKER_CANDIDATE_LOINCS['DHT'] ?? [],
-  FT: withVariants(FT_LOINC),
+  FT: MARKER_CANDIDATE_LOINCS['FT'] ?? [],
 };
 
 const INDEX_KEYS: readonly IndexKey[] = ['cft', 'cftlh', 'biot', 'tlh', 'dhtt', 'te2'];
@@ -90,8 +88,6 @@ const INDEX_KEYS: readonly IndexKey[] = ['cft', 'cftlh', 'biot', 'tlh', 'dhtt', 
 const PANEL_NAME = 'Hypogonadism';
 
 const defOf = (key: string) => INDEX_DEFS.find((d) => d.key === key);
-
-type UnitSystem = 'si' | 'us';
 
 /** The unit each quantity is shown in per unit system, and the molar mass a mass↔molar step needs; anything absent keeps its own unit. */
 const DISPLAY_UNITS: Partial<Record<MeasureKey, { si: string; us: string; molarMass?: string }>> = {
@@ -132,7 +128,7 @@ function labRangeOf(key: MarkerKey, result: Result, unit: string, unitSystem: Un
 const ALBUMIN_FALLBACKS = ['none', 'nearest', 'default'] as const;
 type AlbuminFallback = (typeof ALBUMIN_FALLBACKS)[number];
 
-function albuminFallbackLabel(fallback: AlbuminFallback, unitSystem: 'si' | 'us'): string {
+function albuminFallbackLabel(fallback: AlbuminFallback, unitSystem: UnitSystem): string {
   switch (fallback) {
     case 'none':
       return "Don't use a fallback";
@@ -175,7 +171,7 @@ function snapshotOf(
   allResults: readonly ResultEntry[],
   resultsByDate: Record<string, Record<string, Result>>,
   date: string | undefined,
-  unitSystem: 'si' | 'us',
+  unitSystem: UnitSystem,
   albuminFallback: AlbuminFallback,
   tMolarMass: TMolarMass
 ): Snapshot {
@@ -312,7 +308,7 @@ function indexReference(key: IndexKey, unitSystem: UnitSystem): ReferenceInfo {
   return zoneReference(def, indexBands(def, MALE), (c) => inDisplayUnit(key, c, def.unit ?? '', unitSystem));
 }
 
-function curatedReference(key: MarkerKey, measure: Measure, unitSystem: 'si' | 'us'): ReferenceInfo {
+function curatedReference(key: MarkerKey, measure: Measure, unitSystem: UnitSystem): ReferenceInfo {
   const marker = pathwayRangesFor(MARKER_CODES[key]);
   if (!marker) return { headCites: [], lines: [], empty: 'No reference range', sources: [] };
   const catalogUnit = marker.loincs.map((l) => DEFAULT_UNITS[l]).find((u) => u && rangesInUnit(marker, u).every((r) => r.placed));
@@ -335,7 +331,7 @@ function curatedReference(key: MarkerKey, measure: Measure, unitSystem: 'si' | '
   return { headCites: [], lines, sources };
 }
 
-function referenceOf(measureKey: MeasureKey, snapshot: Snapshot, unitSystem: 'si' | 'us'): ReferenceInfo {
+function referenceOf(measureKey: MeasureKey, snapshot: Snapshot, unitSystem: UnitSystem): ReferenceInfo {
   const subject = subjectOf(measureKey);
   if (subject.kind === 'pool') return { headCites: [], lines: [], empty: 'No reference range (calculated pool)', sources: [] };
   if (subject.kind === 'index') return indexReference(subject.key, unitSystem);
@@ -375,7 +371,7 @@ function Caption({ id }: Readonly<{ id: CaptionId }>) {
   );
 }
 
-function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ id: CaptionId; left: number; top: number; snapshot: Snapshot; date: string | undefined; unitSystem: 'si' | 'us' }>) {
+function CaptionCard({ id, left, top, snapshot, date, unitSystem }: Readonly<{ id: CaptionId; left: number; top: number; snapshot: Snapshot; date: string | undefined; unitSystem: UnitSystem }>) {
   const spec = CAPTIONS[id];
   const measure = snapshot[spec.measure];
   const info = referenceOf(spec.measure, snapshot, unitSystem);
@@ -598,7 +594,7 @@ function poolCallouts(sweeps: readonly number[]): Callout[] {
     const [x0, y0] = polar(mid, DONUT.radius + DONUT.width / 2 + 1);
     const [x1, y1] = polar(mid, DONUT.radius + DONUT.width / 2 + 9);
     const right = mid % 360 < 180;
-    callouts.push({ index, x0, y0, x1, y1, right, y: Math.min(CALLOUT.maxY, Math.max(CALLOUT.minY, y1)) });
+    callouts.push({ index, x0, y0, x1, y1, right, y: clamp(y1, CALLOUT.minY, CALLOUT.maxY) });
   });
   spreadLabels(callouts.filter((c) => c.right));
   spreadLabels(callouts.filter((c) => !c.right));
@@ -1024,7 +1020,7 @@ const BADGES: ReadonlyArray<Badge> = [
 ];
 
 /** A badge's reference info while its card is expanded — null while collapsed, since there is nothing to render. */
-function badgeReferenceInfo(expanded: boolean, measure: Measure | undefined, b: Badge, snapshot: Snapshot, unitSystem: 'si' | 'us'): ReferenceInfo | null {
+function badgeReferenceInfo(expanded: boolean, measure: Measure | undefined, b: Badge, snapshot: Snapshot, unitSystem: UnitSystem): ReferenceInfo | null {
   if (!expanded) return null;
   if (!measure) return NO_REFERENCE;
   return referenceOf(b.measure!, snapshot, unitSystem);
@@ -1102,7 +1098,7 @@ function Badges({
   open,
   setOpen,
   setHovered,
-}: Readonly<{ snapshot: Snapshot; unitSystem: 'si' | 'us'; open: string | null; setOpen: (id: string | null) => void; setHovered: (id: string | null) => void }>) {
+}: Readonly<{ snapshot: Snapshot; unitSystem: UnitSystem; open: string | null; setOpen: (id: string | null) => void; setHovered: (id: string | null) => void }>) {
   return (
     <aside className="mc-pathway-badges" aria-label="Measures and ratios">
       <PoolsDonut snapshot={snapshot} />
@@ -1186,7 +1182,7 @@ export function HormonalPathwaysView({
     if (!layout) return null;
     const a = chip.getBoundingClientRect();
     const box = layout.getBoundingClientRect();
-    const left = Math.min(Math.max(a.left + a.width / 2 - box.left - CARD_WIDTH / 2, 0), Math.max(box.width - CARD_WIDTH, 0));
+    const left = clamp(a.left + a.width / 2 - box.left - CARD_WIDTH / 2, 0, Math.max(box.width - CARD_WIDTH, 0));
     return { left, top: a.bottom - box.top + 6 };
   }, []);
 

@@ -5,7 +5,7 @@ import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import { INDEX_DEFS } from '../../data/indexDefs';
 import type { Result } from '../../types';
 import { INDEX_LOINCS, testLoincs, observationMatchesQuery, indexMatchesQuery, type Observation } from './markers';
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 import { getStatus, type LatestByLoinc, type Status } from './resultsLookup';
 import { COLOR, RADIUS } from '../../styles/tokens';
 import { getPanelMeta } from './panelMeta';

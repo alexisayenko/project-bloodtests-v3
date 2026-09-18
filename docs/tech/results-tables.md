@@ -8,7 +8,7 @@ status a soft tint behind the number rather than across the cell.
 
 ## Cells and units
 
-The number and its unit label always move together: `ui.ts`'s
+The number and its unit label always move together: `resultCells.ts`'s
 `displayedResult` / `sharedUnit` / `buildRowCells` label a reading with its
 own code's unit, and a row whose readings sit on two scales loses its
 row-level unit and labels each cell instead — with two spellings of one unit
@@ -69,7 +69,7 @@ dates, by a thumb-sized "Dates" chip, which is the control people are meant
 to find. The column's sliver is a negative offset on the same sticky `left`;
 the header has to be a copy — vertical sticky would resolve against the
 scrolling box rather than the page — kept aligned by rendering the same
-`colgroup` and `thead` (over `ui.ts`'s shared `RESULT_TABLE` and
+`colgroup` and `thead` (over `resultCells.ts`'s shared `RESULT_TABLE` and
 `LABEL_COL_WIDTH`) in a fixed box of the same width with the horizontal
 scroll mirrored onto it. Nothing is conditionally rendered, so the real header
 and labels keep their place in the accessibility tree. The header handle

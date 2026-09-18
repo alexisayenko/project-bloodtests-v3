@@ -1,9 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { ALSO_REFS, ANALYTE_BY_LOINC, SHORT_NAMES } from '../../../data/analyteCatalog';
-import { COLOR, RADIUS } from '../../../styles/tokens';
-import { Card } from '../../primitives';
-import type { Observation } from '../markers';
-import { pressable } from '../ui';
+import { ALSO_REFS, ANALYTE_BY_LOINC, SHORT_NAMES } from '../../data/analyteCatalog';
+import { COLOR, RADIUS } from '../../styles/tokens';
+import { Card } from '../primitives';
+import type { Observation } from '../conditions/markers';
+import { pressable } from '../primitives/styles';
 
 const SOURCES_RETRIEVED = '2026-09-11';
 

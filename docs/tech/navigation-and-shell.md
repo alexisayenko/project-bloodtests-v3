@@ -6,11 +6,13 @@
 route, results, shared settings and popup state. Each section is its own
 sibling view component, every one a `React.lazy` import behind a
 `<Suspense>`, so a route loads its code on first visit. Pure helpers sit
-beside them in `markers.ts` / `routing.ts` / `ui.ts` / `resultsLookup.ts` /
-`statusFilter.ts` / `reportDetailHelpers.ts`.
+beside them in `markers.ts` / `routing.ts` / `resultCells.ts` /
+`popupGeometry.ts` / `resultsLookup.ts` / `statusFilter.ts` /
+`reportDetailHelpers.ts`.
 
 Persisted view settings (`unitSystem`, `sampleLimit`, `compactPanels`) live
-in `bloodtests_view_settings_v1`, read and written by `ui.ts`'s
+in `bloodtests_view_settings_v1`, read and written by
+`web/src/data/storage/viewSettings.ts`'s
 `loadViewSettings` / `saveViewSettings`, owned by the shell and carried
 through Clear all data and the backup's `settings.json`. Per-view filters are
 `useState` in the view and never stored.
@@ -68,7 +70,7 @@ because the footer sits outside the shell. The toggle collapses it to a 64px
 icon rail (labels and tagline hidden, each item named by `aria-label` and a
 tooltip): `AppShell` stamps `data-sidebar-collapsed` on the root element,
 since the footer outside the shell reads the same width variable, and
-`sidebarCollapsed.ts` keeps the choice under
+`web/src/data/storage/sidebarCollapsed.ts` keeps the choice under
 `bloodtests_sidebar_collapsed_v1` (`"true"`, the key removed when expanded).
 
 Phones keep the wrapping `NavBar` (brand mark plus the same labels) until
@@ -78,7 +80,7 @@ hides on scroll-down and returns on scroll-up (`useHideOnScroll.ts`),
 publishing its height as `--mc-nav-h` / `--mc-nav-offset`. It deliberately
 does not use `TabBar` — it differs in container, three-state colors, its
 blocked / `not-allowed` state and route-derived active tab — and keeps
-`ui.ts`'s inline `tabStyle` to itself.
+`primitives/styles.ts`'s inline `tabStyle` to itself.
 
 ## Shared components
 

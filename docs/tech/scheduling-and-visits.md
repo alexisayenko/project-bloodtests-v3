@@ -2,7 +2,10 @@
 
 A schedule is a list of independent visits
 ([ADR-0016](decisions/adr-0016-scheduling-is-a-collection-of-independent-visits.md)).
-Logic in `web/src/components/conditions/scheduled.ts`; the page is
+Logic in `web/src/data/storage/scheduledVisits.ts` (storage and pure
+reducers), the hook in `web/src/hooks/useScheduled.ts`, the view contracts
+`RowScheduling` / `IndexScheduling` in
+`web/src/components/conditions/scheduling.ts`; the page is
 `PlanVisitView.tsx` (`#plan`, reachable while validation errors exist);
 pricing in `web/src/data/labPricing.ts` and `visitPlan.ts`.
 
@@ -68,5 +71,5 @@ affordances live only in the results tables.
 
 ## Backup
 
-`scheduled-visits.json` in the backup zip; restored through `scheduled.ts`'s
+`scheduled-visits.json` in the backup zip; restored through `scheduledVisits.ts`'s
 own save function ([`account-and-sync.md`](account-and-sync.md)).

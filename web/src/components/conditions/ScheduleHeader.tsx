@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { monthChoices } from './scheduled';
+import { monthChoices } from '../../data/storage/scheduledVisits';
 import { formatMonthFullYear } from '../../data/months';
 import { COLOR } from '../../styles/tokens';
 

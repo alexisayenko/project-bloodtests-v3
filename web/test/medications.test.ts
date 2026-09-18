@@ -14,7 +14,7 @@ import {
   updateCompound,
   updateRow,
   type Medications,
-} from '../src/data/medications';
+} from '../src/data/storage/medications';
 import { installMemoryStorage } from './helpers/storage';
 
 const base = emptyMedications(2026);

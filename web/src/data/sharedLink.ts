@@ -1,4 +1,4 @@
-import { hasStoredResults } from './resultsStorage';
+import { hasStoredResults } from './storage/resultsStorage';
 import { parseSharedMeta, type SharedMeta } from './sharedMeta';
 
 export type SharedPayload = { data: unknown; meta: SharedMeta | null };

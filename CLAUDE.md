@@ -66,11 +66,13 @@ Monetization: undecided (`docs/business/README.md`).
 | `web/src/data/parseUpload.ts`, `validateDiagnosticReports.ts`, `utils/exportData.ts` | import, validation, export |
 | `web/src/data/loincCheck.ts`, `loincNlm.ts`, `fuzzyMatch.ts` | LOINC cross-check; the NLM call is alone in its file |
 | `web/src/data/sharedLink.ts`, `sharedMeta.ts`, `backupArchive.ts`, `backupRestore.ts` | share links, backup zip |
+| `web/src/data/storage/{resultsStorage,scheduledVisits,medications,viewSettings,sidebarCollapsed}.ts` | every localStorage key with its parse / load / save and pure reducers; no React |
+| `web/src/hooks/useScheduled.ts`, `useMedications.ts` | the React hooks over `data/storage/` |
 | `web/src/supabase/` | auth, config, sync |
 | `web/src/components/conditions/MedicalConditionsPage.tsx` | the app shell: route, results, shared settings, popups; every section a `React.lazy` sibling view |
 | `web/src/components/conditions/*View.tsx`, `ReferenceBookPage.tsx` | the views (grid, panel detail, all observations, reports, report detail, profile, plan, medications, pathways, lipids, account, reference) |
-| `web/src/components/conditions/{markers,routing,ui,resultsLookup,statusFilter,reportDetailHelpers,scheduled,pathwayShared}.ts` | pure helpers |
-| `web/src/components/primitives/`, `styles/index.css`, `styles/tokens.ts` | UI primitives and design tokens (`docs/ui-ux/style-guide.md`) |
+| `web/src/components/conditions/{markers,routing,resultCells,popupGeometry,scheduling,resultsLookup,statusFilter,reportDetailHelpers,pathwayShared}.ts` | pure helpers and view contracts |
+| `web/src/components/primitives/`, `styles/index.css`, `styles/tokens.ts` | UI primitives (`pressable` / `tabStyle` in `styles.ts`, `IconComponent` in `icons.ts`) and design tokens (`docs/ui-ux/style-guide.md`) |
 | `web/scripts/` | offline Node scripts: `convert-to-v3`, `recode-molar`, `generate-envelope-types`, `fetch-loinc-names` |
 | `web/test/` | Vitest suites |
 | `archive/` | retired code, outside the build by construction |

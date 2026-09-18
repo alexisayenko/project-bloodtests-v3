@@ -1,4 +1,4 @@
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 
 // Not used by the top nav, which has its own spacing, sizes and blocked state.
 export function TabBar<T extends string>({

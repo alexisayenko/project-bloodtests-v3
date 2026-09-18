@@ -1,4 +1,4 @@
-import type { DiagnosticReport, Result } from '../types';
+import type { DiagnosticReport, Result } from '../../types';
 
 export const RESULTS_STORAGE_KEY = 'bloodtests_upload_v1';
 

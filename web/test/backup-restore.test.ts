@@ -4,12 +4,12 @@ import { buildBackupFiles, isUserDataKey, USER_DATA_KEYS, zipBackupFiles, type S
 import { BackupImportError, clearAllData, readBackup, restoreBackup, unzipBackup } from '../src/data/backupRestore';
 import { ENVELOPE_META_KEY, loadEnvelopeMeta } from '../src/data/envelopeMeta';
 import { importResults } from '../src/data/importResults';
-import { loadMedications, MEDICATIONS_KEY } from '../src/data/medications';
-import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
+import { loadMedications, MEDICATIONS_KEY } from '../src/data/storage/medications';
+import { RESULTS_STORAGE_KEY } from '../src/data/storage/resultsStorage';
 import { IMPORTED_LINKS_KEY } from '../src/data/sharedLink';
 import { SHARED_META_KEY } from '../src/data/sharedMeta';
-import { loadScheduled, SCHEDULED_KEY } from '../src/components/conditions/scheduled';
-import { VIEW_SETTINGS_KEY } from '../src/components/conditions/ui';
+import { loadScheduled, SCHEDULED_KEY } from '../src/data/storage/scheduledVisits';
+import { VIEW_SETTINGS_KEY } from '../src/data/storage/viewSettings';
 import { makeResult, makeSession } from './helpers/fixtures';
 import { installMemoryStorage } from './helpers/storage';
 

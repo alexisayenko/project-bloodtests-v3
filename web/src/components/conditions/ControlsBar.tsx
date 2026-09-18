@@ -1,10 +1,11 @@
 import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { ViewSettings } from './ui';
+import { SAMPLE_LIMITS, type ViewSettings } from '../../data/storage/viewSettings';
+import type { UnitSystem } from '../../types';
 import { SegmentedControl } from '../primitives';
 
 export type ControlsProps = ViewSettings & {
-  setUnitSystem: (v: 'si' | 'us') => void;
+  setUnitSystem: (v: UnitSystem) => void;
   setSampleLimit: (v: number | 'all') => void;
 };
 
@@ -27,8 +28,6 @@ export type ControlsBarProps = ControlsProps & {
 
 const NOT_IN_PANEL_DETAIL = 'You are already viewing one panel — filtering by panel applies in All Observations.';
 const NO_PANELS = 'No monitoring panels to filter by.';
-
-const SAMPLE_LIMITS: readonly (number | 'all')[] = [5, 10, 15, 'all'];
 
 // On the group, not the control: a disabled control receives no mouse events.
 function ControlGroup({

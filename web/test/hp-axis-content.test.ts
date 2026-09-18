@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HP_AXIS_HTML } from '../src/components/conditions/hpAxisContent';
+import { HP_AXIS_HTML } from '../src/components/reference/hpAxisContent';
 
 describe('hpAxisContent', () => {
   it('carries the verbatim v2 prose: prolactin section, cascades, source', () => {

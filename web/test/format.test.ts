@@ -2,12 +2,20 @@ import { describe, it, expect } from 'vitest';
 import {
   fmtNum,
   formatFrequencyText,
+  formatFullDate,
   formatResultReference,
   formatResultValue,
   isNearOutOfRange,
   isOutOfRange,
 } from '../src/utils/format';
 import { makeResult as result } from './helpers/fixtures';
+
+describe('formatFullDate', () => {
+  it('renders the full "Mon D, YYYY"', () => {
+    expect(formatFullDate('2026-08-25')).toBe('Aug 25, 2026');
+    expect(formatFullDate('2024-12-01')).toBe('Dec 1, 2024');
+  });
+});
 
 describe('fmtNum — adaptive precision by magnitude (v2 parity)', () => {
   it('scales decimals down as the value grows', () => {

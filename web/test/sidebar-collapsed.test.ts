@@ -3,7 +3,7 @@ import {
   SIDEBAR_COLLAPSED_KEY,
   loadSidebarCollapsed,
   saveSidebarCollapsed,
-} from '../src/components/conditions/sidebarCollapsed';
+} from '../src/data/storage/sidebarCollapsed';
 
 function memoryStorage() {
   const store = new Map<string, string>();

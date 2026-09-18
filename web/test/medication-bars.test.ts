@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildMedicationBars } from '../src/components/conditions/medicationBars';
-import type { MedicationRow } from '../src/data/medications';
+import type { MedicationRow } from '../src/data/storage/medications';
 
 function row(overrides: Partial<MedicationRow>): MedicationRow {
   return { id: 'r', brand: 'Metformin', compounds: [], notes: '', months: [], ...overrides };

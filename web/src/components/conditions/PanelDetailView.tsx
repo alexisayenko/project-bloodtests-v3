@@ -14,14 +14,16 @@ import {
   testLoincs,
   type Observation,
 } from './markers';
-import { pressable, visibleDatesOf, type SelectedCell } from './ui';
+import { pressable } from '../primitives/styles';
+import { visibleDatesOf, type SelectedCell } from './resultCells';
 import { ControlsBar, type ControlsProps } from './ControlsBar';
 import { TabBar } from './TabBar';
 import { TrendsView } from './TrendsView';
 import { ResultsTable } from './ResultTables';
-import { indexInputLoincs, type IndexScheduling, type RowScheduling } from './scheduled';
+import { indexInputLoincs } from '../../data/storage/scheduledVisits';
+import type { IndexScheduling, RowScheduling } from './scheduling';
 import type { ResultEntry } from './resultsLookup';
-import type { MedicationRow } from '../../data/medications';
+import type { MedicationRow } from '../../data/storage/medications';
 import { EmptyState } from '../primitives';
 import { getPanelMeta } from './panelMeta';
 

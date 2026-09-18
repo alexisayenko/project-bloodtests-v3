@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { clamp } from '../../utils/math';
 
 /** How much of a scrolled-out header row / label column stays on screen as a grab handle. */
 export const SLIVER = 5;
@@ -25,8 +26,6 @@ export interface PullReveal {
     onPointerCancel: (e: ReactPointerEvent<HTMLElement>) => void;
   };
 }
-
-const clamp = (value: number, lo: number, hi: number) => Math.min(Math.max(value, lo), hi);
 
 /** `full` may be 0 before the header has been measured. */
 export function usePullReveal(full: number, axis: 'x' | 'y'): PullReveal {

@@ -2,7 +2,8 @@
 
 `#medications` (`MedicationsView.tsx`, reachable while validation errors
 exist): a medication table in a card with a Jan–Dec month grid per shown
-year, kept by `web/src/data/medications.ts`'s `useMedications` under its own
+year, kept by `web/src/hooks/useMedications.ts` over
+`web/src/data/storage/medications.ts` under its own
 localStorage key `bloodtests_medications_v1`, outside the envelope, export,
 import and share links ([task-0018](../tasks/task-0018.md)); `medications.json`
 in the backup zip ([`account-and-sync.md`](account-and-sync.md)).
@@ -19,7 +20,7 @@ saved in the earlier `name` / `dosage` shape is migrated losslessly by
 `compounds` empty), deliberately without parsing a parenthetical compound
 note, since that pairing cannot be done reliably. The current shape is
 described, documentation-only, by `web/public/schema/medications-1.schema.json`;
-`medications.ts`'s lenient parser is the real gatekeeper.
+`storage/medications.ts`'s lenient parser is the real gatekeeper.
 
 ## Rendering
 

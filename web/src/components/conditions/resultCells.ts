@@ -1,19 +1,23 @@
 import { fmtNum } from '../../utils/format';
-import { SI_US_UNIT, convertUnit, indexBands, type IndexBands, type IndexDef, type SubjectProfile } from '../../data/computedIndices';
+import {
+  LOINC_TO_MARKER,
+  SI_US_UNIT,
+  convertUnit,
+  indexBands,
+  type IndexBands,
+  type IndexDef,
+  type SubjectProfile,
+} from '../../data/computedIndices';
 import { DEFAULT_UNITS } from '../../data/analyteCatalog';
 import { toLatinUnit, sameUnitScale } from '../../data/unitNormalization';
 import { UNKNOWN_LAB } from '../../data/parseUpload';
-import { LOINC_TO_MARKER, testLoincs, type Observation } from './markers';
+import { testLoincs, type Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
-import type { Result } from '../../types';
+import type { Result, UnitSystem } from '../../types';
 import { COLOR } from '../../styles/tokens';
 
 export const ZONE_BG = { ok: COLOR.statusOkBg, warn: COLOR.statusWarnBg, bad: COLOR.statusBadBg } as const;
 export const SELECTED_ZONE_BG = { ok: COLOR.statusOkBgSelected, warn: COLOR.statusWarnBgSelected, bad: COLOR.statusBadBgSelected } as const;
-
-export const POPUP_WIDTH = 260;
-export const INDEX_POPUP_WIDTH = 380;
-const POPUP_MARGIN = 8;
 
 export const LABEL_COL_WIDTH = 180;
 
@@ -27,11 +31,6 @@ export const RESULT_TABLE = {
   width: '100%',
 } as const;
 
-export function formatFullDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 /** The green-zone range as a lab-style reference range; without a profile, every band, sex-labelled. */
 export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
   const unit = def.unit ? ` ${def.unit}` : '';
@@ -43,87 +42,6 @@ export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
   const bands = indexBands(def, profile);
   if (bands) return format(bands);
   return def.bandsBySex && !profile?.sex ? 'depends on sex, not set' : 'none';
-}
-
-export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
-export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
-type StoredViewSettings = ViewSettings & { compactPanels: boolean };
-export const DEFAULT_VIEW_SETTINGS: StoredViewSettings = {
-  unitSystem: 'si',
-  sampleLimit: 5,
-  compactPanels: false,
-};
-
-export function loadViewSettings(): StoredViewSettings {
-  try {
-    const raw = localStorage.getItem(VIEW_SETTINGS_KEY);
-    if (raw) {
-      const stored = JSON.parse(raw) as Partial<StoredViewSettings>;
-      return {
-        unitSystem: stored.unitSystem ?? DEFAULT_VIEW_SETTINGS.unitSystem,
-        sampleLimit: stored.sampleLimit ?? DEFAULT_VIEW_SETTINGS.sampleLimit,
-        compactPanels: stored.compactPanels === true,
-      };
-    }
-  } catch {
-    // corrupt/incompatible local storage -- ignore and start fresh
-  }
-  return { ...DEFAULT_VIEW_SETTINGS };
-}
-
-/** Persist the shared table controls and the Compact view preference, dropping any value outside the accepted set. */
-export function saveViewSettings(settings: ViewSettings & { compactPanels?: boolean }): void {
-  const { unitSystem, sampleLimit, compactPanels } = settings;
-  const validLimit =
-    sampleLimit === 'all' || (typeof sampleLimit === 'number' && Number.isFinite(sampleLimit) && sampleLimit > 0);
-  const safe: StoredViewSettings = {
-    unitSystem: unitSystem === 'us' ? 'us' : 'si',
-    sampleLimit: validLimit ? sampleLimit : DEFAULT_VIEW_SETTINGS.sampleLimit,
-    compactPanels: compactPanels === true,
-  };
-  try {
-    localStorage.setItem(VIEW_SETTINGS_KEY, JSON.stringify(safe));
-  } catch {
-    // storage unavailable (private browsing, quota) -- setting just won't persist
-  }
-}
-
-/** Whether the visitor already made their own choice -- share-link settings only seed when they haven't. */
-export function hasStoredViewSettings(): boolean {
-  try {
-    return localStorage.getItem(VIEW_SETTINGS_KEY) !== null;
-  } catch {
-    return false;
-  }
-}
-
-/** Share-link settings applied over the defaults: a starting point, never an override. */
-export function seedViewSettings(seed: Partial<ViewSettings> | undefined): StoredViewSettings {
-  return { ...DEFAULT_VIEW_SETTINGS, ...seed };
-}
-
-/** Makes a styled non-native element keyboard-activatable (Sonar S6848/S1082). */
-export function pressable(handler: (e: { currentTarget: HTMLElement }) => void) {
-  return {
-    role: 'button' as const,
-    tabIndex: 0,
-    onClick: handler,
-    onKeyDown: (e: { key: string; preventDefault: () => void; currentTarget: HTMLElement }) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handler(e);
-      }
-    },
-  };
-}
-
-/** Active bold is a text-shadow, not a fontWeight, so switching tabs never shifts neighbours. */
-export function tabStyle(active: boolean) {
-  return {
-    borderBottom: active ? `2px solid ${COLOR.accent}` : '2px solid transparent',
-    textShadow: active ? '0.3px 0 currentColor, -0.3px 0 currentColor' : 'none',
-    color: active ? COLOR.accent : COLOR.textSecondary,
-  };
 }
 
 type DisplayedResult = { value: number | null; rawValue: string; unit: string; converted: boolean };
@@ -147,7 +65,7 @@ function ownUnitOf(result: Pick<Result, 'loinc' | 'unit'>): string {
 export function displayedResult(
   marker: string | undefined,
   result: Pick<Result, 'loinc' | 'value' | 'rawValue' | 'unit'>,
-  unitSystem: 'si' | 'us'
+  unitSystem: UnitSystem
 ): DisplayedResult {
   const own = ownUnitOf(result);
   const target = marker ? SI_US_UNIT[marker]?.[unitSystem] : undefined;
@@ -191,7 +109,7 @@ export function buildRowCells(
   test: Observation,
   visibleDates: string[],
   allResults: ResultEntry[],
-  unitSystem: 'si' | 'us'
+  unitSystem: UnitSystem
 ): { cells: RowCell[]; rowUnit: string | undefined; showCellUnits: boolean } {
   const marker = LOINC_TO_MARKER[test.loinc];
   const rowLoincs = testLoincs(test);
@@ -235,20 +153,4 @@ const NAMES_A_LAB = /[\p{L}\p{N}]/u;
 export function namedLab(place: string): string | undefined {
   const name = place.trim();
   return NAMES_A_LAB.test(name) && name !== UNKNOWN_LAB ? name : undefined;
-}
-
-/** The width is returned too: a fixed 380 cannot fit a 375px viewport, and clamping left alone only moves the overflow. */
-export function popupPosition(
-  rect: DOMRect,
-  maxWidth: number
-): { left: number; top?: number; bottom?: number; width: number } {
-  const width = Math.min(maxWidth, window.innerWidth - 2 * POPUP_MARGIN);
-  const center = rect.left + rect.width / 2;
-  const left = Math.max(Math.min(center - width / 2, window.innerWidth - width - POPUP_MARGIN), POPUP_MARGIN);
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const spaceAbove = rect.top;
-  if (spaceBelow < 200 && spaceAbove > spaceBelow) {
-    return { left, width, bottom: window.innerHeight - rect.top + 8 };
-  }
-  return { left, width, top: rect.bottom + 8 };
 }

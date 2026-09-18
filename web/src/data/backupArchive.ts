@@ -3,13 +3,13 @@ import type { DiagnosticReport } from '../types';
 import { ENVELOPE_META_KEY, type EnvelopeMeta } from './envelopeMeta';
 import { buildExportEnvelope } from '../utils/exportData';
 import { LABORATORIES } from './labPricing';
-import { MEDICATIONS_KEY, parseMedications } from './medications';
-import { RESULTS_STORAGE_KEY } from './resultsStorage';
+import { MEDICATIONS_KEY, parseMedications } from './storage/medications';
+import { RESULTS_STORAGE_KEY } from './storage/resultsStorage';
 import { SHARED_META_KEY } from './sharedMeta';
 import { IMPORTED_LINKS_KEY } from './sharedLink';
-import { parseScheduled, SCHEDULED_KEY } from '../components/conditions/scheduled';
-import { VIEW_SETTINGS_KEY } from '../components/conditions/ui';
-import { SIDEBAR_COLLAPSED_KEY } from '../components/conditions/sidebarCollapsed';
+import { parseScheduled, SCHEDULED_KEY } from './storage/scheduledVisits';
+import { VIEW_SETTINGS_KEY } from './storage/viewSettings';
+import { SIDEBAR_COLLAPSED_KEY } from './storage/sidebarCollapsed';
 
 export type StorageReader = Pick<Storage, 'getItem' | 'key' | 'length'>;
 export type BackupInput = {

@@ -1,7 +1,7 @@
 import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 import { formatMonthYear } from '../../data/months';
 import { DASH, type Association, type GlyphArt, type Measure, type Particle1, type ReferenceInfo } from './pathwayShared';
-import { pressable } from './ui';
+import { pressable } from '../primitives/styles';
 
 /** A diagram chip's value, its share of total T on a line of its own. */
 export function ChipValue({ measure }: Readonly<{ measure: Measure }>) {

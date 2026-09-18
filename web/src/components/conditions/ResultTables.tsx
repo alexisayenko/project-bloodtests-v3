@@ -8,26 +8,20 @@ import {
   SELECTED_ZONE_BG,
   LABEL_COL_WIDTH,
   buildRowCells,
-  pressable,
   cellBg,
   isCellArmed,
   type RowCell,
   type SelectedCell,
-} from './ui';
+} from './resultCells';
 import { TableScroller } from './TableScroller';
 import { formatMonthYear } from '../../data/months';
 import { hasReference, type ResultEntry } from './resultsLookup';
-import {
-  indexInputLoincs,
-  isIndexScheduled,
-  isRowScheduled,
-  type IndexScheduling,
-  type RowScheduling,
-} from './scheduled';
+import { indexInputLoincs, isIndexScheduled, isRowScheduled } from '../../data/storage/scheduledVisits';
+import type { IndexScheduling, RowScheduling } from './scheduling';
 import { ScheduleHeader, type ScheduleHeaderProps } from './ScheduleHeader';
-import type { Result } from '../../types';
+import type { Result, UnitSystem } from '../../types';
 import { COLOR } from '../../styles/tokens';
-import { CARD_TABLE_TD, CARD_TABLE_TH, TABLE_CARD } from '../primitives/styles';
+import { CARD_TABLE_TD, CARD_TABLE_TH, TABLE_CARD, pressable } from '../primitives/styles';
 import { Card } from '../primitives/Card';
 
 const DATE_COL_WIDTH = 96;
@@ -469,7 +463,7 @@ export type ResultsTableProps = {
   visibleDates: string[];
   allResults: ResultEntry[];
   resultsByDate?: Record<string, Record<string, Result>>;
-  unitSystem: 'si' | 'us';
+  unitSystem: UnitSystem;
   selectedLoinc: string | null;
   onSelect: (loinc: string) => void;
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;

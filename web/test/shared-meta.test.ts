@@ -17,7 +17,7 @@ import {
   DEFAULT_VIEW_SETTINGS,
   hasStoredViewSettings,
   seedViewSettings,
-} from '../src/components/conditions/ui';
+} from '../src/data/storage/viewSettings';
 import { installMemoryStorage } from './helpers/storage';
 
 describe('parseSharedMeta', () => {

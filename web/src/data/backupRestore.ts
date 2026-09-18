@@ -2,11 +2,11 @@ import type { strFromU8, unzipSync } from 'fflate';
 import { BACKUP_FORMAT, BACKUP_VERSION, USER_DATA_KEYS, isSettingsKey, isUserDataKey } from './backupArchive';
 import { sanitizeEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from './envelopeMeta';
 import { isAcceptedSchemaVersion } from './envelopeSchema';
-import { isMedicationsShape, parseMedications, saveMedications, type Medications } from './medications';
+import { isMedicationsShape, parseMedications, saveMedications, type Medications } from './storage/medications';
 import { parseUploadedResults, UploadParseError } from './parseUpload';
 import { clearSharedMeta } from './sharedMeta';
-import { isScheduledShape, parseScheduled, saveScheduled, type ScheduledVisits } from '../components/conditions/scheduled';
-import { saveViewSettings, VIEW_SETTINGS_KEY, type ViewSettings } from '../components/conditions/ui';
+import { isScheduledShape, parseScheduled, saveScheduled, type ScheduledVisits } from './storage/scheduledVisits';
+import { saveViewSettings, VIEW_SETTINGS_KEY, type ViewSettings } from './storage/viewSettings';
 
 export class BackupImportError extends Error {}
 

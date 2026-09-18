@@ -1,6 +1,6 @@
 import type { DiagnosticReport } from '../types';
 import { parseUploadedResults } from './parseUpload';
-import { RESULTS_STORAGE_KEY } from './resultsStorage';
+import { RESULTS_STORAGE_KEY } from './storage/resultsStorage';
 
 export function replaceStoredSessions(incoming: DiagnosticReport[]): DiagnosticReport[] {
   const sessions = [...incoming].sort((a, b) => b.date.localeCompare(a.date));

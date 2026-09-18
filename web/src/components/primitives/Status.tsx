@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import type { IconComponent } from '../conditions/customIcons';
-import { pressable } from '../conditions/ui';
+import type { IconComponent } from './icons';
+import { pressable } from './styles';
 import { TONE_DOT, type StatusTone } from './tones';
 
 export function StatusDot({
