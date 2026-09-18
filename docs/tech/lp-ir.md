@@ -42,3 +42,5 @@ Sources:
 LP-IR is modeled as a normal reported observation in `analyses.json`, not as a Paneloom computed index. It is added to the **Insulin Resistance** monitoring panel through `monitoring-panels.json`.
 
 This keeps the product invariant intact: laboratory values are stored/displayed as reported, while derived values are only computed when Paneloom has a documented, reproducible formula and source.
+
+A computed LP-IR cross-check, additive to this observation and never merged with it, is specced in [task-0063](../tasks/task-0063.md).
