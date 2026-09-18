@@ -23,8 +23,8 @@ through Clear all data and the backup's `settings.json`. Per-view filters are
 | --- | --- | --- |
 | `#profile` | Get Started | below |
 | `#reports`, `#reports/<file>` | Diagnostic Reports | [`diagnostic-reports.md`](diagnostic-reports.md) |
-| `#all`, `#all/in-range`, `#all/trends` | All Observations | [`results-tables.md`](results-tables.md), [`charts.md`](charts.md) |
-| `#panels` (default), `#panel/<id>` | Monitoring Panels | [`monitoring-panels.md`](monitoring-panels.md) |
+| `#panels/All%20Observations`, `.../trends` (legacy `#all`, `#all/trends`, `#all/in-range`) | All Observations — a pseudo-panel routed like any other panel | [`results-tables.md`](results-tables.md), [`charts.md`](charts.md) |
+| `#panels` (default), `#panels/<name>`, `#panels/<name>/<tab>` | Monitoring Panels | [`monitoring-panels.md`](monitoring-panels.md) |
 | `#pathways` | Hormonal Pathways | [`pathway-pages.md`](pathway-pages.md) |
 | `#lipids` | Lipid Transport | [`pathway-pages.md`](pathway-pages.md) |
 | `#plan` | Scheduled Visits | [`scheduling-and-visits.md`](scheduling-and-visits.md) |
@@ -37,15 +37,18 @@ and evidence-grading note, "Import JSON" (replaces all stored sessions, as a
 share-link import does), a "Go to Diagnostic Reports" pill, and a showcase
 test dataset generator (`data/generateTestData.ts`: demo reports under their
 own ids, medications, and one sample scheduled visit only when no visit
-exists yet; opens `#all/in-range` when finished).
+exists yet; opens the All Observations pseudo-panel's Trends tab when
+finished).
 
 ## Blocking while errors exist
 
-While validation errors exist, Monitoring Panels, Hormonal Pathways, Lipid
-Transport and All Observations are disabled in the nav and their routes
-redirect to `#reports` — one rule, `routing.ts`'s `isRouteBlocked` (panels,
-panel, pathways, lipids, all), which `isNavItemBlocked` also asks. Get
-Started, Scheduled Visits, Medications, Reference Book and Account stay
+While validation errors exist, Monitoring Panels (every panel, including the
+All Observations pseudo-panel), Hormonal Pathways and Lipid Transport are
+disabled in the nav and their routes redirect to `#reports` — one rule,
+`routing.ts`'s `isRouteBlocked` (the `panels`, `panel`, `pathways` and
+`lipids` route views), which `isNavItemBlocked` also asks via `navItemRoute`
+to resolve each nav item — including `all` — to the route it actually blocks.
+Get Started, Scheduled Visits, Medications, Reference Book and Account stay
 reachable. The shell swaps the route during render, so the blocked view never
 paints, and replaces the URL with `history.replaceState` in an effect, so a
 redirect adds no history entry and Back cannot loop into it.
@@ -88,8 +91,9 @@ blocked / `not-allowed` state and route-derived active tab — and keeps
   title, description lines and up to three icon pillars (accepting either
   `lucide-react` or `customIcons.tsx` icons). Panel Detail, report detail and
   the Reference Book's sub-pages keep a plain `<h1>`.
-- `TabBar.tsx` — the in-page tab strip Panel Detail, All Observations and
-  Scheduled Visits render; its look in `index.css`'s `.mc-tabs` / `.mc-tab`.
+- `TabBar.tsx` — the in-page tab strip Panel Detail (every panel, including
+  All Observations) and Scheduled Visits render; its look in `index.css`'s
+  `.mc-tabs` / `.mc-tab`.
 - `ControlsBar`, `ResultTables`, `TableScroller`, `ScheduleHeader` —
   [`results-tables.md`](results-tables.md).
 - `Popup.tsx`, `StatusFilterBar.tsx`, `Footer.tsx`.
@@ -118,4 +122,4 @@ graph, eslint, Sonar's `sonar.sources` and coverage by construction rather
 than by exclusion list. The 3D stacked-ribbon chart engine (once the Panel
 Detail "Charts" tab) followed it into `archive/src/components/analytics/`
 after the tab was removed; only the series palette (`palette.ts`, still used
-by `LabExploreView.tsx`) remains in `web/src/components/analytics/`.
+by `TrendsView.tsx`) remains in `web/src/components/analytics/`.

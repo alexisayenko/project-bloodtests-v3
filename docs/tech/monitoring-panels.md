@@ -41,20 +41,24 @@ one `requestAnimationFrame`, by a `useEffect` keyed on the route transitioning
 back — the same route state whether Back came from `pushState` or the native
 `popstate` — so only a fresh page load opens at the top.
 
-Tabs (`TabBar`): Results (default), Trends, What's in range.
+Tabs (`TabBar`): Results (default), Trends.
 
 - **Results** renders one `ResultsTable` in a `Card` under the `ControlsBar`
   — the panel select present but disabled, since a control that vanishes
   between views makes the bar jump; the marker box filters the panel's own
-  tables ([`results-tables.md`](results-tables.md)).
-- **Trends** (`TrendsView.tsx`) focuses on individual analyte trajectories and
-  data provenance ([task-0027](../tasks/task-0027.md)). It renders key marker
-  summary cards with sparklines and deltas, an interactive timeline chart with
-  laboratory-specific reference bands and unit selection, and a chronological
-  results history table. While Trends is active, the panel header displays the
-  interactive, header-scoped date-range control ([ADR-0024](decisions/adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md)).
-- **What's in range** is a `React.lazy` import behind a `<Suspense>`, so
-  uPlot loads on first visit ([`charts.md`](charts.md)).
+  tables ([`results-tables.md`](results-tables.md)). The All Observations
+  pseudo-panel gets a live panel picker instead, plus a cross-panel row/index
+  scope.
+- **Trends** (`TrendsView.tsx`) is the merged former "Trends" and "What's in
+  range" tab ([`charts.md`](charts.md)) and focuses on individual analyte
+  trajectories and data provenance ([task-0027](../tasks/task-0027.md)). It
+  renders key marker summary cards with sparklines and deltas, a
+  Normalized/Absolute uPlot timeline chart (a `React.lazy` import behind a
+  `<Suspense>`, so uPlot loads on first visit) with laboratory-specific
+  reference bands, a medications lane when there is history to show, and a
+  chronological results history table. While Trends is active, the panel
+  header displays the interactive, header-scoped date-range control
+  ([ADR-0024](decisions/adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md)).
 
 Selecting an index row marks each input observation with an accent • in a
 fixed 10px gutter left of its name, and selecting an observation marks each

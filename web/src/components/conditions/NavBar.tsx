@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { NAV_ITEMS, type Route } from './routing';
+import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, navItemRoute, type Route } from './routing';
 import { pressable, tabStyle } from '../primitives/styles';
 import { useHideOnScroll } from './useHideOnScroll';
 import { COLOR } from '../../styles/tokens';
@@ -35,17 +35,14 @@ export function NavBar({ route, navigate, hasValidationErrors = false }: Readonl
         <span style={{ fontSize: 19, fontWeight: 700, color: COLOR.navy, letterSpacing: -0.2 }}>Paneloom</span>
       </div>
       {NAV_ITEMS.map((item) => {
-        const active =
-          route.view === item.view ||
-          (item.view === 'panels' && route.view === 'panel') ||
-          (item.view === 'reports' && route.view === 'report');
-        const isBlocked = hasValidationErrors && (item.view === 'panels' || item.view === 'all');
+        const active = isNavItemActive(route, item.view);
+        const isBlocked = isNavItemBlocked(item.view, hasValidationErrors);
         const tab = tabStyle(active);
         return (
           <div
             key={item.view}
             {...pressable(() => {
-              if (!isBlocked) navigate({ view: item.view });
+              if (!isBlocked) navigate(navItemRoute(item.view));
             })}
             title={isBlocked ? 'Errors in diagnostic reports block access' : ''}
             style={{

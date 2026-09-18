@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { useHashRoute } from '../src/hooks/useHashRoute';
-import type { Route } from '../src/components/conditions/routing';
+import { ALL_OBSERVATIONS_PANEL, navItemRoute, type Route } from '../src/components/conditions/routing';
 import { mount, unmount } from './helpers/render';
 
 let latest: { route: Route; navigate: (next: Route) => void };
@@ -66,7 +66,7 @@ describe('useHashRoute', () => {
   it('follows the browser back and forward through popstate', async () => {
     await mount(<Harness blocked={false} />);
     await popTo('#all/in-range');
-    expect(latest.route).toEqual({ view: 'all', tab: 'in-range' });
+    expect(latest.route).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL, tab: 'trends' });
     await popTo('#reports');
     expect(latest.route).toEqual({ view: 'reports' });
   });
@@ -124,7 +124,7 @@ describe('useHashRoute', () => {
   it('redirects when navigating into a blocked route', async () => {
     window.location.hash = '#reports';
     await mount(<Harness blocked />);
-    await navigate({ view: 'all' });
+    await navigate(navItemRoute('all'));
     expect(latest.route).toEqual({ view: 'reports' });
     expect(window.history.replaceState).toHaveBeenLastCalledWith(null, '', '#reports');
   });

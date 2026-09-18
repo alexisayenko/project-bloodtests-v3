@@ -29,7 +29,7 @@ An index carries `cut` / `hi`, or `bandsBySex` in place of them. `indexBands`
 Database details (`bloodtests_envelope_meta_v1`); `birthYear` is not read.
 With sex unset a sex-banded index has no band and so no status — a grey chip
 in the grid, an uncolored number in the tables, "depends on sex, not set" as
-the popup's Ref, and "sex not set" in What's in range's not-taken list. The
+the popup's Ref, and "sex not set" in the Trends tab's not-taken list. The
 Reference Book, having no profile, names both bands. An index with neither
 `cut` nor `bandsBySex` is deliberately band-less and never has a status.
 
@@ -79,9 +79,10 @@ else Martin-Hopkins marked as calculated.
 - Monitoring Panels grid cards, below a divider, as status-dotted chips
   ([`monitoring-panels.md`](monitoring-panels.md)).
 - Results tables, under an "Indices" divider row, in Panel Detail (the
-  panel's indices) and All Observations (the selected panel's, or the union
-  over the panels on offer) ([`results-tables.md`](results-tables.md)).
-- "What's in range" and the pathway badges
+  panel's indices) and its All Observations pseudo-panel (the selected
+  panel's, or the union over the panels on offer)
+  ([`results-tables.md`](results-tables.md)).
+- The Trends tab and the pathway badges
   ([`charts.md`](charts.md), [`pathway-pages.md`](pathway-pages.md)).
 - The Reference Book, one page per index with formula, prose and cited
   sources ([`reference-book.md`](reference-book.md)).

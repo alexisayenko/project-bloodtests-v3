@@ -1,6 +1,6 @@
 import { Rocket, FileText, List, LayoutGrid, CalendarCheck, BookOpen, CircleUser, ChevronsLeft, Droplets, ChevronsRight, type LucideIcon } from 'lucide-react';
 import { PathwaysIcon, PillIcon, type IconComponent } from './customIcons';
-import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, type NavView, type Route } from './routing';
+import { NAV_ITEMS, isNavItemActive, isNavItemBlocked, navItemRoute, type NavView, type Route } from './routing';
 import { pressable } from '../primitives/styles';
 import { COLOR } from '../../styles/tokens';
 
@@ -46,7 +46,7 @@ export function SideNav({
       <div
         key={item.view}
         {...pressable(() => {
-          if (!isBlocked) navigate({ view: item.view });
+          if (!isBlocked) navigate(navItemRoute(item.view));
         })}
         className="mc-side-item"
         aria-current={active ? 'page' : undefined}

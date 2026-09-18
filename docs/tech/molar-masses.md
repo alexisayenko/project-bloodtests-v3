@@ -207,7 +207,7 @@ checks:
   for a molar unit under a mass code is still the sibling code, never a
   rewritten number
   ([ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)); the
-  factor's one use is display-time, in the "What's in range" chart's
+  factor's one use is display-time, in the Trends chart's
   `placeOnBandScale` (`web/src/components/conditions/exploreModel.ts`),
   which puts every reading on the unit its reference band is expressed in so
   a history that switched scales plots as one line. Nothing it produces is

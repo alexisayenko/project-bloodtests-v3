@@ -94,8 +94,8 @@ different scales, and one analyte's `IU` never meets another's.
 printed spelling to Latin before matching, so `ммоль/л` converts like
 `mmol/L`. It runs in three places, all display-only: the SI / US switch in the
 results tables, an index reading its inputs into the formula's unit
-([`computed-indices.md`](computed-indices.md)), and the "What's in range"
-chart placing a history on its band's unit ([`charts.md`](charts.md)).
+([`computed-indices.md`](computed-indices.md)), and the Trends chart placing
+a history on its band's unit ([`charts.md`](charts.md)).
 Mass↔molar factors come from `molar-masses.json` through `molarMasses.ts`
 ([`reference-data.md`](reference-data.md#molar-masses-molar-massesjson)).
 

@@ -77,7 +77,7 @@ rather than adopted.**
   argument, which changes only the total T fed to the Vermeulen quadratic;
   it lives in that view's `useState`, is not persisted, is not exported or
   backed up, and changes nothing outside that page — the grid, the tables,
-  What's in range and the Reference Book always use the cited mass.
+  the Trends chart and the Reference Book always use the cited mass.
 
 ## Alternatives considered
 

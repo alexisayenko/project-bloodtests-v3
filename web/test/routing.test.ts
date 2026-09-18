@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { hashToRoute, routeToHash, isNavItemActive, isNavItemBlocked, isRouteBlocked, NAV_ITEMS, type Route } from '../src/components/conditions/routing';
+import {
+  ALL_OBSERVATIONS_PANEL,
+  hashToRoute,
+  routeToHash,
+  isNavItemActive,
+  isNavItemBlocked,
+  isRouteBlocked,
+  navItemRoute,
+  panelRoute,
+  NAV_ITEMS,
+  type Route,
+} from '../src/components/conditions/routing';
 
 describe('nav item state', () => {
   const activeViews = (route: Route) => NAV_ITEMS.filter((item) => isNavItemActive(route, item.view)).map((item) => item.view);
@@ -11,19 +22,24 @@ describe('nav item state', () => {
     expect(activeViews({ view: 'plan' })).toEqual(['plan']);
   });
 
-  it('blocks Monitoring Panels, Hormonal Pathways and All Observations only while reports have errors', () => {
+  it('lights All Observations for its pseudo-panel and Monitoring Panels for every other panel', () => {
+    expect(activeViews({ view: 'panel', name: ALL_OBSERVATIONS_PANEL })).toEqual(['all']);
+    expect(activeViews({ view: 'panel', name: 'Thyroid' })).toEqual(['panels']);
+  });
+
+  it('blocks Monitoring Panels, Hormonal Pathways, Lipid Transport and All Observations only while reports have errors', () => {
     expect(NAV_ITEMS.filter((item) => isNavItemBlocked(item.view, true)).map((item) => item.view)).toEqual(['all', 'panels', 'pathways', 'lipids']);
     expect(NAV_ITEMS.some((item) => isNavItemBlocked(item.view, false))).toBe(false);
   });
 
-  it('blocks the panels grid, Panel Detail and every All Observations tab while reports have errors', () => {
+  it('blocks the panels grid, every panel (including All Observations) and Hormonal Pathways / Lipid Transport while reports have errors', () => {
     const blocked: Route[] = [
       { view: 'panels' },
       { view: 'panel', name: 'Thyroid' },
+      { view: 'panel', name: ALL_OBSERVATIONS_PANEL },
+      { view: 'panel', name: ALL_OBSERVATIONS_PANEL, tab: 'trends' },
       { view: 'pathways' },
       { view: 'lipids' },
-      { view: 'all' },
-      { view: 'all', tab: 'in-range' },
     ];
     const open: Route[] = [
       { view: 'reports' },
@@ -41,8 +57,29 @@ describe('nav item state', () => {
 
   it('agrees with the nav for every nav section', () => {
     for (const item of NAV_ITEMS) {
-      expect(isNavItemBlocked(item.view, true)).toBe(isRouteBlocked({ view: item.view }, true));
+      expect(isNavItemBlocked(item.view, true)).toBe(isRouteBlocked(navItemRoute(item.view), true));
     }
+  });
+});
+
+describe('navItemRoute', () => {
+  it('routes All Observations to its pseudo-panel and every other item to its own simple route', () => {
+    expect(navItemRoute('all')).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL });
+    expect(navItemRoute('panels')).toEqual({ view: 'panels' });
+    expect(navItemRoute('pathways')).toEqual({ view: 'pathways' });
+    expect(navItemRoute('account')).toEqual({ view: 'account' });
+  });
+});
+
+describe('panelRoute', () => {
+  it('collapses the default tab and an unknown segment to the bare panel route', () => {
+    expect(panelRoute('Thyroid')).toEqual({ view: 'panel', name: 'Thyroid' });
+    expect(panelRoute('Thyroid', 'analysis')).toEqual({ view: 'panel', name: 'Thyroid' });
+    expect(panelRoute('Thyroid', 'nope')).toEqual({ view: 'panel', name: 'Thyroid' });
+  });
+
+  it('keeps a known non-default tab', () => {
+    expect(panelRoute('Thyroid', 'trends')).toEqual({ view: 'panel', name: 'Thyroid', tab: 'trends' });
   });
 });
 
@@ -53,9 +90,6 @@ describe('routeToHash ↔ hashToRoute', () => {
     { view: 'lipids' },
     { view: 'reference' },
     { view: 'reference', key: 'homair' },
-    { view: 'all' },
-    { view: 'all', tab: 'in-range' },
-    { view: 'all', tab: 'trends' },
     { view: 'reports' },
     { view: 'report', file: 'dev__2024-06-15' },
     { view: 'profile' },
@@ -63,6 +97,9 @@ describe('routeToHash ↔ hashToRoute', () => {
     { view: 'plan' },
     { view: 'account' },
     { view: 'panel', name: 'Bone and Mineral Metabolism' },
+    { view: 'panel', name: 'Thyroid', tab: 'trends' },
+    { view: 'panel', name: ALL_OBSERVATIONS_PANEL },
+    { view: 'panel', name: ALL_OBSERVATIONS_PANEL, tab: 'trends' },
   ];
 
   it('round-trips every route shape', () => {
@@ -71,14 +108,26 @@ describe('routeToHash ↔ hashToRoute', () => {
     }
   });
 
-  it('All Observations tabs: #all/in-range addresses a tab, the default and an unknown segment collapse to #all', () => {
-    expect(routeToHash({ view: 'all', tab: 'in-range' })).toBe('#all/in-range');
-    expect(routeToHash({ view: 'all', tab: 'analysis' })).toBe('#all');
-    expect(hashToRoute('#all')).toEqual({ view: 'all' });
-    expect(hashToRoute('#all/in-range')).toEqual({ view: 'all', tab: 'in-range' });
-    expect(hashToRoute('#all/analysis')).toEqual({ view: 'all' });
-    expect(hashToRoute('#all/nope')).toEqual({ view: 'all' });
-    expect(hashToRoute('#all/')).toEqual({ view: 'all' });
+  it('a panel tab: the default and an unknown segment collapse to the bare panel hash', () => {
+    expect(routeToHash({ view: 'panel', name: 'Thyroid', tab: 'trends' })).toBe('#panels/Thyroid/trends');
+    expect(routeToHash({ view: 'panel', name: 'Thyroid', tab: 'analysis' })).toBe('#panels/Thyroid');
+    expect(hashToRoute('#panels/Thyroid')).toEqual({ view: 'panel', name: 'Thyroid' });
+    expect(hashToRoute('#panels/Thyroid/trends')).toEqual({ view: 'panel', name: 'Thyroid', tab: 'trends' });
+    expect(hashToRoute('#panels/Thyroid/analysis')).toEqual({ view: 'panel', name: 'Thyroid' });
+    expect(hashToRoute('#panels/Thyroid/nope')).toEqual({ view: 'panel', name: 'Thyroid' });
+  });
+
+  it('a legacy per-panel #panels/<name>/in-range bookmark folds into the merged Trends tab', () => {
+    expect(hashToRoute('#panels/Thyroid/in-range')).toEqual({ view: 'panel', name: 'Thyroid', tab: 'trends' });
+  });
+
+  it('legacy #all links collapse onto the All Observations pseudo-panel, in-range folding into trends', () => {
+    expect(hashToRoute('#all')).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL });
+    expect(hashToRoute('#all/analysis')).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL });
+    expect(hashToRoute('#all/trends')).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL, tab: 'trends' });
+    expect(hashToRoute('#all/in-range')).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL, tab: 'trends' });
+    expect(hashToRoute('#all/nope')).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL });
+    expect(hashToRoute('#all/')).toEqual({ view: 'panel', name: ALL_OBSERVATIONS_PANEL });
   });
 
   it('Hormonal Pathways lives at #pathways', () => {

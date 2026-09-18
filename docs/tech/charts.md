@@ -1,24 +1,28 @@
 # Charts
 
-## "What's in range" (lab-explore)
+## Trends (lab-explore)
 
-Panel Detail and All Observations each carry a "What's in range" tab. In All
-Observations the tab is part of the route — `#all/in-range`, `#all/trends`,
-bare `#all` for Results, an unknown segment falling back to it — and
-switching tabs pushes history the way section navigation does.
+Panel Detail carries one Trends tab, on every panel including the All
+Observations pseudo-panel. It is the merged "Trends" and "What's in range"
+view: a normalized-overlay time chart with a Normalized / Absolute values
+toggle, plus a scrollable row of marker summary cards and a result-history
+table for whichever marker is selected.
 
-It is a normalized-overlay time chart: every marker, and every panel's
-computed indices, plotted as % of its own reference range or ok-zone band on
-one shared axis, with a panel picker (a marker or index shared across panels
-groups under every relevant one), zoom, autoscale, and a "not taken" section
-that also names readings dropped because their unit could not be placed on
-the series' band scale, and an index whose sex-dependent band is unset.
+Normalized mode plots every marker, and every panel's computed indices, as %
+of its own reference range or ok-zone band on one shared axis, with a panel
+picker (a marker or index shared across panels groups under every relevant
+one), zoom, autoscale, and a "not taken" section that also names readings
+dropped because their unit could not be placed on the series' band scale, and
+an index whose sex-dependent band is unset. Absolute mode plots the same
+markers in their own units.
 
 The engine is v2's `<lab-explore>` web component, vendored as-is into
 `web/src/vendor/lab-explore/` and `web/src/vendor/chart-kit/` (its
 domain-agnostic uPlot-based charting engine), driven by the
 `buildExploreModel` adapter in `exploreModel.ts` and mounted via
-`LabExploreView.tsx`. All Observations shares the chunk. `LabExploreView` also
+`TrendsView.tsx`, which is `PanelDetailView`'s Trends tab for every panel —
+the All Observations pseudo-panel passes every visible condition and no
+`currentPanel`, a single panel passes just its own tests. `TrendsView` also
 renders a `MedicationLane` under the plot — the medication history as bars
 from `medicationBars.ts`'s `buildMedicationBars`, omitted when there are no
 medications ([task-0053](../tasks/task-0053.md)). Reference-band overrides and

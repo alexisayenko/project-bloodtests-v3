@@ -1,21 +1,29 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Info } from 'lucide-react';
-import type { Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
 import { Card } from '../primitives/Card';
 import { COLOR, RADIUS } from '../../styles/tokens';
 import { pressable } from '../primitives/styles';
 import { LabExplore } from '../../vendor/lab-explore/lab-explore';
 import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
-import { buildExploreModel } from './exploreModel';
+import { buildExploreModel, type Condition } from './exploreModel';
 import type { Result, UnitSystem } from '../../types';
+import type { MedicationRow } from '../../data/storage/medications';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
-import { SegmentedControl } from '../primitives';
+import { SegmentedControl, SwitchToggle } from '../primitives';
+import { MedicationLane } from './MedicationLane';
+import { buildMedicationBars } from './medicationBars';
+import { PALETTE } from '../analytics/palette';
 import { LOINC_TO_MARKER } from '../../data/computedIndices';
 import { displayedResult } from './resultCells';
 import { molarPerMassUnit } from '../../data/molarMasses';
 import { fmtNum } from '../../utils/format';
 import { specimenOf } from '../../data/analyteCatalog';
+
+function paletteColor(index: number): string {
+  const [r, g, b] = PALETTE[index % PALETTE.length]!;
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 function formatCommonName(longCommonName: string | undefined, fallback: string): string {
   if (!longCommonName) return fallback;
@@ -36,20 +44,24 @@ if (typeof customElements !== 'undefined' && !customElements.get('lab-explore'))
 type LabExploreElement = HTMLElement & { model: LabExploreModel | null };
 
 interface Props {
-  name?: string;
-  tests?: Observation[];
+  conditions: Condition[];
+  currentPanel?: string;
   allResults?: ResultEntry[];
   unitSystem?: UnitSystem;
   resultsByDate?: Record<string, Record<string, Result>>;
+  medications?: MedicationRow[];
 }
 
 export function TrendsView({
-  name,
-  tests = [],
+  conditions,
+  currentPanel,
   allResults = [],
   unitSystem = 'si',
   resultsByDate,
+  medications,
 }: Readonly<Props>) {
+  const tests = useMemo(() => conditions.flatMap((c) => c.tests), [conditions]);
+
   // Available observations in this panel that have results
   const availableTests = useMemo(() => {
     return tests.filter((t) => allResults.some((r) => r.loinc === t.loinc));
@@ -71,6 +83,7 @@ export function TrendsView({
   const [showGuidelineInfo, setShowGuidelineInfo] = useState(false);
   // Normalized (% of ref range) vs Absolute values toggle
   const [normalized, setNormalized] = useState(true);
+  const [showMedications, setShowMedications] = useState(true);
 
   // Reference to custom element
   const ref = useRef<HTMLElement | null>(null);
@@ -78,16 +91,16 @@ export function TrendsView({
 
   // Build model for standard lab-explore control
   const model = useMemo(() => {
-    const panelConditions = tests.length > 0 ? [{ name: name ?? 'Panel', tests }] : [];
     const built = buildExploreModel(
-      panelConditions,
+      conditions,
       allResults,
       unitSystem,
-      name,
+      currentPanel,
       resultsByDate,
       { sex }
     );
-    const viewId = `trends:${name ?? 'all'}:${selectedLoinc || 'all'}`;
+    const panelId = currentPanel ?? 'all';
+    const viewId = `trends:${panelId}:${selectedLoinc || 'all'}`;
     return {
       ...built,
       title: '',
@@ -96,12 +109,17 @@ export function TrendsView({
       defaultSelection: selectedLoinc && built.markers[selectedLoinc] ? [selectedLoinc] : built.defaultSelection,
       persist: {
         sel: `exploreSel:${viewId}`,
-        view: `hpgChartView:trends:${name ?? 'all'}`,
-        autoscale: `hpgAutoscale:trends:${name ?? 'all'}`,
-        evPrefix: `exploreEv:trends:${name ?? 'all'}:`,
+        view: `hpgChartView:trends:${panelId}`,
+        autoscale: `hpgAutoscale:trends:${panelId}`,
+        evPrefix: `exploreEv:trends:${panelId}:`,
       },
     };
-  }, [tests, allResults, unitSystem, name, resultsByDate, sex, selectedLoinc, normalized]);
+  }, [conditions, allResults, unitSystem, currentPanel, resultsByDate, sex, selectedLoinc, normalized]);
+
+  const medicationBars = useMemo(
+    () => (medications?.length ? buildMedicationBars(medications, paletteColor) : []),
+    [medications]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -376,7 +394,7 @@ export function TrendsView({
             )}
           </div>
 
-          {/* Values Normalized / Absolute Control */}
+          {/* Values Normalized / Absolute Control, plus Medications when there is history to show */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <SegmentedControl
               label="Values"
@@ -385,6 +403,9 @@ export function TrendsView({
               onChange={(v) => setNormalized(v === 'normalized')}
               format={(v) => (v === 'normalized' ? 'Normalized values' : 'Absolute numbers')}
             />
+            {medicationBars.length > 0 && (
+              <SwitchToggle label="Medications" pressed={showMedications} onChange={setShowMedications} />
+            )}
           </div>
         </div>
 
@@ -407,6 +428,7 @@ export function TrendsView({
         )}
 
         <lab-explore ref={ref} />
+        {showMedications && medicationBars.length > 0 && <MedicationLane bars={medicationBars} hostRef={ref} />}
       </Card>
 
       {/* 3. Result History Table */}

@@ -2,8 +2,8 @@ import { useMemo, lazy, Suspense } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnosticReports';
-import { buildConditions } from './markers';
-import { allObservationsRoute, DEFAULT_OBSERVATIONS_TAB } from './routing';
+import { buildConditions, type Observation } from './markers';
+import { ALL_OBSERVATIONS_PANEL, DEFAULT_PANEL_TAB, panelRoute } from './routing';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { AppShell } from './AppShell';
 import { Popup } from './Popup';
@@ -20,7 +20,6 @@ import { COLOR } from '../../styles/tokens';
 
 // PanelsGridView is the entry route and stays a static import; every other section is lazy so the first paint never waits on it.
 const ReferenceBookPage = lazy(() => import('./ReferenceBookPage').then((m) => ({ default: m.ReferenceBookPage })));
-const AllObservationsView = lazy(() => import('./AllObservationsView').then((m) => ({ default: m.AllObservationsView })));
 const ProfileView = lazy(() => import('./ProfileView').then((m) => ({ default: m.ProfileView })));
 const MedicationsView = lazy(() => import('./MedicationsView').then((m) => ({ default: m.MedicationsView })));
 const HormonalPathwaysView = lazy(() => import('./HormonalPathwaysView').then((m) => ({ default: m.HormonalPathwaysView })));
@@ -56,6 +55,16 @@ export function MedicalConditionsPage() {
   );
   const allowedPanels = panelAllowlist(sharedMeta);
   const shownConditions = useMemo(() => visiblePanels(conditions, allowedPanels), [conditions, allowedPanels]);
+  // A synthetic card fronting every visible panel's tests, deduped by LOINC, so the grid opens it like any other panel.
+  const gridConditions = useMemo(() => {
+    const seen = new Map<string, Observation>();
+    for (const c of shownConditions) {
+      for (const t of c.tests) {
+        if (!seen.has(t.loinc)) seen.set(t.loinc, t);
+      }
+    }
+    return [{ name: ALL_OBSERVATIONS_PANEL, tests: Array.from(seen.values()) }, ...shownConditions];
+  }, [shownConditions]);
 
   // A clear or restore rewrites storage underneath this state, so it has to be read back.
   const reloadStoredState = () => {
@@ -81,7 +90,7 @@ export function MedicalConditionsPage() {
 
   const panelsGrid = (
     <PanelsGridView
-      conditions={shownConditions}
+      conditions={gridConditions}
       latestByLoinc={latestByLoinc}
       resultsByDate={resultsByDate}
       compact={compactPanels}
@@ -102,8 +111,14 @@ export function MedicalConditionsPage() {
   );
 
   const view = (() => {
-    // A hash pointing at a panel the link doesn't share falls back to the grid.
-    if (route.view === 'panel' && conditions.length > 0 && !isPanelVisible(route.name, allowedPanels)) {
+    // A hash pointing at a panel the link doesn't share falls back to the grid; the All Observations
+    // pseudo-panel is never blocked by the allowlist.
+    if (
+      route.view === 'panel' &&
+      route.name !== ALL_OBSERVATIONS_PANEL &&
+      conditions.length > 0 &&
+      !isPanelVisible(route.name, allowedPanels)
+    ) {
       return panelsGrid;
     }
     // A hash pointing at a report that isn't loaded (stale link, cleared data) falls back to the list.
@@ -111,20 +126,6 @@ export function MedicalConditionsPage() {
       return diagnosticReportsList;
     }
     switch (route.view) {
-      case 'all':
-        return (
-          <AllObservationsView
-            allResults={allResults}
-            conditions={conditions}
-            panelOptions={shownConditions}
-            analysesCatalog={analysesCatalog}
-            controls={controls}
-            resultsByDate={resultsByDate}
-            tab={route.tab ?? DEFAULT_OBSERVATIONS_TAB}
-            onTabChange={(tab) => navigate(allObservationsRoute(tab))}
-            medications={medications.rows}
-          />
-        );
       case 'reports':
         return diagnosticReportsList;
       case 'report':
@@ -145,7 +146,7 @@ export function MedicalConditionsPage() {
             uploadFile={uploadFile}
             loadGenerated={loadGenerated}
             onStoredStateChanged={reloadStoredState}
-            onGenerated={() => navigate({ view: 'all', tab: 'in-range' })}
+            onGenerated={() => navigate({ view: 'panel', name: ALL_OBSERVATIONS_PANEL, tab: 'trends' })}
           />
         );
       case 'pathways':
@@ -184,9 +185,14 @@ export function MedicalConditionsPage() {
             key={route.name} // remount on panel change so the Analysis tab resets
             name={route.name}
             tests={conditions.find((c) => c.name === route.name)?.tests ?? []}
+            conditions={conditions}
+            panelOptions={shownConditions}
+            analysesCatalog={analysesCatalog}
             allResults={allResults}
             resultsByDate={resultsByDate}
             controls={controls}
+            tab={route.tab ?? DEFAULT_PANEL_TAB}
+            onTabChange={(tab) => navigate(panelRoute(route.name, tab))}
             onBack={() => navigate({ view: 'panels' })}
             medications={medications.rows}
           />

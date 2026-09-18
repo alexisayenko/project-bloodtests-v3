@@ -6,10 +6,12 @@ import {
   Droplets,
   Bone,
   Microscope,
+  List,
   type LucideIcon,
 } from 'lucide-react';
 import { LiverIcon, KidneyIcon, ThyroidIcon, PillIcon, type IconComponent } from './customIcons';
 import { TINT } from '../../styles/tokens';
+import { ALL_OBSERVATIONS_PANEL } from './routing';
 
 /** Per-panel visual identity: accent color, card background tint, icon circle background, border color, icon, and short description. */
 export type PanelMeta = {
@@ -32,6 +34,11 @@ const DEFAULT_META: PanelMeta = {
 };
 
 const META: Record<string, PanelMeta> = {
+  [ALL_OBSERVATIONS_PANEL]: {
+    ...colors(TINT.teal),
+    icon: List,
+    description: 'Every result across every panel.',
+  },
   'Hypogonadism': {
     ...colors(TINT.blue),
     icon: Mars,
