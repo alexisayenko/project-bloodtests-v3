@@ -63,7 +63,7 @@ Monetization: undecided (`docs/business/README.md`).
 | Path | What |
 | --- | --- |
 | `web/public/data/*.json`, `web/public/schema/*.schema.json` | reference data and the closed-object schemas that validate it |
-| `web/public/schema/bloodtests-3.schema.json` | the interchange envelope, published at `blood.isayenko.net/schema/` |
+| `web/public/schema/bloodtests-3.schema.json` | the interchange envelope, published at `paneloom.com/schema/` |
 | `web/src/data/analyteCatalog.ts` | derives every lookup map from `analyses.json` |
 | `web/src/data/indexDefs.ts` / `computedIndices.ts` | index definitions / engine |
 | `web/src/data/unitNormalization.ts` | the three unit stages; `massMolarSiblings.ts`, `molarMasses.ts` beside it |

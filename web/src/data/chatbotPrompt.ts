@@ -47,7 +47,7 @@ Follow these steps in order and DO NOT ask clarifying questions about the JSON f
   ]
 }
 
-The same shape as a JSON Schema, if you can validate against one: https://blood.isayenko.net/schema/bloodtests-3.schema.json — the rules below are complete on their own, so don't fetch it unless validating is free for you.
+The same shape as a JSON Schema, if you can validate against one: https://paneloom.com/schema/bloodtests-3.schema.json — the rules below are complete on their own, so don't fetch it unless validating is free for you.
 
 Field rules — apply silently, do not ask me about any of these:
    - "schema": always the literal string "3.1" — with the quotes, a string and not a number.

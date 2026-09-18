@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/pathway-receptor-effects-1.schema.json",
+  "$id": "https://paneloom.com/schema/pathway-receptor-effects-1.schema.json",
   "title": "PathwayReceptorEffects",
   "description": "Receptor effects, schema 1: web/public/data/pathway-receptor-effects.json. What activating each receptor node on Hormonal Pathways does in adult men, every effect backed by at least one cited source and the source's own words. App-internal data with no outside authors, so the objects are CLOSED, as in analytes-1.schema.json.",
   "type": "object",

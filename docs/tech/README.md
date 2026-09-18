@@ -34,7 +34,7 @@ Data and formats:
 - [`interchange-format.md`](interchange-format.md) — the lab-data envelope
   (spec; partially implemented — see its status note). Its machine-readable
   form is published at
-  [`blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json)
+  [`paneloom.com/schema/bloodtests-3.schema.json`](https://paneloom.com/schema/bloodtests-3.schema.json)
   (JSON Schema draft 2020-12, source `web/public/schema/`, major version 3
   only), held to the exporter's output by `web/test/envelope-schema.test.ts`.
 - [`lab-data-import.md`](lab-data-import.md) — research note, not an ADR:

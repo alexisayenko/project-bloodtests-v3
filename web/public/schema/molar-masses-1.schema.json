@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/molar-masses-1.schema.json",
+  "$id": "https://paneloom.com/schema/molar-masses-1.schema.json",
   "title": "MolarMasses",
   "description": "The app's molar-mass reference data, schema 1: web/public/data/molar-masses.json. This is the SINGLE SOURCE OF TRUTH for every mass↔molar conversion factor the app uses — the mass/molar LOINC sibling table and the computed indices both derive their factors from it, and no factor is written by hand anywhere in TypeScript. A factor is never stored: what is stored is a molar mass, and `web/src/data/molarMasses.ts` turns it into a factor for a given unit pair, so \"38.67 mg/dL per mmol/L\" cannot drift from \"cholesterol is 386.664 g/mol\". Each molar mass is in turn derived from a molecular formula and the atomic weights in `atomicWeights`, both of which carry the source they were verified against, so the whole chain from an IUPAC atomic weight to a number in a chart is auditable. Like the analyte catalog this is app-internal data with no outside authors, so the objects are CLOSED: a mistyped key fails the conformance suite instead of being silently ignored at runtime.",
   "type": "object",

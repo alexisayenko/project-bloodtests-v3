@@ -32,7 +32,7 @@ const session = (partial: Partial<DiagnosticReport>): DiagnosticReport =>
 
 describe('published JSON Schema — compiles', () => {
   it('is a valid draft 2020-12 schema with the published $id', () => {
-    expect(schema.$id).toBe('https://blood.isayenko.net/schema/bloodtests-3.schema.json');
+    expect(schema.$id).toBe('https://paneloom.com/schema/bloodtests-3.schema.json');
     expect(typeof validate).toBe('function');
   });
 });

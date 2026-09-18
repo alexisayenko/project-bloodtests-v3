@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/medications-1.schema.json",
+  "$id": "https://paneloom.com/schema/medications-1.schema.json",
   "title": "Medications",
   "description": "The medication history, schema 1: web/src/data/medications.ts's Medications type, stored under localStorage key bloodtests_medications_v1 and exported unchanged as medications.json inside an Account backup zip. Published for documentation only, the same way the interchange envelope schema is — it does NOT gate the app's own import path. medications.json is purely user-generated at runtime (never committed, never touched by CI, unlike analyses.json/laboratories.json/pathway-reference-ranges.json), and its real gatekeeper stays the hand-written, deliberately lenient parser in medications.ts (isMedicationsShape + parseMedications): a malformed row or month is dropped rather than failing the whole import, a row still in the pre-redesign name/dosage shape is migrated into brand/notes, and this schema must never be wired into that path to enforce strictly instead. The objects are CLOSED, as in the app's other schemas, so this document only describes the current shape the app itself produces — it does not describe the retired name/dosage shape a not-yet-migrated stored payload may still be found in.",
   "type": "object",

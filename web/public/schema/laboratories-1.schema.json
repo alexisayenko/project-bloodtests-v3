@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/laboratories-1.schema.json",
+  "$id": "https://paneloom.com/schema/laboratories-1.schema.json",
   "title": "LaboratoryRegistry",
   "description": "The laboratory registry, schema 1: web/public/data/laboratories.json. One entry per laboratory, carrying what it charges for the products it sells. It is the single source of truth for prices, which are never mirrored in TypeScript. App-internal data with no outside authors, so the objects are CLOSED, as in analytes-1.schema.json: a mistyped key fails the conformance suite instead of being silently ignored at runtime.",
   "type": "array",

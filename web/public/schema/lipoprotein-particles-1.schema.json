@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/lipoprotein-particles-1.schema.json",
+  "$id": "https://paneloom.com/schema/lipoprotein-particles-1.schema.json",
   "title": "LipoproteinParticles",
   "description": "Lipoprotein particle reference data, schema 1: web/public/data/lipoprotein-particles.json. Size, density, structural apolipoproteins and mass composition of each particle Lipid Transport draws, every figure recorded exactly as one cited source printed it; where two sources print different figures both are kept, and the range the page shows is derived from them. A share no source gives is left out, never estimated. App-internal data with no outside authors, so the objects are CLOSED, as in analytes-1.schema.json.",
   "type": "object",

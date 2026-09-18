@@ -218,7 +218,7 @@ docs/
 | Tasks (numbered, frontmatter-tagged) | [`tasks/`](tasks/) | Creating or closing a task; orienting at session start |
 | Stack, ADRs, architecture | [`tech/`](tech/) | Anything implementation: framework, hosting, data, payments |
 | Architecture decision records (one file per decision) | [`tech/decisions/README.md`](tech/decisions/README.md) | Asking why an architectural call was made, or recording a new one |
-| Lab-data interchange file envelope (prose spec + published [JSON Schema](https://blood.isayenko.net/schema/bloodtests-3.schema.json)) | [`tech/interchange-format.md`](tech/interchange-format.md) | Reading or writing an exported lab-data file |
+| Lab-data interchange file envelope (prose spec + published [JSON Schema](https://paneloom.com/schema/bloodtests-3.schema.json)) | [`tech/interchange-format.md`](tech/interchange-format.md) | Reading or writing an exported lab-data file |
 | Molar masses and mass↔molar conversion (per-analyte table + citations) | [`tech/molar-masses.md`](tech/molar-masses.md) | Adding or checking a conversion factor; asking where a mass↔molar number came from |
 | One page per subsystem (reference data, units, indices, reports, shell, tables, scheduling, charts, pathways, medications, reference book, account, deploy, testing) | [`tech/README.md`](tech/README.md) | Changing how a subsystem works, or checking what the code does today |
 | Screens (where the user is) | [`ui-ux/screens/`](ui-ux/screens/) | Building or changing a screen |

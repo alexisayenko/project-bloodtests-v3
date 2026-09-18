@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/analytes-1.schema.json",
+  "$id": "https://paneloom.com/schema/analytes-1.schema.json",
   "title": "AnalyteCatalog",
   "description": "The app's reference data, schema 1: the analyte catalog in web/public/data/analyses.json, plus the two panel layers it is composed into — the laboratory groups in panels.json (referenced as #/$defs/labPanel) and the product's Monitoring Panels in monitoring-panels.json (#/$defs/monitoringPanel). The catalog is the single source of truth for everything the app knows about a LOINC code, so every fact about a code — its names (including its short name), its expected unit, the further units accepted for it, and whether it is a variant of another code — lives on one entry here and nowhere in TypeScript. Unlike the interchange envelope, this is app-internal data with no outside authors and no forward-compatibility promise: the objects are therefore CLOSED, so a mistyped key fails the conformance suite instead of being silently ignored at runtime.",
   "type": "array",

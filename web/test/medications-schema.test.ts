@@ -13,7 +13,7 @@ const errorsFor = (value: unknown) => schemaErrors(validate, value);
 
 describe('published JSON Schema — medications-1.schema.json', () => {
   it('is a valid draft 2020-12 schema with the published $id', () => {
-    expect(schema.$id).toBe('https://blood.isayenko.net/schema/medications-1.schema.json');
+    expect(schema.$id).toBe('https://paneloom.com/schema/medications-1.schema.json');
     expect(typeof validate).toBe('function');
   });
 

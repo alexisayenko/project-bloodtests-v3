@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/pathway-reference-ranges-1.schema.json",
+  "$id": "https://paneloom.com/schema/pathway-reference-ranges-1.schema.json",
   "title": "PathwayReferenceRanges",
   "description": "Curated reference ranges, schema 1: web/public/data/pathway-reference-ranges.json. The ranges Hormonal Pathways shows for a marker when the reading carries no lab-printed range, each figure recorded exactly as a cited source printed it, in the unit it printed it in; the app converts for display through its unit helpers and never stores a converted figure or a factor. App-internal data with no outside authors, so the objects are CLOSED, as in analytes-1.schema.json.",
   "type": "object",

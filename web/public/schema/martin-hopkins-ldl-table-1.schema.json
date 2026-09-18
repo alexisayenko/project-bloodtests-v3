@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://blood.isayenko.net/schema/martin-hopkins-ldl-table-1.schema.json",
+  "$id": "https://paneloom.com/schema/martin-hopkins-ldl-table-1.schema.json",
   "title": "MartinHopkinsLdlTable",
   "description": "Reference data, schema 1: web/public/data/martin-hopkins-ldl-table.json. The Martin/Hopkins 180-cell median TG:VLDL-C factor table (Martin SS et al 2013 JAMA 310(19):2061-2068) the `ldlmh` computed index (indexDefs.ts) looks up, keyed by triglyceride strata (rows) and non-HDL-C strata (columns), both mg/dL. App-internal data transcribed from a published source with no outside authors, so the objects are CLOSED, as in analytes-1.schema.json and pathway-reference-ranges-1.schema.json.",
   "type": "object",
