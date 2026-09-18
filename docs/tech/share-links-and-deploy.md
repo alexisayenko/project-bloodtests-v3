@@ -3,11 +3,11 @@
 ## Deploy
 
 The app ships as a Cloudflare Worker (`web/wrangler.jsonc`: worker
-`bloodtests`, `main` `./worker/index.ts`, `assets.directory` `./dist`, custom
-domains `blood.isayenko.net` and `paneloom.com`). The Worker script
-(`web/worker/index.ts`) 301-redirects any `blood.isayenko.net` request onto
-the same path and query on `paneloom.com`, everything else falling through to
-`env.ASSETS.fetch()` unchanged. `paneloom.com` is the production URL.
+`paneloom`, `main` `./worker/index.ts`, `assets.directory` `./dist`, custom
+domain `paneloom.com`). The Worker script (`web/worker/index.ts`) routes
+`/api/data` to the GitHub-backed sync proxy and lets everything else fall
+through to `env.ASSETS.fetch()` unchanged. `paneloom.com` is the production
+URL; the old `blood.isayenko.net` domain is retired and no longer served.
 
 Deploys run from CI: the `deploy` job in
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs on every

@@ -46,8 +46,7 @@ Monetization: undecided (`docs/business/README.md`).
 - No database the app owns: reference data is static JSON under
   `web/public/data/`; uploads are parsed client-side into `localStorage`.
 - Deployed as a Cloudflare Worker serving static assets at `paneloom.com`
-  (`web/wrangler.jsonc`, `web/worker/index.ts`; `blood.isayenko.net`
-  301-redirects there), published by CI on every push to `main`.
+  (`web/wrangler.jsonc`, `web/worker/index.ts`), published by CI on every push to `main`.
 - Opt-in cloud sync: identity from `@supabase/supabase-js` against a
   self-hosted Supabase Auth at `api.paneloom.com` (PKCE flow,
   `web/src/supabase/`); data as per-report JSON files in the private repo

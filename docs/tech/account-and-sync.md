@@ -77,7 +77,7 @@ Signing in and out is the whole interface.
 ### The Worker
 
 `web/worker/githubData.ts`, routed from `web/worker/index.ts` for
-`/api/data` only; everything else stays the redirect and `ASSETS` pass-through
+`/api/data` only; everything else falls through to `ASSETS`
 ([`share-links-and-deploy.md`](share-links-and-deploy.md)). It is a stateless
 proxy that stores nothing itself.
 

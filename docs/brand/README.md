@@ -56,9 +56,7 @@ owns identity / spirit; the style guide operationalizes it.
     with no embedded raster.
 - **Domain**: `paneloom.com`, registered 2026-09-09 — the official,
   primary production URL. `blood.isayenko.net` is retired and
-  301-redirects there (`web/worker/index.ts`, still a second
-  custom-domain route in `web/wrangler.jsonc`, but only to catch and
-  forward the old host); `www.paneloom.com` does not resolve. `paneloom.app` / `.net` were
+  no longer served; `www.paneloom.com` does not resolve. `paneloom.app` / `.net` were
   unregistered on 2026-09-08; only `.com` is in
   [`budget.md`](../business/budget.md).
 - **Wordmark / logo**: horizontal lockup, mark left of the wordmark,
