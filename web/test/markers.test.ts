@@ -67,6 +67,19 @@ describe('buildConditions', () => {
     expect(buildConditions([], {}, MONITORING_PANELS).map((c) => c.name)).toEqual(MONITORING_PANELS.map((d) => d.name));
   });
 
+  it('tags each FBC test with its panels.json section, and leaves non-sectioned panels untagged', () => {
+    const conditions = buildConditions(PANELS, {}, MONITORING_PANELS);
+    const fbc = conditions.find((c) => c.name === 'FBC')!;
+    const fbcPanel = PANELS.find((p) => p.id === 'fbc')!;
+    for (const section of fbcPanel.sections!) {
+      for (const loinc of section.loincs) {
+        expect(fbc.tests.find((t) => t.loinc === loinc)?.section).toBe(section.name);
+      }
+    }
+    const hypo = conditions.find((c) => c.name === 'Hypogonadism')!;
+    expect(hypo.tests.every((t) => t.section === undefined)).toBe(true);
+  });
+
   it('short names win over catalog friendly names', () => {
     const conditions = buildConditions(
       panels,

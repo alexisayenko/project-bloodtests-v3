@@ -6,7 +6,16 @@ import type { Analysis, LoincRef, MonitoringPanelDef, Panel } from '../../types'
 export { ALIAS_TO_PRIMARY, ALSO_REFS, SHORT_NAMES } from '../../data/analyteCatalog';
 export type { LoincRef, MonitoringPanelDef } from '../../types';
 
-export type Observation = { shortName: string; friendlyName: string; longCommonName: string; loinc: string; unit?: string; also?: LoincRef[] };
+export type Observation = {
+  shortName: string;
+  friendlyName: string;
+  longCommonName: string;
+  loinc: string;
+  unit?: string;
+  also?: LoincRef[];
+  /** The panel section this LOINC belongs to (e.g. FBC's "Erythrocytes"), when the panel has sections. */
+  section?: string;
+};
 
 // Lab-reportable codes that a computed index supersedes, so they never show as raw badges; eGFR (48642-3)
 // and ACR (9318-7) have no computed twin (eGFR needs age, ACR needs a paired urine albumin/creatinine) and
@@ -19,6 +28,15 @@ export const COMPUTED_LOINCS = new Set(INDEX_DEFS.map((d) => d.loinc).filter((x)
 function getPanelLoincs(panel: Panel): string[] {
   if (panel.sections) return panel.sections.flatMap((section) => section.loincs);
   return panel.loincs ?? [];
+}
+
+/** Loinc -> section name, for panels that group their loincs into sections (e.g. FBC); empty otherwise. */
+function getPanelSections(panel: Panel): Record<string, string> {
+  const byLoinc: Record<string, string> = {};
+  for (const section of panel.sections ?? []) {
+    for (const loinc of section.loincs) byLoinc[loinc] = section.name;
+  }
+  return byLoinc;
 }
 
 /** The code a reading folds into for display: an alias resolves to its primary. */
@@ -131,14 +149,15 @@ export function buildConditions(
 ): { name: string; tests: Observation[] }[] {
   return monitoringPanels.map((def) => {
     let loincs: string[];
+    let sectionByLoinc: Record<string, string> = {};
     if (def.panelIds) {
-      loincs = def.panelIds.flatMap((id) => {
-        const panel = panels.find((p) => p.id === id);
-        return panel ? getPanelLoincs(panel) : [];
-      });
+      const resolvedPanels = def.panelIds.map((id) => panels.find((p) => p.id === id)).filter((p): p is Panel => !!p);
+      loincs = resolvedPanels.flatMap(getPanelLoincs);
+      sectionByLoinc = resolvedPanels.reduce((acc, panel) => ({ ...acc, ...getPanelSections(panel) }), sectionByLoinc);
     } else if (def.panelId) {
       const panel = panels.find((p) => p.id === def.panelId);
       loincs = panel ? getPanelLoincs(panel) : [];
+      sectionByLoinc = panel ? getPanelSections(panel) : {};
     } else {
       loincs = def.loincs ?? [];
     }
@@ -156,6 +175,7 @@ export function buildConditions(
         loinc,
         unit: labelInfo?.unit,
         also: ALSO_REFS[loinc],
+        section: sectionByLoinc[loinc],
       };
     });
     return { name: def.name, tests };

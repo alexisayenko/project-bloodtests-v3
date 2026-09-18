@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { fmtNum, isOutOfRange } from '../../utils/format';
 import { computeIndex, indexZone, type IndexDef } from '../../data/computedIndices';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
@@ -436,18 +436,26 @@ export function ResultsTable(props: Readonly<ResultsTableProps>) {
       head={<TableHead label={tableLabel} dates={visibleDates} schedules={schedules} onAddVisit={onAddVisit} />}
     >
       <tbody>
-        {builtRows.map(({ test, cells, rowUnit, showCellUnits }) => (
-          <ObservationRow
-            key={test.loinc}
-            test={test}
-            cells={cells}
-            rowUnit={rowUnit}
-            showCellUnits={showCellUnits}
-            selected={selectedLoinc === test.loinc}
-            preferRaw={preferRaw}
-            inputsOf={inputsOf}
-          />
-        ))}
+        {builtRows.map(({ test, cells, rowUnit, showCellUnits }, i) => {
+          const previousSection = i > 0 ? builtRows[i - 1]!.test.section : undefined;
+          const startsNewSection = test.section !== undefined && test.section !== previousSection;
+          return (
+            <Fragment key={test.loinc}>
+              {startsNewSection && (
+                <SectionDividerRow label={test.section!} dateCount={visibleDates.length} visitCount={visitCount} />
+              )}
+              <ObservationRow
+                test={test}
+                cells={cells}
+                rowUnit={rowUnit}
+                showCellUnits={showCellUnits}
+                selected={selectedLoinc === test.loinc}
+                preferRaw={preferRaw}
+                inputsOf={inputsOf}
+              />
+            </Fragment>
+          );
+        })}
         {hasObs && hasIndices && (
           <SectionDividerRow key="__indices_divider__" label="Indices" dateCount={visibleDates.length} visitCount={visitCount} />
         )}
