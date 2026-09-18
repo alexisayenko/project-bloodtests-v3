@@ -8,6 +8,11 @@ import { PageHeader } from './PageHeader';
 import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
+// Subtle column zebra-striping so a given month can be tracked vertically across many rows: odd columns
+// (by continuous index across years, so the pattern doesn't jump at year boundaries) get this tint, even
+// columns stay whatever the row's own background already is.
+const COLUMN_STRIPE = COLOR.surfaceMuted;
+
 const NAME_COL_WIDTH = 260;
 const MONTH_COL_WIDTH = 32;
 const YEAR_EDGE = `1px solid ${COLOR.borderMuted}`;
@@ -45,7 +50,7 @@ function monthEdge(monthIndex: number) {
   return monthIndex === 0 ? YEAR_EDGE : 'none';
 }
 
-function monthTh(monthIndex: number, isLastColumn = false) {
+function monthTh(monthIndex: number, columnIndex: number, isLastColumn = false) {
   return {
     ...th,
     textAlign: 'center',
@@ -58,6 +63,7 @@ function monthTh(monthIndex: number, isLastColumn = false) {
     // otherwise only the left side of each year block is ever drawn, and the last column's
     // right edge is left visually open.
     borderRight: isLastColumn ? YEAR_EDGE : 'none',
+    background: columnIndex % 2 === 1 ? COLUMN_STRIPE : 'transparent',
   } as const;
 }
 
@@ -76,7 +82,7 @@ const monthCheckbox = {
   cursor: 'pointer',
 } as const;
 
-function monthTd(monthIndex: number, last: boolean, isLastColumn = false) {
+function monthTd(monthIndex: number, columnIndex: number, last: boolean, isLastColumn = false) {
   return {
     position: 'relative',
     padding: 0,
@@ -84,6 +90,7 @@ function monthTd(monthIndex: number, last: boolean, isLastColumn = false) {
     borderBottom: last ? 'none' : `1px solid ${COLOR.borderSubtle}`,
     borderLeft: monthEdge(monthIndex),
     borderRight: isLastColumn ? YEAR_EDGE : 'none',
+    background: columnIndex % 2 === 1 ? COLUMN_STRIPE : 'transparent',
   } as const;
 }
 
@@ -293,7 +300,7 @@ export function MedicationsView() {
                 <tr>
                   {years.flatMap((year, yi) =>
                     MONTH_LABELS.map((m, i) => (
-                      <th key={`${year}-${m}`} scope="col" style={monthTh(i, yi === years.length - 1 && i === 11)}>
+                      <th key={`${year}-${m}`} scope="col" style={monthTh(i, yi * 12 + i, yi === years.length - 1 && i === 11)}>
                         {m}
                       </th>
                     ))
@@ -413,16 +420,21 @@ export function MedicationsView() {
                           const marked = row.months.includes(key);
                           const bar = marked && <MonthBar joinsPrevious={isMarked(year, i - 1)} joinsNext={isMarked(year, i + 1)} />;
                           const isLastColumn = yi === years.length - 1 && i === 11;
+                          const columnIndex = yi * 12 + i;
                           if (!editing) {
                             return (
-                              <td key={key} style={monthTd(i, last, isLastColumn)} title={marked ? monthLabel(row, year, i) : undefined}>
+                              <td
+                                key={key}
+                                style={monthTd(i, columnIndex, last, isLastColumn)}
+                                title={marked ? monthLabel(row, year, i) : undefined}
+                              >
                                 {bar}
                               </td>
                             );
                           }
                           const toggle = () => onToggleMonth(row.id, key);
                           return (
-                            <td key={key} style={monthTd(i, last, isLastColumn)}>
+                            <td key={key} style={monthTd(i, columnIndex, last, isLastColumn)}>
                               {bar}
                               <input
                                 type="checkbox"
