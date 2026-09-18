@@ -411,6 +411,31 @@ export function TrendsView({
 
       {/* 3. Result History Table */}
       <Card padding="0" style={{ borderRadius: RADIUS.card, overflow: 'hidden' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '16px 20px',
+            borderBottom: `1px solid ${COLOR.borderSubtle}`,
+            background: COLOR.surfaceCard,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: COLOR.navy }}>
+              {currentObservation?.friendlyName ?? 'Observation'}
+            </h3>
+            {currentObservation?.longCommonName && (
+              <span style={{ fontSize: 13, color: COLOR.textMuted }}>
+                {formatCommonName(currentObservation.longCommonName, currentObservation.friendlyName)}
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 500, color: COLOR.textMuted, whiteSpace: 'nowrap' }}>
+            {observationResults.length} result{observationResults.length === 1 ? '' : 's'}
+          </span>
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${COLOR.borderSubtle}` }}>
