@@ -1,0 +1,185 @@
+{
+  "receptors": [
+    {
+      "id": "ar",
+      "name": "Androgen receptors",
+      "ligands": ["Testosterone", "DHT"],
+      "effects": [
+        {
+          "id": "muscle",
+          "text": "Builds and keeps muscle mass, size and strength",
+          "citations": [
+            { "source": "finkelstein-2013", "quotes": ["Androgen deficiency accounted for decreases in lean mass, muscle size, and strength"] },
+            { "source": "handelsman-endotext-2020", "quotes": ["aromatization was important in mediating testosterone effects in reducing fat mass and sexual function but not on muscle mass or strength"] }
+          ]
+        },
+        {
+          "id": "erythropoiesis",
+          "text": "Drives red blood cell production, so hemoglobin rises on testosterone",
+          "citations": [
+            { "source": "handelsman-endotext-2020", "quotes": ["In androgen deficient men, hemoglobin typically increases by ~10% (or up to 20 g/L) with standard testosterone doses"] }
+          ]
+        },
+        {
+          "id": "hair-sebum",
+          "text": "Grows body and facial hair and stimulates sebum (oily skin, acne at high levels)",
+          "citations": [
+            {
+              "source": "handelsman-endotext-2020",
+              "quotes": [
+                "increased truncal and facial hair growth",
+                "Seborrhea and acne are commonly associated with high androgen levels"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "prostate",
+          "text": "Grows the prostate, mainly through DHT made inside it",
+          "citations": [
+            {
+              "source": "handelsman-endotext-2020",
+              "quotes": [
+                "over 95% of testosterone entering the prostate being converted to the more potent androgen DHT",
+                "[In congenital 5α-reductase deficiency] Prostate development remains rudimentary"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "spermatogenesis",
+          "text": "Sustains sperm production, which needs testosterone far above blood levels inside the testis",
+          "citations": [
+            { "source": "smith-walker-2014", "quotes": ["Testosterone is essential for maintaining spermatogenesis and male fertility."] },
+            { "source": "handelsman-endotext-2020", "quotes": ["high local concentrations (up to 1 μg/g tissue, ~100 times higher than blood concentrations) … of intratesticular testosterone"] }
+          ]
+        },
+        {
+          "id": "scalp-hair-loss",
+          "text": "Male-pattern scalp hair loss in susceptible men, which depends on DHT",
+          "citations": [
+            {
+              "source": "handelsman-endotext-2020",
+              "quotes": [
+                "temporal hair loss or balding may also be seen even with physiologic testosterone replacement in susceptible men",
+                "[In congenital 5α-reductase deficiency] sparse body hair without balding is characteristic"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "er",
+      "name": "Estrogen receptors",
+      "ligands": ["Estradiol"],
+      "effects": [
+        {
+          "id": "bone",
+          "text": "Matures bone, keeps bone density, and closes the growth plates (epiphyses)",
+          "citations": [
+            {
+              "source": "rochira-carani-2009",
+              "quotes": [
+                "all men with aromatase deficiency have tall stature, delayed bone maturation, osteopenia or osteoporosis and eunuchoid skeletal proportions",
+                "the presence of unfused epiphyses and undetectable serum estradiol levels"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "body-fat",
+          "text": "Restrains body fat gain",
+          "citations": [
+            { "source": "finkelstein-2013", "quotes": ["estrogen deficiency primarily accounted for increases in body fat"] }
+          ]
+        },
+        {
+          "id": "sexual-function",
+          "text": "Supports sexual desire and function, together with testosterone",
+          "citations": [
+            { "source": "finkelstein-2013", "quotes": ["both contributed to the decline in sexual function"] }
+          ]
+        },
+        {
+          "id": "lh-feedback",
+          "text": "Negative feedback that lowers LH secretion, at both the hypothalamus and the pituitary",
+          "citations": [
+            { "source": "hayes-2000", "quotes": ["estrogen has dual sites of negative feedback, acting at the hypothalamus to decrease GnRH pulse frequency and at the pituitary"] }
+          ]
+        },
+        {
+          "id": "gynecomastia",
+          "text": "Grows breast tissue (gynecomastia) when estrogen outweighs androgen",
+          "citations": [
+            {
+              "source": "swerdloff-ng-endotext-2023",
+              "quotes": [
+                "Estrogen, acting through its estrogen receptor (ER), promotes ductal growth",
+                "causing an elevation in the estrogen to androgen ratio, can induce gynecomastia"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "finkelstein-2013",
+      "organization": "New England Journal of Medicine (Finkelstein JS et al.)",
+      "title": "Gonadal Steroids and Body Composition, Strength, and Sexual Function in Men",
+      "year": 2013,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24024838/",
+      "doi": "10.1056/NEJMoa1206168",
+      "pmid": "24024838",
+      "retrieved": "2026-09-16"
+    },
+    {
+      "id": "handelsman-endotext-2020",
+      "organization": "Endotext, MDText.com (Handelsman DJ)",
+      "title": "Androgen Physiology, Pharmacology, Use and Misuse",
+      "year": 2020,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK279000/",
+      "retrieved": "2026-09-16"
+    },
+    {
+      "id": "smith-walker-2014",
+      "organization": "Seminars in Cell & Developmental Biology (Smith LB, Walker WH)",
+      "title": "The Regulation of Spermatogenesis by Androgens",
+      "year": 2014,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24598768/",
+      "doi": "10.1016/j.semcdb.2014.02.012",
+      "pmid": "24598768",
+      "retrieved": "2026-09-16"
+    },
+    {
+      "id": "rochira-carani-2009",
+      "organization": "Nature Reviews Endocrinology (Rochira V, Carani C)",
+      "title": "Aromatase Deficiency in Men: A Clinical Perspective",
+      "year": 2009,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/19707181/",
+      "doi": "10.1038/nrendo.2009.176",
+      "pmid": "19707181",
+      "retrieved": "2026-09-16"
+    },
+    {
+      "id": "hayes-2000",
+      "organization": "Journal of Clinical Endocrinology & Metabolism (Hayes FJ et al.)",
+      "title": "Aromatase Inhibition in the Human Male Reveals a Hypothalamic Site of Estrogen Feedback",
+      "year": 2000,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/10999781/",
+      "doi": "10.1210/jcem.85.9.6795",
+      "pmid": "10999781",
+      "retrieved": "2026-09-16"
+    },
+    {
+      "id": "swerdloff-ng-endotext-2023",
+      "organization": "Endotext, MDText.com (Swerdloff RS, Ng JCM)",
+      "title": "Gynecomastia: Etiology, Diagnosis, and Treatment",
+      "year": 2023,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK279105/",
+      "retrieved": "2026-09-16"
+    }
+  ]
+}

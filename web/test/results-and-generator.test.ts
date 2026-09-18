@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getLatest, getStatus, hasReference, latestEntryByLoinc, type LatestByLoinc, type ResultEntry } from '../src/components/conditions/resultsLookup';
+import { getLatest, getStatus, hasReference, latestEntryByLoinc, nearestEntryTo, type LatestByLoinc, type ResultEntry } from '../src/components/conditions/resultsLookup';
 import { buildConditions } from '../src/components/conditions/markers';
 import { MONITORING_PANELS } from './dataFiles';
 import { HP_AXIS_HTML } from '../src/components/conditions/hpAxisContent';
@@ -80,6 +80,56 @@ describe('latestEntryByLoinc', () => {
     for (const numericOnly of [true, false]) {
       expect(latestEntryByLoinc(entries, { numericOnly })['718-7']!.result.value).toBe(140);
     }
+  });
+});
+
+describe('nearestEntryTo', () => {
+  const ALB = ['1751-7', '61151-7'];
+  const entry = (loinc: string, date: string, partial: Partial<Result>): ResultEntry => ({
+    loinc,
+    date,
+    place: 'lab',
+    result: result({ loinc, ...partial }),
+  });
+  const nearest = (entries: ResultEntry[], date: string) => nearestEntryTo(entries, ALB, date, { numericOnly: true });
+
+  it('finds a reading before the date when only earlier ones exist', () => {
+    const entries = [entry('1751-7', '2025-01-01', { value: 1 }), entry('1751-7', '2025-06-01', { value: 2 })];
+    expect(nearest(entries, '2026-01-01')!.date).toBe('2025-06-01');
+  });
+
+  it('finds a reading after the date when only later ones exist', () => {
+    const entries = [entry('1751-7', '2027-01-01', { value: 1 }), entry('61151-7', '2026-03-01', { value: 2 })];
+    expect(nearest(entries, '2026-01-01')!.date).toBe('2026-03-01');
+  });
+
+  it('picks the closer side when readings exist on both', () => {
+    const entries = [entry('1751-7', '2025-10-01', { value: 1 }), entry('1751-7', '2026-02-01', { value: 2 })];
+    expect(nearest(entries, '2026-01-01')!.date).toBe('2026-02-01');
+  });
+
+  it('breaks an equal distance toward the earlier reading, whatever the input order', () => {
+    const later = entry('1751-7', '2026-01-11', { value: 2 });
+    const earlier = entry('1751-7', '2025-12-22', { value: 1 });
+    expect(nearest([later, earlier], '2026-01-01')!.date).toBe('2025-12-22');
+    expect(nearest([earlier, later], '2026-01-01')!.date).toBe('2025-12-22');
+  });
+
+  it('excludes the selected date itself, other codes and blank or text-only draws', () => {
+    const entries = [
+      entry('1751-7', '2026-01-01', { value: 1 }),
+      entry('718-7', '2026-01-02', { value: 140 }),
+      entry('1751-7', '2026-01-03', { rawValue: 'hemolyzed' }),
+      entry('1751-7', '2026-01-04', {}),
+      entry('1751-7', '2026-03-01', { value: 2 }),
+    ];
+    expect(nearest(entries, '2026-01-01')!.date).toBe('2026-03-01');
+    expect(nearestEntryTo(entries, ALB, '2026-01-01')!.date).toBe('2026-01-03');
+  });
+
+  it('returns null when nothing qualifies', () => {
+    expect(nearest([], '2026-01-01')).toBeNull();
+    expect(nearest([entry('1751-7', '2026-01-01', { value: 1 })], '2026-01-01')).toBeNull();
   });
 });
 

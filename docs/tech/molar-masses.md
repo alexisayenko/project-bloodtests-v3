@@ -56,6 +56,18 @@ older set of atomic weights, so testosterone reads **288.431** here
 where a hand-typed table said 288.42. Masses are rounded to six
 decimals.
 
+Testosterone is also where an outside tool disagreed. ISSAM's Free &
+Bioavailable Testosterone calculator (issam.ch, checked 2026-09-16,
+[task-0047](../tasks/task-0047.md)) converts ng/dL to mol/L as
+T / 2.8 × 1e-10 — about **280 g/mol** — and albumin at a rounded
+1.45e-4 mol/L per g/dL, which is the whole of its ≤0.77% gap from the
+app's `cft` / `biot`. The app keeps 288.431: the calculator is a
+cross-check of the formula, not a source of constants, its live cases are
+tested at a 1% tolerance with that cause stated and its published worked
+example at 0.05%, and 280 g/mol appears only as a labelled, unpersisted
+option on the Hormonal Pathways page
+([ADR-0020](decisions/adr-0020-constants-from-cited-data-calculators-are-cross-checks.md)).
+
 ## The analytes
 
 Eighteen entries. An entry exists because something in the app needs

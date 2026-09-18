@@ -274,7 +274,19 @@ set" as the popup's Ref, and "sex not set" in What's in range's not-taken list r
 plotted against some band; the Reference Book, having no profile, names both
 ("men > … · women < …"). The bands are Mayo Clinic Laboratories' TTBS reference
 limits converted from ng/dL; `birthYear` is not read, so the men's borderline
-band is the span Mayo calls low at 20–29 but normal at 60–69 (task-0004). A
+band is the span Mayo calls low at 20–29 but normal at 60–69 (task-0004).
+Hypogonadism also carries four testosterone shares of total, all `%` and
+deliberately band-less (no `cut`, no `bandsBySex`, so never a status): `cftpct`
+and `cftlhpct` (calculated free T by Vermeulen / Ly & Handelsman), `ftpct`
+(LOINC `15432-8`, from measured free T — `MARKER_LOINC`'s `FT`, `2991-8`,
+converting pg/mL and ng/dL ↔ pmol/L through derived factors) and `biotpct`
+(`6891-6`); Labcorp's 1.5–3.2 % adult male interval belongs to equilibrium
+dialysis and is a single interval where a band needs a borderline, so it is
+quoted in their prose only. `TESTOSTERONE_MOLAR_MASS` (`molarMassOf`) is
+exported beside `testosteronePools`, whose optional `solveMolarMass` exists
+only for the Hormonal Pathways cross-check select — issam.ch's calculator
+solves at ~280 g/mol, which the app documents as a deviation rather than
+adopting (ADR-0020, task-0047). A
 citation may carry an optional ISO `retrieved` date, shown in the Reference
 Book as "· retrieved <date>". An index
 reads its inputs through `MARKER_CANDIDATE_LOINCS`, which expands
@@ -388,11 +400,11 @@ From 768px up the nav is an app shell (`AppShell.tsx`): a white top bar
 "Your data stays in this browser" when signed out, a cloud-check icon and
 "Synced to your account" when signed in via `useSupabaseAuthUser`) over a left
 sidebar (`SideNav.tsx`) listing
-all nine `NAV_ITEMS` with a line icon each — `lucide-react`'s, except the two
+all ten `NAV_ITEMS` with a line icon each — `lucide-react`'s, except the two
 drawn in `customIcons.tsx` to the same stroke and size, `PillIcon` (a split
 capsule, also the Medications header's pillar and the Pancreatic Function card's
 icon, `PageHeader` pillars accepting either kind) for Medications and
-`PathwaysIcon` (three linked hollow circles) for Hormonal Pathways — Account
+`PathwaysIcon` (three linked hollow circles) for Hormonal Pathways, and `lucide-react`'s `Droplets` for Lipid Transport — Account
 pinned to its foot above a « / » collapse toggle, and a three-line tagline
 vertically centered in the free space between the sections and Account, hidden
 below a 760px viewport height — the active one a
@@ -407,12 +419,12 @@ a tooltip): `AppShell` stamps `data-sidebar-collapsed` on the root element,
 since the footer outside the shell reads the same width variable, and
 `sidebarCollapsed.ts` keeps the choice under localStorage
 `bloodtests_sidebar_collapsed_v1` (`"true"`, the key removed when expanded). Phones keep the old wrapping `NavBar`
-(brand mark plus the same nine labels), until task-0020 designs their shell, and every
+(brand mark plus the same ten labels), until task-0020 designs their shell, and every
 slot stays in place across the breakpoint so rotating a phone remounts nothing.
 Every section's landing page opens with the same `PageHeader.tsx` banner —
 overline, two-tone title, description lines and up to three icon pillars —
 while Panel Detail, report detail and the Reference Book's sub-pages keep a
-plain `<h1>`. The nine sections, in nav order — Get Started (`#profile`: app description,
+plain `<h1>`. The ten sections, in nav order — Get Started (`#profile`: app description,
 data-privacy statement and evidence-grading note, "Import JSON"
 (replaces all stored sessions, as a share-link import does), a "Go to
 Diagnostic Reports" pill for building a first database, and generate
@@ -503,30 +515,47 @@ the indices), Monitoring Panels
 validation errors exist, like Monitoring Panels: task-0024's first version in
 `HormonalPathwaysView.tsx`, under a `PageHeader` with overline
 "Endocrinology", title "Hormonal Pathways" and "Biochemical pathways of
-hormones" — one canvas of four zones, each captioned by small uppercase text at
-its top left with its description on hover: Hypothalamus + Pituitary (empty so
-far); Blood Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
+hormones" — one canvas of four zones, each captioned by small uppercase text
+turned 90° counter-clockwise in a gutter down its left edge, with its
+description on hover: Brain (a hypothalamus–pituitary image,
+`web/public/pathways/brain-pituitary.png`, generated in ChatGPT by Alex, facing
+left, and centred by a measured transform on T's vertical axis); Blood
+Transport (FSH, LH, SHBG with SHBG-bound T docked, ⇄ T ⇄, Albumin
 with albumin-bound T docked, E2); Testes (Sertoli and Leydig cells); Target
-tissues (5α-reductase → DHT, aromatase → E2, androgen and estrogen receptors).
+tissues (5α-reductase → DHT, aromatase → E2, each enzyme centred over its
+product, androgen and estrogen receptors), a muted `ArtworkNote` under the
+toolbar saying the brain and cell images are illustrative (ADR-0022).
 Values are the user's: the shell passes the loaded reports, the Hypogonadism
-panel's observations and the unit system, and a ‹ date › stepper lists exactly
+panel's observations and its persisted `unitSystem` with its setter, and a
+‹ date › stepper lists exactly
 that panel's results-table dates — `markers.ts`'s `panelDates`, shared with
-`PanelDetailView` — defaulting to the latest, the readings shown in SI/US;
-Free T, Bio-T, T/LH, DHT/T and T/E2 come from `computeIndex` over
-`INDEX_DEFS`, and the SHBG-bound and albumin-bound pools from `indexDefs.ts`'s
-`testosteronePools`. A single select in `HormonalPathwaysView.tsx` — not a
+`PanelDetailView` — defaulting to the latest, the readings shown in SI/US
+through an SI / US `SegmentedControl` beside it that changes the shell's
+setting; cFT (Vermeulen), Bio-T and the SHBG-bound and albumin-bound pools
+come from one `indexDefs.ts` `testosteronePools` solve, cFT (Ly & Handelsman),
+T/LH, DHT/T and T/E2 from `computeIndex` over `INDEX_DEFS`, and measured free
+T (`2991-8`) from the reports, every testosterone fraction also showing its
+molar % of total T on its chip or badge. Under the diagram sits a row of
+calculation selects: the albumin fallback below, and "Testosterone molar mass"
+— "288.4 g/mol (PubChem)", the `TESTOSTERONE_MOLAR_MASS` default, or "280 g/mol
+(issam.ch calculator)" — passed as `testosteronePools`' optional
+`solveMolarMass`, which rescales only the total T fed to the quadratic, so it
+moves only this page's Vermeulen values; unpersisted `useState`, a labelled
+aid for reproducing issam.ch's figures, never a constant anywhere else
+(ADR-0020). A single select in `HormonalPathwaysView.tsx` — not a
 checkbox — offers three mutually-exclusive fallbacks for a selected date with
 no same-draw albumin reading: "Don't use a fallback" (no albumin, as the old
-unchecked state), "Use the previously measured albumin" (the newest reading
-strictly before the selected date, found through a new `latestEntryBefore`
-helper in `resultsLookup.ts`, the date-bounded sibling of
-`latestEntryByLoinc`), and "Use 43 g/L (4.3 g/dL)" (the old checked-default
-state, still the default selection) — feeding `DEFAULT_ALBUMIN_GDL` or the
-resolved prior reading to Free T, Bio-T and the pools exactly as before; a
+unchecked state), "Use the nearest measured albumin" (the numeric reading
+closest in days to the selected date on either side, the selected date itself
+excluded and a tie going to the earlier, found through `nearestEntryTo` in
+`resultsLookup.ts`, the date-anchored sibling of `latestEntryByLoinc`), and
+"Use 43 g/L", or "Use 4.3 g/dL" in the US unit system (the old checked-default
+state, still the default selection) — feeding `DEFAULT_ALBUMIN_GDL` or the resolved nearest reading to
+Free T, Bio-T and the pools exactly as before; a
 same-draw reading always wins over the select regardless of which option is
 chosen, and the choice lives in plain component `useState`, unpersisted like
 the checkbox's state before it. Node captions are
-compact chips with a status dot and a short face (SHBG-T, Albumin-T) whose
+compact chips with a status dot and a short face (Alb, SHBG-T, Alb-T) whose
 floating card gives the full title (SHBG-bound Testosterone); chips and badges
 expand in place, one open at a time, closed by Escape or an outside click, and
 nodes carry no analyte-popup wiring. Each shows a reference range judged as
@@ -543,19 +572,55 @@ Swerdloff 2017 (Endocrine Reviews) for DHT, a single hospital lab standing in
 for the major reference labs that could not be retrieved (open in task-0024);
 Free T, Bio-T and the ratios show `INDEX_DEFS`' male zones and citations, and
 the pools "No reference range (calculated pool)" with a bioavailability note.
-The pathway arrows are an SVG overlay measured from the DOM and re-measured by
-a `ResizeObserver` — FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
+Under each receptor node's label, "Androgen receptors" and "Estrogen receptors",
+a small "Effects ▸" chip (`data-effects`, the same one-open state, Escape and
+outside click) opens a floating card of what that receptor's activation does in
+adult men — its ligands, a bullet list each carrying [n] cites, and a Sources
+footer — read from `web/public/data/pathway-receptor-effects.json` (closed-object
+schema `pathway-receptor-effects-1.schema.json`, loader
+`data/pathwayReceptorEffects.ts` with `receptorById` / `numberedEffects`), every
+effect citing at least one retrieved source with short verbatim `quotes`
+(Finkelstein 2013 NEJM, Handelsman's and Swerdloff & Ng's Endotext chapters,
+Smith & Walker 2014, Rochira & Carani 2009, Hayes 2000 JCEM); the chip sits in
+the node's out-of-flow caption, so the receptor boxes and the arrows landing on
+them do not move.
+The pathway arrows are an SVG overlay measured from the DOM and re-measured,
+coalesced into one animation frame, whenever the diagram box or any
+`data-node` element resizes, an image loads, `document.fonts.ready` settles,
+or the date, unit system, albumin fallback or molar mass changes. The canvas
+and the 220px badge column sit side by side down to a 1280px viewport: the
+diagram's horizontal spacing eases with the canvas width through container
+query units (`--pw-fit-*`), and `fitBands` zooms the zones out only for what
+spacing cannot absorb, correcting the DOM-placed brain, enzymes and receptors
+for the zoom so arrows stay attached. The arrows: the brain forking to FSH and LH from its left side at
+mid-height, FSH → Sertoli, LH → Leydig, Leydig → T, T split to both
 enzymes and down to the androgen receptors, enzymes → products,
-DHT → androgen receptors, E2 → blood E2 → estrogen receptors — thin pale
+DHT → androgen receptors, E2 → blood E2 → estrogen receptors, and estradiol's
+negative feedback, blood E2 up and into the brain's right side at mid-height
+with a "↓" marker at its head (the one feedback arrow drawn so far, solid like
+the rest rather than the spec's dashed) — thin pale
 strokes with rounded turns. Icons are `customIcons.tsx`'s `HormoneIcon` (T, E2,
 blood E2, FSH and LH — every signal drawn as the same schematic rather than a
 real structure) and `CarrierIcon` (SHBG and Albumin), plus
 `web/public/pathways/leydig-cells.png` (Sertoli and Leydig cells, cropped from
 a mockup with a transparent background) and two shared custom-artwork icons —
-`enzyme-icon.png` (a bead-ring graphic) for both aromatase and 5α-reductase,
+`enzyme-icon.png` (a bead-ring graphic) for both aromatase and 5α-reductase
+(both rendered through `Particle1Node`/`Particle1` — `pathwayShared.ts`/
+`PathwayParts.tsx`, a shared bare-glyph-plus-caption node type generalizing
+this "bare icon, no tile, optional white circular backdrop for contrast on
+busy artwork" convention; refactor only, same rendered output — Lipid
+Transport's own enzyme nodes, HMG-CoA reductase and LPL, are a deferred
+follow-up),
 `receptor-icon.png` (a Y-shaped graphic) for both the androgen and estrogen
-receptor nodes — a deliberate style choice (task-0024), not an accuracy
-correction. The page no longer renders any real protein structure: FSH, LH,
+receptor nodes, both on transparent backgrounds — a deliberate style choice
+(task-0024), not an accuracy correction. Every glyph sits bare, with no tile
+or frame, sized by level of organisation rather than molecular mass (the
+component's `SIZE`): molecular actors — signals, carriers, enzymes, receptors
+and the bound-T bubbles, the T docked inside scaled to fit — 32px, cells 64px,
+the brain 128px; a raster glyph goes through `Glyph`, which crops the PNG to
+its drawn content box so padding in the file never shrinks it, and the enzyme,
+receptor and brain URLs carry a `?v=` query so a replaced file is not served
+stale from cache. The page no longer renders any real protein structure: FSH, LH,
 aromatase and 5α-reductase all carried real PDB images and citations (FSH
 1XWD, LH 7FII — a hormone-receptor-Gs complex whose bound hormone is actually
 chorionic gonadotropin, hCG, LH's structural proxy since it shares the same
@@ -565,11 +630,17 @@ credit line) until task-0024 replaced them in two passes — first aromatase and
 nodes used before, along with them. FSH's real structure (PDB 1XWD) lives on
 only in the unrelated Reference Book FSH page (`#reference/fsh`, under
 `web/public/reference/fsh/`, untouched by this).
-A column of eight badges on the right, in order — Total
-Testosterone, Bioavailable Testosterone, Free Testosterone (the measured
-value, LOINC `2991-8`), cFT (Vermeulen) (the calculated value, formerly plain
-"Free Testosterone"), cFT (Ly & Handelsman) (a real computed value, its own
-empirical regression on total T and SHBG), T/LH, DHT/T, T/E2 — each
+A column on the right opens with a "Testosterone pools" donut card — SHBG-T,
+Albumin-T and Free T (Vermeulen) as shares of total T, with callout labels, the
+free sliver widened to a visible minimum, "Bio-T = Albumin-T + Free T" beneath —
+over six badges, in order — Total Testosterone, Bioavailable Testosterone, Free
+Testosterone, T/LH, DHT/T, T/E2. Free Testosterone is one merged badge (it
+replaced separate measured, cFT (Vermeulen) and cFT (Ly & Handelsman) badges):
+its face is cFT (Vermeulen); expanded, a Measured section (the `2991-8`
+reading, its lab range) and a Calculated one (cFT Vermeulen and Ly & Handelsman,
+their zones shown once when identical, plus Labcorp's 1.5–3.2 % adult male
+range), one merged Meaning / Low / High / Caveats, and sources trimmed to
+Bhasin 2018, Vermeulen 1999, Ly & Handelsman 2005 and Labcorp. Each badge
 expands on click, an open badge overlaying 150% width over the canvas and,
 absolutely positioned, over the badges below it in the column rather than
 pushing them down: Reference range now leads, then Meaning (rewritten
@@ -580,7 +651,141 @@ for now (`INDEX_DEFS` the intended source), and while one is hovered, focused
 or open it draws its association lines, hidden at rest: one purple bus from
 the badge to a lane above its targets, stubs down to dashed rings around each
 target; only an opened badge also veils the rest of the diagram, hover
-drawing the lines alone), Scheduled Visits (`#plan`, reachable despite validation
+drawing the lines alone), Lipid Transport (`#lipids`, blocked while validation errors exist, like Hormonal
+Pathways: task-0060's first version in `LipidTransportView.tsx`, redrawn in
+task-0062 as a holder-plus-cargo diagram in Hormonal Pathways' own visual
+language, the shape SHBG uses to hold docked testosterone, replacing the earlier
+six-particle glyph row and its Artwork/Data toggle, under a `PageHeader` with
+overline "Lipidology" — three pathway zones, Intestine, Liver (the liver
+artwork, `web/public/pathways/liver.png`, ChatGPT-generated by Alex,
+illustrative, 128px wide, the level-of-organisation sizes shared as
+`pathwayShared.ts`'s `SIZE`, with HMG-CoA reductase docked on it at molecular
+size — the shared enzyme artwork, its card citing Feingold's Endotext chapters —
+a pale arrow from the enzyme to a bare `CholesterolIcon` beside it as its
+synthesized product, and a second pale arrow down to VLDL) and Blood Transport.
+Every particle is a `ParticleNode` — together with `CompoundStack`,
+`CargoAnchor` and the particle sizing constants, extracted (task-0062, a pure
+file move, no behavior change) into its own module, `Particle3.tsx`, named
+"Particle3" as the third lipoprotein-particle rendering design in this
+codebase's history, after the two retired approaches below (a reshape of its
+props into a compounds-array `ParticleConfig` model was discussed and paused
+mid-implementation, not yet built): a central `CarrierIcon` whose `holder`
+prop names the structural apolipoprotein carrying it — ApoB-100 for VLDL,
+IDL, LDL and Lp(a) alike, ApoB-48 for chylomicron, ApoA-I for HDL — bonded to
+a `CompoundStack` of small identical TRIG and Chol circles, one
+`CholesterolIcon` (still hand-drawn, `customIcons.tsx`) or, since task-0062's
+raster swap, a `TriglycerideGlyphIcon` (adapting ChatGPT-generated artwork —
+`web/public/pathways/triglyceride.png`, same crop/transparent-bg recipe as
+liver.png/intestine.png — to `CompoundStack`'s `IconComponent` prop, retiring
+the hand-drawn `TriglycerideIcon` there; the same pass replaced the page's
+fatty-acid markers with `web/public/pathways/fatty-acid.png`) per bubble,
+where the COUNT of circles, not the icon's own size, depicts how much of that
+compound is aboard, deliberately, so "more" never reads as "one bigger blob";
+every bond line
+in the diagram — TRIG-ApoB, Chol-ApoB, and LDL's plain ApoB-Chol bond once no
+TRIG is left — is tuned to the same ~75px length across all three chain stages
+in one pass, not VLDL-only. VLDL → IDL → LDL is the core endogenous pathway,
+each stage's TRIG and Chol circle count tapering down the chain — VLDL 3/3, IDL
+2/2, LDL 1/1, illustrative and NOT to scale, since the sourced composition data
+(`lipoprotein-particles.json`) gives only % of each particle's own mass and
+IDL's isn't sourced at all — the three stages drawn with no bond between them,
+since they are one particle transforming rather than three separate reactions.
+Chylomicron (its own "Intestine" zone ahead of Liver, no organ artwork existing
+for it yet, TRIG 4 / Chol 1, the most TRIG-dominant particle), HDL (a second row
+inside Blood Transport below the VLDL/IDL/LDL chain, TRIG 1 / Chol 1, secreted
+lipid-poor and picking up cargo later from peripheral tissue rather than
+packaged like VLDL) and Lp(a) (same second row, TRIG 1 / Chol 1, ApoB-100 plus a
+second protein, apo(a), drawn as a small pill docked on the main icon and tagged
+"(a)" via `ParticleNode`'s `extraApo` prop) are all deliberately unconnected to
+the VLDL chain, since none of them is one of its transformation stages. The
+diagram's bond lines and dashed per-particle outline boxes (`--lipid-outline`)
+are computed by measuring the DOM — `LipidAssociations`, a `useMeasuredLayout`
+callback looping over all six particle ids (chylomicron, vldl, idl, ldl, hdl,
+lpa) — the same measured-overlay pattern the badge association lines already
+used. A badge column on the right — Total cholesterol, LDL-C (one merged badge
+on the Free Testosterone model: face the lab's LDL-C else Martin-Hopkins marked
+calc; expanded, Reported then Calculated Friedewald / Sampson / Martin-Hopkins
+with zones shown once, trimmed sources), Triglycerides, ApoB (cited to Sniderman
+et al. 2019), Non-HDL-C, Remnant-C, TC/HDL-C, LDL-C/HDL-C, AIP, ApoB/ApoA —
+draws Hormonal Pathways' purple association lines on hover, focus or open,
+ringing each particle's own Chol/TRIG circle stack or ApoB/ApoA icon directly
+(`data-node` ids `<particle>-chol` / `-trig` / `-apo`), falling back to the
+whole particle when a specific region isn't rendered; the per-particle
+reference-range chips and the ApoB bracket the old row carried are gone, a badge
+now rings the diagram itself. A ‹ date › stepper over the Cardiovascular Risk
+panel's `panelDates` and the SI/US switch drive every value. The page shares
+its measures, reference and source blocks, stepper, dismiss handling,
+association rings, raster `Glyph` and layout-measuring hook with Hormonal
+Pathways through `pathwayShared.ts` and `PathwayParts.tsx` — one engine for
+every axis page, each page keeping only its own layout and hand-coded wiring
+(ADR-0021; still no `pathways.json`, ADR-0014). The six-particle glyph row this
+replaced — its Artwork/Data `SegmentedControl`, the ChatGPT-generated particle
+SVGs, and the files that drew computed-geometry glyphs from the sourced data
+(`LipidParticleGlyph.tsx`, `lipidArtwork.ts`, `lipidParticleGeometry.ts`,
+`web/src/assets/lipids/*.svg`, `web/test/lipid-artwork.test.ts`) — is gone;
+each particle icon is now either a hand-drawn `customIcons.tsx` glyph
+(`CholesterolIcon`) or, for TRIG and the fatty-acid markers, task-0062's later
+ChatGPT-generated raster artwork — but ADR-0022's artwork-vs-computed-glyph
+distinction still holds, since every bubble renders at one fixed size
+regardless of which icon fills it, so it is a stack's own circle count, never
+the icon's shape or size, that encodes quantity. The liver zone also carries
+two standalone nodes feeding its nascent-VLDL assembly, each on its own
+measured arrow: `liver-apob` (a bare `CarrierIcon`, labeled ApoB-100, since
+the assembled particle's own ApoB-100 previously had no source arrow at all)
+and `liver-trig` (the liver's own DGAT/glycerol-3-phosphate triglyceride
+synthesis, `LIVER_TRIG_SYNTH_NOTE`) — `liver-trig` also the landing point for
+the fatty-acid-supply arrow crossing in from Blood Transport, rather than
+that arrow feeding the VLDL box directly. Both nodes, and the
+synthesized-cholesterol icon beside HMG-CoA reductase, originally all
+rendered at `STANDALONE_CHOL_ICON_SIZE`; `liver-apob`/`liver-trig`, and
+Intestine's mirroring `enterocyte-apob48`/`enterocyte-trig` pair, were then
+sized back down to plain `SIZE.molecular` (32px) — all four had been reading
+as full particle cores rather than small synthesis markers — while
+`synth-chol` alone stayed at `STANDALONE_CHOL_ICON_SIZE`. The fatty-acid-supply
+arrow now lands on the liver artwork itself first and hands off to
+`liver-trig` on its own arrow (FA → Liver → `liver-trig` → Nascent VLDL's
+TRIG, not FA → `liver-trig` directly), so the liver reads as actually taking
+up and reprocessing the fatty acids; both that arrow and the newer
+`liver-apob` source arrow are straight vertical lines, and `liverToTrigArrow`'s
+edge projection is anchored to the liver artwork's own bottom edge rather
+than a center-based one, which used to start right next to HMG-CoA
+reductase (near the artwork's middle) and wrongly implied the enzyme —
+cholesterol synthesis only — also produced TRIG. None of the liver/Intestine
+synthesis markers has adopted `Particle1`/`Particle1Node` yet
+(`pathwayShared.ts`/`PathwayParts.tsx`, generalizing the same bare-glyph
+convention proved out so far only on Hormonal Pathways' own `Enzyme`
+component — see above); Lipid Transport's own enzyme nodes, HMG-CoA
+reductase and LPL, are a deferred follow-up. A fourth zone, Arterial Wall
+(`artery-wall.png`, Alex/ChatGPT-generated, same crop/transparent-bg recipe
+as the page's other organ art, an endothelium strip with a drawn gap), sits
+between Blood Transport and Intestine: LDL, IDL and Lp(a) each get a dashed
+arrow from their own ApoB-100 down to that gap; VLDL gets none, by omission
+rather than an unsourced claim — Borén et al. 2020 (European Heart Journal,
+EAS Consensus Panel) is cited for both the binding mechanism (ApoB-100's
+positively-charged residues binding the arterial wall's proteoglycans) and
+the ~70nm size ceiling that excludes VLDL, with a clickable chip on the gap
+opening a cited `RetentionCard` (mirrors the HMG-CoA reductase enzyme chip)
+and a plain hover tooltip summarizing the same claim. The Blood Transport
+zone's `LplBranch` now stacks LPL directly above the fatty-acid glyph it
+releases — a straight vertical join, the glyph now labeled "fatty acids" to
+match the zone's other marker's wording — instead of side by side, with two
+separate arrows fanning out from it to Muscle and Adipocytes
+(`CellDestination`, reusing the same generic `CELLS_ART` cell artwork as
+Peripheral cells and Enterocytes) rather than the two cells sitting nearby
+with no arrows at all. A dev-only "Debug" toggle beside the SI/US control
+(`useNodeDrag`, `pathwayShared.ts`) lets any `data-node` element be dragged
+with the mouse — a purely visual `transform`, never touching real
+`left`/`top`/`margin`, reset by a reload or toggling Debug off with nothing
+persisted — with a live panel (an icon-only Copy button) reporting each
+dragged node's id, accumulated dx/dy and its currently-set positioning
+properties, so a reposition is an exact pixel delta from that readout
+rather than a guess-then-screenshot loop; a `MC_NUDGE_EVENT` custom event
+keeps the measured-arrow overlay recomputing on every drag frame, since a
+CSS `transform` fires no `ResizeObserver`. Every liver- and Intestine-zone
+node reposition since — `liver-apob`/`liver-trig`/`synth-chol`/Nascent VLDL,
+then `enterocyte-trig`/`enterocyte-apob48`/Chylomicron — was taken from that
+tool's own readout),
+Scheduled Visits (`#plan`, reachable despite validation
 errors: one tab per scheduled visit (`TabBar`, the same in-page tab strip
 Panel Detail and All Observations use, labeled by that visit's month via
 `formatMonthFullYear` or "No month" when unset) showing exactly the active
@@ -762,10 +967,8 @@ beyond the two cutover moments, and no storage-mode picker — signing in
 and out is the whole interface. The TopBar and Get Started's pitch
 (`ProfileView.tsx`) both read `useSupabaseAuthUser` too, swapping their
 local-only copy and "100% private" pillar for a "Synced to your
-account" line and pillar while signed in. Firebase's own code
-(`web/src/firebase/*`) is untouched and still in the repo — simply no
-longer used by `AccountView`/`TopBar`/`ProfileView` as of ADR-0019; whether
-and when it gets removed is undecided. Then a
+account" line and pillar while signed in. Firebase's code and dependency
+are gone (ADR-0019 addendum, 2026-09-18). Then a
 "Database details" card — subject
 / sex / birth year / notes plus a read-only `generatedAt` stamped on each
 export, persisted under localStorage key `bloodtests_envelope_meta_v1` and
@@ -810,10 +1013,10 @@ knows one, the value never converted, ADR-0003, and the code's accepted
 units otherwise), and, lower-severity, a unit that resolves
 to neither a Latin spelling nor a UCUM code (the rows whose curated
 tables need extending) are warnings; while errors exist, Monitoring Panels,
-Hormonal Pathways and All
+Hormonal Pathways, Lipid Transport and All
 Observations are disabled in the nav and their routes redirect to
 `#reports` (Get Started and Reference Book stay reachable) — one rule,
-`routing.ts`'s `isRouteBlocked` (panels, panel, pathways, all), which `isNavItemBlocked`
+`routing.ts`'s `isRouteBlocked` (panels, panel, pathways, lipids, all), which `isNavItemBlocked`
 also asks; the shell swaps the route during render, so the blocked view never
 paints, and replaces the URL with `history.replaceState` in an effect, so a
 redirect adds no history entry and Back cannot loop into it again. Upload
@@ -941,8 +1144,15 @@ build-level ones (entry bundle over Vite's 500 kB advisory) in
 
 ## Quality
 
-Vitest suites in `web/test/` (885 tests across 40 files — 884 passing, 1 skipped — as run on 2026-09-15: index
-golden-masters ported from v2, bioavailable testosterone and sex-dependent index
+Vitest suites in `web/test/` (966 tests across 44 files — 965 passing, 1 skipped — as run on 2026-09-16: index
+golden-masters ported from v2, `cft` and `biot` held to ISSAM's published
+worked example (issam.ch/freetesuit.htm) within 0.05% and cross-checked within
+1% against eight fixtures recorded from its live calculator — the tolerance
+being that calculator's known deviation, T converted at ~280 g/mol and albumin
+at a rounded 1.45e-4 mol/L per g/dL against the app's 288.431 and 1/6900
+(ADR-0020; reported to ISSAM 2026-09-16) — plus `testosteronePools`' 280 g/mol
+solve and the four band-less testosterone % indices (`cftpct`, `ftpct`,
+`cftlhpct`, `biotpct`), bioavailable testosterone and sex-dependent index
 bands, calculated free testosterone (Ly & Handelsman) and Martin-Hopkins LDL-C
 golden-masters, upload parsing — the v3 envelope, and
 every non-v3 shape rejected — and import-replace, diagnostic-report validation, LOINC
@@ -962,7 +1172,16 @@ recomputed from its formula, agreeing with a cited source within
 `laboratories-1.schema.json`; pathway reference ranges against
 `pathway-reference-ranges-1.schema.json`, plus every source cited and every
 citation resolving, codes catalogued, molar masses tabulated, and each
-population placing on a catalog unit; the Martin-Hopkins LDL table against
+population placing on a catalog unit; pathway receptor effects against
+`pathway-receptor-effects-1.schema.json`, plus both receptor nodes covered,
+every effect citing a source, every citation resolving, every source cited and
+every quote under 25 words; lipoprotein particles against
+`lipoprotein-particles-1.schema.json`, plus transport order, every figure citing
+a known source and every source cited, quotes under 25 words, intervals
+ordered, the smallest printed shares and the drawn areas never over 100%, every
+structural apoprotein one its source lists, and each glyph region's area
+within 1% of its share; the particle artwork tagged and text-free in
+`lipid-artwork.test.ts`; the Martin-Hopkins LDL table against
 `martin-hopkins-ldl-table-1.schema.json`, plus internal consistency of its
 180 cells),
 share-link and shared-meta,
@@ -970,7 +1189,14 @@ explore-model, markers, routing,
 scheduling, month keys, ui helpers, build stamp, format utils, lab pricing and the visit
 plan, medications, the backup archive and its restore, the showcase generator,
 import-results, old-shape stored sessions and the results context, analyte sort,
-the Monitoring Panels status filter; the mobile reveal —
+the Monitoring Panels status filter, both pathway views rendered in jsdom over
+synthetic results (`pathway-views.test.tsx`: zones, particles, badges and the
+illustrative-artwork note, grey dashes with no data, the date stepper, the SI/US
+switch, testosterone shares and the molar-mass select, Artwork/Data modes and
+"composition not sourced", the LDL-C badge's Martin-Hopkins fallback, a badge's
+reference range and Escape) and `pathwayShared.ts`'s pure helpers
+(`pathway-shared.test.ts`), with nothing that needs real layout measurement
+tested; the mobile reveal —
 `TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile` — has none
 yet). CI
 (`.github/workflows/ci.yml`) runs lint → tests+coverage → build in a
@@ -1010,10 +1236,11 @@ weekly npm (minor+patch grouped) and github-actions bumps.
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/product/concepts/](docs/product/concepts/) — observation, monitoring
   panel, lab report, computed index, companion observation (planned),
-  pathway (planned), unit (printed and canonical are a pair: `rawUnit` and
-  `unit`)
+  pathway (two axis pages built: Hormonal Pathways and Lipid Transport),
+  unit (printed and canonical are a pair: `rawUnit` and `unit`)
 - [docs/tech/decisions/](docs/tech/decisions/README.md) — ADR index
-  (fourteen records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
-  ADR-0012 and ADR-0013 2026-09-09, ADR-0014 2026-09-11)
+  (twenty-two records; ADR-0005–0010 recorded 2026-09-07, ADR-0011 2026-09-08,
+  ADR-0012 and ADR-0013 2026-09-09, ADR-0014 2026-09-11, ADR-0015 2026-09-12,
+  ADR-0016–0018 2026-09-13, ADR-0019 2026-09-14, ADR-0020–0022 2026-09-16)
 - [docs/tech/interchange-format.md](docs/tech/interchange-format.md) —
   envelope spec, and its published JSON Schema

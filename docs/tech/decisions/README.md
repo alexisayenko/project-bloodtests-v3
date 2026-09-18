@@ -35,6 +35,10 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) | Supabase (self-hosted, then managed cloud) replaces the bearer-token server; real accounts/OAuth return | accepted · 2026-09-13 · supersedes 0015 · superseded by 0018 |
 | [ADR-0018](adr-0018-firebase-storage-provisional.md) | Firebase (Auth + Firestore) replaces the Supabase plan, provisionally | accepted · 2026-09-13 · supersedes 0017 · superseded by 0019 |
 | [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) | Self-hosted Supabase replaces Firebase for cloud sync | accepted · 2026-09-14 · supersedes 0018 |
+| [ADR-0020](adr-0020-constants-from-cited-data-calculators-are-cross-checks.md) | Physical constants come from cited reference data; external calculators are cross-checks, not gold standards | accepted · 2026-09-16 |
+| [ADR-0021](adr-0021-pathway-pages-share-one-overlay-engine.md) | Pathway pages share one overlay and association engine | accepted · 2026-09-16 |
+| [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
+| [ADR-0023](adr-0023-product-purpose-and-clinical-boundary.md) | Product purpose, audience, and clinical boundary | accepted · 2026-09-18 |
 
 ## Where each one bites
 
@@ -56,7 +60,14 @@ Each record opens with `# ADR-NNNN: <title>` and a
   concepts. 0011 applies the same rule to mass↔molar arithmetic —
   `web/public/data/molar-masses.json`, derived in
   `web/src/data/molarMasses.ts`; see
-  [`../molar-masses.md`](../molar-masses.md).
+  [`../molar-masses.md`](../molar-masses.md). 0020 holds that line
+  against outside tools: issam.ch's free-testosterone calculator converts
+  T at ~280 g/mol, and the app keeps 288.431, anchors its tests on
+  ISSAM's published worked example exactly and on the live calculator at
+  a 1% tolerance whose cause is written down, and allows the other mass
+  only as the Hormonal Pathways page's labelled, unpersisted cross-check
+  select; see the [computed index](../../product/concepts/computed-index.md)
+  concept and [task-0047](../../tasks/task-0047.md).
 - **Relations between markers** — 0005, still unbuilt; see the
   [companion observation](../../product/concepts/companion-observation.md)
   concept and [task-0010](../../tasks/task-0010.md).
@@ -73,8 +84,24 @@ Each record opens with `# ADR-NNNN: <title>` and a
   (0003).
 - **Pathways** — 0014, still unbuilt: per-axis Mermaid wiring generated
   to `web/public/data/pathways.json`, the same single-source rule as
-  0010; see the [pathway](../../product/concepts/pathway.md) concept and
-  [task-0024](../../tasks/task-0024.md).
+  0010 — Hormonal Pathways and Lipid Transport each hard-code their wiring
+  meanwhile. 0021: both pages draw on one shared layer,
+  `web/src/components/conditions/pathwayShared.ts` and `PathwayParts.tsx` —
+  reference and source blocks, the date stepper, dismissal, and the
+  DOM-measured overlay with association lines hidden at rest — and own only
+  their layout and wiring. 0022: generated artwork may ship as illustration
+  — the brain and Lipid Transport's liver image — but never stands in for a
+  shape that encodes a quantity; Lipid Transport's particle icons, redrawn in
+  task-0062 first as hand-drawn `customIcons.tsx` glyphs and later (TRIG and
+  the fatty-acid markers) as ChatGPT-generated raster artwork, no longer
+  carry computed-from-data areas the way the retired Data mode did — a
+  stack's own circle count, not its icon's shape or size, still encodes
+  quantity either way — and the sourced
+  `lipoprotein-particles.json` composition (IDL and Lp(a) "not sourced") now
+  surfaces only in the page's own size-and-composition table. See the
+  [pathway](../../product/concepts/pathway.md) concept,
+  [task-0024](../../tasks/task-0024.md), [task-0060](../../tasks/task-0060.md)
+  and [task-0062](../../tasks/task-0062.md).
 - **Sync / storage backend** — 0015: an opt-in dedicated server storage
   mode beside the unchanged local-only default, syncing the existing
   backup-bundle shape; its bearer-token auth model
@@ -93,8 +120,8 @@ Each record opens with `# ADR-NNNN: <title>` and a
   Supabase — a second, independent instance kept apart from any other
   project's Supabase — with Supabase Auth (Google/Apple, PKCE flow) and
   a `public.user_backups` table under RLS standing in for Firestore's
-  per-person document; implemented, with Firebase's own code left in the
-  repo unused rather than deleted. The storage-mode shape and the
+  per-person document; implemented, Firebase's own code since removed
+  (2026-09-18). The storage-mode shape and the
   one-time-cutover migration model carry over from 0015 unchanged, and
   0018's own two-tier sign-in policy (cloud wins; sign-out pushes then
   wipes local, unless local is empty and cloud isn't) carries over from
@@ -105,6 +132,14 @@ Each record opens with `# ADR-NNNN: <title>` and a
   `web/src/components/conditions/scheduled.ts` and rendered as one
   Scheduled column per visit in the results tables and one stacked section
   per visit on `#plan` (`PlanVisitView.tsx`).
+- **Product purpose and clinical boundary** — 0023: the three pillars
+  (reduce complexity, show the whole picture, build understanding), the
+  audience definition, the learning approach, and the clinical boundary
+  ("understanding, not diagnosis") that shapes feature scope and wording
+  throughout. Documented in
+  [`../../product/README.md`](../../product/README.md) (core idea +
+  constraints) and [`../../business/README.md`](../../business/README.md)
+  (audience, scope, non-goals).
 
 ## Adding one
 

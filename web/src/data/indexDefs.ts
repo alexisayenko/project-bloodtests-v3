@@ -1,5 +1,6 @@
 import { molarPerMass, type IndexDef, type Markers } from './computedIndices';
 import { martinHopkinsFactor } from './martinHopkinsLdl';
+import { molarMassOf } from './molarMasses';
 
 /**
  * The clinical definitions the index engine in `computedIndices.ts` runs:
@@ -63,6 +64,19 @@ function calculatedFreeTestosteroneLyHandelsman(totalT_nmoll: number, shbg_nmoll
   return (FT_pmolL / 1000 / T_NGDL_TO_NMOLL) * 10; // pmol/L -> nmol/L -> ng/dL -> pg/mL
 }
 
+/** Ly & Handelsman free T as % of total T, both nmol/L; null exactly where cftlh is. */
+function lyHandelsmanFreePercent(totalT_nmoll: number, shbg_nmoll: number): number | null {
+  const FT_pmolL = lyHandelsmanFreeT_pmolL(totalT_nmoll, shbg_nmoll);
+  if (FT_pmolL < 0) return null;
+  return (FT_pmolL / 1000 / totalT_nmoll) * 100;
+}
+
+/** Vermeulen free T as % of total T (nmol/L); the fraction ISSAM's worked example prints as [S] %. */
+function vermeulenFreePercent(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl?: number): number {
+  const T = totalT_nmoll * 1e-9;
+  return (vermeulenFreeT(T, shbg_nmoll * 1e-9, albuminMolL(albumin_gdl)) / T) * 100;
+}
+
 // Mayo Clinic Laboratories' bioavailable testosterone reference limits (test
 // TTBS), ng/dL: the men's lower limits for ages 20-29 and 60-69, the women's
 // (20-50, non-oophorectomized) upper limits on and off oral estrogen.
@@ -77,10 +91,17 @@ function bioavailableTestosterone(totalT_nmoll: number, shbg_nmoll: number, albu
   return (FT * (1 + KA_ALBUMIN * A)) / 1e-9;
 }
 
-/** Testosterone's three pools, nmol/L: free, albumin-bound (free × Ka·albumin) and SHBG-bound (the rest). */
-export function testosteronePools(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl: number) {
+export const TESTOSTERONE_MOLAR_MASS = molarMassOf('testosterone');
+
+/**
+ * Testosterone's three pools, nmol/L: free, albumin-bound (free × Ka·albumin) and SHBG-bound (the rest).
+ * `solveMolarMass` (g/mol) changes only the total T fed to the quadratic, so only the free fraction;
+ * each pool stays that fraction of `totalT_nmoll` -- issam.ch's calculator solves at 280 g/mol this way.
+ */
+export function testosteronePools(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl: number, solveMolarMass?: number) {
   const A = albuminMolL(albumin_gdl);
-  const free = vermeulenFreeT(totalT_nmoll * 1e-9, shbg_nmoll * 1e-9, A) / 1e-9;
+  const scale = solveMolarMass == null ? 1 : TESTOSTERONE_MOLAR_MASS / solveMolarMass;
+  const free = vermeulenFreeT(totalT_nmoll * scale * 1e-9, shbg_nmoll * 1e-9, A) / 1e-9 / scale;
   const albuminBound = free * KA_ALBUMIN * A;
   return { free, albuminBound, shbgBound: totalT_nmoll - free - albuminBound };
 }
@@ -88,8 +109,8 @@ export function testosteronePools(totalT_nmoll: number, shbg_nmoll: number, albu
 export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'ka', friendlyName: 'Atherogenic coefficient', shortName: 'AC', panels: ['Cardiovascular Risk'],
-    formula: '(TC − HDL) / HDL', cut: [3, 4], inputKeys: ['TC', 'HDL-C'], level: 'heuristic',
-    meaning: 'Share of atherogenic cholesterol relative to protective HDL. Higher = more atherogenic blood. Rough guide: <3 good, 3–4 borderline, >4 high.',
+    formula: '(TC − HDL-C) / HDL-C', cut: [3, 4], inputKeys: ['TC', 'HDL-C'], level: 'heuristic',
+    meaning: 'Share of atherogenic cholesterol relative to protective HDL-C. Higher = more atherogenic blood. Rough guide: <3 good, 3–4 borderline, >4 high.',
     consensus: 'Common in post-Soviet labs; in international guidelines superseded by ApoB and direct ratios. Fine as a rough orientation.',
     evidenceLevel: 'heuristic',
     references: [
@@ -98,9 +119,9 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (has(m, 'TC', 'HDL-C') ? (m['TC']! - m['HDL-C']!) / m['HDL-C']! : null),
   },
   {
-    key: 'tchdl', friendlyName: 'TC / HDL ratio', shortName: 'TC/HDL', panels: ['Cardiovascular Risk'],
-    formula: 'TC / HDL', cut: [3.5, 5], inputKeys: ['TC', 'HDL-C'], level: 'consensus', loinc: '9830-1',
-    meaning: 'Total cholesterol per unit of protective HDL. Simple, robust cardiovascular-risk marker. Target usually <3.5–4.',
+    key: 'tchdl', friendlyName: 'TC / HDL-C ratio', shortName: 'TC/HDL-C', panels: ['Cardiovascular Risk'],
+    formula: 'TC / HDL-C', cut: [3.5, 5], inputKeys: ['TC', 'HDL-C'], level: 'consensus', loinc: '9830-1',
+    meaning: 'Total cholesterol per unit of protective HDL-C. Simple, robust cardiovascular-risk marker. Target usually <3.5–4.',
     consensus: 'Well-established CV-risk marker, used in risk calculators (e.g. Framingham). Good evidence base.',
     evidenceLevel: 'consensus',
     references: [
@@ -109,10 +130,10 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (has(m, 'TC', 'HDL-C') ? m['TC']! / m['HDL-C']! : null),
   },
   {
-    key: 'ldlhdl', friendlyName: 'LDL / HDL ratio', shortName: 'LDL/HDL', panels: ['Cardiovascular Risk'],
-    formula: 'LDL / HDL', cut: [2, 3.5], inputKeys: ['LDL-C', 'HDL-C'], level: 'heuristic', loinc: '11054-4',
-    meaning: 'Direct ratio of atherogenic LDL to protective HDL. More LDL-sensitive than TC/HDL. Target <2–3.',
-    consensus: 'Long used and intuitive, but current guidance considers ApoB / non-HDL more accurate.',
+    key: 'ldlhdl', friendlyName: 'LDL-C / HDL-C ratio', shortName: 'LDL-C/HDL-C', panels: ['Cardiovascular Risk'],
+    formula: 'LDL-C / HDL-C', cut: [2, 3.5], inputKeys: ['LDL-C', 'HDL-C'], level: 'heuristic', loinc: '11054-4',
+    meaning: 'Direct ratio of atherogenic LDL-C to protective HDL-C. More LDL-C-sensitive than TC/HDL-C. Target <2–3.',
+    consensus: 'Long used and intuitive, but current guidance considers ApoB / non-HDL-C more accurate.',
     evidenceLevel: 'heuristic',
     references: [
       { organization: "European Society of Cardiology / European Atherosclerosis Society", document: "2019 ESC/EAS Guidelines for the management of dyslipidaemias (Mach F et al.)", year: 2020, url: "https://academic.oup.com/eurheartj/article/41/1/111/5556353", doi: "10.1093/eurheartj/ehz455", quote: "Guidelines set treatment targets for LDL-C, non-HDL-C and ApoB; the LDL/HDL ratio has no formal guideline target, so the cut-points here are orientation only." },
@@ -121,7 +142,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'aip', friendlyName: 'AIP (atherogenic index of plasma)', shortName: 'AIP', panels: ['Insulin Resistance', 'Cardiovascular Risk'],
-    formula: 'log₁₀(TG / HDL), molar', cut: [0.11, 0.21], inputKeys: ['TRIG', 'HDL-C'],
+    formula: 'log₁₀(TG / HDL-C), molar', cut: [0.11, 0.21], inputKeys: ['TRIG', 'HDL-C'],
     inputUnits: { TRIG: 'mmol/L', 'HDL-C': 'mmol/L' }, level: 'heuristic',
     meaning: 'Reflects LDL particle size and insulin resistance. Scale: <0.11 low risk, 0.11–0.21 medium, >0.21 high.',
     consensus: 'A studied statistical surrogate, not a consensus-endorsed clinical test: its own defining paper and the follow-on literature are observational-association studies (correlation with LDL particle size, CAD severity, metabolic syndrome), and no named guideline or consensus statement recommends AIP for clinical risk use. Most useful as orientation with high triglycerides / metabolic syndrome.',
@@ -133,10 +154,10 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'nonhdl', friendlyName: 'Non-HDL cholesterol', shortName: 'Non-HDL-C', panels: ['Cardiovascular Risk'],
-    formula: 'TC − HDL (mg/dL)', cut: [130, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C'],
+    formula: 'TC − HDL-C (mg/dL)', cut: [130, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL' }, level: 'consensus', loinc: '43396-1',
-    meaning: 'All atherogenic cholesterol (LDL + VLDL + remnants). Reflects risk better than LDL alone, especially with high TG. Target <130 mg/dL (high risk <100).',
-    consensus: 'Recommended by ESC/AHA guidelines as a secondary treatment target; more reliable than isolated LDL.',
+    meaning: 'All atherogenic cholesterol (LDL + VLDL + remnants). Reflects risk better than LDL-C alone, especially with high TG. Target <130 mg/dL (high risk <100).',
+    consensus: 'Recommended by ESC/AHA guidelines as a secondary treatment target; more reliable than isolated LDL-C.',
     evidenceLevel: 'guideline',
     references: [
       { organization: "European Society of Cardiology / European Atherosclerosis Society", document: "2019 ESC/EAS Guidelines for the management of dyslipidaemias (Mach F et al.)", year: 2020, url: "https://academic.oup.com/eurheartj/article/41/1/111/5556353", doi: "10.1093/eurheartj/ehz455", quote: "Non-HDL-C is recommended as a secondary treatment target, with goals (e.g. <2.6 mmol/L ≈ 100 mg/dL in high risk) set 30 mg/dL above the corresponding LDL-C goal." },
@@ -146,7 +167,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'remnant', friendlyName: 'Remnant cholesterol', shortName: 'Remnant-C', panels: ['Cardiovascular Risk'],
-    formula: 'TC − HDL − LDL (mg/dL)', cut: [24, 30], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'LDL-C'],
+    formula: 'TC − HDL-C − LDL-C (mg/dL)', cut: [24, 30], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'LDL-C'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', 'LDL-C': 'mg/dL' }, level: 'consensus',
     meaning: 'Cholesterol in triglyceride-rich lipoproteins (VLDL and remnants). Independent CV-risk and vascular-inflammation factor. Target <24 mg/dL (~0.6 mmol/L).',
     consensus: 'Accumulating evidence as a causal driver of atherosclerosis; increasingly used.',
@@ -170,10 +191,10 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'ldlf', friendlyName: 'LDL-C (Friedewald)', shortName: 'LDL-C (F)', panels: ['Cardiovascular Risk'],
-    formula: 'TC − HDL − TG/5 (mg/dL)\nonly when TG < 400 mg/dL', cut: [100, 160], unit: 'mg/dL',
+    formula: 'TC − HDL-C − TG/5 (mg/dL)\nonly when TG < 400 mg/dL', cut: [100, 160], unit: 'mg/dL',
     inputKeys: ['TC', 'HDL-C', 'TRIG'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus', loinc: '13457-7',
-    meaning: 'LDL cholesterol estimated by the 1972 Friedewald equation — the formula most labs have used for half a century, computed here from YOUR TC, HDL and TG so the series stays method-consistent even when labs change formulas between draws. Compare it with the lab-reported LDL-C row: a gap means the lab used a different method, not that your LDL moved. There is no universal LDL-C cutoff — the target is risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low), so pick the line that matches your own risk. The bands here are the NCEP ATP III DESCRIPTIVE categories, not a target: <100 optimal/near optimal · 100–159 near optimal to borderline · ≥160 high (≥190 very high). Beware the units: in mmol/L the last term is TG/2.2, not TG/5 — this index converts every input to mg/dL first, so the /5 always applies to mg/dL.',
+    meaning: 'LDL cholesterol estimated by the 1972 Friedewald equation — the formula most labs have used for half a century, computed here from YOUR TC, HDL-C and TG so the series stays method-consistent even when labs change formulas between draws. Compare it with the lab-reported LDL-C row: a gap means the lab used a different method, not that your LDL moved. There is no universal LDL-C cutoff — the target is risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low), so pick the line that matches your own risk. The bands here are the NCEP ATP III DESCRIPTIVE categories, not a target: <100 optimal/near optimal · 100–159 near optimal to borderline · ≥160 high (≥190 very high). Beware the units: in mmol/L the last term is TG/2.2, not TG/5 — this index converts every input to mg/dL first, so the /5 always applies to mg/dL.',
     consensus: 'The long-standing standard estimate, and still the default in most labs, but it is an approximation with known failure modes: it is invalid above TG 400 mg/dL (no value is produced there), and also invalid with chylomicronemia, type III dysbetalipoproteinemia, or a non-fasting sample. It underestimates most at low LDL-C combined with high TG — exactly the range where a treatment decision is being made — which is why newer equations (Martin-Hopkins, Sampson/NIH) were developed. Needs TC, HDL-C and TG from ONE draw.',
     evidenceLevel: 'consensus',
     references: [
@@ -190,7 +211,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'ldls', friendlyName: 'LDL-C (Sampson)', shortName: 'LDL-C (S)', panels: ['Cardiovascular Risk'],
-    formula: 'TC/0.948 − HDL/0.971\n− (TG/8.56 + TG×nonHDL/2140 − TG²/16100)\n− 9.44 (mg/dL)\nnonHDL = TC − HDL; only when TG ≤ 800 mg/dL',
+    formula: 'TC/0.948 − HDL-C/0.971\n− (TG/8.56 + TG×non-HDL-C/2140 − TG²/16100)\n− 9.44 (mg/dL)\nnon-HDL-C = TC − HDL-C; only when TG ≤ 800 mg/dL',
     cut: [100, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'TRIG'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus',
     meaning: 'LDL cholesterol estimated by the 2020 Sampson (NIH equation 2) formula, from the same three inputs as the Friedewald row above. It was derived against beta-quantification ultracentrifugation to fix exactly where Friedewald fails: it stays valid up to TG 800 mg/dL and is markedly more accurate at low LDL-C with high triglycerides. Read the two side by side — where they agree, the estimate is solid; where Sampson reads higher, Friedewald is under-reporting. Same caveat on thresholds: there is no universal LDL-C cutoff, targets are risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low). The bands here are the NCEP ATP III descriptive categories (<100 optimal · 100–159 near optimal to borderline · ≥160 high), used for coloring only.',
@@ -212,7 +233,7 @@ export const INDEX_DEFS: IndexDef[] = [
   },
   {
     key: 'ldlmh', friendlyName: 'LDL-C (Martin-Hopkins)', shortName: 'LDL-C (MH)', panels: ['Cardiovascular Risk'],
-    formula: 'Non-HDL − TG/F (mg/dL)\nF = median TG:VLDL-C ratio, looked up from a\n180-cell table by TG × non-HDL-C strata (Martin et al. 2013)\nNon-HDL = TC − HDL; only within the table\'s covered range',
+    formula: 'Non-HDL-C − TG/F (mg/dL)\nF = median TG:VLDL-C ratio, looked up from a\n180-cell table by TG × non-HDL-C strata (Martin et al. 2013)\nNon-HDL-C = TC − HDL-C; only within the table\'s covered range',
     cut: [100, 160], unit: 'mg/dL', inputKeys: ['TC', 'HDL-C', 'TRIG'],
     inputUnits: { TC: 'mg/dL', 'HDL-C': 'mg/dL', TRIG: 'mg/dL' }, level: 'consensus', loinc: '96259-7',
     meaning: 'LDL cholesterol estimated by the 2013 Martin/Hopkins method, from the same three inputs as the Friedewald and Sampson rows above. Instead of Friedewald\'s fixed TG÷5, it looks up an adjustable divisor from a 180-cell table (30 triglyceride strata × 6 non-HDL-C strata, each cell the median TG:VLDL-C ratio measured in over 900,000 direct ultracentrifugation profiles) and subtracts TG/F from non-HDL-C (TC − HDL). Read the three LDL-C rows side by side: where they agree, the estimate is solid; where Martin-Hopkins and Sampson both read higher than Friedewald, Friedewald is under-reporting. The table\'s own strata run mg/dL only, so this index always computes in mg/dL regardless of the display unit toggle, exactly like Friedewald and Sampson. Same caveat on thresholds: there is no universal LDL-C cutoff, targets are risk-stratified (2019 ESC/EAS: <55 mg/dL very high risk · <70 high · <100 moderate · <115 low). The bands here are the NCEP ATP III descriptive categories (<100 optimal · 100–159 near optimal to borderline · ≥160 high), used for coloring only.',
@@ -318,6 +339,39 @@ export const INDEX_DEFS: IndexDef[] = [
     fn: (m) => (m['T'] != null && m['SHBG'] != null ? calculatedFreeTestosterone(m['T']!, m['SHBG']!, m['ALB']) : null),
   },
   {
+    key: 'cftpct', friendlyName: 'Free testosterone, % of total (calculated, Vermeulen)', shortName: 'cFT %', panels: ['Hypogonadism'],
+    formula: 'cFT % = free T / total T × 100\nfree T = Vermeulen quadratic (as cFT)\n(both mol/L)',
+    unit: '%', inputKeys: ['T', 'SHBG'], optionalInputKeys: ['ALB'],
+    inputUnits: { T: 'nmol/L', SHBG: 'nmol/L', ALB: 'g/dL' }, level: 'consensus',
+    meaning: 'The share of total testosterone that circulates unbound, as calculated by the Vermeulen equation — the same free T as cFT (Vermeulen), divided by total T in molar terms, so it reads the same whichever unit either was printed in. It is set almost entirely by SHBG (and, weakly, albumin): a low SHBG raises the fraction, a high SHBG lowers it, which is why it can flag a binding problem that total T alone hides. Albumin defaults to 4.3 g/dL when no same-draw reading places in g/dL, as for cFT. ' +
+      'No status bands: the one adult reference interval found for a free-testosterone percentage (Labcorp\'s, men 1.5–3.2 %) is for the fraction measured by equilibrium dialysis, and it gives a single interval where this app\'s bands need a separate borderline limit, so it is quoted here for orientation rather than turned into a band.',
+    consensus: 'The Endocrine Society recommends equilibrium dialysis for free T, or, where that is unavailable, a formula that accurately calculates it from total T, SHBG and albumin; the percentage is that calculated free T expressed as a fraction of total. Against equilibrium dialysis, Vermeulen\'s calculation ran a median 19% high in men (Fiers et al. 2018), so a calculated percentage sits correspondingly above the dialysis-measured one — keep that in mind when comparing it with Labcorp\'s 1.5–3.2 % dialysis interval.',
+    evidenceLevel: 'consensus',
+    references: [
+      { organization: "ISSAM (Hormonology department, University Hospital of Ghent)", document: "Free & Bioavailable Testosterone calculator — Explanation and examples", url: "https://www.issam.ch/freetesuit.htm", doi: null, retrieved: '2026-09-16', quote: "[S] % = 1.7388-10 x 100 = 1.74 %" },
+      { organization: "Journal of Clinical Endocrinology & Metabolism (Vermeulen A, Verdonck L, Kaufman JM)", document: "A critical evaluation of simple methods for the estimation of free testosterone in serum", year: 1999, url: "https://pubmed.ncbi.nlm.nih.gov/10523012/", doi: "10.1210/jcem.84.10.6079", quote: "Derives the equilibrium-binding equation (SHBG Ka≈1×10⁹, albumin Ka≈3.6×10⁴ L/mol) used here to compute free testosterone from total T, SHBG and albumin." },
+      { organization: "Endocrine Society (Bhasin S et al.)", document: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline, JCEM", year: 2018, url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", doi: "10.1210/jc.2018-00229", retrieved: '2026-09-16', quote: "If equilibrium dialysis is not available for measuring FT, clinicians should estimate FT concentrations using a formula that accurately calculates FT concentrations using TT, SHBG, and albumin concentrations." },
+      { organization: "Journal of Clinical Endocrinology & Metabolism (Fiers T, Wu F, Moghetti P, Vanderschueren D, Lapauw B, Kaufman JM)", document: "Reassessing Free-Testosterone Calculation by Liquid Chromatography-Tandem Mass Spectrometry Direct Equilibrium Dialysis", year: 2018, url: "https://pubmed.ncbi.nlm.nih.gov/29618085/", doi: "10.1210/jc.2017-02360", quote: "The median... ratios of calculated FT (cFT) over ED-FT... were 1.19 (0.9 to 1.47), 1.00 (0.69 to 1.42), and 2.05 (1.26 to 3.26) for cFT-V, cFT-L, and cFT-Z, respectively..." },
+      { organization: "Labcorp (Endocrine Sciences)", document: "Test 500726: Testosterone, Free, Mass Spectrometry/Equilibrium Dialysis — Reference Interval", url: "https://www.labcorp.com/tests/500726/testosterone-free-mass-spectrometry-equilibrium-dialysis-endocrine-sciences", doi: null, retrieved: '2026-09-16', quote: "% Free Testosterone (Dialysis) … Adults: Males 1.5−3.2 %, Females 0.8−1.4 %" },
+    ],
+    fn: (m) => (has(m, 'T', 'SHBG') ? vermeulenFreePercent(m['T']!, m['SHBG']!, m['ALB']) : null),
+  },
+  {
+    key: 'ftpct', friendlyName: 'Free testosterone, % of total (measured)', shortName: 'FT %', panels: ['Hypogonadism'],
+    formula: 'FT % = measured free T / total T × 100\n(both converted to mol/L)',
+    unit: '%', inputKeys: ['FT', 'T'],
+    inputUnits: { FT: 'pmol/L', T: 'nmol/L' }, level: 'heuristic', loinc: '15432-8',
+    meaning: 'The lab-measured Free Testosterone row divided by total testosterone from the same draw, both converted to molar units with testosterone\'s molar mass, so a free T printed in pg/mL and a total T printed in nmol/L still divide correctly. Physiologically free T is around 1.5–3 % of total in adult men; a figure far below that says more about the free-T assay than about the man. Compare it with cFT % (Vermeulen) above. ' +
+      'No status bands: Labcorp\'s adult male interval for this percentage, 1.5–3.2 %, belongs to equilibrium dialysis, which most labs\' free-T rows are not, and it gives a single interval where this app\'s bands need a separate borderline limit — so it is quoted for orientation only.',
+    consensus: 'Only as good as the free-T number on top of it. The Endocrine Society says clinicians should not use direct analog free-testosterone immunoassays, as they are inaccurate — and that is how most routine labs measure the Free Testosterone row. Such assays read systematically low, so this percentage typically falls well under the 1.5–3.2 % equilibrium-dialysis interval even when the calculated fraction is normal; a large gap between FT % and cFT % is the signature of the assay, not of a hormonal disorder. Where the free T was measured by equilibrium dialysis, this is the quantity Labcorp\'s interval describes.',
+    evidenceLevel: 'heuristic',
+    references: [
+      { organization: "Endocrine Society (Bhasin S et al.)", document: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline, JCEM", year: 2018, url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", doi: "10.1210/jc.2018-00229", retrieved: '2026-09-16', quote: "Clinicians should not use direct analog-based free testosterone immunoassays, as they are inaccurate." },
+      { organization: "Labcorp (Endocrine Sciences)", document: "Test 500726: Testosterone, Free, Mass Spectrometry/Equilibrium Dialysis — Reference Interval", url: "https://www.labcorp.com/tests/500726/testosterone-free-mass-spectrometry-equilibrium-dialysis-endocrine-sciences", doi: null, retrieved: '2026-09-16', quote: "% Free Testosterone (Dialysis) … Adults: Males 1.5−3.2 %, Females 0.8−1.4 % — reported under LOINC 15432-8." },
+    ],
+    fn: (m) => (has(m, 'FT', 'T') ? (m['FT']! / 1000 / m['T']!) * 100 : null),
+  },
+  {
     key: 'cftlh', friendlyName: 'Free testosterone (calculated, Ly & Handelsman)', shortName: 'cFT (LH)', panels: ['Hypogonadism'],
     formula: 'T ≥ 5 nmol/L:\nFT = −52.65 + 24.4T − 0.704S − 0.0782TS − 0.0584T²\nT < 5 nmol/L:\nFT = −6.593 + 19.304T + 0.056S − 0.0959TS\n(T, S nmol/L; FT pmol/L; Ly & Handelsman 2005)',
     cut: [100, 65], unit: 'pg/mL', hi: true, inputKeys: ['T', 'SHBG'],
@@ -328,8 +382,26 @@ export const INDEX_DEFS: IndexDef[] = [
     references: [
       { organization: "European Journal of Endocrinology (Ly LP, Handelsman DJ)", document: "Empirical estimation of free testosterone from testosterone and sex hormone-binding globulin immunoassays", year: 2005, url: "https://pubmed.ncbi.nlm.nih.gov/15757865/", doi: "10.1530/eje.1.01844", retrieved: '2026-09-14', quote: "Dividing the dataset into samples with blood TT above and below 5 nM, using a bootstrap regression modeling approach guided by Akaike Information Criterion for model selection... empirical equations were developed for FT in terms of TT and SHBG. ... these simple, assumption-free empirical FT equations can estimate accurately blood FT from TT and SHBG measured in the same samples." },
       { organization: "Thorax (Han Y-Y, Yan Q, Yang G, Chen W, Forno E, Celedón JC)", document: "Serum free testosterone and asthma, asthma hospitalizations, and lung function in British adults", year: 2020, url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7938359/", doi: "10.1136/thoraxjnl-2020-214875", retrieved: '2026-09-14', quote: "Because testosterone circulates highly bound to SHBG, free testosterone was estimated using the empirical free testosterone (EFT) formula [Ly & Handelsman 2005] — a published implementation of the equation, applied to 256,419 UK Biobank adults with free testosterone reported in pmol/L (mean 164.9 pmol/L in men, 11.9 pmol/L in women), confirming the equation's published output unit." },
+      { organization: "BMJ Open Respiratory Research (Pavey H, Polkey MI, Bolton CE, Cheriyan J, McEniery CM, Wilkinson I, Mohan D, Casaburi R, Miller BE, Tal-Singer R, Fisk M)", document: "Circulating testosterone levels and health outcomes in chronic obstructive pulmonary disease: results from ECLIPSE and ERICA", year: 2023, url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10277522/", doi: "10.1136/bmjresp-2022-001601", retrieved: '2026-09-16', quote: "The empirical free testosterone (EFT) formula was used to calculate this from TT and sex hormone binding globulin (SHBG) [Ly & Handelsman 2005] — reprints both EFT-low/EFT-high branches (T threshold 5 nmol/L, T and SHBG in nmol/L, FT in pmol/L) with coefficients identical to the ones implemented here, independent confirmation of the coefficients." },
+      { organization: "Annals of Allergy, Asthma & Immunology (Han Y-Y, Forno E, Witchel SF, Manni ML, Acosta-Pérez E, Canino G, Celedón JC)", document: "Testosterone to estradiol ratio and lung function in a prospective study of Puerto Rican youth", year: 2021, url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8349830/", doi: "10.1016/j.anai.2021.04.013", retrieved: '2026-09-16', quote: "Because testosterone circulates highly bound to SHBG, free testosterone was estimated using the empirical free testosterone (EFT) formula [Ly & Handelsman 2005] — reprints both EFT-low/EFT-high branches (T threshold 5 nmol/L, T and SHBG in nmol/L, FT in pmol/L) with coefficients identical to the ones implemented here, independent confirmation of the coefficients." },
     ],
     fn: (m) => (has(m, 'T', 'SHBG') ? calculatedFreeTestosteroneLyHandelsman(m['T']!, m['SHBG']!) : null),
+  },
+  {
+    key: 'cftlhpct', friendlyName: 'Free testosterone, % of total (calculated, Ly & Handelsman)', shortName: 'cFT (LH) %', panels: ['Hypogonadism'],
+    formula: 'cFT (LH) % = FT / T × 100\nFT = Ly & Handelsman regression (as cFT (LH)), pmol/L → nmol/L\n(T, S nmol/L)',
+    unit: '%', inputKeys: ['T', 'SHBG'],
+    inputUnits: { T: 'nmol/L', SHBG: 'nmol/L' }, level: 'consensus',
+    meaning: 'The free fraction by Ly & Handelsman\'s empirical regression: cFT (LH) divided by total T, both in nmol/L. No albumin term, as for its parent. Wherever the regression extrapolates to a negative free T it shows "–", exactly where cFT (LH) does. ' +
+      'No status bands: the adult reference interval found for a free-testosterone percentage (Labcorp, men 1.5–3.2 %) is for the fraction measured by equilibrium dialysis and gives a single interval where this app\'s bands need a separate borderline limit, so it is quoted for orientation only.',
+    consensus: 'Fiers et al. (2018) found this calculation the closest of three to equilibrium-dialysis free T (median ratio 1.00, 2.5th–97.5th percentile 0.69–1.42), so of the calculated percentages it is the one expected to sit nearest a dialysis-measured fraction — on average; individual results scatter across that range. Being a regression fit to one population, it carries no mechanistic meaning and does not generalize outside that sample.',
+    evidenceLevel: 'consensus',
+    references: [
+      { organization: "European Journal of Endocrinology (Ly LP, Handelsman DJ)", document: "Empirical estimation of free testosterone from testosterone and sex hormone-binding globulin immunoassays", year: 2005, url: "https://pubmed.ncbi.nlm.nih.gov/15757865/", doi: "10.1530/eje.1.01844", retrieved: '2026-09-14', quote: "Dividing the dataset into samples with blood TT above and below 5 nM, using a bootstrap regression modeling approach guided by Akaike Information Criterion for model selection... empirical equations were developed for FT in terms of TT and SHBG. ... these simple, assumption-free empirical FT equations can estimate accurately blood FT from TT and SHBG measured in the same samples." },
+      { organization: "Journal of Clinical Endocrinology & Metabolism (Fiers T, Wu F, Moghetti P, Vanderschueren D, Lapauw B, Kaufman JM)", document: "Reassessing Free-Testosterone Calculation by Liquid Chromatography-Tandem Mass Spectrometry Direct Equilibrium Dialysis", year: 2018, url: "https://pubmed.ncbi.nlm.nih.gov/29618085/", doi: "10.1210/jc.2017-02360", quote: "The median... ratios of calculated FT (cFT) over ED-FT... were 1.19 (0.9 to 1.47), 1.00 (0.69 to 1.42), and 2.05 (1.26 to 3.26) for cFT-V, cFT-L, and cFT-Z, respectively..." },
+      { organization: "Labcorp (Endocrine Sciences)", document: "Test 500726: Testosterone, Free, Mass Spectrometry/Equilibrium Dialysis — Reference Interval", url: "https://www.labcorp.com/tests/500726/testosterone-free-mass-spectrometry-equilibrium-dialysis-endocrine-sciences", doi: null, retrieved: '2026-09-16', quote: "% Free Testosterone (Dialysis) … Adults: Males 1.5−3.2 %, Females 0.8−1.4 %" },
+    ],
+    fn: (m) => (has(m, 'T', 'SHBG') ? lyHandelsmanFreePercent(m['T']!, m['SHBG']!) : null),
   },
   {
     key: 'biot', friendlyName: 'Bioavailable testosterone', shortName: 'Bio-T', panels: ['Hypogonadism'],
@@ -352,6 +424,22 @@ export const INDEX_DEFS: IndexDef[] = [
       { organization: "Endocrine Society (Bhasin S et al.)", document: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline, JCEM", year: 2018, url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", doi: "10.1210/jc.2018-00229", retrieved: '2026-09-11', quote: "there are no detailed studies (similar to those described previously that relate FT concentrations to manifestations of T deficiency) that use bioavailable T concentrations" },
     ],
     fn: (m) => (has(m, 'T', 'SHBG') ? bioavailableTestosterone(m['T']!, m['SHBG']!, m['ALB']) : null),
+  },
+  {
+    key: 'biotpct', friendlyName: 'Bioavailable testosterone, % of total', shortName: 'Bio-T %', panels: ['Hypogonadism'],
+    formula: 'Bio-T % = bio-T / total T × 100\nbio-T = free T × (1 + Ka·albumin), as Bio-T\n(both nmol/L)',
+    unit: '%', inputKeys: ['T', 'SHBG'], optionalInputKeys: ['ALB'],
+    inputUnits: { T: 'nmol/L', SHBG: 'nmol/L', ALB: 'g/dL' }, level: 'consensus', loinc: '6891-6',
+    meaning: 'The share of total testosterone that is not bound to SHBG — free plus albumin-bound — computed as Bio-T divided by total T, both in nmol/L. Albumin is handled exactly as for Bio-T: a same-draw reading placed in g/dL, otherwise 4.3 g/dL. Because albumin binding is weak and roughly constant, this percentage mostly mirrors SHBG: high SHBG pushes it down, low SHBG pushes it up. ' +
+      'No status bands: no reference interval for bioavailable testosterone as a percentage of total was found in a major reference laboratory\'s catalog (the reference values of Mayo Clinic Laboratories\' TTBS test give bioavailable testosterone in ng/dL only), so the value carries no status.',
+    consensus: 'Calculated rather than measured, and inherits every limitation of Bio-T: unreliable when steroids crowd SHBG\'s binding sites and when albumin is far from normal. Vermeulen et al. found calculated non-SHBG-bound T almost identical to the ammonium-sulfate precipitation measurement, which is what makes a calculated fraction a fair estimate. No guideline sets a threshold for it.',
+    evidenceLevel: 'consensus',
+    references: [
+      { organization: "Journal of Clinical Endocrinology & Metabolism (Vermeulen A, Verdonck L, Kaufman JM)", document: "A critical evaluation of simple methods for the estimation of free testosterone in serum", year: 1999, url: "https://pubmed.ncbi.nlm.nih.gov/10523012/", doi: "10.1210/jcem.84.10.6079", retrieved: '2026-09-11', quote: "nonspecifically bound T, calculated from FT, … almost identical to … non-SHBG-T obtained by ammonium sulfate precipitation" },
+      { organization: "ISSAM (Hormonology department, University Hospital of Ghent)", document: "Free & Bioavailable Testosterone calculator — Explanation and examples", url: "https://www.issam.ch/freetesuit.htm", doi: null, retrieved: '2026-09-16', quote: "Bio T = [S] + [SA] = [S] + 22.43 [S]" },
+      { organization: "Mayo Clinic Laboratories", document: "Test catalog, TTBS: Testosterone, Total and Bioavailable, Serum — Reference Values", url: "https://www.mayocliniclabs.com/test-catalog/overview/80065", doi: null, retrieved: '2026-09-11', quote: "TESTOSTERONE, BIOAVAILABLE: Males < or =19 years: Not established 20-29 years: 83-257 ng/dL 30-39 years: 72-235 ng/dL 40-49 years: 61-213 ng/dL 50-59 years: 50-190 ng/dL 60-69 years: 40-168 ng/dL > or =70 years: Not established" },
+    ],
+    fn: (m) => (has(m, 'T', 'SHBG') ? (bioavailableTestosterone(m['T']!, m['SHBG']!, m['ALB']) / m['T']!) * 100 : null),
   },
   {
     key: 'fai', friendlyName: 'Free androgen index', shortName: 'FAI', panels: ['Hypogonadism'],

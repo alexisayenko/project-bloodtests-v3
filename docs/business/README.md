@@ -9,34 +9,54 @@ work-area axes (C1, C2, …), see [`../concerns.md`](../concerns.md).
 
 ## Audience
 
-[TODO: who this product is for. Primary audience explicitly; any
-groups who are incidental / not designed for.]
+People who receive bloodwork results and want to understand more
+than whether each number falls inside a reference range. They
+shouldn't need to arrive with medical knowledge, but they are
+willing to learn — the product makes that learning approachable
+and connects it to their own data.
+
+Primary audience today is the author and his family. The broader
+audience is anyone who gets bloodwork done across multiple labs
+and wants to own and understand the history themselves.
+
+Not designed for: clinicians making treatment decisions, laboratory
+information systems, or users seeking automated health advice.
 
 ## Scope (v1)
 
-[TODO: what's in v1 — concrete numbers / boundaries where they
-exist. What's deliberately deferred to v2+.]
+Web app only (browser-based, Cloudflare Worker deploy). No native
+mobile app yet — mobile concept is under design
+([task-0040](../tasks/task-0040.md)). No backend accounts required
+for the core experience; optional cloud sync is under evaluation
+(see ADR-0019).
 
 ## Monetization
 
-- **Model**: [TODO: one-time purchase / subscription / freemium
-  / ad-supported / donation / none.]
-- **Free tier**: [TODO: what's in the free tier — or "n/a".]
-- **Paid tier**: [TODO: what gates the paid tier — features,
-  capacity, support — or "n/a".]
-- **Price**: [TODO: price point + currency, or "TBD pending
-  market research".]
+- **Model**: undecided — explicitly left open, not "free" by
+  design choice.
+- **Free tier**: n/a (the entire product is currently free and
+  open-source).
+- **Paid tier**: n/a — no paid tier exists or is planned yet.
+- **Price**: TBD pending audience growth and feature maturity.
 
 ## Non-goals (v1)
 
 Things deliberately out of scope. Each line defends an absence.
 
-- [TODO: e.g. "no subscriptions / recurring revenue".]
-- [TODO: e.g. "no community features (comments, ratings, UGC)".]
+- No clinical interpretation or treatment recommendations — we
+  support understanding, not diagnosis (see product constraints).
+- No community features (comments, ratings, UGC) — this is a
+  personal record, not a social platform.
+- No live data connections to laboratories or EHR systems — upload
+  is manual and intentional.
 
 ## Open questions
 
-- [TODO: open business decisions awaiting resolution.]
+- Monetization model — when and whether to introduce a paid tier.
+- Cloud sync rollout — self-hosted Supabase is decided (ADR-0019)
+  but not yet shipped to users.
+- Mobile concept — navigation, opening screen, and historical-data
+  comparison on narrow screens (task-0040).
 
 ## Resolved
 
@@ -44,8 +64,11 @@ Historical decisions with dates — load-bearing for understanding
 why the current shape is what it is. Don't delete; the trail is
 the audit.
 
-- **[TODO: decision title]** ([TODO: YYYY-MM-DD]):
-  [TODO: what was decided and why.]
+- **Product purpose defined** (2026-09-18): three pillars (reduce
+  complexity, show the whole picture, build understanding), clinical
+  boundary, and learning approach agreed and documented in
+  [`../product/README.md`](../product/README.md) and
+  [ADR-0023](../tech/decisions/adr-0023-product-purpose-and-clinical-boundary.md).
 
 ## File layout
 

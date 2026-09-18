@@ -1,35 +1,87 @@
 # Pathway
 
-> **Status: first static version built** — specified 2026-09-11
+> **Status: two static axis pages built** (Hormonal Pathways, Lipid Transport) — specified 2026-09-11
 > ([task-0024](../../tasks/task-0024.md),
 > [ADR-0014](../../tech/decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
 > `HormonalPathwaysView.tsx` draws four captioned zones on one canvas —
-> Hypothalamus + Pituitary (empty so far), Blood Transport, Testes, Target
-> tissues — with pathway arrows measured from the DOM and, as of 2026-09-12,
-> ten clickable badges (Total T, Bioavailable T, the measured Free
-> Testosterone, cFT (Vermeulen), three `unavailable` cFT variants — Ly &
-> Handelsman, Sartorius, Zakharov — that render "Not available" rather than a
-> value, then T/LH, DHT/T, T/E2), now on the user's own readings: a ‹ date › stepper over the Hypogonadism
+> Brain (a hypothalamus–pituitary image, `brain-pituitary.png`, centred on T's
+> vertical axis, with forked arrows to FSH and LH leaving its left side and,
+> as of 2026-09-16, estradiol's feedback from blood E2 entering its right side,
+> marked "↓"), Blood Transport, Testes, Target
+> tissues — with pathway arrows measured from the DOM (re-measured as nodes,
+> images, fonts or values change), the canvas beside the badge column down to a
+> 1280px viewport (spacing tightens first, then the zones zoom out), and, as of 2026-09-16,
+> a testosterone pools donut (SHBG-T, Albumin-T, Free T, with callouts) atop
+> six clickable badges (Total T, Bioavailable T, one merged Free Testosterone
+> — its face cFT (Vermeulen), expanded into Measured (LOINC `2991-8`, with the
+> lab's range) and Calculated (Vermeulen and Ly & Handelsman, their identical
+> zones shown once, plus Labcorp's 1.5–3.2 % adult male range) — then T/LH,
+> DHT/T, T/E2), now on the user's own readings: a ‹ date › stepper over the Hypogonadism
 > panel's results-table dates (latest by default), values in the SI/US unit
-> system, indices from `INDEX_DEFS`, the bound pools from `testosteronePools`,
-> and an albumin default of 4.3 g/dL behind a checkbox. Node captions are
+> system through a toggle bound to the shell's persisted setting, each
+> testosterone fraction also shown as % of total T, the Vermeulen values and
+> bound pools from `testosteronePools`, the other indices from `INDEX_DEFS`,
+> and, when a draw has no albumin, a select choosing no fallback, the nearest
+> measured albumin, or 4.3 g/dL (the default). That row of selects under the
+> diagram also carries "Testosterone molar mass" — 288.4 g/mol
+> (PubChem), the default, or 280 g/mol (issam.ch calculator) — which re-solves
+> only this page's Vermeulen values, unpersisted, as a labelled cross-check
+> aid ([ADR-0020](../../tech/decisions/adr-0020-constants-from-cited-data-calculators-are-cross-checks.md)). Node captions are
 > chips with status dots; a chip or badge expands in place to a reference
 > range — the lab's own when printed, else the cited, adult-male ranges of
 > `pathway-reference-ranges.json`, `INDEX_DEFS`' zones for indices, none for
-> the calculated pools. No `pathways.json` or feedback arrows yet. Where the
-> build departs from what follows (zones, not bands; badges in one column;
+> the calculated pools. Each receptor node carries a compact "Effects ▸"
+> chip opening a card of what its activation does in adult men, every bullet
+> citing [n] sources from `pathway-receptor-effects.json`. No `pathways.json` yet — the wiring is hand-coded in
+> the component — and of the feedback arrows only that one E2 → brain arrow.
+> Where the
+> build departs from what follows (zones, not bands, their captions turned 90°
+> counter-clockwise in a left gutter; the E2 feedback drawn solid into the
+> brain as a whole rather than dashed to Kp and LH; badges in one column;
 > association lines hidden at rest; cells and receptors drawn; a date stepper
-> rather than a month stepper; a default albumin; ten badges rather than six,
-> an expanded badge overlaying rather than pushing down its neighbors, and the
-> enzyme and receptor icons drawn as shared PNG artwork — `enzyme-icon.png`,
-> `receptor-icon.png` — rather than hand-drawn per-role SVG), task-0024's
+> rather than a month stepper; a default albumin; a merged Free Testosterone
+> badge and a pools donut, an expanded badge overlaying rather than pushing down its neighbors, and the
+> enzyme and receptor icons drawn as shared, transparent PNG artwork —
+> `enzyme-icon.png`, `receptor-icon.png` — rather than hand-drawn per-role
+> SVG), task-0024's
 > status note records it. No protein on the page renders a real structure
 > image any more: FSH and LH briefly did (PDB 1XWD, 7FII), then settled back
 > onto the same `HormoneIcon` schematic as every other signal, and aromatase
 > and 5α-reductase briefly did too (PDB 3EQM, 7C83) before settling onto the
 > shared enzyme icon — task-0024's log has both reversals.
+>
+> **Second axis page, 2026-09-16: Lipid Transport** (`#lipids`,
+> `LipidTransportView.tsx`, [task-0060](../../tasks/task-0060.md)) — its own
+> nav item after Hormonal Pathways rather than an axis tab, redrawn 2026-09-17
+> ([task-0062](../../tasks/task-0062.md)) as three pathway zones — Intestine,
+> Liver (with HMG-CoA reductase docked on it and a bare cholesterol icon
+> beside it as its synthesized product) and Blood Transport — each of the six
+> lipoprotein particles (Chylomicron, VLDL, IDL, LDL, HDL, Lp(a)) now a
+> holder-plus-cargo diagram in the same visual language SHBG uses to hold
+> docked testosterone: a carrier icon named for its structural apolipoprotein
+> (ApoB-100 for VLDL/IDL/LDL/Lp(a), ApoB-48 for chylomicron, ApoA-I for HDL)
+> bonded to a stack of small TRIG/Chol circles whose COUNT depicts the amount
+> aboard, never one scaled icon. VLDL → IDL → LDL is drawn as one particle
+> transforming, with no bond between the stages, both its TRIG and Chol counts
+> tapering down the chain (illustrative, not to scale); chylomicron, HDL and
+> Lp(a) are drawn unconnected to that chain, none of them being one of its
+> transformation stages. A badge column rings each particle's own
+> Chol/TRIG/apo icon directly on hover, focus or open, rather than a chip row
+> under it. The particle glyphs are no longer either generated artwork or
+> geometry computed from `lipoprotein-particles.json` — every one is now a
+> hand-drawn `customIcons.tsx` glyph like the rest of the app's icons, so
+> [ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)
+> now bears only on the liver image. Only the liver → VLDL arrow, plus a
+> second, enzyme → synthesized-cholesterol arrow, of its flows are drawn.
+> **Both pages share one engine**, `pathwayShared.ts` and `PathwayParts.tsx` — reference and source
+> blocks, date stepper, one-open-at-a-time dismissal, the DOM-measured overlay
+> with association lines hidden at rest, re-measured on resize, image load,
+> fonts and each page's own layout key, and the level-of-organisation `SIZE`s —
+> while each page hand-codes its own layout and wiring
+> ([ADR-0021](../../tech/decisions/adr-0021-pathway-pages-share-one-overlay-engine.md)).
+> The rest of this page describes the gonadal axis.
 
-One hormonal axis drawn as its wiring — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
+One axis drawn as its wiring — a hormonal axis, or a transport pathway such as lipid transport — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
 
 A [monitoring panel](monitoring-panel.md) lists markers; a pathway shows how they act on each other, so a reading is seen at the point in the axis where it happens.
 
@@ -47,7 +99,7 @@ Drawn: bands, signals, carriers, enzymes, badges and lines. **Not drawn**: cells
 
 ### Band
 
-An organ, drawn as a zone of one canvas and named by a small uppercase caption at its top left, its description on hover: Hypothalamus + Pituitary, Blood Transport, Testes, Target tissues. Blood Transport is a compartment rather than an organ, drawn as a zone alike. (The spec's five horizontal bands became these four zones in the first build.)
+An organ, drawn as a zone of one canvas and named by a small uppercase caption turned 90° counter-clockwise in a gutter down its left edge, its description on hover: Brain (hypothalamus and pituitary), Blood Transport, Testes, Target tissues. Blood Transport is a compartment rather than an organ, drawn as a zone alike. (The spec's five horizontal bands became these four zones in the first build.)
 
 **Where an arrow acts is data, not drawing.** Each arrow keeps its site as organ → region/tissue → cell → receptor, shown as its hover text — "T acts on Kp neurons in the arcuate nucleus via the androgen receptor":
 
@@ -63,7 +115,7 @@ Only two cells are ever seen, as **small text on their arrow**: "Leydig cells" o
 
 ### Signal
 
-A molecule that carries information along the axis: T, E2, DHT, cortisol, GnRH, Kp, LH, FSH, prolactin, inhibin B. It is raised by the signal upstream, made by a conversion, or enters as a side input (cortisol, prolactin); every arrow that changes it lands on it. Where it comes from, and for T, DHT and E2 the target-cell receptor each acts on, is hover text. **DHT and E2 are end nodes**: no arrow draws their action on target cells.
+A molecule that carries information along the axis: T, E2, DHT, cortisol, GnRH, Kp, LH, FSH, prolactin, inhibin B. It is raised by the signal upstream, made by a conversion, or enters as a side input (cortisol, prolactin); every arrow that changes it lands on it. Where it comes from, and for T, DHT and E2 the target-cell receptor each acts on, is hover text. **DHT and E2 end at the receptors**: DHT's arrow lands on the androgen receptors and E2's path, through blood E2, on the estrogen receptors; no further arrow leaves either receptor. What each receptor's activation does in adult men is an **Effects** card under it instead — a short list, every effect citing its sources, read from `pathway-receptor-effects.json`.
 
 The central T in Blood transport is the free pool: labeled "T", it carries **no amount** — the Free T badge shows it.
 
@@ -77,7 +129,7 @@ A converter: aromatase (T → E2), 5α-reductase (T → DHT), drawn as a node on
 
 ## Badges
 
-Badges are descriptive — they report a value, they do not make a diagnosis. They sit in one column on the right, in the order Total T, Free T, Bioavailable T, T/LH, DHT/T, T/E2, with no group headings. Two kinds:
+Badges are descriptive — they report a value, they do not make a diagnosis. They sit in one column on the right, under a testosterone pools donut, in the order Total T, Bioavailable T, Free Testosterone, T/LH, DHT/T, T/E2, with no group headings; Free Testosterone is one badge for every free-T value — measured (`2991-8`) and calculated by Vermeulen and by Ly & Handelsman — its face the Vermeulen figure, and every testosterone fraction also shows its % of total T. Two kinds:
 
 - **Measures** of pools — Total T, Free T, Bioavailable T — each joined to the T bubbles it sums.
 - **Ratios** of processes, each tied to what it reads:
@@ -105,7 +157,7 @@ A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B
 
 ## Icons
 
-Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). ChatGPT, stock and AI images are inspiration only, never shipped.
+Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Alex's final choices, 2026-09-11). Generated artwork may also ship, as illustration only — the brain image and Lipid Transport's liver are ChatGPT-generated, and both pages say so in a muted note — but any shape whose geometry encodes a quantity is drawn from cited reference data, and labelled artwork never stands in for it ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)); Lipid Transport's particle icons (`CholesterolIcon`, `TriglycerideIcon`, joining `CarrierIcon`) are hand-drawn `customIcons.tsx` glyphs like every other role, no longer generated or data-computed.
 
 | Role | Icon |
 | --- | --- |
@@ -116,6 +168,8 @@ Custom SVG icons, one per role, redrawn by us in `customIcons.tsx` when used (Al
 | Provenance | flask = measured, calculator = calculated, dashed circle = not measured |
 
 The carrier and the cells must stay visually distinct: a dense filled cluster against a few separate outlined circles with nuclei. A detailed steroid is angular fused rings, three hexagons and one pentagon. Badge groups carry no icon, and there is no receptor icon.
+
+**Glyph size encodes level of organisation, not molecular mass** (Alex, 2026-09-16) — consistent with node kinds being roles, not chemistry — as an ordinal hierarchy doubling per step: molecular actors (the signals T, DHT, both E2, FSH and LH; the carriers SHBG and albumin; the enzymes; the receptors; and the SHBG-bound and albumin-bound T circles, the T docked inside each scaled to fit) 32px; cells (Sertoli, Leydig) 64px; organs (the brain image) 128px. Glyphs sit bare, with no tile or frame, and a new node takes the size of its level.
 
 ## Notation
 

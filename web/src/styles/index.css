@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
 /* The palette, by role. This block is the only place a colour value is
    written: everything else in the app -- CSS here, the inline style objects
@@ -11,7 +9,7 @@
   --accent: #14757e; --accent-hover: #0f5a61;
   --accent-soft: #e6f1f3; --accent-line: #cfe3e6;
 
-  --text: #062a4f; --text-secondary: #385572; --text-muted: #768a9e;
+  --text: #062a4f; --text-secondary: #385572; --text-muted: #5a7189;
   --text-disabled: #a9b4c0; --text-on-accent: #ffffff;
 
   --surface: #ffffff; --surface-page: #f6f9fa;
@@ -28,6 +26,13 @@
   --surface-band: #f2f7fa; --surface-band-alt: #eef4f7;
   /* Hormonal Pathways glyph fills: a transport protein's beads, a steroid. */
   --pathway-carrier: #5bc3cc; --pathway-steroid: #f2b544;
+  /* Testosterone pools donut: two bound pools in the carrier/navy family, free in the steroid fill. */
+  --pathway-pool-shbg: color-mix(in srgb, var(--navy) 70%, white);
+  --pathway-pool-albumin: var(--pathway-carrier);
+  --pathway-pool-free: var(--pathway-steroid);
+  --pathway-pool-empty: var(--border-muted);
+  /* Lipid Transport: maroon outline for the liver node's own label. */
+  --lipid-outline: #6b1d3a;
 
   /* Status is semantic, not decorative: in range / borderline / out of range /
      not tested. Deliberately independent of the brand palette. Each state has
@@ -91,15 +96,23 @@ body {
 button.mc-chip { cursor: pointer; transition: transform 0.1s ease, box-shadow 0.1s ease; }
 button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); }
 .mc-segmented {
+  position: relative;
   display: inline-flex; gap: 2px; padding: 3px; border: 0; margin: 0; border-radius: var(--radius-pill);
   background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
+.mc-segment-thumb {
+  position: absolute; top: 3px; left: 0; bottom: 3px;
+  background: var(--surface); box-shadow: var(--shadow-card); border-radius: var(--radius-pill);
+  transition: transform 150ms ease, width 150ms ease;
+  pointer-events: none;
+}
 .mc-segment {
+  position: relative;
   padding: 4px 12px; border: 0; border-radius: var(--radius-pill); background: transparent;
   font-family: inherit; font-size: 13px; font-weight: 600; line-height: 18px; color: var(--text-secondary); cursor: pointer;
 }
 .mc-segment:hover:not(:disabled) { color: var(--text); }
-.mc-segment[aria-pressed='true'] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-card); }
+.mc-segment[aria-pressed='true'] { color: var(--text); }
 .mc-segment:disabled { color: var(--text-disabled); cursor: not-allowed; }
 .mc-segment:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -220,7 +233,14 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .biomarker-picker-item input { accent-color: var(--accent); }
 .biomarker-picker-hint { width: 100%; font-size: 12px; color: var(--text-muted); }
 
-.mc-page { padding: 56px 48px; }
+/* min-height reserves the footer's resting spot below the fold: panels.json
+   and monitoring-panels.json load async (DataContext's useEffect fetch), so
+   the Monitoring Panels grid renders empty then grows once they arrive. With
+   no reserved height the footer sat right under the empty grid and visibly
+   jumped down when it filled in -- a real Lighthouse-measured CLS shift, not
+   cosmetic. Reserving a full viewport keeps that growth (and the footer's
+   move) below the fold, where the Layout Instability API doesn't count it. */
+.mc-page { padding: 56px 48px; min-height: 100vh; }
 .mc-nav { display: flex; gap: 32px; margin-bottom: 32px; border-bottom: 1.5px solid var(--border-subtle); }
 /* Monitoring Panels grid: at most three columns, each at least 280px wide. */
 .mc-panels-toolbar {
@@ -283,37 +303,60 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-panels-grid--compact .mc-panel-icon svg { width: 20px; height: 20px; }
 .mc-panels-grid--compact .mc-panel-title { font-size: var(--font-card-title); overflow-wrap: anywhere; }
 
-/* Desktop and tablet shell: a top bar over a sidebar. Phones keep .mc-nav
-   (task-0020), so nothing here may reach below the mobile breakpoint. */
+/* Desktop and tablet shell: a sidebar spanning the full viewport height.
+   Phones keep .mc-nav (task-0020), so nothing here may reach below the
+   mobile breakpoint. */
 @media (min-width: 768px) {
-  :root { --mc-topbar-h: 60px; --mc-sidebar-w: 232px; }
-  .mc-topbar {
-    position: sticky; top: 0; z-index: 40; height: var(--mc-topbar-h);
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border-subtle);
-  }
+  :root { --mc-sidebar-w: 232px; }
   /* Fixed rather than sticky: the footer sits outside the shell, so a sticky
      sidebar was pushed up under the top bar once the page reached its end. */
   .mc-sidebar {
-    position: fixed; top: var(--mc-topbar-h); bottom: 0; left: 0; z-index: 30;
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 30;
     width: var(--mc-sidebar-w); overflow: hidden;
     padding: 16px 12px; background: var(--surface); border-right: 1px solid var(--border-subtle);
     transition: width 150ms ease;
   }
   .mc-page, .mc-footer { margin-left: var(--mc-sidebar-w); transition: margin-left 150ms ease; }
-  .mc-side-item > span { white-space: nowrap; }
+  .mc-side-top {
+    display: flex; align-items: center; margin-bottom: 12px;
+  }
+  .mc-side-logo {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    padding: 8px 12px; min-width: 0;
+    transition: padding 150ms ease;
+  }
+  .mc-side-logo span {
+    white-space: nowrap; overflow: hidden; display: inline-block;
+    max-width: 160px; opacity: 1;
+    transition: max-width 150ms ease, opacity 150ms ease;
+  }
+  .mc-side-item > span {
+    white-space: nowrap; overflow: hidden; display: inline-block;
+    max-width: 170px; opacity: 1;
+    transition: max-width 150ms ease, opacity 150ms ease;
+  }
   .mc-side-toggle {
-    display: flex; align-items: center; margin: 0 0 4px; padding: 8px 12px; border: 0; border-radius: 8px;
-    background: none; color: var(--text-muted); cursor: pointer;
+    position: fixed; top: 51px; left: calc(var(--mc-sidebar-w) - 13px); z-index: 31;
+    display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--border-subtle); background: var(--surface);
+    color: var(--text-muted); cursor: pointer;
+    transition: left 150ms ease, background 120ms ease, color 120ms ease;
   }
   .mc-side-toggle:hover { background: var(--surface-muted); color: var(--text); }
-  .mc-side-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .mc-side-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .mc-side-list { display: flex; flex-direction: column; gap: 2px; }
-  .mc-side-tagline { padding: 4px 12px 8px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-  .mc-side-item {
-    display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 8px;
-    font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+  .mc-side-tagline {
+    padding: 4px 12px 8px; font-size: 12px; color: var(--text-muted); line-height: 1.5;
+    overflow: hidden; max-height: 80px; opacity: 1;
+    transition: max-height 150ms ease, opacity 150ms ease, padding 150ms ease;
   }
+  .mc-side-item {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+    transition: width 150ms ease, padding 150ms ease, gap 150ms ease;
+  }
+  .mc-side-item svg { flex-shrink: 0; }
   .mc-side-item:hover { background: var(--surface-muted); color: var(--text); }
   .mc-side-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .mc-side-item[aria-current='page'] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
@@ -329,17 +372,18 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   .mc-page { padding: 28px 24px 48px; }
 }
 @media (min-width: 768px) {
+  /* The icon's own left offset (sidebar padding-left + item/logo padding-left)
+     is deliberately IDENTICAL to the expanded state below -- neither .mc-sidebar's
+     padding nor .mc-side-item's/.mc-side-logo's padding-left change on collapse,
+     so the icons themselves don't shift position, only the label text collapses
+     away beside them. */
   :root[data-sidebar-collapsed] { --mc-sidebar-w: 64px; }
-  :root[data-sidebar-collapsed] .mc-sidebar { padding: 16px 0; }
-  :root[data-sidebar-collapsed] .mc-side-list { align-items: center; }
-  :root[data-sidebar-collapsed] .mc-side-item {
-    justify-content: center; width: 36px; height: 36px; padding: 0; gap: 0;
+  :root[data-sidebar-collapsed] .mc-side-item { gap: 0; }
+  :root[data-sidebar-collapsed] .mc-side-item > span { max-width: 0; opacity: 0; }
+  :root[data-sidebar-collapsed] .mc-side-tagline {
+    max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0;
   }
-  :root[data-sidebar-collapsed] .mc-side-item > span,
-  :root[data-sidebar-collapsed] .mc-side-tagline { display: none; }
-  :root[data-sidebar-collapsed] .mc-side-toggle {
-    justify-content: center; width: 36px; height: 36px; margin: 0 auto 4px; padding: 0;
-  }
+  :root[data-sidebar-collapsed] .mc-side-logo span { max-width: 0; opacity: 0; }
 }
 
 @media (max-width: 767px) {
@@ -422,7 +466,13 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   .mc-table-wrap.mc-col-animated th:first-child,
   .mc-table-wrap.mc-col-animated tbody td:first-child,
   .mc-dates-chip.mc-animated,
-  .mc-dates-chip svg { transition: none; }
+  .mc-dates-chip svg,
+  .mc-side-logo,
+  .mc-side-logo span,
+  .mc-side-item,
+  .mc-side-item > span,
+  .mc-side-tagline,
+  .mc-segment-thumb { transition: none; }
 }
 
 /* Hormonal Pathways: one horizontal band per anatomical site, its label column
@@ -431,13 +481,27 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   display: flex; flex-direction: column; border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card); overflow: hidden; background: var(--surface-band);
   position: relative;
+  --pw-fit-pad: clamp(8px, calc(8px + (100cqi - 720px) * 0.0372), 24px);
+  --pw-fit-slot: clamp(80px, calc(80px + (100cqi - 720px) * 0.0372), 96px);
+  --pw-fit-group-indent: clamp(4px, calc(4px + (100cqi - 720px) * 0.0651), 32px);
+  --pw-fit-group-gap: clamp(6px, calc(6px + (100cqi - 720px) * 0.014), 12px);
+  --pw-fit-exchange: clamp(32px, calc(32px + (100cqi - 720px) * 0.0558), 56px);
+  --pw-fit-enzyme-gap: clamp(176px, calc(176px + (100cqi - 720px) * 0.1023), 220px);
+  --pw-fit-e2-indent: clamp(34px, calc(34px + (100cqi - 720px) * 0.0442), 53px);
+  /* Lipid Transport: gap between the VLDL-IDL-LDL row and Peripheral cells, and between VLDL/IDL/LDL themselves, eased the same way so the row plus Peripheral cells still clears the badge column at a narrower canvas. */
+  --pw-fit-ldl-gap: clamp(16px, calc(16px + (100cqi - 720px) * 0.0372), 32px);
+  --pw-fit-chain-gap: clamp(48px, calc(48px + (100cqi - 720px) * 0.0651), 76px);
 }
-.mc-pathway-band { position: relative; display: flex; padding-top: 32px; border-top: 1px solid var(--border-subtle); }
+.mc-pathway-band { position: relative; display: flex; padding: 20px 0 0 32px; border-top: 1px solid var(--border-subtle); }
 .mc-pathway-band:nth-of-type(1) { border-top: none; }
 .mc-pathway-band:last-of-type { padding-top: 56px; }
 .mc-pathway-band:nth-of-type(even) { background: var(--surface-band-alt); }
-.mc-pathway-site { position: absolute; top: 10px; left: 16px; z-index: 2; }
+.mc-pathway-site {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 32px; z-index: 2;
+  display: flex; align-items: center; justify-content: center; padding: 4px 0; box-sizing: border-box;
+}
 .mc-pathway-title {
+  margin: 0; max-height: 100%; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--text-muted); line-height: 1.3; cursor: help;
 }
@@ -452,20 +516,23 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 }
 .mc-pathway-diagram { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .mc-pathway-row {
-  display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 0 24px 52px;
+  display: flex; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 0 24px 52px var(--pw-fit-pad);
 }
 .mc-pathway-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; color: #8FA3B5; z-index: 1; }
-.mc-pathway-group { display: flex; align-items: center; gap: 12px; margin-left: 64px; }
-.mc-pathway-enzymes { position: relative; display: flex; align-items: flex-start; gap: 160px; margin-left: 268px; padding-bottom: 96px; }
+.mc-pathway-group { display: flex; align-items: center; gap: var(--pw-fit-group-gap); margin-left: var(--pw-fit-group-indent); }
+.mc-pathway-enzymes { position: relative; display: flex; align-items: flex-start; gap: var(--pw-fit-enzyme-gap); margin-left: 268px; padding-bottom: 96px; }
 .mc-pathway-ar { position: absolute; bottom: 0; left: 0; }
-.mc-pathway-e2blood { margin-left: 72px; }
-.mc-pathway-enzyme-col { display: flex; flex-direction: column; align-items: flex-start; gap: 40px; }
-.mc-pathway-product { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 56px; }
+.mc-pathway-e2blood { margin-left: var(--pw-fit-e2-indent); }
+.mc-pathway-hp { display: flex; flex: none; position: relative; }
+.mc-pathway-enzyme-col { display: flex; flex-direction: column; align-items: center; gap: 40px; }
+.mc-pathway-enzyme-col .mc-pathway-enzyme { position: relative; }
+.mc-pathway-enzyme-col .mc-pathway-enzyme .mc-pathway-node-label { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 8px; white-space: nowrap; }
+.mc-pathway-product { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 64px; }
 .mc-pathway-er { position: absolute; left: 0; top: 0; }
 .mc-pathway-toolbar { display: flex; align-items: center; gap: 20px; margin-bottom: 12px; }
 .mc-pathway-chip {
   background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 10px; box-shadow: var(--shadow-card);
-  padding: 4px 10px; font-family: inherit; cursor: pointer; line-height: 1.25;
+  padding: 4px 10px; font-family: inherit; cursor: pointer; line-height: 1.25; position: relative; z-index: 2;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .mc-pathway-chip:hover { border-color: var(--accent-line); box-shadow: var(--shadow-pop); }
@@ -474,6 +541,9 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-chip-open:hover { border-color: var(--accent); }
 .mc-pathway-chip-head { display: inline-flex; align-items: center; gap: 5px; }
 .mc-pathway-chip .mc-pathway-dot { width: 6px; height: 6px; }
+.mc-pathway-effects-toggle { margin-top: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; color: var(--accent); }
+.mc-pathway-effects { margin: 2px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+.mc-pathway-effects li { color: var(--text-secondary); }
 .mc-pathway-pop {
   position: absolute; z-index: 5; box-sizing: border-box; background: var(--surface); border: 1px solid var(--accent);
   border-radius: 12px; box-shadow: var(--shadow-pop); padding: 10px 12px; font-size: 12px; line-height: 1.4;
@@ -499,6 +569,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-sources { margin-top: 4px; }
 .mc-pathway-sources ol { margin: 2px 0 0; padding-left: 18px; }
 .mc-pathway-sources a { color: var(--accent); }
+.mc-pathway-source-quote { display: block; font-style: italic; color: var(--text-secondary); }
 .mc-pathway-badge-body .mc-pathway-sources { margin-top: 0; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
 .mc-pathway-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
 .mc-pathway-check input { accent-color: var(--accent); width: 15px; height: 15px; }
@@ -519,7 +590,29 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-veil { fill: #f2f7fa; opacity: 0.72; animation: mc-veil-in 0.18s ease-out; }
 @keyframes mc-veil-in { from { opacity: 0; } to { opacity: 0.72; } }
 @keyframes mc-assoc-in { from { opacity: 0; } to { opacity: 0.85; } }
-.mc-pathway-layout .mc-pathway-bands { flex: 1; min-width: 0; }
+.mc-pathway-main { flex: 1; min-width: 0; container-type: inline-size; }
+/* Horizontal spacing eases from its full value on a 1150px canvas to its minimum at 720px, so the diagram
+   tightens beside the badge column; fitBands zooms the bands only for what spacing alone cannot absorb.
+   (--pw-fit-* custom properties live on the .mc-pathway-bands rule above.) */
+.mc-lipid-particles { display: grid; grid-template-columns: repeat(6, auto); justify-content: start; align-items: start; column-gap: 14px; row-gap: 6px; }
+.mc-lipid-synth-chol { position: absolute; left: 234px; top: 108px; transform: translate(calc(-50% + 32px), calc(-50% + 32px)); }
+.mc-lipid-liver-apob { position: absolute; left: 80px; top: 258px; transform: translate(-50%, calc(-50% + 32px)); display: flex; flex-direction: column; align-items: center; }
+.mc-lipid-liver-trig { position: absolute; left: 141px; top: 179px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+.mc-lipid-extra-apo { position: absolute; right: -8px; bottom: -6px; background: #fff; border-radius: 50%; }
+.mc-lipid-extra-apo-label { position: absolute; right: -14px; bottom: -4px; font-size: 9px; font-weight: 600; color: var(--lipid-outline); }
+.mc-pathway-art-note { font-size: 13px; color: var(--text-muted); margin: -4px 0 14px; }
+.mc-lipid-calc { margin-left: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.mc-lipid-organ { grid-row: 1; grid-column: 2; justify-self: center; display: flex; flex-direction: column; align-items: center; margin-bottom: 28px; }
+.mc-lipid-liver { position: relative; }
+.mc-lipid-intestine { display: flex; align-items: center; gap: 24px; }
+.mc-lipid-enzyme { position: absolute; left: 45%; top: 42%; display: flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; font: inherit; line-height: 1.2; white-space: nowrap; cursor: pointer; }
+.mc-lipid-enzyme:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/** A plain white backdrop so the bare enzyme glyph reads over the liver artwork. */
+.mc-lipid-enzyme-backdrop { display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+/** A flex item of the column-flex .mc-pathway-diagram would otherwise stretch to its full width (align-items: stretch), which is exactly what breaks the gap chip's percentage positioning below -- align-self keeps this box sized to its own (fixed-width) content instead. */
+.mc-lipid-artery { position: relative; display: inline-block; align-self: flex-start; }
+.mc-lipid-artery-gap { position: absolute; left: 49%; top: 8%; width: 22px; height: 22px; transform: translate(-50%, -50%); padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+.mc-lipid-artery-gap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mc-pathway-badges { flex: 0 0 220px; display: flex; flex-direction: column; gap: 10px; }
 .mc-pathway-badge {
   background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 12px;
@@ -527,6 +620,7 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   display: block; width: 100%; box-sizing: border-box; text-align: left; font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+.mc-pathway-settings { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; margin-top: 12px; }
 .mc-pathway-badge-toggle {
   display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit;
   font: inherit; text-align: left; cursor: pointer;
@@ -550,6 +644,10 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   max-height: 360px; overflow-y: auto;
 }
 .mc-pathway-badge-body b { display: block; color: var(--navy); font-weight: 600; }
+.mc-pathway-badge-section {
+  display: flex; flex-direction: column; gap: 3px; padding-bottom: 8px; border-bottom: 1px solid var(--border-subtle);
+}
+.mc-pathway-badge-body .mc-pathway-badge-section .mc-pathway-ref { margin: 4px 0 0; padding: 0; border: 0; }
 .mc-pathway-badge-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mc-pathway-badge-name { font-size: 13px; font-weight: 600; }
 .mc-pathway-badge-value { display: block; margin-top: 2px; font-size: 15px; font-weight: 700; }
@@ -559,20 +657,36 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
 .mc-pathway-dot-bad { background: var(--status-bad); }
 .mc-pathway-dot-none { background: var(--status-none); }
 .mc-pathway-enzyme { display: flex; align-items: center; gap: 8px; color: var(--navy); }
-.mc-pathway-structure-img {
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-  box-shadow: var(--shadow-card); background: #fff; object-fit: cover;
-}
+.mc-pathway-glyph { position: relative; display: block; flex: none; overflow: hidden; }
+.mc-pathway-glyph img { position: absolute; max-width: none; }
+.mc-pathway-feedback { fill: currentColor; font-size: 13px; font-weight: 700; }
 .mc-pathway-row-start { justify-content: flex-start; }
-.mc-pathway-slot { width: 96px; justify-content: center; }
-.mc-pathway-exchange { flex: none; width: 56px; height: 14px; color: var(--navy); }
+.mc-pathway-slot { width: var(--pw-fit-slot); justify-content: center; }
+.mc-pathway-exchange { flex: none; width: var(--pw-fit-exchange); height: 14px; color: var(--navy); }
 .mc-pathway-node { color: var(--navy); display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .mc-pathway-docked { display: flex; align-items: center; }
-.mc-pathway-docked .mc-pathway-bond { margin-left: -6px; width: 48px; }
+.mc-pathway-docked .mc-pathway-bond { margin-left: -6px; width: 64px; }
 .mc-pathway-docked-left .mc-pathway-bond { margin-left: 0; margin-right: -6px; }
 .mc-pathway-anchor { position: relative; display: flex; }
 .mc-pathway-caption { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; display: flex; flex-direction: column; align-items: center; white-space: nowrap; }
 .mc-pathway-node-value { font-size: var(--font-small); color: var(--navy); opacity: 0.8; }
+.mc-pathway-share { display: block; color: var(--text-secondary); }
 .mc-pathway-bond { width: 14px; border-top: 1.5px solid var(--navy); }
-.mc-pathway-bubble { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1.5px solid var(--navy); border-radius: 50%; background: #fff; }
+.mc-pathway-bubble { display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--navy); border-radius: 50%; background: #fff; }
 .mc-pathway-node-label { font-size: var(--font-small); font-weight: 600; color: var(--navy); line-height: 1.2; }
+.mc-pathway-pools {
+  background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 12px;
+  box-shadow: var(--shadow-card); padding: 10px 12px; color: var(--navy); width: 100%; box-sizing: border-box;
+}
+.mc-pathway-pools-caption {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+}
+.mc-pathway-pools-chart { display: flex; justify-content: center; padding: 26px 0 24px; }
+.mc-pathway-pools-donut { display: block; overflow: visible; }
+.mc-pathway-pools-callout { color: var(--text-muted); font-size: 11px; }
+.mc-pathway-pools-callout text { fill: var(--navy); font-weight: 600; }
+.mc-pathway-pools-legend {
+  margin-top: 8px; display: flex; flex-direction: column; gap: 2px; white-space: nowrap; font-size: 11px; line-height: 1.3;
+}
+.mc-pathway-pools-empty { color: var(--text-muted); text-align: center; }
+.mc-pathway-pools-note { color: var(--text-muted); margin-top: 2px; }

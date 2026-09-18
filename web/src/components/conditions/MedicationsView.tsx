@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMedications, type MedicationRow } from '../../data/medications';
+import { newRowId } from '../../data/ids';
 import { MONTH_LABELS, monthKey } from '../../data/months';
 import { Clock, TrendingUp } from 'lucide-react';
 import { PillIcon } from './customIcons';
 import { PageHeader } from './PageHeader';
 import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
+
+// Subtle column zebra-striping so a given month can be tracked vertically across many rows: odd columns
+// (by continuous index across years, so the pattern doesn't jump at year boundaries) get this tint, even
+// columns stay whatever the row's own background already is.
+const COLUMN_STRIPE = COLOR.surfaceMuted;
 
 const NAME_COL_WIDTH = 260;
 const MONTH_COL_WIDTH = 32;
@@ -44,7 +50,7 @@ function monthEdge(monthIndex: number) {
   return monthIndex === 0 ? YEAR_EDGE : 'none';
 }
 
-function monthTh(monthIndex: number, isLastColumn = false) {
+function monthTh(monthIndex: number, columnIndex: number, isLastColumn = false) {
   return {
     ...th,
     textAlign: 'center',
@@ -57,6 +63,7 @@ function monthTh(monthIndex: number, isLastColumn = false) {
     // otherwise only the left side of each year block is ever drawn, and the last column's
     // right edge is left visually open.
     borderRight: isLastColumn ? YEAR_EDGE : 'none',
+    background: columnIndex % 2 === 1 ? COLUMN_STRIPE : 'transparent',
   } as const;
 }
 
@@ -75,7 +82,7 @@ const monthCheckbox = {
   cursor: 'pointer',
 } as const;
 
-function monthTd(monthIndex: number, last: boolean, isLastColumn = false) {
+function monthTd(monthIndex: number, columnIndex: number, last: boolean, isLastColumn = false) {
   return {
     position: 'relative',
     padding: 0,
@@ -83,6 +90,7 @@ function monthTd(monthIndex: number, last: boolean, isLastColumn = false) {
     borderBottom: last ? 'none' : `1px solid ${COLOR.borderSubtle}`,
     borderLeft: monthEdge(monthIndex),
     borderRight: isLastColumn ? YEAR_EDGE : 'none',
+    background: columnIndex % 2 === 1 ? COLUMN_STRIPE : 'transparent',
   } as const;
 }
 
@@ -121,6 +129,42 @@ function compoundsLine(row: MedicationRow): string {
   return row.compounds.map((c) => `${c.name} ${c.dose}`.trim()).join(', ');
 }
 
+/**
+ * `Compound` carries no id of its own, and its name/dose are edited in place, so neither the array
+ * index nor the compound's own fields make a stable React key. `compoundKeys` mints one synthetic
+ * key per compound slot instead: this tops up a row's key array whenever its `compounds` array has
+ * grown past it -- covers initial load, import/restore and adding a compound alike, since every one
+ * of those only ever appends -- while removal (the one case that doesn't) splices the exact removed
+ * slot out in the click handler itself, so a key always tracks the compound it was minted for rather
+ * than a position. Called during render rather than an effect, following React's supported "adjust
+ * state while rendering" pattern, so a freshly added compound's key exists on the very render that
+ * needs it instead of a tick later.
+ */
+function padCompoundKeys(
+  keys: Readonly<Record<string, readonly string[]>>,
+  rows: readonly MedicationRow[]
+): Record<string, readonly string[]> | null {
+  let next: Record<string, readonly string[]> | undefined;
+  for (const row of rows) {
+    const existing = keys[row.id] ?? [];
+    if (existing.length < row.compounds.length) {
+      const padded = [...existing];
+      while (padded.length < row.compounds.length) padded.push(newRowId());
+      next = { ...(next ?? keys), [row.id]: padded };
+    }
+  }
+  return next ?? null;
+}
+
+/** Splices out the removed compound's synthetic key so `compoundKeys` never drifts out of sync with `compounds`. */
+function withCompoundKeyRemoved(
+  keys: Readonly<Record<string, readonly string[]>>,
+  rowId: string,
+  index: number
+): Record<string, readonly string[]> {
+  return { ...keys, [rowId]: (keys[rowId] ?? []).filter((_, idx) => idx !== index) };
+}
+
 export function MedicationsView() {
   const {
     medications,
@@ -139,6 +183,13 @@ export function MedicationsView() {
   const nameInputs = useRef(new Map<string, HTMLInputElement>());
   const scrollRef = useRef<HTMLDivElement>(null);
   const { years, rows } = medications;
+
+  const [compoundKeys, setCompoundKeys] = useState<Record<string, readonly string[]>>({});
+  const paddedCompoundKeys = padCompoundKeys(compoundKeys, rows);
+  const effectiveCompoundKeys = paddedCompoundKeys ?? compoundKeys;
+  if (paddedCompoundKeys) {
+    setCompoundKeys(paddedCompoundKeys);
+  }
 
   useEffect(() => {
     if (focusId) nameInputs.current.get(focusId)?.focus();
@@ -249,7 +300,7 @@ export function MedicationsView() {
                 <tr>
                   {years.flatMap((year, yi) =>
                     MONTH_LABELS.map((m, i) => (
-                      <th key={`${year}-${m}`} scope="col" style={monthTh(i, yi === years.length - 1 && i === 11)}>
+                      <th key={`${year}-${m}`} scope="col" style={monthTh(i, yi * 12 + i, yi === years.length - 1 && i === 11)}>
                         {m}
                       </th>
                     ))
@@ -264,10 +315,13 @@ export function MedicationsView() {
                   // January of the next are adjacent calendar months, so a run marked across that
                   // boundary still joins into one bar instead of resetting at each year's column group.
                   const isMarked = (year: number, monthIndex: number) => {
-                    const rolloverYear = monthIndex < 0 ? year - 1 : monthIndex > 11 ? year + 1 : year;
+                    let rolloverYear = year;
+                    if (monthIndex < 0) rolloverYear = year - 1;
+                    else if (monthIndex > 11) rolloverYear = year + 1;
                     const rolloverMonth = (monthIndex + 12) % 12;
                     return row.months.includes(monthKey(rolloverYear, rolloverMonth));
                   };
+                  const rowCompoundKeys = effectiveCompoundKeys[row.id] ?? [];
                   return (
                     <tr key={row.id}>
                       <td style={nameCellStyle(cell)}>
@@ -294,7 +348,7 @@ export function MedicationsView() {
                               />
                             </div>
                             {row.compounds.map((compound, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 26 }}>
+                              <div key={rowCompoundKeys[i]} style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 26 }}>
                                 <input
                                   aria-label={`Compound ${i + 1} name`}
                                   placeholder="Compound"
@@ -312,7 +366,10 @@ export function MedicationsView() {
                                 <Button
                                   size="xs"
                                   aria-label={`Remove compound ${i + 1}`}
-                                  onClick={() => onRemoveCompound(row.id, i)}
+                                  onClick={() => {
+                                    setCompoundKeys((prev) => withCompoundKeyRemoved(prev, row.id, i));
+                                    onRemoveCompound(row.id, i);
+                                  }}
                                   style={removeCompoundButton}
                                 >
                                   ×
@@ -363,16 +420,21 @@ export function MedicationsView() {
                           const marked = row.months.includes(key);
                           const bar = marked && <MonthBar joinsPrevious={isMarked(year, i - 1)} joinsNext={isMarked(year, i + 1)} />;
                           const isLastColumn = yi === years.length - 1 && i === 11;
+                          const columnIndex = yi * 12 + i;
                           if (!editing) {
                             return (
-                              <td key={key} style={monthTd(i, last, isLastColumn)} title={marked ? monthLabel(row, year, i) : undefined}>
+                              <td
+                                key={key}
+                                style={monthTd(i, columnIndex, last, isLastColumn)}
+                                title={marked ? monthLabel(row, year, i) : undefined}
+                              >
                                 {bar}
                               </td>
                             );
                           }
                           const toggle = () => onToggleMonth(row.id, key);
                           return (
-                            <td key={key} style={monthTd(i, last, isLastColumn)}>
+                            <td key={key} style={monthTd(i, columnIndex, last, isLastColumn)}>
                               {bar}
                               <input
                                 type="checkbox"

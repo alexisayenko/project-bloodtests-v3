@@ -18,9 +18,12 @@ Product / business / UX live in their own sections.
   per-analyte table with its citations, the two conventional entries
   and why they are conventional, and the two hand-typed factors the
   consolidation corrected
-  ([ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)).
+  ([ADR-0011](decisions/adr-0011-molar-masses-are-data-factors-are-derived.md)),
+  and why issam.ch's ~280 g/mol testosterone is a documented deviation
+  rather than a constant to adopt
+  ([ADR-0020](decisions/adr-0020-constants-from-cited-data-calculators-are-cross-checks.md)).
 - [`decisions/README.md`](decisions/README.md) — the ADR index
-  (thirteen records, `adr-NNNN-<slug>.md`, numbered independently of
+  (twenty records, `adr-NNNN-<slug>.md`, numbered independently of
   v2), with a per-ADR row and a note on which doc each decision
   governs. The index is the single list — don't duplicate it here.
 - [`sync-architecture-options.md`](sync-architecture-options.md) — a

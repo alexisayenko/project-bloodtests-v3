@@ -53,23 +53,34 @@ export function latestEntryByLoinc(
 }
 
 /**
- * The newest entry across any of the given LOINCs recorded strictly before
- * `beforeDate` -- the date-bounded sibling of `getLatest`/`latestEntryByLoinc`,
- * for a fallback that should prefer the patient's own prior measurement (e.g.
- * albumin on an earlier draw) over a same-date reading or a fixed constant.
+ * The entry across any of the given LOINCs whose date lies closest to `date`,
+ * on either side, excluding `date` itself -- the date-anchored sibling of
+ * `getLatest`/`latestEntryByLoinc`, for a fallback that should prefer the
+ * patient's own nearest measurement (e.g. albumin on another draw) over a
+ * fixed constant. A same-date reading is the caller's to use first. On an
+ * equal distance the earlier date wins; on the same date the first entry stays.
  */
-export function latestEntryBefore(
+export function nearestEntryTo(
   entries: readonly ResultEntry[],
   loincs: readonly string[],
-  beforeDate: string,
+  date: string,
   { numericOnly }: LatestEntryOptions = DEFAULT_LATEST_ENTRY_OPTIONS,
 ): ResultEntry | null {
+  const anchor = Date.parse(date);
   let current: ResultEntry | null = null;
+  let currentDistance = Infinity;
   for (const entry of entries) {
-    if (entry.date >= beforeDate) continue;
+    if (entry.date === date) continue;
     if (!loincs.includes(entry.loinc)) continue;
     if (entry.result.value == null && (numericOnly || !entry.result.rawValue)) continue;
-    if (!current || entry.date > current.date) current = entry;
+    const distance = Math.abs(Date.parse(entry.date) - anchor);
+    if (Number.isNaN(distance)) continue;
+    const closer = distance < currentDistance;
+    const tieButEarlier = distance === currentDistance && current != null && entry.date < current.date;
+    if (closer || tieButEarlier) {
+      current = entry;
+      currentDistance = distance;
+    }
   }
   return current;
 }

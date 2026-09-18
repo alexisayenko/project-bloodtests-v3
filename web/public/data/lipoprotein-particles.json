@@ -1,0 +1,133 @@
+{
+  "particles": [
+    {
+      "id": "chylomicron",
+      "name": "Chylomicron",
+      "structuralApolipoproteins": ["ApoB-48"],
+      "majorApoproteins": { "printed": ["Apo B-48", "Apo C", "Apo E", "Apo A-I", "A-II", "A-IV"], "source": "feingold-2024" },
+      "diameterNm": { "min": 75, "max": 1200, "source": "feingold-2024" },
+      "densityGPerMl": { "max": 0.93, "exclusiveMax": true, "source": "feingold-2024" },
+      "composition": {
+        "triglyceride": [{ "value": 90, "source": "cox-1990" }],
+        "cholesterol": [{ "value": 3, "source": "cox-1990" }],
+        "phospholipid": [{ "value": 5, "source": "cox-1990" }],
+        "protein": [
+          { "value": 9, "source": "cox-1990" },
+          { "value": 2, "approximate": true, "source": "statpearls-chylomicron" }
+        ]
+      },
+      "note": "Table 31.2 prints apoprotein 9%, which brings its chylomicron row to 107%; StatPearls gives around 2%, and both figures are kept."
+    },
+    {
+      "id": "vldl",
+      "name": "VLDL",
+      "structuralApolipoproteins": ["ApoB-100"],
+      "majorApoproteins": { "printed": ["Apo B-100", "Apo E", "Apo C"], "source": "feingold-2024" },
+      "diameterNm": { "min": 30, "max": 80, "source": "feingold-2024" },
+      "densityGPerMl": { "min": 0.93, "max": 1.006, "source": "feingold-2024" },
+      "composition": {
+        "triglyceride": [{ "value": 70, "source": "cox-1990" }],
+        "cholesterol": [{ "value": 10, "source": "cox-1990" }],
+        "phospholipid": [{ "value": 10, "source": "cox-1990" }],
+        "protein": [{ "value": 10, "source": "cox-1990" }]
+      }
+    },
+    {
+      "id": "idl",
+      "name": "IDL",
+      "structuralApolipoproteins": ["ApoB-100"],
+      "majorApoproteins": { "printed": ["Apo B-100", "Apo E", "Apo C"], "source": "feingold-2024" },
+      "diameterNm": { "min": 25, "max": 35, "source": "feingold-2024" },
+      "densityGPerMl": { "min": 1.006, "max": 1.019, "source": "feingold-2024" },
+      "composition": {},
+      "note": "Table 31.2 prints a dash for every IDL percentage; no mass composition is sourced yet."
+    },
+    {
+      "id": "ldl",
+      "name": "LDL",
+      "structuralApolipoproteins": ["ApoB-100"],
+      "majorApoproteins": { "printed": ["Apo B-100"], "source": "feingold-2024" },
+      "diameterNm": { "min": 18, "max": 25, "source": "feingold-2024" },
+      "densityGPerMl": { "min": 1.019, "max": 1.063, "source": "feingold-2024" },
+      "composition": {
+        "triglyceride": [{ "value": 10, "source": "cox-1990" }],
+        "cholesterol": [
+          { "value": 26, "source": "cox-1990" },
+          { "value": 50, "source": "statpearls-ldl" }
+        ],
+        "phospholipid": [{ "value": 15, "source": "cox-1990" }],
+        "protein": [
+          { "value": 25, "source": "cox-1990" },
+          { "value": 20, "source": "statpearls-ldl" }
+        ]
+      },
+      "note": "The two sources disagree on LDL cholesterol (26% vs 50%, the latter stated as free plus esterified); the range spans both."
+    },
+    {
+      "id": "lpa",
+      "name": "Lp(a)",
+      "structuralApolipoproteins": ["ApoB-100", "apo(a)"],
+      "majorApoproteins": { "printed": ["Apo B-100", "Apo (a)"], "source": "feingold-2024" },
+      "diameterNm": { "min": 30, "max": 30, "approximate": true, "source": "feingold-2024" },
+      "densityGPerMl": { "min": 1.055, "max": 1.085, "source": "feingold-2024" },
+      "composition": {},
+      "note": "Neither retrieved source gives Lp(a) mass percentages; its composition is not sourced yet."
+    },
+    {
+      "id": "hdl",
+      "name": "HDL",
+      "structuralApolipoproteins": ["ApoA-I"],
+      "majorApoproteins": { "printed": ["Apo A-I", "Apo A-II", "Apo C", "Apo E"], "source": "feingold-2024" },
+      "diameterNm": { "min": 5, "max": 12, "source": "feingold-2024" },
+      "densityGPerMl": { "min": 1.063, "max": 1.21, "source": "feingold-2024" },
+      "composition": {
+        "triglyceride": [{ "value": 5, "source": "cox-1990" }],
+        "cholesterol": [{ "value": 20, "source": "cox-1990" }],
+        "phospholipid": [{ "value": 25, "source": "cox-1990" }],
+        "protein": [{ "value": 50, "source": "cox-1990" }]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "feingold-2024",
+      "authors": "Feingold KR",
+      "title": "Introduction to Lipids and Lipoproteins",
+      "publication": "Endotext [Internet]. South Dartmouth (MA): MDText.com, Inc.; last updated 2024-01-14",
+      "year": 2024,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK305896/",
+      "retrieved": "2026-09-16",
+      "table": "Table 1. Lipoprotein Classes: the Density (g/ml), Size (nm) and Major Apoproteins columns"
+    },
+    {
+      "id": "cox-1990",
+      "authors": "Cox RA, García-Palmieri MR",
+      "title": "Cholesterol, Triglycerides, and Associated Lipoproteins",
+      "publication": "Clinical Methods: The History, Physical, and Laboratory Examinations, 3rd ed., chapter 31 (Walker HK, Hall WD, Hurst JW, eds.). Boston: Butterworths",
+      "year": 1990,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK351/",
+      "retrieved": "2026-09-16",
+      "table": "Table 31.2. Characteristics and Percentage Content of the Various Lipoprotein Particles Relative to Total Weight: the cholesterol, triglyceride, phospholipid and apoprotein percentage columns"
+    },
+    {
+      "id": "statpearls-ldl",
+      "authors": "Venugopal SK, Anoruo M, Jialal I",
+      "title": "Biochemistry, Low Density Lipoprotein",
+      "publication": "StatPearls [Internet]. Treasure Island (FL): StatPearls Publishing; last updated 2023-04-17",
+      "year": 2023,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK500010/",
+      "retrieved": "2026-09-16",
+      "quote": "LDL contains 20% protein and 50% cholesterol (cholesterol esters and free cholesterol)"
+    },
+    {
+      "id": "statpearls-chylomicron",
+      "authors": "Rahmany S, Jialal I",
+      "title": "Biochemistry, Chylomicron",
+      "publication": "StatPearls [Internet]. Treasure Island (FL): StatPearls Publishing; last updated 2023-07-17",
+      "year": 2023,
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK545157/",
+      "retrieved": "2026-09-16",
+      "quote": "they have the lowest protein content of all lipoproteins of around 2 percent"
+    }
+  ]
+}

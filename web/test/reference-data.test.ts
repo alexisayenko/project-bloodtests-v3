@@ -2,7 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
-import { ANALYSES, LABORATORY_FILE, MARTIN_HOPKINS_FILE, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS, PATHWAY_RANGE_FILE } from './dataFiles';
+import { ANALYSES, LABORATORY_FILE, LIPOPROTEIN_PARTICLE_FILE, MARTIN_HOPKINS_FILE, MOLAR_MASS_FILE, MONITORING_PANELS, PANELS, PATHWAY_RANGE_FILE, RECEPTOR_EFFECTS_FILE } from './dataFiles';
+import {
+  PATHWAY_RECEPTORS,
+  RECEPTOR_EFFECT_SOURCES,
+  RECEPTOR_EFFECT_SOURCE_BY_ID,
+  numberedEffects,
+  receptorById,
+} from '../src/data/pathwayReceptorEffects';
 import {
   PATHWAY_RANGE_MARKERS,
   PATHWAY_RANGE_SOURCES,
@@ -22,6 +29,7 @@ import {
 } from '../src/data/molarMasses';
 import { MASS_MOLAR_SIBLINGS } from '../src/data/massMolarSiblings';
 import { dimensionOf } from '../src/data/unitNormalization';
+import { COMPONENTS, LIPOPROTEIN_PARTICLES, LIPOPROTEIN_SOURCES, apoKey, citedSourceIds, shareRange } from '../src/data/lipoproteinParticles';
 import { MARTIN_HOPKINS_NON_HDL_BANDS, MARTIN_HOPKINS_ROWS, martinHopkinsFactor } from '../src/data/martinHopkinsLdl';
 
 const SCHEMA_ID = 'https://blood.isayenko.net/schema/analytes-1.schema.json';
@@ -29,6 +37,8 @@ const MOLAR_SCHEMA_ID = 'https://blood.isayenko.net/schema/molar-masses-1.schema
 const LAB_SCHEMA_ID = 'https://blood.isayenko.net/schema/laboratories-1.schema.json';
 const PATHWAY_SCHEMA_ID = 'https://blood.isayenko.net/schema/pathway-reference-ranges-1.schema.json';
 const MARTIN_HOPKINS_SCHEMA_ID = 'https://blood.isayenko.net/schema/martin-hopkins-ldl-table-1.schema.json';
+const RECEPTOR_EFFECTS_SCHEMA_ID = 'https://blood.isayenko.net/schema/pathway-receptor-effects-1.schema.json';
+const LIPOPROTEIN_SCHEMA_ID = 'https://blood.isayenko.net/schema/lipoprotein-particles-1.schema.json';
 
 function loadSchema(name: string): object {
   return JSON.parse(readFileSync(new URL(`../public/schema/${name}`, import.meta.url), 'utf8')) as object;
@@ -41,6 +51,8 @@ ajv.addSchema(loadSchema('molar-masses-1.schema.json'));
 ajv.addSchema(loadSchema('laboratories-1.schema.json'));
 ajv.addSchema(loadSchema('pathway-reference-ranges-1.schema.json'));
 ajv.addSchema(loadSchema('martin-hopkins-ldl-table-1.schema.json'));
+ajv.addSchema(loadSchema('pathway-receptor-effects-1.schema.json'));
+ajv.addSchema(loadSchema('lipoprotein-particles-1.schema.json'));
 
 function validator(pointer: string): ValidateFunction {
   const compiled = ajv.getSchema(`${SCHEMA_ID}${pointer}`);
@@ -502,6 +514,67 @@ describe('pathway reference ranges are internally consistent', () => {
   });
 });
 
+describe('pathway receptor effects conform to pathway-receptor-effects-1.schema.json', () => {
+  it('pathway-receptor-effects.json is a valid effects table', () => {
+    expect(errorsIn(ajv.getSchema(RECEPTOR_EFFECTS_SCHEMA_ID)!, RECEPTOR_EFFECTS_FILE)).toEqual([]);
+  });
+
+  it('rejects an effect with an unknown key or no citation, and a citation with no quote', () => {
+    const effect = ajv.getSchema(`${RECEPTOR_EFFECTS_SCHEMA_ID}#/$defs/effect`)!;
+    const base = { id: 'muscle', text: 'Muscle', citations: [{ source: 'a', quotes: ['q'] }] };
+    expect(effect(base)).toBe(true);
+    expect(effect({ ...base, txet: 'Muscle' })).toBe(false);
+    expect(effect({ ...base, citations: [] })).toBe(false);
+    expect(effect({ ...base, citations: [{ source: 'a', quotes: [] }] })).toBe(false);
+  });
+});
+
+describe('pathway receptor effects are internally consistent', () => {
+  it('covers both receptor nodes, with no receptor, effect or source id listed twice', () => {
+    expect(receptorById('ar')).toBeDefined();
+    expect(receptorById('er')).toBeDefined();
+    const receptors = PATHWAY_RECEPTORS.map((r) => r.id);
+    const sources = RECEPTOR_EFFECT_SOURCES.map((s) => s.id);
+    expect(receptors).toHaveLength(new Set(receptors).size);
+    expect(sources).toHaveLength(new Set(sources).size);
+    for (const r of PATHWAY_RECEPTORS) {
+      const effects = r.effects.map((e) => e.id);
+      expect(effects, r.id).toHaveLength(new Set(effects).size);
+    }
+  });
+
+  it('every effect cites at least one source, every citation resolves, and every source is cited', () => {
+    const cited = new Set<string>();
+    for (const r of PATHWAY_RECEPTORS) {
+      for (const e of r.effects) {
+        expect(e.citations.length, `${r.id}/${e.id}`).toBeGreaterThan(0);
+        for (const c of e.citations) {
+          expect(RECEPTOR_EFFECT_SOURCE_BY_ID[c.source], `${r.id}/${e.id}: ${c.source}`).toBeDefined();
+          cited.add(c.source);
+        }
+      }
+    }
+    for (const s of RECEPTOR_EFFECT_SOURCES) expect(cited.has(s.id), `${s.id} is never cited`).toBe(true);
+  });
+
+  it('every quote is a short excerpt, under 25 words', () => {
+    for (const r of PATHWAY_RECEPTORS) {
+      for (const e of r.effects) {
+        for (const q of e.citations.flatMap((c) => c.quotes)) {
+          expect(q.split(/\s+/).filter(Boolean).length, `${r.id}/${e.id}: ${q}`).toBeLessThan(25);
+        }
+      }
+    }
+  });
+
+  it('numbers a card’s sources by first citation, one number per source', () => {
+    const ar = numberedEffects(receptorById('ar')!);
+    expect(ar.sources.map((s) => s.id)).toEqual([...new Set(receptorById('ar')!.effects.flatMap((e) => e.citations.map((c) => c.source)))]);
+    for (const e of ar.effects) for (const n of e.cites) expect(n).toBeGreaterThanOrEqual(1);
+    expect(ar.effects[0].cites).toEqual([1, 2]);
+  });
+});
+
 describe('Martin-Hopkins LDL table conforms to martin-hopkins-ldl-table-1.schema.json', () => {
   it('martin-hopkins-ldl-table.json is a valid factor table', () => {
     expect(errorsIn(ajv.getSchema(MARTIN_HOPKINS_SCHEMA_ID)!, MARTIN_HOPKINS_FILE)).toEqual([]);
@@ -676,5 +749,80 @@ describe('long common name trimmed for display', () => {
       else seen.set(key, a.loinc);
     }
     expect(collisions).toEqual([]);
+  });
+});
+
+describe('lipoprotein particles conform to lipoprotein-particles-1.schema.json', () => {
+  it('lipoprotein-particles.json is a valid particle table', () => {
+    expect(errorsIn(ajv.getSchema(LIPOPROTEIN_SCHEMA_ID)!, LIPOPROTEIN_PARTICLE_FILE)).toEqual([]);
+  });
+
+  it('rejects an unknown key, a figure over 100%, and a source with neither quote nor table', () => {
+    const particle = ajv.getSchema(`${LIPOPROTEIN_SCHEMA_ID}#/$defs/particle`)!;
+    const source = ajv.getSchema(`${LIPOPROTEIN_SCHEMA_ID}#/$defs/source`)!;
+    const figure = ajv.getSchema(`${LIPOPROTEIN_SCHEMA_ID}#/$defs/figure`)!;
+    expect(particle({ ...LIPOPROTEIN_PARTICLES[0], size: 1 })).toBe(false);
+    expect(figure({ value: 101, source: 'cox-1990' })).toBe(false);
+    const tabled = LIPOPROTEIN_SOURCES.find((s) => s.table)!;
+    expect(source(Object.fromEntries(Object.entries(tabled).filter(([key]) => key !== 'table')))).toBe(false);
+  });
+});
+
+describe('lipoprotein particles are internally consistent', () => {
+  const sourceIds = new Set(LIPOPROTEIN_SOURCES.map((s) => s.id));
+
+  it('lists the particles in transport order', () => {
+    expect(LIPOPROTEIN_PARTICLES.map((p) => p.id)).toEqual(['chylomicron', 'vldl', 'idl', 'ldl', 'lpa', 'hdl']);
+  });
+
+  it('every figure cites a known source, and every source is cited', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      const cited = [
+        p.majorApoproteins.source,
+        p.diameterNm.source,
+        p.densityGPerMl.source,
+        ...COMPONENTS.flatMap((c) => (p.composition[c] ?? []).map((f) => f.source)),
+      ];
+      for (const id of cited) expect(sourceIds.has(id), `${p.id}: ${id}`).toBe(true);
+    }
+    expect(new Set(citedSourceIds())).toEqual(sourceIds);
+    expect(sourceIds.size).toBe(LIPOPROTEIN_SOURCES.length);
+  });
+
+  it('every quote stays under 25 words', () => {
+    for (const s of LIPOPROTEIN_SOURCES) {
+      if (s.quote) expect(s.quote.trim().split(/\s+/).length, s.id).toBeLessThan(25);
+    }
+  });
+
+  it('every interval is ordered', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      for (const interval of [p.diameterNm, p.densityGPerMl]) {
+        if (interval.min !== undefined && interval.max !== undefined) expect(interval.min, p.id).toBeLessThanOrEqual(interval.max);
+      }
+    }
+  });
+
+  it('no particle’s smallest printed shares add up to more than its whole mass, nor its drawn areas', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      const ranges = COMPONENTS.map((c) => shareRange(p, c));
+      for (const r of ranges) if (r) expect(r.min, p.id).toBeLessThanOrEqual(r.max);
+      expect(ranges.reduce((sum, r) => sum + (r?.min ?? 0), 0), p.id).toBeLessThanOrEqual(100);
+      const drawn = (shareRange(p, 'triglyceride')?.midpoint ?? 0) + (shareRange(p, 'cholesterol')?.midpoint ?? 0);
+      expect(drawn, p.id).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it('every structural apolipoprotein is one the source lists for that particle', () => {
+    for (const p of LIPOPROTEIN_PARTICLES) {
+      const listed = new Set(p.majorApoproteins.printed.map(apoKey));
+      for (const apo of p.structuralApolipoproteins) expect(listed.has(apoKey(apo)), `${p.id}: ${apo}`).toBe(true);
+    }
+  });
+
+  it('derives a share range from the printed figures without storing it', () => {
+    const ldl = LIPOPROTEIN_PARTICLES.find((p) => p.id === 'ldl')!;
+    expect(shareRange(ldl, 'cholesterol')).toEqual({ min: 26, max: 50, midpoint: 38, approximate: false, sources: ['cox-1990', 'statpearls-ldl'] });
+    expect(shareRange(LIPOPROTEIN_PARTICLES.find((p) => p.id === 'lpa')!, 'triglyceride')).toBeUndefined();
   });
 });

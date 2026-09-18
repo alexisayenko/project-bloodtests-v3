@@ -18,7 +18,8 @@ Current concepts: [observation](observation.md),
 [monitoring panel](monitoring-panel.md),
 [diagnostic report](lab-report.md), [computed index](computed-index.md),
 [companion observation](companion-observation.md) (planned),
-[pathway](pathway.md) (planned),
+[pathway](pathway.md) (two static axis pages built: the gonadal axis and
+lipid transport),
 [unit](unit.md) (partly built: derived on import, the canonical
 code written on export, no UCUM parser yet).
 

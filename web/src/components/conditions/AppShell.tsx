@@ -2,7 +2,6 @@ import { type ReactNode, useLayoutEffect, useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { NavBar } from './NavBar';
 import { SideNav } from './SideNav';
-import { TopBar } from './TopBar';
 import { type Route } from './routing';
 import { loadSidebarCollapsed, saveSidebarCollapsed } from './sidebarCollapsed';
 
@@ -35,7 +34,6 @@ export function AppShell({
   // breakpoint (a phone rotated to landscape) never remounts the page below.
   return (
     <div className="mc-shell">
-      {isMobile ? null : <TopBar navigate={navigate} />}
       <div className="mc-shell-body">
         {isMobile ? null : (
           <SideNav

@@ -172,22 +172,6 @@ export const HormoneIcon: IconComponent = ({ size = 24, color = 'currentColor', 
   </svg>
 );
 
-const CELLS: ReadonlyArray<readonly [number, number, number]> = [
-  [16, 11, 7], [31, 9, 6.5], [9, 26, 6.5], [24, 24, 7.5], [38, 23, 6.5], [18, 39, 6.5], [33, 38, 6.5],
-];
-
-/** Cells: a loose group of rounded cells, each with a nucleus. */
-export const CellsIcon: IconComponent = ({ size = 48, strokeWidth = 1.75, ...rest }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 48 48" fill="none" strokeWidth={strokeWidth} {...rest}>
-    {CELLS.map(([cx, cy, r]) => (
-      <g key={`${cx}-${cy}`}>
-        <circle cx={cx} cy={cy} r={r} fill="#E6F2FB" stroke="#3B8FD4" />
-        <circle cx={cx} cy={cy} r={r * 0.42} stroke="#3B8FD4" />
-      </g>
-    ))}
-  </svg>
-);
-
 const CARRIER_BEADS: ReadonlyArray<readonly [number, number, number]> = [
   [24, 9, 6.5], [32.5, 12.3, 6.2], [38.5, 19.3, 6.6], [37.9, 28.5, 6.3], [32.8, 36.1, 6.6],
   [24, 38.8, 6.3], [15.1, 36.3, 6.5], [10.2, 28.5, 6.2], [9.6, 19.3, 6.6], [15.4, 12.1, 6.3],
@@ -232,5 +216,57 @@ export const TargetTissueIcon: IconComponent = ({ size = 24, color = 'currentCol
       <circle cx="7.7" cy="14.8" r="0.9" />
       <circle cx="16.3" cy="14.8" r="0.9" />
     </g>
+  </svg>
+);
+
+// ---- Lipid molecule icons ----
+
+/** Cholesterol: CarrierIcon's three-ring steroid cargo, outline only, no fill. */
+export const CholesterolIcon: IconComponent = ({ size = 48, color = '#94a028', strokeWidth = 1.4, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    <path d="M18.54 23.45 22.18 25.55V29.75L18.54 31.85 14.9 29.75V25.55ZM25.82 23.45 29.46 25.55V29.75L25.82 31.85 22.18 29.75V25.55ZM29.46 17.15 33.1 19.25V23.45L29.46 25.55 25.82 23.45V19.25Z" />
+  </svg>
+);
+
+const FATTY_ACID_SCATTER = [
+  { x: 9, y: 11, r: -25 },
+  { x: 29, y: 8, r: 50 },
+  { x: 6, y: 28, r: 5 },
+  { x: 27, y: 30, r: -65 },
+  { x: 36, y: 38, r: 160 },
+];
+
+/** A few loose fatty acids -- short carbon-chain tails, each with its own head, scattered at random positions and angles rather than one tail repeated. */
+export const FattyAcidClusterIcon: IconComponent = ({ size = 48, color = '#c9a227', strokeWidth = 2, ...rest }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
+    {FATTY_ACID_SCATTER.map(({ x, y, r }) => (
+      <g key={`${x}-${y}-${r}`} transform={`translate(${x} ${y}) rotate(${r})`}>
+        <path d="M0 0 4 -5 8 0 12 -5 16 0" />
+        <circle cx="0" cy="0" r="1.8" fill={color} stroke="none" />
+      </g>
+    ))}
   </svg>
 );
