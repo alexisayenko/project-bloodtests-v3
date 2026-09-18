@@ -37,6 +37,13 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=optional"
     />
   </noscript>
+  <!-- Monitoring Panels (the default route) can't render until both of these
+       resolve; DataContext only fetches them once its own module runs, which
+       waits for the JS bundle to parse and execute first, adding ~260ms of
+       serial latency to the critical path. Preloading here lets the browser
+       start both fetches in parallel with the JS download instead. -->
+  <link rel="preload" as="fetch" href="/data/panels.json" crossorigin />
+  <link rel="preload" as="fetch" href="/data/monitoring-panels.json" crossorigin />
 </head>
 <body>
   <div id="root"></div>
