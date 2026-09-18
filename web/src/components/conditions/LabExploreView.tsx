@@ -6,7 +6,7 @@ import type { ResultEntry } from './resultsLookup';
 import type { Result, UnitSystem } from '../../types';
 import type { MedicationRow } from '../../data/storage/medications';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
-import { SegmentedControl } from '../primitives';
+import { SegmentedControl, SwitchToggle } from '../primitives';
 import { MedicationLane } from './MedicationLane';
 import { buildMedicationBars } from './medicationBars';
 import { PALETTE } from '../analytics/palette';
@@ -46,6 +46,7 @@ export function LabExploreView({
   const sex = loadEnvelopeMeta().sex;
   // Session-only, like the chart's own zoom state.
   const [normalized, setNormalized] = useState(true);
+  const [showMedications, setShowMedications] = useState(true);
   const model = useMemo(() => {
     const built = buildExploreModel(conditions, allResults, unitSystem, currentPanel, resultsByDate, { sex });
     // Persisted keys are scoped per view: unscoped, one panel's selection would win over another's defaults.
@@ -92,9 +93,19 @@ export function LabExploreView({
             format={(v) => (v === 'normalized' ? 'Normalized values' : 'Absolute numbers')}
           />
         </div>
+        {medicationBars.length > 0 && (
+          <div className="mc-control-group">
+            <div className="mc-control-label">Medications</div>
+            <SwitchToggle
+              label="Medications"
+              pressed={showMedications}
+              onChange={setShowMedications}
+            />
+          </div>
+        )}
       </div>
       <lab-explore ref={ref} />
-      {medicationBars.length > 0 && <MedicationLane bars={medicationBars} hostRef={ref} />}
+      {showMedications && medicationBars.length > 0 && <MedicationLane bars={medicationBars} hostRef={ref} />}
     </>
   );
 }
