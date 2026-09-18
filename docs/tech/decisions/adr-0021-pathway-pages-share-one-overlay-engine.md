@@ -2,6 +2,17 @@
 
 Status: accepted · 2026-09-16
 
+> **Amended 2026-09-18.** `useAxisPage` (`pathwayShared.ts`) now consolidates
+> the per-page date/open/hover/dismiss state both pages previously wired by
+> hand into one hook, and `<BadgeColumn>` (`PathwayParts.tsx`) consolidates
+> the badge aside layout both pages previously duplicated. Each page's
+> arrow/layout geometry and badge specs now live in their own `*.geometry.ts`
+> / `*.badges.ts` module rather than inline in the view —
+> `HormonalPathways.geometry.ts` / `HormonalPathways.badges.ts` and
+> `LipidTransport.geometry.ts` / `LipidTransport.badges.ts`. This is what
+> finally closes the "About 400 lines would have been duplicated" risk this
+> ADR was written to avoid, for both pages, not only Hormonal Pathways.
+
 ## Context
 
 Hormonal Pathways ([task-0024](../../tasks/task-0024.md)) was built as one

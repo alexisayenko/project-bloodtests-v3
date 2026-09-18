@@ -3,12 +3,15 @@
 Two axis pages, Hormonal Pathways (`#pathways`, `HormonalPathwaysView.tsx`)
 and Lipid Transport (`#lipids`, `LipidTransportView.tsx`), both blocked while
 validation errors exist. They share one engine — measures, reference and
-source blocks, the date stepper, dismiss handling, association rings and
-lines, the raster `Glyph`, `SIZE` and the layout-measuring hook — through
+source blocks, the `useAxisPage` hook (date stepper, open/hover/dismiss state
+for chips and badges) and the `<BadgeColumn>` badge aside, association rings
+and lines, the raster `Glyph`, `SIZE` and the layout-measuring hook — through
 `pathwayShared.ts` and `PathwayParts.tsx`
 ([ADR-0021](decisions/adr-0021-pathway-pages-share-one-overlay-engine.md));
-each page keeps only its own layout and hand-coded wiring — there is no
-`pathways.json` yet
+each page's view file holds its own layout, JSX and hand-coded wiring, with
+its arrow and layout math split out into its own `*.geometry.ts` (pure, so
+it's the natural home for unit tests) and its badge specs and citations into
+its own `*.badges.ts` — there is no `pathways.json` yet
 ([ADR-0014](decisions/adr-0014-pathway-wiring-is-mermaid-generated-to-json.md)).
 Product-level: the [pathway](../product/concepts/pathway.md) concept; artwork
 policy: [ADR-0022](decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md).
@@ -64,6 +67,10 @@ policy: [ADR-0022](decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs
   rest of the diagram.
 
 ## Hormonal Pathways
+
+Layout and wiring in `HormonalPathwaysView.tsx`; its arrow and zone-fit math
+in `HormonalPathways.geometry.ts`; its `BADGES`, marker/index specs and
+source citations in `HormonalPathways.badges.ts`.
 
 `PageHeader` overline "Endocrinology", title "Hormonal Pathways", "Biochemical
 pathways of hormones". One canvas of four zones, each captioned by small
@@ -132,6 +139,10 @@ by age band, albumin, estradiol), Travison 2017 (total T), Swerdloff 2017
 could not be retrieved ([task-0024](../tasks/task-0024.md)).
 
 ## Lipid Transport
+
+Layout and wiring in `LipidTransportView.tsx`; its arrow and bond/outline math
+in `LipidTransport.geometry.ts`; its `BADGES`, marker/index specs and source
+citations in `LipidTransport.badges.ts`.
 
 `PageHeader` overline "Lipidology". A holder-plus-cargo diagram in Hormonal
 Pathways' visual language — the shape SHBG uses to hold docked testosterone

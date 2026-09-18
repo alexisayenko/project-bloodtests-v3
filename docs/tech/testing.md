@@ -32,16 +32,26 @@ the suites that validate it; fixtures under `web/test/fixtures/`.
   routing, scheduling and month keys, ui helpers, build stamp, format utils,
   lab pricing and the visit plan, medications (rows, bars, schema), backup
   archive and restore, the showcase generator, analyte sort, the Monitoring
-  Panels status filter, Supabase sync; both pathway views rendered in jsdom
-  over synthetic results (`pathway-views.test.tsx`: zones, particles, badges
-  and the illustrative-artwork note, grey dashes with no data, the date
-  stepper, the SI/US switch, testosterone shares and the molar-mass select,
-  the LDL-C badge's Martin-Hopkins fallback, a badge's reference range and
-  Escape) and `pathwayShared.ts`'s pure helpers (`pathway-shared.test.ts`).
+  Panels status filter, Supabase sync, `useHashRoute` (route read from the
+  hash, `navigate`, browser back/forward through `popstate`, the
+  blocked-route redirect, grid scroll restore), `useViewSettings` (defaults,
+  persistence through every setter, share-link seeding without overriding a
+  stored choice, `reload`) and `useAllResults` (flattening sessions with
+  items already in memory, loading a session's items on demand, dropping a
+  load superseded by a newer session list, the latest-by-LOINC and by-date
+  indexes); both pathway views rendered in jsdom over synthetic results
+  (`pathway-views.test.tsx`: zones, particles, badges and the
+  illustrative-artwork note, grey dashes with no data, the date stepper, the
+  SI/US switch, testosterone shares and the molar-mass select, the LDL-C
+  badge's Martin-Hopkins fallback, a badge's reference range and Escape) and
+  `pathwayShared.ts`'s pure helpers (`pathway-shared.test.ts`).
 
-Not tested: anything needing real layout measurement (the pathway arrow and
-association geometry), and the mobile reveal (`TableScroller`,
-`usePullReveal`, `useHideOnScroll`, `useIsMobile`).
+Not tested: anything needing real layout measurement — the pathway arrow and
+association geometry (`HormonalPathways.geometry.ts`,
+`LipidTransport.geometry.ts`: arrow paths, `fitBands`, pool sweeps and
+callouts) has no dedicated unit test and is exercised only indirectly
+through `pathway-views.test.tsx`'s rendering assertions — and the mobile
+reveal (`TableScroller`, `usePullReveal`, `useHideOnScroll`, `useIsMobile`).
 
 ## CI
 

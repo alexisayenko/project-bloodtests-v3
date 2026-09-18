@@ -66,7 +66,10 @@ Monetization: undecided (`docs/business/README.md`).
 | `web/src/data/loincCheck.ts`, `loincNlm.ts`, `fuzzyMatch.ts` | LOINC cross-check; the NLM call is alone in its file |
 | `web/src/data/sharedLink.ts`, `sharedMeta.ts`, `backupArchive.ts`, `backupRestore.ts` | share links, backup zip |
 | `web/src/data/storage/{resultsStorage,scheduledVisits,medications,viewSettings,sidebarCollapsed}.ts` | every localStorage key with its parse / load / save and pure reducers; no React |
-| `web/src/hooks/useScheduled.ts`, `useMedications.ts` | the React hooks over `data/storage/` |
+| `web/src/hooks/useScheduled.ts`, `useMedications.ts`, `useViewSettings.ts` | the React hooks over `data/storage/` |
+| `web/src/hooks/useHashRoute.ts` | hash routing, blocked-route redirect, grid scroll restore |
+| `web/src/hooks/useAllResults.ts` | flattens sessions into `allResults` / `latestByLoinc` / `resultsByDate`, loading a session's items on demand |
+| `web/src/components/conditions/PopupContext.tsx`, `SchedulingContext.tsx` | popup and scheduling state shared by `PanelDetailView`, `ResultTables`, `Popup`, `PlanVisitView` |
 | `web/src/supabase/` | auth, config, sync |
 | `web/src/components/conditions/MedicalConditionsPage.tsx` | the app shell: route, results, shared settings, popups; every section a `React.lazy` sibling view |
 | `web/src/components/conditions/*View.tsx`, `ReferenceBookPage.tsx` | the views (grid, panel detail, all observations, reports, report detail, profile, plan, medications, pathways, lipids, account, reference) |
@@ -146,6 +149,8 @@ What each suite covers, and what is deliberately untested:
   the U/IU fold, display-time conversion, mass-vs-molar siblings
 - [computed-indices.md](docs/tech/computed-indices.md) — inputs, bands,
   LDL-C estimates, the testosterone family
+- [lp-ir.md](docs/tech/lp-ir.md) — LP-IR vs the CardioIQ Insulin Resistance
+  Score, why LP-IR is imported as reported, never derived locally
 - [interchange-format.md](docs/tech/interchange-format.md) — the envelope,
   its schema and round-trip gaps
 - [diagnostic-reports.md](docs/tech/diagnostic-reports.md) — chatbot prompt,

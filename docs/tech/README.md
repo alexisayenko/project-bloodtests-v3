@@ -28,6 +28,9 @@ Data and formats:
 - [`computed-indices.md`](computed-indices.md) — `INDEX_DEFS` and the
   engine: inputs through aliases, bands and sex, LDL-C estimates, the
   testosterone family.
+- [`lp-ir.md`](lp-ir.md) — LP-IR and the CardioIQ Insulin Resistance Score as
+  distinct observations, and why LP-IR is imported and displayed as the
+  laboratory reported it, never derived from its NMR inputs.
 - [`interchange-format.md`](interchange-format.md) — the lab-data envelope
   (spec; partially implemented — see its status note). Its machine-readable
   form is published at
