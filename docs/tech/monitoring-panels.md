@@ -41,7 +41,7 @@ one `requestAnimationFrame`, by a `useEffect` keyed on the route transitioning
 back — the same route state whether Back came from `pushState` or the native
 `popstate` — so only a fresh page load opens at the top.
 
-Tabs (`TabBar`): Results (default), Trends, What's in range, Charts.
+Tabs (`TabBar`): Results (default), Trends, What's in range.
 
 - **Results** renders one `ResultsTable` in a `Card` under the `ControlsBar`
   — the panel select present but disabled, since a control that vanishes
@@ -53,9 +53,8 @@ Tabs (`TabBar`): Results (default), Trends, What's in range, Charts.
   laboratory-specific reference bands and unit selection, and a chronological
   results history table. While Trends is active, the panel header displays the
   interactive, header-scoped date-range control ([ADR-0024](decisions/adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md)).
-- **What's in range** and **Charts** are `React.lazy` imports behind a
-  `<Suspense>`, so uPlot and the 3D engine each load on first visit
-  ([`charts.md`](charts.md)).
+- **What's in range** is a `React.lazy` import behind a `<Suspense>`, so
+  uPlot loads on first visit ([`charts.md`](charts.md)).
 
 Selecting an index row marks each input observation with an accent • in a
 fixed 10px gutter left of its name, and selecting an observation marks each

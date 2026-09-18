@@ -115,6 +115,7 @@ blocked / `not-allowed` state and route-derived active tab — and keeps
 The pre-nav upload / panels / results flow lives in `archive/src/components/`
 at the repo root — outside `web/`, so outside the TS build, Vite's module
 graph, eslint, Sonar's `sonar.sources` and coverage by construction rather
-than by exclusion list. Its shared chart types moved to
-`web/src/components/analytics/types.ts` and the series palette to
-`palette.ts`, so the live Charts tab has no dependency on the archive.
+than by exclusion list. The 3D stacked-ribbon chart engine (once the Panel
+Detail "Charts" tab) followed it into `archive/src/components/analytics/`
+after the tab was removed; only the series palette (`palette.ts`, still used
+by `LabExploreView.tsx`) remains in `web/src/components/analytics/`.

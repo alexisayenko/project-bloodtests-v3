@@ -1,8 +1,5 @@
 # Charts
 
-Two chart engines, both lazy-loaded on first visit
-([`monitoring-panels.md`](monitoring-panels.md#panel-detail)).
-
 ## "What's in range" (lab-explore)
 
 Panel Detail and All Observations each carry a "What's in range" tab. In All
@@ -34,27 +31,3 @@ one line; the converted number reaches this chart's in-memory series and
 nowhere else ([ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)),
 and a reading that cannot be placed exactly is dropped and named rather than
 plotted on the wrong scale.
-
-## Charts tab (3D stacked ribbons)
-
-Panel Detail's "Charts" tab (`PanelChartsView`) draws the panel's markers as
-a 3D stacked-ribbon chart, one marker per depth plane, each normalized to its
-own observed min/max so mixed units share one chart; alias LOINCs merge into
-one series per test (canonical code = the test's `loinc`). A checkbox picker
-selects up to 8 markers with stable per-marker colors (`palette.ts`), plus a
-translucent/opaque toggle, a "Reset view" button, and From / To year selects
-listing only the years the data has (a gap year stays absent; picking a From
-past the To drags the other along, and the pair drives the engine's
-`setRange` — out-of-window points are dropped before per-series
-normalization). Drag to rotate, wheel/pinch to zoom, double-click to reset;
-the time axis stretches to the page width (the room's x half-extent is fitted
-per draw so the projected room spans ~90% of the canvas; height fixed at
-420px).
-
-The engine (`web/src/components/analytics/chart3d-stacked-core.ts`,
-`chart3d-camera.ts`) is ported from project-moodtracker's
-`chart3d-stacked.js` / `chart3d-camera.js`, generalized to N series, its time
-window either all or the explicit `setRange` interval.
-`StackedBiomarkerChart3D.tsx` mounts it and `StackedBiomarkerSection.tsx`
-owns selection and the picker. Shared chart types (`LoincEntry`,
-`BiomarkerNames`) live in `analytics/types.ts`.

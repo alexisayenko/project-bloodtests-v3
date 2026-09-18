@@ -55,7 +55,7 @@ Sections and views:
 - [`scheduling-and-visits.md`](scheduling-and-visits.md) — visits storage
   and cascade, the Scheduled Visits page, lab pricing
   ([ADR-0016](decisions/adr-0016-scheduling-is-a-collection-of-independent-visits.md)).
-- [`charts.md`](charts.md) — "What's in range" and the 3D Charts tab.
+- [`charts.md`](charts.md) — "What's in range".
 - [`pathway-pages.md`](pathway-pages.md) — Hormonal Pathways and Lipid
   Transport
   ([ADR-0021](decisions/adr-0021-pathway-pages-share-one-overlay-engine.md),

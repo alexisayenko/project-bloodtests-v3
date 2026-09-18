@@ -50,8 +50,7 @@ Monetization: undecided (`docs/business/README.md`).
   at `api.paneloom.com`, one row per signed-in user, PKCE flow
   (`web/src/supabase/`). Signing in and out is the whole interface.
 - Charts: uPlot through the vendored `lab-explore` / `chart-kit`
-  (`web/src/vendor/`) and a canvas 3D engine
-  (`web/src/components/analytics/`); both route-lazy.
+  (`web/src/vendor/`), route-lazy.
 - Vitest, eslint, GitHub Actions, SonarCloud, Lighthouse.
 
 ## Repo map
@@ -159,8 +158,7 @@ What each suite covers, and what is deliberately untested:
   controls bar, frozen column and mobile reveal, scheduled columns
 - [scheduling-and-visits.md](docs/tech/scheduling-and-visits.md) — visits
   storage, cascade, the Scheduled Visits page and lab pricing
-- [charts.md](docs/tech/charts.md) — "What's in range" (lab-explore) and
-  the 3D Charts tab
+- [charts.md](docs/tech/charts.md) — "What's in range" (lab-explore)
 - [pathway-pages.md](docs/tech/pathway-pages.md) — Hormonal Pathways, Lipid
   Transport, shared conventions, the dev-only debug tool
 - [medications.md](docs/tech/medications.md) — row shape, grid, storage
