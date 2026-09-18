@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=optional');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 /* The palette, by role. This block is the only place a colour value is
@@ -11,7 +11,7 @@
   --accent: #14757e; --accent-hover: #0f5a61;
   --accent-soft: #e6f1f3; --accent-line: #cfe3e6;
 
-  --text: #062a4f; --text-secondary: #385572; --text-muted: #768a9e;
+  --text: #062a4f; --text-secondary: #385572; --text-muted: #5a7189;
   --text-disabled: #a9b4c0; --text-on-accent: #ffffff;
 
   --surface: #ffffff; --surface-page: #f6f9fa;
