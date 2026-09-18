@@ -27,7 +27,7 @@ export const LOINC_TO_MARKER: Record<string, string> = Object.fromEntries(
   Object.entries(MARKER_LOINC).flatMap(([marker, loincs]) => loincs.map((loinc) => [loinc, marker]))
 );
 
-export function getPanelLoincs(panel: Panel): string[] {
+function getPanelLoincs(panel: Panel): string[] {
   if (panel.sections) return panel.sections.flatMap((section) => section.loincs);
   return panel.loincs ?? [];
 }

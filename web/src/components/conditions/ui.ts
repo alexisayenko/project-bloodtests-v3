@@ -8,13 +8,6 @@ import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
 import { COLOR } from '../../styles/tokens';
 
-export const STATUS_STYLES = {
-  'never': { border: COLOR.border, background: COLOR.surfaceMuted, color: COLOR.textMuted },
-  'in-range': { border: COLOR.statusOk, background: COLOR.statusOkBg, color: COLOR.text },
-  'out-of-range': { border: COLOR.statusBad, background: COLOR.statusBadBg, color: COLOR.text },
-  'unknown': { border: COLOR.accent, background: 'transparent', color: COLOR.text },
-} as const;
-
 // 3-zone coloring for computed indices (see data/computedIndices.ts's `zone()`).
 export const ZONE_BG = { ok: COLOR.statusOkBg, warn: COLOR.statusWarnBg, bad: COLOR.statusBadBg } as const;
 // Selected-row variants, blended with the row-selection tint (--accent-soft).
@@ -24,7 +17,7 @@ export const SELECTED_ZONE_BG = { ok: COLOR.statusOkBgSelected, warn: COLOR.stat
 export const POPUP_WIDTH = 260;
 export const INDEX_POPUP_WIDTH = 380;
 /** Breathing room kept between a popup and each edge of the viewport. */
-export const POPUP_MARGIN = 8;
+const POPUP_MARGIN = 8;
 
 // Shared across observations and both indices tables so they line up as one
 // block -- and read by the mobile reveal, whose overlays borrow the same grid.
@@ -77,7 +70,7 @@ export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
 // Monitoring Panels grid's Compact view rides along as a view preference.
 export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
 export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
-export type StoredViewSettings = ViewSettings & { compactPanels: boolean };
+type StoredViewSettings = ViewSettings & { compactPanels: boolean };
 export const DEFAULT_VIEW_SETTINGS: StoredViewSettings = {
   unitSystem: 'si',
   sampleLimit: 5,
@@ -165,7 +158,7 @@ export function tabStyle(active: boolean) {
 }
 
 /** What one reading is displayed as: a number and the unit it is labelled with. */
-export type DisplayedResult = { value: number | null; rawValue: string; unit: string; converted: boolean };
+type DisplayedResult = { value: number | null; rawValue: string; unit: string; converted: boolean };
 
 /**
  * The reading's own printed unit, in the app's spelling of it: the catalog's

@@ -47,7 +47,7 @@ export interface CitedSource {
   quote?: string;
 }
 
-export interface ReferenceLine {
+interface ReferenceLine {
   label?: string;
   text: string;
   cites: number[];
@@ -197,7 +197,7 @@ export function roundedPath(points: string, radius = 10): string {
   return `${d} L${last[0]},${last[1]}`;
 }
 
-export interface Ring {
+interface Ring {
   cx: number;
   cy: number;
   r: number;
@@ -210,7 +210,7 @@ export interface Association {
 }
 
 /** The rings drawn around an association's target nodes. */
-export function ringsFor(el: HTMLElement, base: DOMRect, targets: readonly string[]): Ring[] {
+function ringsFor(el: HTMLElement, base: DOMRect, targets: readonly string[]): Ring[] {
   return targets.flatMap((target) => {
     const node = el.querySelector(`[data-node="${target}"]`);
     if (!node) return [];
@@ -245,7 +245,7 @@ export function associationFor(el: HTMLElement, base: DOMRect, badge: string, ta
  * one animation frame at most per burst.
  */
 /** Dispatched on a `useMeasuredLayout` root to force its next-frame recompute outside the triggers it watches on its own -- e.g. a debug drag's `transform`, which fires no ResizeObserver. */
-export const MC_NUDGE_EVENT = 'mc-pathway-nudge';
+const MC_NUDGE_EVENT = 'mc-pathway-nudge';
 
 export function useMeasuredLayout(root: RefObject<HTMLDivElement | null>, layoutKey: string, measure: (el: HTMLDivElement) => void): void {
   const latest = useRef(measure);
@@ -288,7 +288,7 @@ export function useMeasuredLayout(root: RefObject<HTMLDivElement | null>, layout
 }
 
 /** One dragged node's accumulated offset, plus a one-time snapshot of whichever positioning fields are actually set (inline if set, else computed), taken at drag start. */
-export interface NodeDragState {
+interface NodeDragState {
   dx: number;
   dy: number;
   left: string;
@@ -331,7 +331,7 @@ export function useNodeDrag(root: RefObject<HTMLDivElement | null>, enabled: boo
 
   useEffect(() => {
     const el = root.current;
-    if (!el || !enabled) return;
+    if (!import.meta.env.DEV || !el || !enabled) return;
     let frame = 0;
     let current: {
       id: string;

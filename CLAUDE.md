@@ -967,10 +967,8 @@ beyond the two cutover moments, and no storage-mode picker — signing in
 and out is the whole interface. The TopBar and Get Started's pitch
 (`ProfileView.tsx`) both read `useSupabaseAuthUser` too, swapping their
 local-only copy and "100% private" pillar for a "Synced to your
-account" line and pillar while signed in. Firebase's own code
-(`web/src/firebase/*`) is untouched and still in the repo — simply no
-longer used by `AccountView`/`TopBar`/`ProfileView` as of ADR-0019; whether
-and when it gets removed is undecided. Then a
+account" line and pillar while signed in. Firebase's code and dependency
+are gone (ADR-0019 addendum, 2026-09-18). Then a
 "Database details" card — subject
 / sex / birth year / notes plus a read-only `generatedAt` stamped on each
 export, persisted under localStorage key `bloodtests_envelope_meta_v1` and

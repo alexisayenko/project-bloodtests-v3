@@ -774,8 +774,7 @@ function EnterocytesNode() {
  * from LDL's own cholesterol delivery above, so it gets its own arrow rather
  * than merging with `LDL_UPTAKE_NOTE`. The fatty-acid glyph is
  * `FattyAcidClusterIcon`, several loose carbon-chain tails scattered in one
- * icon (not `TriglycerideIcon`'s three tails on one glycerol backbone),
- * since LPL releases individual fatty acids rather than whole triglycerides.
+ * icon, since LPL releases individual fatty acids rather than whole triglycerides.
  * Muscle and Adipocytes reuse the same generic cell artwork as Peripheral
  * cells and Enterocytes (`CELLS_ART`), for the same reason: no
  * tissue-specific artwork exists yet.
@@ -959,7 +958,8 @@ export function LipidTransportView({
   const [hovered, setHovered] = useState<string | null>(null);
   const [cardAt, setCardAt] = useState<{ left: number; top: number } | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
-  const [debug, setDebug] = useState(false);
+  const [debugOn, setDebug] = useState(false);
+  const debug = import.meta.env.DEV && debugOn;
   const { drags, activeId, reset: resetDrags } = useNodeDrag(layoutRef, debug);
   const toggleDebug = useCallback(() => {
     setDebug((prev) => {
@@ -1020,25 +1020,27 @@ export function LipidTransportView({
             format={(sys) => sys.toUpperCase()}
           />
         </div>
-        <button
-          type="button"
-          onClick={toggleDebug}
-          title="Dev-only: drag a diagram node to see the pixel offset it moved"
-          aria-pressed={debug}
-          style={{
-            marginLeft: 'auto',
-            padding: '4px 10px',
-            fontSize: 12,
-            fontWeight: 600,
-            borderRadius: 6,
-            border: debug ? '1px solid #b83227' : '1px solid #ccc',
-            background: debug ? '#b83227' : '#fff',
-            color: debug ? '#fff' : '#333',
-            cursor: 'pointer',
-          }}
-        >
-          {debug ? 'Debug: ON' : 'Debug'}
-        </button>
+        {import.meta.env.DEV && (
+          <button
+            type="button"
+            onClick={toggleDebug}
+            title="Dev-only: drag a diagram node to see the pixel offset it moved"
+            aria-pressed={debug}
+            style={{
+              marginLeft: 'auto',
+              padding: '4px 10px',
+              fontSize: 12,
+              fontWeight: 600,
+              borderRadius: 6,
+              border: debug ? '1px solid #b83227' : '1px solid #ccc',
+              background: debug ? '#b83227' : '#fff',
+              color: debug ? '#fff' : '#333',
+              cursor: 'pointer',
+            }}
+          >
+            {debug ? 'Debug: ON' : 'Debug'}
+          </button>
+        )}
       </div>
       <ArtworkNote>The liver and artery-wall images are illustrative.</ArtworkNote>
       <div className="mc-pathway-layout" ref={layoutRef} style={debug ? { cursor: 'grab' } : undefined}>
@@ -1129,7 +1131,7 @@ export function LipidTransportView({
         {open === HMGCR && cardAt && <EnzymeCard left={cardAt.left} top={cardAt.top} />}
         {open === RETENTION && cardAt && <RetentionCard left={cardAt.left} top={cardAt.top} />}
       </div>
-      {debug && <DebugPanel drags={drags} activeId={activeId} />}
+      {import.meta.env.DEV && debug && <DebugPanel drags={drags} activeId={activeId} />}
     </div>
   );
 }

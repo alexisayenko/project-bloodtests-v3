@@ -37,7 +37,7 @@ const STACK_CHOL_ICON_SIZE = 34;
  * gives % of each particle's own mass, and IDL's isn't sourced at all.
  */
 
-/** Adapts TRIGLYCERIDE_ART (pathwayShared.ts) to the `IconComponent` shape `CompoundStack`'s `icon` prop expects, so the raster glyph can stand in for the hand-drawn `TriglycerideIcon` there. */
+/** Adapts TRIGLYCERIDE_ART to the `IconComponent` shape `CompoundStack`'s `icon` prop expects. */
 const TriglycerideGlyphIcon: IconComponent = ({ size = 48 }) => <Glyph art={{ ...TRIGLYCERIDE_ART, size }} alt="Triglyceride" />;
 
 /** A cargo diagram's own anchor: an icon (or docked bubble) with a caption below it, sized to line up with the apoprotein's own height. `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it looking off-center. */

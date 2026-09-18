@@ -21,7 +21,7 @@ import { DEFAULT_UNITS, ALLOWED_UNITS, U_IU_FOLD_REASON } from './analyteCatalog
 import { MASS_MOLAR_SIBLINGS, SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from './massMolarSiblings';
 import type { MassMolarSibling } from './massMolarSiblings';
 
-export type TokenKind = 'substance' | 'mass' | 'volume' | 'arbitrary' | 'count' | 'time' | 'length' | 'area' | 'ratio';
+type TokenKind ='substance' | 'mass' | 'volume' | 'arbitrary' | 'count' | 'time' | 'length' | 'area' | 'ratio';
 
 export type UnitDimension =
   | 'substance/volume'
@@ -277,7 +277,7 @@ export function dimensionOf(unit: string): UnitDimension | undefined {
   return dimensionFromKinds(kinds);
 }
 
-export type CodeUnitCheck =
+type CodeUnitCheck =
   | { kind: 'ok' }
   | { kind: 'unknown-code' }
   | { kind: 'unknown-unit' }
@@ -552,7 +552,7 @@ export function canonicalUnitFor(loinc: string): string | undefined {
   return primary === undefined ? undefined : toUcum(primary);
 }
 
-export interface ObservationUnit {
+interface ObservationUnit {
   loinc: string;
   unit: string;
   /** Optional: supply it to also get the derived canonical form. */

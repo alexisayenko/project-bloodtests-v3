@@ -91,5 +91,3 @@ export interface DiagnosticReport {
   items: Result[] | null;
   itemCount: number;
 }
-
-export type Lang = 'en' | 'ru-RU' | 'uk-UA';

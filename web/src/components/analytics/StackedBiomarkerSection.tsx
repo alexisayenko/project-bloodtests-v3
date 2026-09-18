@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useLang } from '../../i18n/LangContext';
 import { useData } from '../../data/DataContext';
-import { getAnalysisName } from '../../utils/analysis';
 import { StackedBiomarkerChart3D, type StackedEntry } from './StackedBiomarkerChart3D';
 import { MAX_SERIES } from './palette';
 import type { BiomarkerNames, LoincEntry } from './types';
@@ -31,7 +29,6 @@ interface Props {
 }
 
 export function StackedBiomarkerSection({ entries, defaultSelectionCount = DEFAULT_SELECTION_COUNT, names }: Readonly<Props>) {
-  const { lang } = useLang();
   const { analysesCatalog } = useData();
   const [selection, setSelection] = useState<Selection | null>(null);
 
@@ -77,7 +74,7 @@ export function StackedBiomarkerSection({ entries, defaultSelectionCount = DEFAU
                 disabled={atCap && !checked}
                 onChange={() => toggleLoinc(e.loinc)}
               />
-              {names?.friendlyName(e.loinc) ?? getAnalysisName(e.loinc, analysesCatalog, lang)}
+              {names?.friendlyName(e.loinc) ?? analysesCatalog[e.loinc]?.friendlyName ?? e.loinc}
             </label>
           );
         })}
