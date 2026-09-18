@@ -47,8 +47,12 @@ Tabs (`TabBar`): Results (default), Trends, What's in range, Charts.
   — the panel select present but disabled, since a control that vanishes
   between views makes the bar jump; the marker box filters the panel's own
   tables ([`results-tables.md`](results-tables.md)).
-- **Trends** (`TrendsView.tsx`) is a deliberate placeholder while what
-  belongs in it is undecided ([task-0014](../tasks/task-0014.md)).
+- **Trends** (`TrendsView.tsx`) focuses on individual analyte trajectories and
+  data provenance ([task-0027](../tasks/task-0027.md)). It renders key marker
+  summary cards with sparklines and deltas, an interactive timeline chart with
+  laboratory-specific reference bands and unit selection, and a chronological
+  results history table. While Trends is active, the panel header displays the
+  interactive, header-scoped date-range control ([ADR-0024](decisions/adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md)).
 - **What's in range** and **Charts** are `React.lazy` imports behind a
   `<Suspense>`, so uPlot and the 3D engine each load on first visit
   ([`charts.md`](charts.md)).
