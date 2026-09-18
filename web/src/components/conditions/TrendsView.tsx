@@ -7,6 +7,7 @@ import { pressable } from '../primitives/styles';
 import { LabExplore } from '../../vendor/lab-explore/lab-explore';
 import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
 import { buildExploreModel, type Condition } from './exploreModel';
+import { testLoincs } from './markers';
 import type { Result, UnitSystem } from '../../types';
 import type { MedicationRow } from '../../data/storage/medications';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
@@ -111,7 +112,7 @@ export function TrendsView({
 
   // Available observations in this panel that have results
   const availableTests = useMemo(() => {
-    return tests.filter((t) => allResults.some((r) => r.loinc === t.loinc));
+    return tests.filter((t) => allResults.some((r) => testLoincs(t).includes(r.loinc)));
   }, [tests, allResults]);
 
   // Active observation: default to first or Testosterone / first available
@@ -186,8 +187,9 @@ export function TrendsView({
   const primaryCards = useMemo(() => {
     const list = availableTests.length > 0 ? availableTests : tests;
     return list.map((test) => {
+      const loincs = testLoincs(test);
       const results = allResults
-        .filter((r) => r.loinc === test.loinc && (r.result.value != null || r.result.rawValue))
+        .filter((r) => loincs.includes(r.loinc) && (r.result.value != null || r.result.rawValue))
         .sort((a, b) => b.date.localeCompare(a.date));
       const latest = results[0];
       const prev = results[1];
@@ -222,8 +224,9 @@ export function TrendsView({
   // Filter and sort results for this observation across all dates
   const observationResults = useMemo(() => {
     if (!currentObservation) return [];
+    const loincs = testLoincs(currentObservation);
     return allResults
-      .filter((r) => r.loinc === currentObservation.loinc && (r.result.value != null || r.result.rawValue))
+      .filter((r) => loincs.includes(r.loinc) && (r.result.value != null || r.result.rawValue))
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [allResults, currentObservation]);
 
