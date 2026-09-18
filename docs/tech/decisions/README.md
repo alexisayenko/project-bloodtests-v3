@@ -39,6 +39,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0021](adr-0021-pathway-pages-share-one-overlay-engine.md) | Pathway pages share one overlay and association engine | accepted · 2026-09-16 |
 | [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
 | [ADR-0023](adr-0023-product-purpose-and-clinical-boundary.md) | Product purpose, audience, and clinical boundary | accepted · 2026-09-18 |
+| [ADR-0024](adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md) | The panel date-range control is header-scoped and changes data only through an explicit binding | accepted · 2026-09-18 |
 
 ## Where each one bites
 
@@ -140,6 +141,12 @@ Each record opens with `# ADR-NNNN: <title>` and a
   [`../../product/README.md`](../../product/README.md) (core idea +
   constraints) and [`../../business/README.md`](../../business/README.md)
   (audience, scope, non-goals).
+- **Panel date range picker** — 0024: the header-scoped date-range control
+  on Panel Detail (`start year — end year`), visible while the Trends tab is
+  active; opens as an overlay popup without layout shift, featuring a
+  horizontally scrollable timeline with dual handles and report counts per
+  calendar year. Presentational/locally interactive first, prior to explicit
+  atomic data binding. Cross-linked from [task-0027](../../tasks/task-0027.md).
 
 ## Adding one
 
