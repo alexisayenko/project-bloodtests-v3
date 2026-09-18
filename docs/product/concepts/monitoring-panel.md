@@ -14,7 +14,7 @@ A panel does not imply the user has been diagnosed with the condition it's named
 A monitoring panel is not a laboratory panel, and the product keeps them apart:
 
 - **Laboratory groups** — the way a lab orders and prints a set of analytes ("Full Blood Count", "Lipid Metabolism"). This layer describes the laboratory's world, and the product does not get to redraw it.
-- **Monitoring panels** — the product's own grouping, expressed as a *composition* over those groups: start from one group, several groups, or a literal list of LOINCs; drop what the clinical question does not need; add what it does. "Insulin Resistance" is the lab's glucose-metabolism group minus amylase and lipase, plus triglycerides and HDL-C.
+- **Monitoring panels** — the product's own grouping, expressed as a *composition* over those groups: start from one group, several groups, or a literal list of LOINCs; drop what the clinical question does not need; add what it does. "Insulin Resistance" is the lab's glucose-metabolism group minus amylase and lipase, plus triglycerides, HDL-C, and the laboratory-reported LP-IR score (LOINC 62255-5) when available.
 
 Keeping the composition separate means a panel can be re-cut for a clinical question without misrepresenting how any lab actually ordered the draw.
 

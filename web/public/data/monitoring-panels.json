@@ -18,7 +18,7 @@
     "name": "Insulin Resistance",
     "panelId": "glucose-metabolism",
     "excludeLoincs": ["1798-8", "3040-3", "59261-8"],
-    "extraLoincs": ["2571-8", "2085-9"]
+    "extraLoincs": ["2571-8", "2085-9", "62255-5"]
   },
   {
     "name": "Cardiovascular Risk",
