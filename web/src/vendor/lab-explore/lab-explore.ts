@@ -748,7 +748,53 @@ export class LabExplore extends HTMLElement {
           { scale: "pct", stroke: th.axis, grid: { stroke: th.grid, width: 0.5 } },
         ],
         legend: { show: false },
-        cursor: { drag: { x: false, y: false } },
+        cursor: {
+          drag: { x: false, y: false },
+          // Default uPlot cursor behavior lets the crosshair (.u-cursor-x, and our
+          // own tooltip position, which reads cursor.left) follow the raw mouse
+          // pixel while the per-series hover points (.u-cursor-pt) and cursor.idx
+          // independently snap to the nearest real data point. With this app's
+          // sparse, irregularly-spaced lab draws the "nearest point" catchment can
+          // be tens of pixels wide, so the two diverge: the tooltip's VALUES are
+          // right (keyed off cursor.idx) but its POSITION visibly drifts from the
+          // point it is describing. Snap the raw mouse itself to the nearest
+          // point's pixel so every cursor.* consumer agrees.
+          move: (self, mouseLeft, mouseTop) => {
+            const xs = self.data[0] as number[] | undefined;
+            if (mouseLeft < 0 || !xs || !xs.length) return [mouseLeft, mouseTop];
+            // Bound the search to the currently VISIBLE index range (uPlot's own
+            // series[0].idxs, kept in sync with the x scale by zoom/pan), not the
+            // full data array. self.data[0] holds every point in the series
+            // regardless of zoom; searching all of it let an edge hover snap to a
+            // point outside the visible window -- e.g. an older draw scrolled off
+            // to the left -- producing a wildly out-of-plot pixel (valToPos of a
+            // value outside the current scale range) while uPlot's own cursor.idx
+            // lookup (closestIdx(valAtPosX, data[0], i0, i1) in its source) stayed
+            // correctly clamped to what's on screen, hiding the per-series points
+            // (its mouseLeft1 < 0 guard) instead of matching our crosshair.
+            const [i0, i1] = self.series[0]?.idxs ?? [0, xs.length - 1];
+            if (i0 > i1) return [mouseLeft, mouseTop];
+            const xVal = self.posToVal(mouseLeft, "x");
+            let lo = i0;
+            let hi = i1;
+            while (lo < hi) {
+              const mid = (lo + hi) >> 1;
+              if (xs[mid]! < xVal) lo = mid + 1;
+              else hi = mid;
+            }
+            let nearest = lo;
+            if (lo > i0 && Math.abs(xVal - xs[lo - 1]!) <= Math.abs(xs[lo]! - xVal)) {
+              nearest = lo - 1;
+            }
+            // canvasPixels omitted (defaults false): valToPos must return CSS-pixel
+            // space to match mouseLeft/mouseTop, not device-pixel space -- passing
+            // true here returns coordinates scaled by devicePixelRatio, which on a
+            // >1 DPR screen pushes the snapped position outside the plot's CSS
+            // bounds and makes uPlot mark the cursor "off" (hidden) instead of moved.
+            const snappedLeft = self.valToPos(xs[nearest]!, "x");
+            return [snappedLeft, mouseTop];
+          },
+        },
         hooks: {
           drawClear: [drawBand, drawEvents],
           setCursor: [(self: uPlot) => this.#showTip?.(self)],
