@@ -291,3 +291,25 @@ describe('panel membership of a LOINC (Reference Book, LOINC database)', () => {
     expect(panelMembershipOf(panelsByLoinc, '25371-6')).toEqual({ panels: [], via: '13458-5' });
   });
 });
+
+
+describe('LP-IR is a first-class reported observation', () => {
+  it('registers LOINC 62255-5 with its score unit', () => {
+    expect(ANALYTE_BY_LOINC['62255-5']).toMatchObject({
+      friendlyName: 'LP-IR Score',
+      shortName: 'LP-IR',
+      unit: '{Index_val}',
+      longCommonName: 'Lipoprotein insulin resistance score in Serum or Plasma',
+    });
+  });
+
+  it('includes LP-IR in the Insulin Resistance monitoring panel', () => {
+    const panel = buildConditions(PANELS, ANALYTE_BY_LOINC, MONITORING_PANELS)
+      .find((c) => c.name === 'Insulin Resistance')!;
+    expect(panel.tests.map((t) => t.loinc)).toContain('62255-5');
+  });
+
+  it('does not confuse LP-IR with the CardioIQ insulin resistance score', () => {
+    expect(ANALYTE_BY_LOINC['92845-7']).toBeUndefined();
+  });
+});
