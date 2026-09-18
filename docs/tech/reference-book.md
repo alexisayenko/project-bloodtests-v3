@@ -1,8 +1,9 @@
 # Reference Book
 
-`#reference` (`ReferenceBookPage.tsx`, with sub-pages under
-`web/src/components/conditions/reference/`), reachable while validation errors
-exist. Each page is its own URL hash (`#reference/<key>`, routed
+`#reference` (`conditions/ReferenceBookPage.tsx`, the index list and a router
+that lazy-loads each sub-page from `web/src/components/reference/` — shared
+cell styles, `Pill`, `LoincLink` and friends in its `parts.tsx`), reachable
+while validation errors exist. Each page is its own URL hash (`#reference/<key>`, routed
 generically) so browser back/forward works. Analyte names in its prose open
 the analyte popup through the `onOpenPopup` the shell passes in. The section
 groups:
@@ -15,7 +16,7 @@ groups:
   "· retrieved <date>".
 - **Organism-wide aspects** — the HP Axis page (`HpAxisPage`, content in
   `hpAxisContent.ts`: feedback-loop cascades) and the Testosterone page
-  (`#reference/testosterone`, `reference/TestosteronePage.tsx`: secretion,
+  (`#reference/testosterone`, `TestosteronePage.tsx`: secretion,
   plasma binding, conversion to DHT / E2, negative feedback and clomiphene as
   flow diagrams, each claim carrying an `[n]` link that scrolls to its quoted
   source without rewriting the routing hash).
