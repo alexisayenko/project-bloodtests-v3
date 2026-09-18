@@ -14,7 +14,6 @@
 	"workers_dev": true,
 	"preview_urls": true,
 	"routes": [
-		{ "pattern": "blood.isayenko.net", "custom_domain": true },
 		{ "pattern": "paneloom.com", "custom_domain": true }
 	]
 }
