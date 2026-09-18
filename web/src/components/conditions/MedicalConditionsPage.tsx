@@ -2,7 +2,7 @@ import { useMemo, lazy, Suspense } from 'react';
 import { useData } from '../../data/DataContext';
 import { useResultsContext } from '../../data/ResultsContext';
 import { validateDiagnosticReports, hasErrors } from '../../data/validateDiagnosticReports';
-import { buildConditions, type Observation } from './markers';
+import { buildConditions } from './markers';
 import { ALL_OBSERVATIONS_PANEL, DEFAULT_PANEL_TAB, panelRoute } from './routing';
 import { panelAllowlist, isPanelVisible, visiblePanels } from '../../data/sharedMeta';
 import { AppShell } from './AppShell';
@@ -55,16 +55,6 @@ export function MedicalConditionsPage() {
   );
   const allowedPanels = panelAllowlist(sharedMeta);
   const shownConditions = useMemo(() => visiblePanels(conditions, allowedPanels), [conditions, allowedPanels]);
-  // A synthetic card fronting every visible panel's tests, deduped by LOINC, so the grid opens it like any other panel.
-  const gridConditions = useMemo(() => {
-    const seen = new Map<string, Observation>();
-    for (const c of shownConditions) {
-      for (const t of c.tests) {
-        if (!seen.has(t.loinc)) seen.set(t.loinc, t);
-      }
-    }
-    return [{ name: ALL_OBSERVATIONS_PANEL, tests: Array.from(seen.values()) }, ...shownConditions];
-  }, [shownConditions]);
 
   // A clear or restore rewrites storage underneath this state, so it has to be read back.
   const reloadStoredState = () => {
@@ -90,7 +80,7 @@ export function MedicalConditionsPage() {
 
   const panelsGrid = (
     <PanelsGridView
-      conditions={gridConditions}
+      conditions={shownConditions}
       latestByLoinc={latestByLoinc}
       resultsByDate={resultsByDate}
       compact={compactPanels}
