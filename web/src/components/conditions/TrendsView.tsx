@@ -128,14 +128,16 @@ export function TrendsView({
 
   // Guideline reference range popup toggle
   const [showGuidelineInfo, setShowGuidelineInfo] = useState(false);
-  // Normalized (% of ref range) vs Absolute values toggle
-  const [normalized, setNormalized] = useState(true);
+  // Normalized (% of ref range) vs Absolute vs Log values toggle
+  const [chartMode, setChartMode] = useState<'normalized' | 'absolute' | 'log'>('normalized');
 
   // Reference to custom element
   const ref = useRef<HTMLElement | null>(null);
   const sex = loadEnvelopeMeta().sex;
 
   // Build model for standard lab-explore control
+  const normalized = chartMode === 'normalized';
+  const logScale = chartMode === 'log';
   const model = useMemo(() => {
     const built = buildExploreModel(
       conditions,
@@ -152,6 +154,7 @@ export function TrendsView({
       title: '',
       intro: '',
       normalized,
+      logScale,
       defaultSelection: selectedLoinc && built.markers[selectedLoinc] ? [selectedLoinc] : built.defaultSelection,
       persist: {
         sel: `exploreSel:${viewId}`,
@@ -160,7 +163,7 @@ export function TrendsView({
         evPrefix: `exploreEv:trends:${panelId}:`,
       },
     };
-  }, [conditions, allResults, unitSystem, currentPanel, resultsByDate, sex, selectedLoinc, normalized]);
+  }, [conditions, allResults, unitSystem, currentPanel, resultsByDate, sex, selectedLoinc, normalized, logScale]);
 
   const medicationBars = useMemo(
     () => (medications?.length ? buildMedicationBars(medications, paletteColor) : []),
@@ -444,10 +447,10 @@ export function TrendsView({
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <SegmentedControl
               label="Values"
-              options={['normalized', 'absolute'] as const}
-              value={normalized ? 'normalized' : 'absolute'}
-              onChange={(v) => setNormalized(v === 'normalized')}
-              format={(v) => (v === 'normalized' ? 'Normalized values' : 'Absolute numbers')}
+              options={['normalized', 'absolute', 'log'] as const}
+              value={chartMode}
+              onChange={setChartMode}
+              format={(v) => (v === 'normalized' ? 'Normalized values' : v === 'absolute' ? 'Absolute numbers' : 'Logarithmic scale')}
             />
           </div>
         </div>

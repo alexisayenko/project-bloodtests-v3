@@ -59,6 +59,10 @@ const DEFAULT_INTRO_ABSOLUTE =
   "Pick markers below to overlay them, each plotted at its own actual value on one shared " +
   "axis (no unit shown on the axis -- hover a point for its own unit). Drag to scroll · −/+ to zoom.";
 
+const DEFAULT_INTRO_LOG =
+  "Pick markers below to overlay them, each plotted at its own actual value on one shared " +
+  "logarithmic axis (no unit shown on the axis -- hover a point for its own unit). Drag to scroll · −/+ to zoom.";
+
 /** English fallbacks for the chart's chrome; a host page overrides via model.labels. */
 const DEFAULT_LABELS = {
   // v3 DEVIATION from the v2 source: v2 always captions a never-taken chip
@@ -187,12 +191,13 @@ export class LabExplore extends HTMLElement {
 
     const events = m.events ?? [];
     const normalized = m.normalized !== false;
+    const logScale = m.logScale === true;
     this.#root.innerHTML =
       `<style>${UPLOT_CSS}${EXPLORE_STYLES}</style>` +
       // The view's own name. It is the first thing on the labs page — see
       // LabExploreModel.title for why it is a promise and not a label.
       (m.title ? `<h2 class="explore-title">${esc(m.title)}</h2>` : "") +
-      `<p class="muted hpg-note">${m.intro ?? (normalized ? DEFAULT_INTRO : DEFAULT_INTRO_ABSOLUTE)}</p>` +
+      `<p class="muted hpg-note">${m.intro ?? (normalized ? DEFAULT_INTRO : logScale ? DEFAULT_INTRO_LOG : DEFAULT_INTRO_ABSOLUTE)}</p>` +
       `<div class="chart-toolbar">` +
       `<div class="zoom-ctrl">` +
       `<button type="button" class="zoom" data-zoom="out" aria-label="Zoom out">−</button>` +
@@ -278,6 +283,8 @@ export class LabExplore extends HTMLElement {
         this.dispatchEvent(new CustomEvent("lab-explore-view", { detail: { xmin, xmax } }));
         if (this.#autoOn()) {
           // fit the % axis to the visible window
+          const m = this.#model!;
+          const logScale = m.logScale === true && m.normalized === false;
           let lo = Infinity,
             hi = -Infinity;
           for (let si = 1; si < this.#data.length; si++)
@@ -285,12 +292,18 @@ export class LabExplore extends HTMLElement {
               if (this.#x[i]! < xmin || this.#x[i]! > xmax) continue;
               const v = this.#data[si]![i];
               if (v == null) continue;
+              if (logScale && v <= 0) continue; // log scale can't include zero/negative values
               if (v < lo) lo = v;
               if (v > hi) hi = v;
             }
           if (isFinite(lo)) {
-            const p = (hi - lo) * 0.1 || 5;
-            this.#setPct?.(lo - p, hi + p);
+            if (logScale) {
+              const padFactor = 1.2;
+              this.#setPct?.(lo / padFactor, hi * padFactor);
+            } else {
+              const p = (hi - lo) * 0.1 || 5;
+              this.#setPct?.(lo - p, hi + p);
+            }
           } else this.#setPct?.(this.#allLo, this.#allHi);
         } else {
           this.#setPct?.(this.#allLo, this.#allHi); // eased toward the fixed full range
@@ -589,6 +602,7 @@ export class LabExplore extends HTMLElement {
   #buildData(): void {
     const m = this.#model!;
     const normalized = m.normalized !== false;
+    const logScale = m.logScale === true;
     this.#used = this.#sel
       .filter((k) => k in m.markers)
       .map((k) => ({ key: k, ...m.markers[k]! }));
@@ -635,13 +649,27 @@ export class LabExplore extends HTMLElement {
     if (normalized) {
       this.#allLo = Math.min(0, allN.length ? Math.min(...allN) : 0);
       this.#allHi = Math.max(100, allN.length ? Math.max(...allN) : 100);
+    } else if (logScale) {
+      // Log scale can't include zero/negative values -- both for the axis
+      // range itself and for the multiplicative pad below (an additive pad
+      // is linear-only: it can push #allLo to or past zero on a small-magnitude
+      // series, which is undefined on a log axis).
+      const posN = allN.filter((v) => v > 0);
+      this.#allLo = posN.length ? Math.min(...posN) : 0.1;
+      this.#allHi = posN.length ? Math.max(...posN) : 1;
     } else {
       this.#allLo = allN.length ? Math.min(...allN) : 0;
       this.#allHi = allN.length ? Math.max(...allN) : 1;
     }
-    const ap = (this.#allHi - this.#allLo) * 0.06 + 1;
-    this.#allLo -= ap;
-    this.#allHi += ap;
+    if (logScale && !normalized) {
+      const padFactor = 1.5;
+      this.#allLo /= padFactor;
+      this.#allHi *= padFactor;
+    } else {
+      const ap = (this.#allHi - this.#allLo) * 0.06 + 1;
+      this.#allLo -= ap;
+      this.#allHi += ap;
+    }
   }
 
   #makeChart(): void {
@@ -651,6 +679,7 @@ export class LabExplore extends HTMLElement {
     this.#refreshWarnFoot();
     const m = this.#model!;
     const normalized = m.normalized !== false;
+    const logScale = m.logScale === true;
     const wrap = this.#root.querySelector<HTMLElement>(".chart-wrap")!;
 
     if (!canvasSupported()) {
@@ -785,7 +814,14 @@ export class LabExplore extends HTMLElement {
       {
         width: W(),
         height: 360,
-        scales: { x: { time: true }, pct: {} },
+        scales: {
+          x: { time: true },
+          pct:
+            logScale && !normalized
+              // 3 = uPlot's Distr.Logarithmic (see uPlot.d.ts); literal to avoid referencing the const enum across modules
+              ? { distr: 3 }
+              : {},
+        },
         series,
         axes: [
           xAxis(th),

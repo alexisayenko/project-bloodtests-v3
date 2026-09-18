@@ -160,6 +160,12 @@ export interface LabExploreModel {
    * when omitted.
    */
   normalized?: boolean;
+  /**
+   * true plots the absolute-value axis (see `normalized` above) on a
+   * logarithmic scale instead of linear. Has no effect when `normalized`
+   * is true. Default false, unchanged when omitted.
+   */
+  logScale?: boolean;
   events?: ExploreEvent[];
   /** zoom stops; defaults to 6 m … 10 y like the reference implementation */
   steps?: ExploreZoomStep[];
