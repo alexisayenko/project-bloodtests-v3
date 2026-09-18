@@ -7,3 +7,12 @@
 # one with different bytes.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The favicon and touch icon aren't content-hashed, but they never change
+# without a filename edit -- if one is ever swapped, rename the file so
+# browsers fetch the new one instead of serving a year-old cached copy.
+/favicon.*
+  Cache-Control: public, max-age=31536000, immutable
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=31536000, immutable
