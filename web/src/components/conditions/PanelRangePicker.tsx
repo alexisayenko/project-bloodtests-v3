@@ -58,6 +58,9 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 2);
   }, []);
 
+  const ITEM_WIDTH = 64; // px per year tick
+  const totalYears = years.length;
+
   // Drag-scrolling state for the area above the horizontal line
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{
@@ -66,8 +69,49 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
     hasMoved: boolean;
   }>({ startX: 0, startScrollLeft: 0, hasMoved: false });
 
-  const handleDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+  // Explicit edge handle dragging state ('start' | 'end')
+  const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const handleEdgeDragStart = (edge: 'start' | 'end', e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     if (e.button !== 0) return;
+    setDraggingHandle(edge);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleEdgeDragMove = (edge: 'start' | 'end', e: React.PointerEvent<HTMLDivElement>) => {
+    if (draggingHandle !== edge || !trackRef.current) return;
+    e.stopPropagation();
+
+    const trackRect = trackRef.current.getBoundingClientRect();
+    const relativeX = e.clientX - trackRect.left;
+    // Each tick center is at: idx * ITEM_WIDTH + ITEM_WIDTH / 2
+    // So index is: (relativeX - ITEM_WIDTH / 2) / ITEM_WIDTH
+    const rawIndex = Math.round((relativeX - ITEM_WIDTH / 2) / ITEM_WIDTH);
+    const clampedIndex = Math.max(0, Math.min(years.length - 1, rawIndex));
+    const targetYear = years[clampedIndex];
+    if (targetYear == null) return;
+
+    if (edge === 'start') {
+      setStartYear(Math.min(targetYear, endYear));
+    } else {
+      setEndYear(Math.max(targetYear, startYear));
+    }
+  };
+
+  const handleEdgeDragEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setDraggingHandle(null);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || draggingHandle) return;
     if (!timelineScrollRef.current) return;
 
     dragRef.current = {
@@ -179,12 +223,9 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
 
   const isNarrowed = startYear > minAvailableYear || endYear < maxAvailableYear;
 
-  // Compute percentage positions for handles and active accent bar
+  // Compute positions for handles and active accent bar
   const startIndex = years.indexOf(startYear);
   const endIndex = years.indexOf(endYear);
-  const totalYears = years.length;
-
-  const ITEM_WIDTH = 64; // px per year tick
 
   return (
     <div ref={containerRef} style={{ position: 'relative', display: 'inline-block' }}>
@@ -259,6 +300,7 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
               }}
             >
               <div
+                ref={trackRef}
                 style={{
                   position: 'relative',
                   width: totalYears * ITEM_WIDTH,
@@ -337,6 +379,8 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                   const isStart = year === startYear;
                   const isEnd = year === endYear;
                   const isSelected = isStart || isEnd;
+                  const edgeType: 'start' | 'end' | null = isStart ? 'start' : isEnd ? 'end' : null;
+                  const isThisDragging = edgeType != null && draggingHandle === edgeType;
 
                   const xPos = idx * ITEM_WIDTH + ITEM_WIDTH / 2;
 
@@ -356,7 +400,7 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                         alignItems: 'center',
                         cursor: 'pointer',
                         userSelect: 'none',
-                        zIndex: 3,
+                        zIndex: isSelected ? 8 : 3,
                       }}
                       title={`${year}: ${count} report${count === 1 ? '' : 's'}`}
                     >
@@ -384,17 +428,35 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
                           justifyContent: 'center',
                         }}
                       >
-                        {isSelected ? (
+                        {isSelected && edgeType ? (
                           <div
+                            role="slider"
+                            tabIndex={0}
+                            aria-label={`${edgeType === 'start' ? 'Start' : 'End'} year: ${year}`}
+                            aria-valuemin={edgeType === 'start' ? minAvailableYear : startYear}
+                            aria-valuemax={edgeType === 'start' ? endYear : maxAvailableYear}
+                            aria-valuenow={year}
+                            onPointerDown={(e) => handleEdgeDragStart(edgeType, e)}
+                            onPointerMove={(e) => handleEdgeDragMove(edgeType, e)}
+                            onPointerUp={handleEdgeDragEnd}
+                            onPointerCancel={handleEdgeDragEnd}
+                            onClick={(e) => e.stopPropagation()}
                             style={{
-                              width: 14,
-                              height: 14,
+                              width: 16,
+                              height: 16,
                               borderRadius: '50%',
-                              background: '#1a88f8',
+                              background: isThisDragging ? '#0070e0' : '#1a88f8',
                               border: '2.5px solid #ffffff',
-                              boxShadow: '0 1px 4px rgba(26, 136, 248, 0.4)',
-                              cursor: 'grab',
+                              boxShadow: isThisDragging
+                                ? '0 0 0 3px rgba(26, 136, 248, 0.35), 0 2px 6px rgba(26, 136, 248, 0.5)'
+                                : '0 1px 4px rgba(26, 136, 248, 0.4)',
+                              cursor: 'ew-resize',
+                              touchAction: 'none',
+                              transform: isThisDragging ? 'scale(1.2)' : 'scale(1)',
+                              transition: isThisDragging ? 'none' : 'transform 0.12s ease, box-shadow 0.12s ease',
+                              zIndex: 10,
                             }}
+                            title={`Drag to adjust ${edgeType} year (${year})`}
                           />
                         ) : (
                           <div
