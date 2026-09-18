@@ -15,6 +15,19 @@ import { LOINC_TO_MARKER } from '../../data/computedIndices';
 import { displayedResult } from './resultCells';
 import { molarPerMassUnit } from '../../data/molarMasses';
 import { fmtNum } from '../../utils/format';
+import { specimenOf } from '../../data/analyteCatalog';
+
+function formatCommonName(longCommonName: string | undefined, fallback: string): string {
+  if (!longCommonName) return fallback;
+  const specimen = specimenOf(longCommonName);
+  if (specimen) {
+    const beforeBracket = longCommonName.split('[')[0]?.trim();
+    if (beforeBracket) {
+      return `${beforeBracket} in ${specimen}`;
+    }
+  }
+  return longCommonName.replace(/\s*\[[^[\]]*\]/g, '').replace(/\s{2,}/g, ' ').trim() || fallback;
+}
 
 if (typeof customElements !== 'undefined' && !customElements.get('lab-explore')) {
   customElements.define('lab-explore', LabExplore);
@@ -323,7 +336,28 @@ export function TrendsView({
               {currentObservation?.friendlyName ?? 'Marker'}
             </h2>
             <div style={{ fontSize: 13, color: COLOR.textMuted, marginTop: 2 }}>
-              LOINC {currentObservation?.loinc} · {currentObservation?.longCommonName}
+              {currentObservation?.loinc && (
+                <>
+                  <a
+                    href={`https://loinc.org/${currentObservation.loinc}/`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      color: COLOR.link,
+                      textDecoration: 'none',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                    title={`Open LOINC ${currentObservation.loinc} on loinc.org`}
+                  >
+                    {currentObservation.loinc}
+                  </a>
+                  <span> · </span>
+                </>
+              )}
+              <span>
+                {formatCommonName(currentObservation?.longCommonName, currentObservation?.friendlyName ?? '')}
+              </span>
             </div>
 
             {guidelineRange && (
