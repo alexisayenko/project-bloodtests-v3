@@ -74,6 +74,8 @@ const DEFAULT_LABELS = {
   events: "Events:",
   autoscale: "Autoscale vertical",
   panelToggle: "Select / deselect all in this group",
+  selectAll: "Select all",
+  clearAll: "Clear all",
 };
 
 interface UsedMarker extends ExploreMarker {
@@ -306,6 +308,17 @@ export class LabExplore extends HTMLElement {
   #buildPicker(): void {
     const m = this.#model!;
     const picker = this.#root.querySelector(".marker-picker")!;
+    const allKeys = Object.keys(m.markers);
+    if (allKeys.length > 1) {
+      const allRow = document.createElement("div");
+      allRow.className = "picker-all-row";
+      const allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.className = "picker-all-toggle";
+      allBtn.addEventListener("click", () => this.#toggleAll());
+      allRow.appendChild(allBtn);
+      picker.appendChild(allRow);
+    }
     const byPanel: Record<string, string[]> = {};
     const order: string[] = [];
     const add = (p: string): string[] => {
@@ -451,6 +464,12 @@ export class LabExplore extends HTMLElement {
       b.style.background = on ? this.#colorFor(k) : "";
       b.style.borderColor = on ? this.#colorFor(k) : "";
     });
+    const allBtn = this.#root.querySelector<HTMLButtonElement>(".picker-all-toggle");
+    if (allBtn) {
+      const all = Object.keys(this.#model!.markers);
+      const allOn = all.length > 0 && all.every((k) => this.#selSet[k]);
+      allBtn.textContent = allOn ? this.#lbl("clearAll") : this.#lbl("selectAll");
+    }
   }
 
   /**
@@ -491,6 +510,23 @@ export class LabExplore extends HTMLElement {
     for (const k of keys) {
       if (anyOn) {
         // anything on → clear the whole panel
+        delete this.#selSet[k];
+        this.#sel = this.#sel.filter((s) => s !== k);
+      } else if (!this.#selSet[k]) {
+        this.#selSet[k] = 1;
+        this.#sel.push(k);
+      }
+    }
+    this.#saveSel();
+    this.#refreshBadges();
+    this.#rebuildKeepScroll();
+  }
+
+  #toggleAll(): void {
+    const all = Object.keys(this.#model!.markers);
+    const allOn = all.length > 0 && all.every((k) => this.#selSet[k]);
+    for (const k of all) {
+      if (allOn) {
         delete this.#selSet[k];
         this.#sel = this.#sel.filter((s) => s !== k);
       } else if (!this.#selSet[k]) {

@@ -87,6 +87,9 @@ export const EXPLORE_STYLES = `
 .picker-panel { border: 1px solid var(--_rule-soft); border-radius: 6px; padding: 0.75rem 0.85rem 0.85rem; }
 .picker-cap { display: block; width: 100%; text-align: left; font: inherit; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--_muted); margin-bottom: 0.6rem; background: none; border: 0; padding: 0; cursor: pointer; }
 .picker-cap:hover { color: var(--_fg); text-decoration: underline; }
+.marker-picker > .picker-all-row { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-bottom: 0.2rem; }
+.picker-all-toggle { font: inherit; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--_muted); background: none; border: 0; padding: 0; cursor: pointer; }
+.picker-all-toggle:hover { color: var(--_fg); text-decoration: underline; }
 .picker-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 /* Single-panel picker (#buildPicker's box===null branch) appends the badge row as a
    DIRECT child of the .marker-picker grid instead of inside a .picker-panel box, so

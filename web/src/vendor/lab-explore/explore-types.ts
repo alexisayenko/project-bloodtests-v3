@@ -107,6 +107,10 @@ export interface ExploreLabels {
   autoscale?: string;
   /** accessible name of the panel select/deselect-all caption button */
   panelToggle?: string;
+  /** label of the picker-wide select-all button when not all markers are selected */
+  selectAll?: string;
+  /** label of the picker-wide select-all button when all markers are selected */
+  clearAll?: string;
 }
 
 /** One period of a treatment/event band. `end: null` = ongoing (band follows the visible right edge). */
