@@ -1204,6 +1204,23 @@
     }
   },
   {
+    "loinc": "62255-5",
+    "longCommonName": "Lipoprotein insulin resistance score in Serum or Plasma",
+    "friendlyName": "LP-IR Score",
+    "shortName": "LP-IR",
+    "unit": "{Index_val}",
+    "lang": {
+      "ru-RU": "Липопротеиновый индекс инсулинорезистентности",
+      "uk-UA": "Ліпопротеїновий індекс інсулінорезистентності"
+    },
+    "info": {
+      "description": "A laboratory-reported 0–100 score derived from six NMR lipoprotein particle measurements. Lower scores indicate a more insulin-sensitive lipoprotein pattern; higher scores indicate a more insulin-resistant pattern.",
+      "why": "Provides a single lipoprotein-based marker associated with insulin resistance when an NMR lipoprotein profile reports it.",
+      "frequency": "As clinically indicated",
+      "scientific": "LP-IR combines six NMR-derived lipoprotein particle size and concentration measures into a score from 0 (most insulin sensitive) to 100 (most insulin resistant). Paneloom treats LP-IR as a reported laboratory observation and does not calculate it from component measurements."
+    }
+  },
+  {
     "loinc": "3040-3",
     "longCommonName": "Lipase [Enzymatic activity/volume] in Serum or Plasma",
     "friendlyName": "Lipase",
