@@ -175,7 +175,14 @@ export function AllObservationsView({
       <TabBar tabs={OBSERVATIONS_TABS} active={tab} onChange={onTabChange} />
 
       {tab === 'analysis' && analysisTab}
-      {tab === 'trends' && <TrendsView />}
+      {tab === 'trends' && (
+        <TrendsView
+          tests={conditions.flatMap((c) => c.tests)}
+          allResults={allResults}
+          unitSystem={controls.unitSystem}
+          resultsByDate={resultsByDate}
+        />
+      )}
       {tab === 'in-range' && (
         <Suspense fallback={chartFallback}>
           <LabExploreView

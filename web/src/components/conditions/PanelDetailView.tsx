@@ -156,7 +156,15 @@ export function PanelDetailView({
           )}
         </div>
       )}
-      {detailTab === 'trends' && <TrendsView name={name} tests={tests} allResults={allResults} />}
+      {detailTab === 'trends' && (
+        <TrendsView
+          name={name}
+          tests={tests}
+          allResults={allResults}
+          unitSystem={controls.unitSystem}
+          resultsByDate={resultsByDate}
+        />
+      )}
       {detailTab === 'in-range' && (
         <Suspense fallback={chartFallback}>
           <LabExploreView

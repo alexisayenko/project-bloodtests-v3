@@ -1,20 +1,42 @@
-import { useState, useMemo } from 'react';
-import { Info, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Info } from 'lucide-react';
 import type { Observation } from './markers';
 import type { ResultEntry } from './resultsLookup';
 import { Card } from '../primitives/Card';
 import { COLOR, RADIUS } from '../../styles/tokens';
 import { pressable } from '../primitives/styles';
-import { ANALYTE_BY_LOINC } from '../../data/analyteCatalog';
+import { LabExplore } from '../../vendor/lab-explore/lab-explore';
+import type { LabExploreModel } from '../../vendor/lab-explore/explore-types';
+import { buildExploreModel } from './exploreModel';
+import type { Result, UnitSystem } from '../../types';
+import { loadEnvelopeMeta } from '../../data/envelopeMeta';
+import { SegmentedControl } from '../primitives';
+import { LOINC_TO_MARKER } from '../../data/computedIndices';
+import { displayedResult } from './resultCells';
 import { molarPerMassUnit } from '../../data/molarMasses';
+import { fmtNum } from '../../utils/format';
+
+if (typeof customElements !== 'undefined' && !customElements.get('lab-explore')) {
+  customElements.define('lab-explore', LabExplore);
+}
+
+type LabExploreElement = HTMLElement & { model: LabExploreModel | null };
 
 interface Props {
   name?: string;
   tests?: Observation[];
   allResults?: ResultEntry[];
+  unitSystem?: UnitSystem;
+  resultsByDate?: Record<string, Record<string, Result>>;
 }
 
-export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
+export function TrendsView({
+  name,
+  tests = [],
+  allResults = [],
+  unitSystem = 'si',
+  resultsByDate,
+}: Readonly<Props>) {
   // Available observations in this panel that have results
   const availableTests = useMemo(() => {
     return tests.filter((t) => allResults.some((r) => r.loinc === t.loinc));
@@ -22,7 +44,9 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
 
   // Active observation: default to first or Testosterone / first available
   const [selectedLoinc, setSelectedLoinc] = useState<string>(() => {
-    const testO = availableTests.find((t) => t.friendlyName.toLowerCase().includes('testosterone') || t.shortName.toLowerCase().includes('t'));
+    const testO = availableTests.find(
+      (t) => t.friendlyName.toLowerCase().includes('testosterone') || t.shortName.toLowerCase().includes('t')
+    );
     return testO?.loinc ?? availableTests[0]?.loinc ?? tests[0]?.loinc ?? '';
   });
 
@@ -30,142 +54,119 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
     return tests.find((t) => t.loinc === selectedLoinc) ?? tests[0];
   }, [tests, selectedLoinc]);
 
-  // Unit switcher state
-  const catalogAnalyte = currentObservation ? ANALYTE_BY_LOINC[currentObservation.loinc] : undefined;
-  const canonicalUnit = currentObservation?.unit ?? catalogAnalyte?.unit ?? 'nmol/L';
-  const alternativeUnit = canonicalUnit === 'nmol/L' ? 'ng/dL' : canonicalUnit === 'mg/dL' ? 'mmol/L' : undefined;
+  // Guideline reference range popup toggle
+  const [showGuidelineInfo, setShowGuidelineInfo] = useState(false);
+  // Normalized (% of ref range) vs Absolute values toggle
+  const [normalized, setNormalized] = useState(true);
 
-  const [activeUnit, setActiveUnit] = useState<string>(canonicalUnit);
+  // Reference to custom element
+  const ref = useRef<HTMLElement | null>(null);
+  const sex = loadEnvelopeMeta().sex;
 
-  // Conversion factor between mass and molar if applicable
-  const conversionFactor = useMemo(() => {
-    if (!alternativeUnit || activeUnit === canonicalUnit) return 1;
-    try {
-      if (canonicalUnit === 'nmol/L' && activeUnit === 'ng/dL') {
-        // ng/dL to nmol/L factor is ~0.03467, so nmol/L to ng/dL is 1 / 0.03467 (~28.84)
-        const factor = molarPerMassUnit('testosterone', 'ng/dL', 'nmol/L');
-        return factor > 0 ? 1 / factor : 1;
-      }
-      if (canonicalUnit === 'ng/dL' && activeUnit === 'nmol/L') {
-        return molarPerMassUnit('testosterone', 'ng/dL', 'nmol/L');
-      }
-    } catch {
-      return 1;
-    }
-    return 1;
-  }, [canonicalUnit, activeUnit, alternativeUnit]);
+  // Build model for standard lab-explore control
+  const model = useMemo(() => {
+    const panelConditions = tests.length > 0 ? [{ name: name ?? 'Panel', tests }] : [];
+    const built = buildExploreModel(
+      panelConditions,
+      allResults,
+      unitSystem,
+      name,
+      resultsByDate,
+      { sex }
+    );
+    const viewId = `trends:${name ?? 'all'}:${selectedLoinc || 'all'}`;
+    return {
+      ...built,
+      title: '',
+      intro: '',
+      normalized,
+      defaultSelection: selectedLoinc && built.markers[selectedLoinc] ? [selectedLoinc] : built.defaultSelection,
+      persist: {
+        sel: `exploreSel:${viewId}`,
+        view: `hpgChartView:trends:${name ?? 'all'}`,
+        autoscale: `hpgAutoscale:trends:${name ?? 'all'}`,
+        evPrefix: `exploreEv:trends:${name ?? 'all'}:`,
+      },
+    };
+  }, [tests, allResults, unitSystem, name, resultsByDate, sex, selectedLoinc, normalized]);
 
-  // Filter and sort results for this observation across all dates
-  const observationResults = useMemo(() => {
-    if (!currentObservation) return [];
-    return allResults
-      .filter((r) => r.loinc === currentObservation.loinc && r.result.value != null)
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [allResults, currentObservation]);
+  useEffect(() => {
+    let cancelled = false;
+    customElements.whenDefined('lab-explore').then(() => {
+      if (cancelled) return;
+      const el = ref.current as LabExploreElement | null;
+      if (el) el.model = model;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [model]);
 
   // Primary marker cards (scrollable row of markers in this panel)
   const primaryCards = useMemo(() => {
     const list = availableTests.length > 0 ? availableTests : tests;
     return list.map((test) => {
       const results = allResults
-        .filter((r) => r.loinc === test.loinc && r.result.value != null)
+        .filter((r) => r.loinc === test.loinc && (r.result.value != null || r.result.rawValue))
         .sort((a, b) => b.date.localeCompare(a.date));
       const latest = results[0];
       const prev = results[1];
 
+      const markerKey = LOINC_TO_MARKER[test.loinc];
+      const disp = latest?.result ? displayedResult(markerKey, latest.result, unitSystem) : null;
+
       let deltaPct: number | null = null;
-      if (latest && prev && prev.result.value && latest.result.value) {
+      if (latest?.result.value != null && prev?.result.value != null && prev.result.value !== 0) {
         deltaPct = Math.round(((latest.result.value - prev.result.value) / prev.result.value) * 100);
       }
 
-      const sparkPoints = results.slice(0, 6).reverse().map((r) => r.result.value!);
+      const sparkPoints = results
+        .filter((r) => r.result.value != null)
+        .slice(0, 6)
+        .reverse()
+        .map((r) => {
+          const d = displayedResult(markerKey, r.result, unitSystem);
+          return d.value ?? r.result.value!;
+        });
 
       return {
         test,
-        latestValue: latest?.result.value,
-        unit: latest?.result.unit ?? test.unit ?? '',
+        latestValue: disp?.value != null ? fmtNum(disp.value) : (latest?.result.rawValue || '—'),
+        unit: disp?.unit || latest?.result.unit || test.unit || '',
         deltaPct,
         sparkPoints,
       };
     });
-  }, [availableTests, tests, allResults]);
+  }, [availableTests, tests, allResults, unitSystem]);
 
-  // Guideline reference range popup toggle
-  const [showGuidelineInfo, setShowGuidelineInfo] = useState(false);
+  // Filter and sort results for this observation across all dates
+  const observationResults = useMemo(() => {
+    if (!currentObservation) return [];
+    return allResults
+      .filter((r) => r.loinc === currentObservation.loinc && (r.result.value != null || r.result.rawValue))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [allResults, currentObservation]);
 
-  // Chronological results for chart (earliest to latest)
-  const chartPoints = useMemo(() => {
-    return [...observationResults].reverse().map((r) => {
-      const val = (r.result.value ?? 0) * conversionFactor;
-      const refMin = r.result.refMin != null ? r.result.refMin * conversionFactor : undefined;
-      const refMax = r.result.refMax != null ? r.result.refMax * conversionFactor : undefined;
-      return {
-        date: r.date,
-        year: r.date.slice(0, 4),
-        val,
-        refMin,
-        refMax,
-        place: r.place,
-      };
-    });
-  }, [observationResults, conversionFactor]);
+  // Marker unit from explore model or current observation
+  const displayUnit = model.markers[selectedLoinc]?.unit ?? currentObservation?.unit ?? '';
 
   // Fixed/known guideline ranges (e.g. Endocrine Society for Total Testosterone: 9.2 - 31.8 nmol/L)
   const guidelineRange = useMemo(() => {
-    const isTestosterone = currentObservation?.friendlyName.toLowerCase().includes('testosterone') || currentObservation?.loinc === '2986-8';
+    const isTestosterone =
+      currentObservation?.friendlyName.toLowerCase().includes('testosterone') ||
+      currentObservation?.loinc === '2986-8';
     if (!isTestosterone) return null;
-    const baseMin = 9.2;
-    const baseMax = 31.8;
+    const isUs = unitSystem === 'us';
+    const factor = isUs ? molarPerMassUnit('testosterone', 'ng/dL', 'nmol/L') : 1;
+    const conv = isUs ? (factor > 0 ? 1 / factor : 28.84) : 1;
+    const min = Math.round(9.2 * conv * (isUs ? 1 : 10)) / (isUs ? 1 : 10);
+    const max = Math.round(31.8 * conv * (isUs ? 1 : 10)) / (isUs ? 1 : 10);
     return {
-      min: Math.round(baseMin * conversionFactor * 10) / 10,
-      max: Math.round(baseMax * conversionFactor * 10) / 10,
+      min,
+      max,
       source: 'Endocrine Society / CDC Harmonized',
     };
-  }, [currentObservation, conversionFactor]);
-
-  // SVG Chart Layout Calculations
-  const chartW = 760;
-  const chartH = 220;
-  const padL = 40;
-  const padR = 24;
-  const padT = 20;
-  const padB = 36;
-  const plotW = chartW - padL - padR;
-  const plotH = chartH - padT - padB;
-
-  const yMax = useMemo(() => {
-    let m = 35;
-    for (const p of chartPoints) {
-      if (p.val > m) m = p.val;
-      if (p.refMax && p.refMax > m) m = p.refMax;
-    }
-    if (guidelineRange && guidelineRange.max > m) m = guidelineRange.max;
-    return Math.ceil(m * 1.15);
-  }, [chartPoints, guidelineRange]);
-
-  const getY = (val: number) => padT + plotH - (val / yMax) * plotH;
-  const getX = (idx: number, count: number) => {
-    if (count <= 1) return padL + plotW / 2;
-    return padL + (idx / (count - 1)) * plotW;
-  };
-
-  // Construct SVG polygon for the report-specific reference range band
-  const refBandPath = useMemo(() => {
-    if (chartPoints.length === 0) return '';
-    const upperPoints: string[] = [];
-    const lowerPoints: string[] = [];
-
-    chartPoints.forEach((p, idx) => {
-      const x = getX(idx, chartPoints.length);
-      const top = getY(p.refMax ?? (guidelineRange?.max ?? 30));
-      const bottom = getY(p.refMin ?? (guidelineRange?.min ?? 9));
-      upperPoints.push(`${x},${top}`);
-      lowerPoints.unshift(`${x},${bottom}`);
-    });
-
-    return `M ${upperPoints.join(' L ')} L ${lowerPoints.join(' L ')} Z`;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartPoints, guidelineRange, yMax]);
+  }, [currentObservation, unitSystem]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -220,7 +221,15 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
                   <span style={{ fontSize: 20, fontWeight: 700, color: COLOR.navy, letterSpacing: -0.5 }}>
                     {latestValue != null ? latestValue : '—'}
                   </span>
-                  <span style={{ fontSize: 11, color: COLOR.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: COLOR.textMuted,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {unit}
                   </span>
 
@@ -297,9 +306,18 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
         />
       </div>
 
-      {/* 2. Interactive Analyte Timeline Chart */}
+      {/* 2. Standard Chart Control (<lab-explore>) */}
       <Card padding="20px 24px" style={{ borderRadius: RADIUS.card }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: COLOR.navy, margin: 0 }}>
               {currentObservation?.friendlyName ?? 'Marker'}
@@ -311,7 +329,7 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
             {guidelineRange && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 13, color: COLOR.navy }}>
                 <span>
-                  Guideline Ref. Range: {guidelineRange.min}–{guidelineRange.max} {activeUnit}
+                  Guideline Ref. Range: {guidelineRange.min}–{guidelineRange.max} {displayUnit}
                 </span>
                 <span
                   {...pressable(() => setShowGuidelineInfo(!showGuidelineInfo))}
@@ -324,41 +342,16 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
             )}
           </div>
 
-          {/* Unit Switcher */}
-          {alternativeUnit && (
-            <div style={{ position: 'relative' }}>
-              <select
-                aria-label="Select Unit"
-                value={activeUnit}
-                onChange={(e) => setActiveUnit(e.target.value)}
-                style={{
-                  padding: '6px 28px 6px 12px',
-                  borderRadius: RADIUS.control,
-                  border: `1px solid ${COLOR.border}`,
-                  background: COLOR.surfaceCard,
-                  color: COLOR.navy,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  appearance: 'none',
-                }}
-              >
-                <option value={canonicalUnit}>{canonicalUnit}</option>
-                <option value={alternativeUnit}>{alternativeUnit}</option>
-              </select>
-              <ChevronDown
-                size={14}
-                style={{
-                  position: 'absolute',
-                  right: 10,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none',
-                  color: COLOR.textMuted,
-                }}
-              />
-            </div>
-          )}
+          {/* Values Normalized / Absolute Control */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <SegmentedControl
+              label="Values"
+              options={['normalized', 'absolute'] as const}
+              value={normalized ? 'normalized' : 'absolute'}
+              onChange={(v) => setNormalized(v === 'normalized')}
+              format={(v) => (v === 'normalized' ? 'Normalized values' : 'Absolute numbers')}
+            />
+          </div>
         </div>
 
         {/* Guideline Info Modal / Popover */}
@@ -379,86 +372,7 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
           </div>
         )}
 
-        {/* SVG Main Timeline Chart */}
-        <div style={{ width: '100%', overflowX: 'auto' }}>
-          <svg width="100%" height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} style={{ minWidth: 500, overflow: 'visible' }}>
-            {/* Horizontal Grid lines */}
-            {[0, 10, 20, 30, 40].map((tick) => {
-              if (tick > yMax) return null;
-              const y = getY(tick);
-              return (
-                <g key={tick}>
-                  <line x1={padL} y1={y} x2={chartW - padR} y2={y} stroke="#eaf0f4" strokeDasharray="3 3" />
-                  <text x={padL - 8} y={y + 4} textAnchor="end" fontSize="11" fill={COLOR.textMuted}>
-                    {tick}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Shaded Laboratory Reference Range Band */}
-            {refBandPath && (
-              <path d={refBandPath} fill="rgba(76, 175, 122, 0.12)" />
-            )}
-
-            {/* Reference Band Upper & Lower dashed boundary lines */}
-            {chartPoints.map((p, idx) => {
-              if (idx === 0) return null;
-              const prev = chartPoints[idx - 1]!;
-              const x1 = getX(idx - 1, chartPoints.length);
-              const x2 = getX(idx, chartPoints.length);
-              const topY1 = getY(prev.refMax ?? (guidelineRange?.max ?? 30));
-              const topY2 = getY(p.refMax ?? (guidelineRange?.max ?? 30));
-              const botY1 = getY(prev.refMin ?? (guidelineRange?.min ?? 9));
-              const botY2 = getY(p.refMin ?? (guidelineRange?.min ?? 9));
-              return (
-                <g key={`band-${p.date}`}>
-                  <line x1={x1} y1={topY1} x2={x2} y2={topY2} stroke="#4caf7a" strokeWidth="1.5" strokeDasharray="4 3" opacity={0.8} />
-                  <line x1={x1} y1={botY1} x2={x2} y2={botY2} stroke="#4caf7a" strokeWidth="1.5" strokeDasharray="4 3" opacity={0.8} />
-                </g>
-              );
-            })}
-
-            {/* Trend Data Line */}
-            {chartPoints.map((p, idx) => {
-              if (idx === 0) return null;
-              const prev = chartPoints[idx - 1]!;
-              const x1 = getX(idx - 1, chartPoints.length);
-              const y1 = getY(prev.val);
-              const x2 = getX(idx, chartPoints.length);
-              const y2 = getY(p.val);
-              return (
-                <line key={`trend-${p.date}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#0e8388" strokeWidth="2.5" />
-              );
-            })}
-
-            {/* Data Dots & X-axis Dates */}
-            {chartPoints.map((p, idx) => {
-              const x = getX(idx, chartPoints.length);
-              const y = getY(p.val);
-              return (
-                <g key={p.date}>
-                  <circle cx={x} cy={y} r="4.5" fill="#0e8388" stroke="#ffffff" strokeWidth="2" />
-                  <text x={x} y={chartH - 10} textAnchor="middle" fontSize="12" fill={COLOR.navy} fontWeight={500}>
-                    {p.year}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, marginTop: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: COLOR.navy }}>
-            <span style={{ width: 14, height: 3, background: '#0e8388', borderRadius: 2 }} />
-            <span>{currentObservation?.friendlyName} ({activeUnit})</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: COLOR.navy }}>
-            <span style={{ width: 18, height: 0, borderTop: '2px dashed #4caf7a' }} />
-            <span>Laboratory reference range (varies by report)</span>
-          </div>
-        </div>
+        <lab-explore ref={ref} />
       </Card>
 
       {/* 3. Result History Table */}
@@ -467,8 +381,12 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${COLOR.borderSubtle}` }}>
               <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Date ↑</th>
-              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Result ({activeUnit})</th>
-              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Reference Range ({activeUnit})</th>
+              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>
+                Result{displayUnit ? ` (${displayUnit})` : ''}
+              </th>
+              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>
+                Reference Range{displayUnit ? ` (${displayUnit})` : ''}
+              </th>
               <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Laboratory</th>
             </tr>
           </thead>
@@ -481,13 +399,22 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
               </tr>
             ) : (
               observationResults.map((r, i) => {
-                const val = (r.result.value ?? 0) * conversionFactor;
-                const min = r.result.refMin != null ? r.result.refMin * conversionFactor : null;
-                const max = r.result.refMax != null ? r.result.refMax * conversionFactor : null;
+                const markerKey = LOINC_TO_MARKER[currentObservation?.loinc ?? ''];
+                const disp = displayedResult(markerKey, r.result, unitSystem);
+                const scale = r.result.value && disp.value ? disp.value / r.result.value : 1;
+                const min = r.result.refMin != null ? r.result.refMin * scale : null;
+                const max = r.result.refMax != null ? r.result.refMax * scale : null;
 
-                const rangeStr = min != null && max != null
-                  ? `${min.toFixed(1)} – ${max.toFixed(1)}`
-                  : r.result.refText ?? '—';
+                const rangeStr =
+                  min != null && max != null
+                    ? `${fmtNum(min)} – ${fmtNum(max)}`
+                    : min != null
+                    ? `> ${fmtNum(min)}`
+                    : max != null
+                    ? `< ${fmtNum(max)}`
+                    : r.result.refText ?? '—';
+
+                const valStr = disp.value != null ? fmtNum(disp.value) : (r.result.rawValue || '—');
 
                 return (
                   <tr
@@ -497,7 +424,7 @@ export function TrendsView({ tests = [], allResults = [] }: Readonly<Props>) {
                     }}
                   >
                     <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 500 }}>{r.date}</td>
-                    <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 600 }}>{val.toFixed(1)}</td>
+                    <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 600 }}>{valStr}</td>
                     <td style={{ padding: '12px 16px', color: COLOR.text }}>{rangeStr}</td>
                     <td style={{ padding: '12px 16px', color: COLOR.text }}>{r.place || '—'}</td>
                   </tr>
