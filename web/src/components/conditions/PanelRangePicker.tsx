@@ -245,23 +245,6 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
             padding: '20px 24px',
           }}
         >
-          {/* Active Range Pill */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-            <span
-              style={{
-                display: 'inline-block',
-                background: '#eef5fc',
-                color: COLOR.navy,
-                fontSize: 14,
-                fontWeight: 600,
-                padding: '5px 22px',
-                borderRadius: 9999,
-              }}
-            >
-              {startYear} — {endYear}
-            </span>
-          </div>
-
           {/* Horizontally scrollable timeline with edge shading */}
           <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
             <div
