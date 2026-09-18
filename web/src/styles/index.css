@@ -98,15 +98,23 @@ body {
 button.mc-chip { cursor: pointer; transition: transform 0.1s ease, box-shadow 0.1s ease; }
 button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); }
 .mc-segmented {
+  position: relative;
   display: inline-flex; gap: 2px; padding: 3px; border: 0; margin: 0; border-radius: var(--radius-pill);
   background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
+.mc-segment-thumb {
+  position: absolute; top: 3px; left: 0; bottom: 3px;
+  background: var(--surface); box-shadow: var(--shadow-card); border-radius: var(--radius-pill);
+  transition: transform 150ms ease, width 150ms ease;
+  pointer-events: none;
+}
 .mc-segment {
+  position: relative;
   padding: 4px 12px; border: 0; border-radius: var(--radius-pill); background: transparent;
   font-family: inherit; font-size: 13px; font-weight: 600; line-height: 18px; color: var(--text-secondary); cursor: pointer;
 }
 .mc-segment:hover:not(:disabled) { color: var(--text); }
-.mc-segment[aria-pressed='true'] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-card); }
+.mc-segment[aria-pressed='true'] { color: var(--text); }
 .mc-segment:disabled { color: var(--text-disabled); cursor: not-allowed; }
 .mc-segment:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -458,7 +466,8 @@ button.mc-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0
   .mc-side-logo span,
   .mc-side-item,
   .mc-side-item > span,
-  .mc-side-tagline { transition: none; }
+  .mc-side-tagline,
+  .mc-segment-thumb { transition: none; }
 }
 
 /* Hormonal Pathways: one horizontal band per anatomical site, its label column
