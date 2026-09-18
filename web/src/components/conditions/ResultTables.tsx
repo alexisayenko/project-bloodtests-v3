@@ -60,7 +60,7 @@ const addTh = { ...th, textAlign: 'center', padding: '6px 4px' } as const;
 const STATUS_TEXT = { ok: COLOR.statusOkText, warn: COLOR.statusWarnText, bad: COLOR.statusBadText } as const;
 
 /** The negative margin cancels the tint's padding, so digits stay on the header's left edge whether tinted or not. */
-function StatusValue({ tone, bg, children }: Readonly<{ tone: keyof typeof STATUS_TEXT; bg: string; children: ReactNode }>) {
+export function StatusValue({ tone, bg, children }: Readonly<{ tone: keyof typeof STATUS_TEXT; bg: string; children: ReactNode }>) {
   return (
     <span
       style={{

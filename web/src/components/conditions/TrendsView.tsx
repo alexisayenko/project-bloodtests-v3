@@ -10,15 +10,17 @@ import { buildExploreModel, type Condition } from './exploreModel';
 import type { Result, UnitSystem } from '../../types';
 import type { MedicationRow } from '../../data/storage/medications';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
-import { SegmentedControl, SwitchToggle } from '../primitives';
-import { MedicationLane } from './MedicationLane';
-import { buildMedicationBars } from './medicationBars';
+import { SegmentedControl } from '../primitives';
+import { buildMedicationBars, groupMedicationBarsByBrand, type MedicationBar } from './medicationBars';
 import { PALETTE } from '../analytics/palette';
 import { LOINC_TO_MARKER } from '../../data/computedIndices';
-import { displayedResult } from './resultCells';
+import { displayedResult, cellBg } from './resultCells';
 import { molarPerMassUnit } from '../../data/molarMasses';
-import { fmtNum } from '../../utils/format';
+import { fmtNum, isOutOfRange } from '../../utils/format';
 import { specimenOf } from '../../data/analyteCatalog';
+import { hasReference } from './resultsLookup';
+import { StatusValue } from './ResultTables';
+import { formatMonthYear } from '../../data/months';
 
 function paletteColor(index: number): string {
   const [r, g, b] = PALETTE[index % PALETTE.length]!;
@@ -35,6 +37,51 @@ function formatCommonName(longCommonName: string | undefined, fallback: string):
     }
   }
   return longCommonName.replace(/\s*\[[^[\]]*\]/g, '').replace(/\s{2,}/g, ' ').trim() || fallback;
+}
+
+/** `ts` is epoch seconds UTC (the `MedicationBar` convention); back to the "YYYY-MM" key `formatMonthYear` reads. */
+function tsToMonthKey(ts: number): string {
+  const d = new Date(ts * 1000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Static badge row under the chart: one pill per medication brand, replacing the old chart-overlay lane. */
+function MedicationBadgeRow({ bars }: Readonly<{ bars: MedicationBar[] }>) {
+  const groups = groupMedicationBarsByBrand(bars);
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+      {groups.map(({ brand, bars: groupBars }) => {
+        const startTs = Math.min(...groupBars.map((b) => b.startTs));
+        const endTs = Math.max(...groupBars.map((b) => b.endTs));
+        // endTs is the exclusive start of the month after the last active one; back up a second to land in it.
+        const span = `${formatMonthYear(tsToMonthKey(startTs))} – ${formatMonthYear(tsToMonthKey(endTs - 1))}`;
+        const details = Array.from(new Set(groupBars.map((b) => b.detail).filter(Boolean)));
+        const title = details.length > 0 ? `${details.join('; ')} · ${span}` : span;
+        return (
+          <span
+            key={brand}
+            title={title}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: RADIUS.pill,
+              border: `1px solid ${COLOR.borderSubtle}`,
+              background: COLOR.surfaceCard,
+              fontSize: 12,
+              fontWeight: 500,
+              color: COLOR.navy,
+            }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: groupBars[0]!.color, flexShrink: 0 }} />
+            {brand}
+            <span style={{ fontSize: 11, fontWeight: 400, color: COLOR.textMuted }}>{span}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 if (typeof customElements !== 'undefined' && !customElements.get('lab-explore')) {
@@ -83,7 +130,6 @@ export function TrendsView({
   const [showGuidelineInfo, setShowGuidelineInfo] = useState(false);
   // Normalized (% of ref range) vs Absolute values toggle
   const [normalized, setNormalized] = useState(true);
-  const [showMedications, setShowMedications] = useState(true);
 
   // Reference to custom element
   const ref = useRef<HTMLElement | null>(null);
@@ -394,7 +440,7 @@ export function TrendsView({
             )}
           </div>
 
-          {/* Values Normalized / Absolute Control, plus Medications when there is history to show */}
+          {/* Values Normalized / Absolute Control */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <SegmentedControl
               label="Values"
@@ -403,9 +449,6 @@ export function TrendsView({
               onChange={(v) => setNormalized(v === 'normalized')}
               format={(v) => (v === 'normalized' ? 'Normalized values' : 'Absolute numbers')}
             />
-            {medicationBars.length > 0 && (
-              <SwitchToggle label="Medications" pressed={showMedications} onChange={setShowMedications} />
-            )}
           </div>
         </div>
 
@@ -428,7 +471,7 @@ export function TrendsView({
         )}
 
         <lab-explore ref={ref} />
-        {showMedications && medicationBars.length > 0 && <MedicationLane bars={medicationBars} hostRef={ref} />}
+        {medicationBars.length > 0 && <MedicationBadgeRow bars={medicationBars} />}
       </Card>
 
       {/* 3. Result History Table */}
@@ -462,19 +505,17 @@ export function TrendsView({
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${COLOR.borderSubtle}` }}>
               <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Date ↑</th>
-              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>
-                Result{displayUnit ? ` (${displayUnit})` : ''}
-              </th>
-              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>
-                Reference Range{displayUnit ? ` (${displayUnit})` : ''}
-              </th>
+              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Observation</th>
+              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Result</th>
+              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Reference Range</th>
               <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Laboratory</th>
+              <th style={{ padding: '12px 16px', fontWeight: 600, color: COLOR.navy }}>Method</th>
             </tr>
           </thead>
           <tbody>
             {observationResults.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: '24px 16px', textAlign: 'center', color: COLOR.textMuted }}>
+                <td colSpan={6} style={{ padding: '24px 16px', textAlign: 'center', color: COLOR.textMuted }}>
                   No results recorded for this marker.
                 </td>
               </tr>
@@ -485,6 +526,7 @@ export function TrendsView({
                 const scale = r.result.value && disp.value ? disp.value / r.result.value : 1;
                 const min = r.result.refMin != null ? r.result.refMin * scale : null;
                 const max = r.result.refMax != null ? r.result.refMax * scale : null;
+                const hasNumericRange = min != null || max != null;
 
                 const rangeStr =
                   min != null && max != null
@@ -496,6 +538,14 @@ export function TrendsView({
                     : r.result.refText ?? '—';
 
                 const valStr = disp.value != null ? fmtNum(disp.value) : (r.result.rawValue || '—');
+                const valUnit = disp.value != null && displayUnit && (
+                  <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {displayUnit}</span>
+                );
+                const rangeUnit = hasNumericRange && displayUnit && (
+                  <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {displayUnit}</span>
+                );
+                const hasRef = hasReference(r.result);
+                const outOfRange = isOutOfRange(r.result);
 
                 return (
                   <tr
@@ -505,9 +555,26 @@ export function TrendsView({
                     }}
                   >
                     <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 500 }}>{r.date}</td>
-                    <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 600 }}>{valStr}</td>
-                    <td style={{ padding: '12px 16px', color: COLOR.text }}>{rangeStr}</td>
+                    <td style={{ padding: '12px 16px', color: COLOR.text }}>{r.result.rawName}</td>
+                    <td style={{ padding: '12px 16px', color: COLOR.navy, fontWeight: 600 }}>
+                      {hasRef ? (
+                        <StatusValue tone={outOfRange ? 'bad' : 'ok'} bg={cellBg(hasRef, outOfRange, false)}>
+                          {valStr}
+                          {valUnit}
+                        </StatusValue>
+                      ) : (
+                        <>
+                          {valStr}
+                          {valUnit}
+                        </>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: COLOR.text }}>
+                      {rangeStr}
+                      {rangeUnit}
+                    </td>
                     <td style={{ padding: '12px 16px', color: COLOR.text }}>{r.place || '—'}</td>
+                    <td style={{ padding: '12px 16px', color: COLOR.text }}>{r.result.method || '—'}</td>
                   </tr>
                 );
               })

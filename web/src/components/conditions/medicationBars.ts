@@ -66,3 +66,17 @@ export function buildMedicationBars(rows: MedicationRow[], colorOf: (index: numb
     .filter((row) => row.brand.trim() !== '' && row.months.length > 0)
     .flatMap((row) => rowBars(row, colorOf(colorIndex++)));
 }
+
+/** Bars sharing a brand name, in first-seen order -- one badge per group in the Trends medications row. */
+export function groupMedicationBarsByBrand(bars: MedicationBar[]): { brand: string; bars: MedicationBar[] }[] {
+  const order: string[] = [];
+  const byBrand = new Map<string, MedicationBar[]>();
+  for (const bar of bars) {
+    if (!byBrand.has(bar.brand)) {
+      byBrand.set(bar.brand, []);
+      order.push(bar.brand);
+    }
+    byBrand.get(bar.brand)!.push(bar);
+  }
+  return order.map((brand) => ({ brand, bars: byBrand.get(brand)! }));
+}
