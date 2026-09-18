@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { ChevronDown, RotateCcw } from 'lucide-react';
 import { pressable } from '../primitives/styles';
 import { COLOR, RADIUS } from '../../styles/tokens';
 
@@ -46,6 +46,18 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
 
+  // Scrollability indicators for edge shading
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScrollability = useCallback(() => {
+    const el = timelineScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 2);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 2);
+  }, []);
+
   // Close on Escape or click outside
   useEffect(() => {
     if (!isOpen) return;
@@ -64,6 +76,31 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
       window.removeEventListener('pointerdown', onPointerDown);
     };
   }, [isOpen]);
+
+  // Smooth mousewheel & scroll listener
+  useEffect(() => {
+    if (!isOpen) return;
+    const el = timelineScrollRef.current;
+    if (!el) return;
+
+    checkScrollability();
+    el.addEventListener('scroll', checkScrollability, { passive: true });
+    window.addEventListener('resize', checkScrollability);
+
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) {
+        e.preventDefault();
+        el.scrollBy({ left: e.deltaY, behavior: 'smooth' });
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+
+    return () => {
+      el.removeEventListener('scroll', checkScrollability);
+      el.removeEventListener('wheel', onWheel);
+      window.removeEventListener('resize', checkScrollability);
+    };
+  }, [isOpen, checkScrollability]);
 
   const handleYearClick = (year: number) => {
     // Move nearest handle; handles never cross
@@ -88,18 +125,6 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
   const handleReset = () => {
     setStartYear(minAvailableYear);
     setEndYear(maxAvailableYear);
-  };
-
-  const scrollEarlier = () => {
-    if (timelineScrollRef.current) {
-      timelineScrollRef.current.scrollBy({ left: -140, behavior: 'smooth' });
-    }
-  };
-
-  const scrollLater = () => {
-    if (timelineScrollRef.current) {
-      timelineScrollRef.current.scrollBy({ left: 140, behavior: 'smooth' });
-    }
   };
 
   const isNarrowed = startYear > minAvailableYear || endYear < maxAvailableYear;
@@ -187,37 +212,16 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
             </span>
           </div>
 
-          {/* Timeline Row with Scroll Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
-            <button
-              type="button"
-              aria-label="Scroll earlier"
-              onClick={scrollEarlier}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 28,
-                height: 28,
-                background: 'none',
-                border: 'none',
-                color: COLOR.textMuted,
-                cursor: 'pointer',
-                borderRadius: '50%',
-                flexShrink: 0,
-              }}
-            >
-              <ChevronLeft size={18} strokeWidth={2.2} />
-            </button>
-
-            {/* Horizontally scrollable timeline container */}
+          {/* Horizontally scrollable timeline with edge shading */}
+          <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
             <div
               ref={timelineScrollRef}
               style={{
-                flex: 1,
                 overflowX: 'auto',
                 scrollbarWidth: 'none',
-                padding: '24px 8px 12px',
+                scrollBehavior: 'smooth',
+                WebkitOverflowScrolling: 'touch',
+                padding: '24px 12px 12px',
                 position: 'relative',
               }}
             >
@@ -368,26 +372,37 @@ export function PanelRangePicker({ yearCounts }: Readonly<PanelRangePickerProps>
               </div>
             </div>
 
-            <button
-              type="button"
-              aria-label="Scroll later"
-              onClick={scrollLater}
+            {/* Left Edge Gradient Shading */}
+            <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 28,
-                height: 28,
-                background: 'none',
-                border: 'none',
-                color: COLOR.textMuted,
-                cursor: 'pointer',
-                borderRadius: '50%',
-                flexShrink: 0,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: 36,
+                background: 'linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0))',
+                pointerEvents: 'none',
+                opacity: canScrollLeft ? 1 : 0,
+                transition: 'opacity 0.2s ease',
+                zIndex: 10,
               }}
-            >
-              <ChevronRight size={18} strokeWidth={2.2} />
-            </button>
+            />
+
+            {/* Right Edge Gradient Shading */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: 36,
+                background: 'linear-gradient(to left, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0))',
+                pointerEvents: 'none',
+                opacity: canScrollRight ? 1 : 0,
+                transition: 'opacity 0.2s ease',
+                zIndex: 10,
+              }}
+            />
           </div>
 
           {/* Reset Action */}
