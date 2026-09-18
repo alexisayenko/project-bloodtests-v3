@@ -36,8 +36,10 @@ owns identity / spirit; the style guide operationalizes it.
   See "Names considered" below for the process that led here, kept for
   the record.
 - **Visual direction**: flat, geometric, calm. Clinical without being
-  cold — no red, no droplets, nothing that reads as a laboratory or a
-  diagnosis.
+  cold — no red in the brand palette (the app's soft status red,
+  `--status-bad` in the [style guide](../ui-ux/style-guide.md), marks
+  out-of-range values only), no droplets, nothing that reads as a
+  laboratory or a diagnosis.
   - **Palette**: fixed by the SVG redraw of the mark — deep navy
     `#062A4F` (dominant), teals `#3EB0B0` / `#2A9EA4`, mid blue-teals
     `#1F8D9A` / `#0D768F`. The landing concept adds near-white grounds

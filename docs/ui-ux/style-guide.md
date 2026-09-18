@@ -161,10 +161,10 @@ band), `FIELD_INPUT` (an inline text or select field), `OVERLINE`,
 
 - **Top-level sections** (`NAV_ITEMS` in `routing.ts`, in this order:
   Get Started, Diagnostic Reports, All Observations, Monitoring Panels,
-  Hormonal Pathways, Scheduled Visits, Medications, Reference Book,
-  Account) are on every page, each its own URL hash (`#profile`,
-  `#reports`, `#all`, `#panels`, `#pathways`, `#plan`, `#medications`,
-  `#reference`, `#account`) so
+  Hormonal Pathways, Lipid Transport, Scheduled Visits, Medications,
+  Reference Book, Account) are on every page, each its own URL hash
+  (`#profile`, `#reports`, `#all`, `#panels`, `#pathways`, `#lipids`,
+  `#plan`, `#medications`, `#reference`, `#account`) so
   browser back/forward always works. All Observations' non-default
   tabs are part of the hash too (`#all/trends`, `#all/in-range`).
 - **Shell, by width.** From 768px up: a white top bar (mark and
@@ -175,7 +175,7 @@ band), `FIELD_INPUT` (an inline text or select field), `OVERLINE`,
   the page and the footer are offset by its width (232px, 200px below
   1024px), items are padded 8px × 12px, and the three-line tagline,
   vertically centered in the free space above Account, hides below a
-  760px viewport height so all nine items still fit. A « / » toggle
+  760px viewport height so all ten items still fit. A « / » toggle
   under Account collapses the sidebar to a 64px rail of 36px icon
   buttons — labels and tagline hidden, each section named by its
   tooltip — with width and page offset easing over 150ms; the choice is

@@ -3,14 +3,17 @@
 The prompt below was written on 2026-09-08 to get domain-name candidates
 from an external model, and then reused unchanged to generate the visual
 concepts. It is kept verbatim because it is the only place the product's
-positioning has been written down in full — `CLAUDE.md`'s Product section
-is still a placeholder — and because reusing the same brief is what kept
+positioning had been written down in full — `CLAUDE.md`'s Product section
+was still a placeholder then — and because reusing the same brief is what kept
 the name and the artwork pointing the same way.
 
 What came out of it: the working name **Paneloom**, the four lockups in
 this folder, and [`landing-concept.png`](landing-concept.png).
 
-Two things to know before reusing it. The candidate list it cites is a
+Three things to know before reusing it. "No backend, no accounts" was true
+when it was written; since [ADR-0019](../tech/decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)
+an opt-in sign-in syncs a copy to a self-hosted Supabase account, while no
+login still keeps everything local. The candidate list it cites is a
 snapshot — see "Names considered" in [`README.md`](README.md) for the
 current one, including registration status. And it deliberately tells the
 model *not* to check availability, because a model cannot; that stayed the

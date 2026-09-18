@@ -38,8 +38,7 @@
 > build departs from what follows (zones, not bands, their captions turned 90°
 > counter-clockwise in a left gutter; the E2 feedback drawn solid into the
 > brain as a whole rather than dashed to Kp and LH; badges in one column;
-> association lines hidden at rest; cells and receptors drawn; a date stepper
-> rather than a month stepper; a default albumin; a merged Free Testosterone
+> association lines hidden at rest; a default albumin; a merged Free Testosterone
 > badge and a pools donut, an expanded badge overlaying rather than pushing down its neighbors, and the
 > enzyme and receptor icons drawn as shared, transparent PNG artwork —
 > `enzyme-icon.png`, `receptor-icon.png` — rather than hand-drawn per-role
@@ -67,11 +66,12 @@
 > Lp(a) are drawn unconnected to that chain, none of them being one of its
 > transformation stages. A badge column rings each particle's own
 > Chol/TRIG/apo icon directly on hover, focus or open, rather than a chip row
-> under it. The particle glyphs are no longer either generated artwork or
-> geometry computed from `lipoprotein-particles.json` — every one is now a
-> hand-drawn `customIcons.tsx` glyph like the rest of the app's icons, so
-> [ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)
-> now bears only on the liver image. Only the liver → VLDL arrow, plus a
+> under it. The particle glyphs are no longer geometry computed from
+> `lipoprotein-particles.json`: cholesterol is a hand-drawn `customIcons.tsx`
+> glyph, while TRIG (`triglyceride.png`) and the fatty-acid markers
+> (`fatty-acid.png`) are ChatGPT-generated raster artwork, every bubble at one
+> fixed size so a stack's circle count, never the icon, encodes quantity
+> ([ADR-0022](../../tech/decisions/adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md)). Only the liver → VLDL arrow, plus a
 > second, enzyme → synthesized-cholesterol arrow, of its flows are drawn.
 > **Both pages share one engine**, `pathwayShared.ts` and `PathwayParts.tsx` — reference and source
 > blocks, date stepper, one-open-at-a-time dismissal, the DOM-measured overlay
@@ -81,21 +81,21 @@
 > ([ADR-0021](../../tech/decisions/adr-0021-pathway-pages-share-one-overlay-engine.md)).
 > The rest of this page describes the gonadal axis.
 
-One axis drawn as its wiring — a hormonal axis, or a transport pathway such as lipid transport — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected month placed on it.
+One axis drawn as its wiring — a hormonal axis, or a transport pathway such as lipid transport — organ bands, signals, carriers and enzymes joined by pathway arrows — with the user's own values for a selected date placed on it.
 
 A [monitoring panel](monitoring-panel.md) lists markers; a pathway shows how they act on each other, so a reading is seen at the point in the axis where it happens.
 
 ## Scope for now
 
 - **Men only, gonadal axis first.** The women's axis comes later, and with it FAI.
-- **Month stepper** — one month at a time, stepping through the months the data has.
-- **"Measured only | Full pathway"** — a toggle between the parts with a reading that month and the whole wiring, unmeasured parts grey.
+- **Date stepper** — one draw date at a time, stepping through the panel's results-table dates.
+- **"Measured only | Full pathway"** — a toggle between the parts with a reading on that date and the whole wiring, unmeasured parts grey.
 
 ## Node kinds
 
 A node kind describes a **role in the axis, not chemistry**. T and LH are both signals although one is a steroid and one a glycoprotein; the chemical class appears only in hover text. A molecule can play several roles — T is a signal and the substrate of two conversions — and the line carries the relation, never a second kind.
 
-Drawn: bands, signals, carriers, enzymes, badges and lines. **Not drawn**: cells, tissues and regions, and receptors — no node or shape for any of them. Cells and tissues have a role icon, never a diagram node; receptors have none.
+Drawn: bands, signals, carriers, enzymes, cells (Sertoli, Leydig), receptors (androgen, estrogen), badges and lines. **Not drawn**: tissues and regions — no node or shape for them, only a band.
 
 ### Band
 
@@ -153,7 +153,7 @@ Two families, visually distinct:
 - **Association** — no arrowhead, no thickness, hidden until its badge is hovered, focused or open. Part of (a measure badge to the pools it sums), ratio link (a ratio badge to the enzyme or cell label it reads), docking (T on its carrier). A node sits in its band by containment, not by a line.
 - **Pathway arrows** — signaling (signal → signal), conversion (T → enzyme → product), feedback and crosstalk (dashed), and exchange (⇄, free T ↔ docked T, unmarked).
 
-A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B** means "B rises when the source rises", **↓B** "B falls when the source rises" — B being the arrow's target signal, a conversion's product (↑DHT) included. Its **thickness** has three steps, set by where the **source** value sits in its reference range; it is grey when the source was not measured that month.
+A pathway arrow is **uncolored**. Its effect is marked on the target end: **↑B** means "B rises when the source rises", **↓B** "B falls when the source rises" — B being the arrow's target signal, a conversion's product (↑DHT) included. Its **thickness** has three steps, set by where the **source** value sits in its reference range; it is grey when the source was not measured on that date.
 
 ## Icons
 
