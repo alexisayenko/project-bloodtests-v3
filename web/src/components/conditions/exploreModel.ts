@@ -160,12 +160,20 @@ function buildTestMarker(
 
   const data: [string, number, string?][] = [];
   const omitted: string[] = [];
+  const refBands: Record<string, { refMin: number; refMax: number }> = {};
   for (const [date, e] of byDate) {
     const placed = placeOnBandScale(e.result.value!, e.result.unit, unit, e.loinc, unitMarker);
     if (placed === undefined) omitted.push((e.result.unit ?? '').trim());
     else {
       const lab = namedLab(e.place);
       data.push(lab ? [date, placed, lab] : [date, placed]);
+      if (e.result.refMax != null) {
+        const rMin = e.result.refMin != null ? convert(e.result.refMin, e.result.unit) : 0;
+        const rMax = convert(e.result.refMax, e.result.unit);
+        if (rMax > rMin) {
+          refBands[date] = { refMin: rMin, refMax: rMax };
+        }
+      }
     }
   }
   data.sort((a, b) => a[0].localeCompare(b[0]));
@@ -178,6 +186,7 @@ function buildTestMarker(
     panel,
     data,
     warn: false,
+    ...(Object.keys(refBands).length > 0 ? { refBands } : {}),
     ...(override
       ? {
           goodAbove: convert(override.refMax, refFromUnit),

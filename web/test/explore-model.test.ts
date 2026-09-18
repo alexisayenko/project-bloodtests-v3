@@ -40,6 +40,23 @@ describe('buildExploreModel — plottable two-sided-range markers', () => {
         ['2024-06-01', 12, 'Lab'],
       ],
       warn: false,
+      refBands: {
+        '2024-01-01': { refMin: 5, refMax: 15 },
+        '2024-06-01': { refMin: 5, refMax: 15 },
+      },
+    });
+  });
+
+  it('records differing lab reference ranges by date for point-specific normalization', () => {
+    const test = obs('E2', 'Estradiol', 'pg/mL');
+    const allResults = [
+      entry('E2', '2025-05-01', 48.8, { unit: 'pg/mL', refMin: 28, refMax: 156 }),
+      entry('E2', '2026-08-19', 41.6, { unit: 'pg/mL', refMin: 10, refMax: 40 }),
+    ];
+    const model = buildExploreModel([{ name: 'PanelA', tests: [test] }], allResults, 'si', 'PanelA');
+    expect(model.markers['E2']?.refBands).toEqual({
+      '2025-05-01': { refMin: 28, refMax: 156 },
+      '2026-08-19': { refMin: 10, refMax: 40 },
     });
   });
 

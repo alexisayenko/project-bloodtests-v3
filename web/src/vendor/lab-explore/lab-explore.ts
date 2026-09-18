@@ -105,6 +105,8 @@ export class LabExplore extends HTMLElement {
   #used: UsedMarker[] = [];
   #abs: (number | null)[][] = [];
   #labs: (string | undefined)[][] = [];
+  #refMins: (number | null)[][] = [];
+  #refMaxs: (number | null)[][] = [];
   #data: (number | null)[][] = [];
   #x: number[] = [];
   #gdates: string[] = [];
@@ -556,6 +558,8 @@ export class LabExplore extends HTMLElement {
       .map((k) => ({ key: k, ...m.markers[k]! }));
     this.#abs = [];
     this.#labs = [];
+    this.#refMins = [];
+    this.#refMaxs = [];
     this.#data = [this.#x];
     for (const mk of this.#used) {
       const map: Record<string, number> = {};
@@ -565,12 +569,22 @@ export class LabExplore extends HTMLElement {
         if (p[2]) labMap[p[0]] = p[2];
       }
       const abs = this.#gdates.map((d) => (d in map ? map[d]! : null));
-      const rng = mk.refMax - mk.refMin;
+      const refMins = this.#gdates.map((d) => (d in map ? (mk.refBands?.[d]?.refMin ?? mk.refMin) : null));
+      const refMaxs = this.#gdates.map((d) => (d in map ? (mk.refBands?.[d]?.refMax ?? mk.refMax) : null));
       this.#abs.push(abs);
       this.#labs.push(this.#gdates.map((d) => labMap[d]));
+      this.#refMins.push(refMins);
+      this.#refMaxs.push(refMaxs);
       this.#data.push(
         normalized
-          ? abs.map((v) => (v == null ? null : Math.round(((v - mk.refMin) / rng) * 1000) / 10))
+          ? this.#gdates.map((_, di) => {
+              const v = abs[di];
+              if (v == null) return null;
+              const rMin = refMins[di] ?? mk.refMin;
+              const rMax = refMaxs[di] ?? mk.refMax;
+              const rng = rMax - rMin;
+              return rng > 0 ? Math.round(((v - rMin) / rng) * 1000) / 10 : 50;
+            })
           : abs,
       );
     }
@@ -610,12 +624,50 @@ export class LabExplore extends HTMLElement {
     const drawBand = (uu: uPlot) => {
       const ctx = uu.ctx,
         bb = uu.bbox;
-      const y0 = uu.valToPos(0, "pct", true);
-      const y100 = uu.valToPos(100, "pct", true);
-      ctx.save();
-      ctx.fillStyle = bandCol;
-      ctx.fillRect(bb.left, Math.min(y0, y100), bb.width, Math.abs(y100 - y0));
-      ctx.restore();
+      if (normalized) {
+        const y0 = uu.valToPos(0, "pct", true);
+        const y100 = uu.valToPos(100, "pct", true);
+        ctx.save();
+        ctx.fillStyle = bandCol;
+        ctx.fillRect(bb.left, Math.min(y0, y100), bb.width, Math.abs(y100 - y0));
+        ctx.restore();
+      } else if (this.#used.length === 1) {
+        // In absolute mode with 1 marker, shade the lab-specific reference band following each report's ref limits
+        const rMins = this.#refMins[0] || [];
+        const rMaxs = this.#refMaxs[0] || [];
+        const validIdxs: number[] = [];
+        for (let i = 0; i < this.#x.length; i++) {
+          if (this.#abs[0]?.[i] != null && rMins[i] != null && rMaxs[i] != null) {
+            validIdxs.push(i);
+          }
+        }
+        if (validIdxs.length > 0) {
+          ctx.save();
+          ctx.beginPath();
+          for (let i = 0; i < validIdxs.length; i++) {
+            const vi = validIdxs[i]!;
+            const px = uu.valToPos(this.#x[vi]!, "x", true);
+            const py = uu.valToPos(rMaxs[vi]!, "pct", true);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          for (let i = validIdxs.length - 1; i >= 0; i--) {
+            const vi = validIdxs[i]!;
+            const px = uu.valToPos(this.#x[vi]!, "x", true);
+            const py = uu.valToPos(rMins[vi]!, "pct", true);
+            ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fillStyle = bandCol;
+          ctx.fill();
+
+          ctx.strokeStyle = th.dark ? "rgba(46,204,113,0.35)" : "rgba(30,132,73,0.3)";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 3]);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
     };
 
     // band drawing lives in chart-kit; the component only supplies the event
@@ -634,6 +686,8 @@ export class LabExplore extends HTMLElement {
         if (a == null) return;
         const norm = this.#data[i + 1]![idx];
         const lab = this.#labs[i]?.[idx];
+        const rMin = this.#refMins[i]?.[idx] ?? mk.refMin;
+        const rMax = this.#refMaxs[i]?.[idx] ?? mk.refMax;
         const note =
           mk.goodAbove != null && a >= mk.goodAbove
             ? ` <span class="u-tip-ok">✓ ${esc(mk.goodNote || "optimal")}</span>`
@@ -643,13 +697,14 @@ export class LabExplore extends HTMLElement {
         // its ⚠, right against the figure it is casting doubt on.
         const w = mk.warn ? `<span class="u-tip-warn" title="⚠">⚠</span> ` : "";
         const labNote = lab ? ` <span class="muted">· ${esc(lab)}</span>` : "";
+        const refNote = rMax > rMin ? ` <span class="muted">(ref: ${fmtVal(rMin)}–${fmtVal(rMax)}${mk.unit ? " " + esc(mk.unit) : ""})</span>` : "";
         const pctNote = normalized
           ? ` <span class="muted">(${esc(norm)}%${mk.warn ? " ⚠" : ""})</span>`
           : "";
         rows +=
           `<div class="u-tip-row"><span class="u-tip-dot" style="background:${this.#colorFor(mk.key)}"></span>` +
           `${w}${esc(mk.label)}: <b>${fmtVal(a)}${mk.unit ? " " + esc(mk.unit) : ""}</b>` +
-          `${pctNote}${note}${labNote}</div>`;
+          `${pctNote}${refNote}${note}${labNote}</div>`;
       });
       return rows;
     };
@@ -695,11 +750,7 @@ export class LabExplore extends HTMLElement {
         legend: { show: false },
         cursor: { drag: { x: false, y: false } },
         hooks: {
-          // drawBand shades the 0-100% reference band -- only meaningful on the
-          // normalized "pct" scale; absolute mode plots raw, differently-scaled
-          // values on that same axis key, so the band would shade a range with
-          // no shared meaning.
-          drawClear: normalized ? [drawBand, drawEvents] : [drawEvents],
+          drawClear: [drawBand, drawEvents],
           setCursor: [(self: uPlot) => this.#showTip?.(self)],
         },
       },

@@ -48,6 +48,8 @@ export interface ExploreMarker {
    * its line, flags its tooltip row, and names it in a footnote under the chart.
    */
   warn?: boolean;
+  /** Optional point-specific reference ranges by date: "YYYY-MM-DD" -> { refMin, refMax } */
+  refBands?: Record<string, { refMin: number; refMax: number }>;
 }
 
 /**
