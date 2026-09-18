@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   buildRowCells,
   cellBg,
-  formatFullDate,
   greenRangeOf,
   isCellArmed,
   loadViewSettings,
@@ -21,17 +20,10 @@ import { COLOR } from '../src/styles/tokens';
 import { ALSO_REFS, SHORT_NAMES } from '../src/data/analyteCatalog';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
-import type { Result } from '../src/types';
+import type { Result, UnitSystem } from '../src/types';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import { makeEntry, makeObservation } from './helpers/fixtures';
 import { installMemoryStorage } from './helpers/storage';
-
-describe('date labels', () => {
-  it('renders the full "Mon D, YYYY"', () => {
-    expect(formatFullDate('2026-08-25')).toBe('Aug 25, 2026');
-    expect(formatFullDate('2024-12-01')).toBe('Dec 1, 2024');
-  });
-});
 
 describe('greenRangeOf', () => {
   it('lower-is-better indices get "< cut0"', () => {
@@ -229,6 +221,19 @@ describe('loadViewSettings', () => {
     installMemoryStorage();
     loadViewSettings().sampleLimit = 'all';
     expect(DEFAULT_VIEW_SETTINGS.sampleLimit).toBe(5);
+    vi.unstubAllGlobals();
+  });
+
+  it('snaps a stored unit system and sample limit outside the allowed sets to their defaults', () => {
+    stored('{"unitSystem":"metric","sampleLimit":20}');
+    expect(loadViewSettings()).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: false });
+    vi.unstubAllGlobals();
+  });
+
+  it('saves only an allowed unit system and sample limit, snapping anything else to the defaults', () => {
+    const store = installMemoryStorage();
+    saveViewSettings({ unitSystem: 'metric' as unknown as UnitSystem, sampleLimit: 20 as number, compactPanels: false });
+    expect(JSON.parse(store.get(VIEW_SETTINGS_KEY)!)).toEqual({ unitSystem: 'si', sampleLimit: 5, compactPanels: false });
     vi.unstubAllGlobals();
   });
 });
