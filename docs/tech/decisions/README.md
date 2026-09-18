@@ -38,6 +38,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0020](adr-0020-constants-from-cited-data-calculators-are-cross-checks.md) | Physical constants come from cited reference data; external calculators are cross-checks, not gold standards | accepted · 2026-09-16 |
 | [ADR-0021](adr-0021-pathway-pages-share-one-overlay-engine.md) | Pathway pages share one overlay and association engine | accepted · 2026-09-16 |
 | [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
+| [ADR-0023](adr-0023-product-purpose-and-clinical-boundary.md) | Product purpose, audience, and clinical boundary | accepted · 2026-09-18 |
 
 ## Where each one bites
 
@@ -131,6 +132,14 @@ Each record opens with `# ADR-NNNN: <title>` and a
   `web/src/components/conditions/scheduled.ts` and rendered as one
   Scheduled column per visit in the results tables and one stacked section
   per visit on `#plan` (`PlanVisitView.tsx`).
+- **Product purpose and clinical boundary** — 0023: the three pillars
+  (reduce complexity, show the whole picture, build understanding), the
+  audience definition, the learning approach, and the clinical boundary
+  ("understanding, not diagnosis") that shapes feature scope and wording
+  throughout. Documented in
+  [`../../product/README.md`](../../product/README.md) (core idea +
+  constraints) and [`../../business/README.md`](../../business/README.md)
+  (audience, scope, non-goals).
 
 ## Adding one
 

@@ -1,10 +1,29 @@
 # Product
 
-[TODO: one paragraph — the product's core idea, the mechanic, the
-value to the user. State the load-bearing tension in plain terms.]
+Paneloom helps people make sense of their bloodwork as a connected
+picture over time, so they can participate more confidently in
+conversations with their doctor. Three pillars shape every feature:
+**reduce complexity** — make results, units, reference ranges, and
+terminology easier to navigate, and flag possible inconsistencies for
+review; **show the whole picture** — connect related measurements and
+show how they change over time, keeping gaps and uncertainty visible
+(by "holistic view" we mean helping you understand how your blood test
+results relate to each other and change over time, while recognizing
+that they are only one part of your overall health picture); and
+**build understanding** — explain what measurements represent and how
+they relate, helping people research, prepare questions, and understand
+the context of their doctor's recommendations. Users don't need to
+arrive with medical knowledge, but understanding their results involves
+learning — Paneloom makes that learning approachable and connects it
+to their own data. The Reference Book and pathway diagrams are central
+to this purpose: they explain what a marker represents and how related
+processes work, enough to build a solid understanding without
+requiring a deep dive into molecular biology or biochemistry.
 
-[TODO: one line — purpose. What this product enables that wasn't
-possible (or wasn't easy) before.]
+**Purpose:** enable anyone who receives bloodwork to understand more
+than whether each number falls inside a reference range — to see the
+connections, the trends, and the context that makes a conversation
+with a specialist productive.
 
 For the wider docs/ map and what-lives-where, see
 [`../README.md`](../README.md).
@@ -73,7 +92,12 @@ technically could. Externally-imposed obligations (licensing,
 compliance, attribution) live in
 [`../business/compliance.md`](../business/compliance.md), not here.
 
-- **[TODO: load-bearing constraint — e.g. "free X, paid Y", "no
-  live data", "single-user only" — the tension that shapes
-  feature scope]**
-- **[TODO: secondary constraint, or remove this bullet if none]**
+- **Understanding, not diagnosis.** Paneloom supports understanding
+  and preparation; clinical interpretation and decisions about what
+  to do next belong with a qualified specialist. This shapes
+  features (no risk scores, no treatment suggestions) and wording
+  (always "consult a specialist" — we are not doctors).
+- **Your data stays yours.** Results live in the browser. Nothing
+  leaves the device except through a deliberately generated share
+  link and an explicit, values-free LOINC name lookup (NLM). No
+  backend accounts are required for the core experience.
