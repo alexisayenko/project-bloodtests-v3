@@ -28,17 +28,15 @@ import { getPanelMeta } from './panelMeta';
 
 import { PanelRangePicker } from './PanelRangePicker';
 
-// Lazy: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit, "Charts" the 3D canvas engine.
+// Lazy: "What's in range" pulls uPlot plus the vendored lab-explore/chart-kit.
 const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
-const PanelChartsView = lazy(() => import('../analytics/PanelChartsView').then((m) => ({ default: m.PanelChartsView })));
 
-type DetailTab = 'analysis' | 'trends' | 'in-range' | 'charts';
+type DetailTab = 'analysis' | 'trends' | 'in-range';
 
 const DETAIL_TABS: readonly { id: DetailTab; label: string }[] = [
   { id: 'analysis', label: 'Results' },
   { id: 'trends', label: 'Trends' },
   { id: 'in-range', label: "What's in range" },
-  { id: 'charts', label: 'Charts' },
 ];
 
 // The min-height reserves roughly a chart's worth of room so the tab doesn't jump on load.
@@ -175,11 +173,6 @@ export function PanelDetailView({
             resultsByDate={resultsByDate}
             medications={medications}
           />
-        </Suspense>
-      )}
-      {detailTab === 'charts' && (
-        <Suspense fallback={chartFallback}>
-          <PanelChartsView tests={tests} allResults={allResults} />
         </Suspense>
       )}
     </>
