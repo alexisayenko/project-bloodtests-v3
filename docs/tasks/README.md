@@ -32,7 +32,7 @@ the index.
 | [task-0012](task-0012.md) | Implement the Martin-Hopkins LDL-C estimate | done |
 | [task-0013](task-0013.md) | Reorganize the results controls area | done |
 | [task-0014](task-0014.md) | Rename the Analysis tab to Results and add a Trends tab | done |
-| [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | to do |
+| [task-0015](task-0015.md) | Make the results tables usable on a narrow screen | in progress |
 | [task-0016](task-0016.md) | Implement FIB-4 for fibrosis-risk staging | to do |
 | [task-0017](task-0017.md) | Audit the computed-index unit fallback for unchecked values | to do |
 | [task-0018](task-0018.md) | Add a Medications history section for tracking what was taken and at what dosage | done |
@@ -77,7 +77,7 @@ the index.
 | [task-0057](task-0057.md) | Reconcile the Hormonal Pathways estradiol feedback arrow with the spec | to do |
 | [task-0058](task-0058.md) | Strengthen the sourcing of the receptor effects in the Hormonal Pathways Effects cards | to do |
 | [task-0059](task-0059.md) | Draw the testosterone and inhibin B feedback arrows on Hormonal Pathways | to do |
-| [task-0060](task-0060.md) | Add a Lipid transport pathway diagram | in progress |
+| [task-0060](task-0060.md) | Add a Lipid transport pathway diagram | done |
 | [task-0061](task-0061.md) | Add Scores -- simplified summary for users who don't want to dig into details | to do |
 | [task-0062](task-0062.md) | Add cholesterol/triglyceride molecule icons and a holder-plus-cargo diagram to Lipid Transport | done |
 

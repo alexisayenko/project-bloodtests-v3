@@ -4,7 +4,7 @@ LOINC-coded blood-test monitoring app. Three-step workflow: generate lab-results
 
 ## Overview
 
-React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker to `paneloom.com`, its production URL (`blood.isayenko.net` is retired and 301-redirects there). All data stays local — nothing leaves your device except through optional share links and the explicit-opt-in "Check online (NLM)" LOINC lookup, which sends test names (never values) to clinicaltables.nlm.nih.gov.
+React 19 + TypeScript + Vite app in `web/`, with no server of its own. Static JSON reference data (`web/public/data/`), uploaded results parsed client-side and kept in `localStorage`. Deploys as a Cloudflare Worker to `paneloom.com`, its production URL (`blood.isayenko.net` is retired and 301-redirects there). Data stays local by default — it leaves your device only through optional share links, the explicit-opt-in "Check online (NLM)" LOINC lookup (test names, never values, to clinicaltables.nlm.nih.gov), and opt-in cloud sync to a self-hosted Supabase instance when you sign in.
 
 **Workflow:**
 
@@ -12,7 +12,7 @@ React 19 + TypeScript + Vite app in `web/`, no backend. Static JSON reference da
 2. **Upload & Edit:** Import into app; validate; refine in Diagnostic Reports view.
 3. **Export:** Download updated v3 envelope with new `contentHash`.
 
-See [`CLAUDE.md`](CLAUDE.md) for fast-path summary, [`docs/tech/README.md#upload--edit-workflow`](docs/tech/README.md#upload--edit-workflow) for implementation details.
+See [`CLAUDE.md`](CLAUDE.md) for the fast-path summary, [`docs/tech/diagnostic-reports.md`](docs/tech/diagnostic-reports.md) for the workflow's implementation, and [`docs/tech/README.md`](docs/tech/README.md) for the other subsystem pages.
 
 ## Structure
 
@@ -79,32 +79,21 @@ Some root files are created on demand, not scaffolded:
 
 ### Archive
 
-Single root `archive/` folder for obsolete code and docs. A
-`docs/` subfolder inside holds obsolete documentation.
+Single root `archive/` folder for obsolete code. A folder belongs in
+`archive/` when it **no longer ships**; before archiving code, extract any
+worthwhile lessons or decisions into an ADR or task — code in archive rots;
+docs survive.
 
-```text
-archive/
-├── docs/                       # obsolete project-level docs
-│   └── <old-doc>.md
-└── <old-folder>/               # obsolete code (e.g. v1 prototype)
-```
-
-A folder belongs in `archive/` when it **no longer ships**.
-Before archiving code, extract any worthwhile lessons or
-decisions into `archive/docs/` — code in archive rots; docs
-survive.
-
-`archive/` doesn't exist by default. Create on first retirement.
-Here it holds `archive/src/components/` — the pre-nav upload / panels /
+It holds `archive/src/components/` — the pre-nav upload / panels /
 results flow — outside `web/`, so it is outside the build, lint and
-coverage; there is no `archive/docs/` yet.
+coverage by construction.
 
 ## Key implementation details
 
 - **Upload:** v3 envelope JSON (major version 3 only — `schema` is the `"major.minor"` string, currently `"3.1"`, and any `"3.x"` is accepted, plus the legacy bare number `3` read as 3.0; see [ADR-0012](docs/tech/decisions/adr-0012-envelope-version-is-a-major-minor-string.md)) with a DiagnosticReport array, each observation's printed test name in `rawName`. Nothing else is accepted — `schema: 1`, v2 canonical-draws and two legacy array shapes were dropped in [ADR-0009](docs/tech/decisions/adr-0009-v3-only-and-rawname.md); older files are converted once with `npm run convert:v3`. Parser in `web/src/data/parseUpload.ts`.
 - **Export:** v3 envelope with `generatedAt`, `contentHash` for change detection, and optional subject/sex/birthYear/notes metadata; some fields aren't written yet — see [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md) for exactly what's implemented.
 - **Schema:** the envelope's machine-readable form is published at [`blood.isayenko.net/schema/bloodtests-3.schema.json`](https://blood.isayenko.net/schema/bloodtests-3.schema.json) (JSON Schema draft 2020-12, source `web/public/schema/`). It describes major version 3 only — every minor within it — and so does the upload parser.
-- **Validation:** Two tiers — errors (missing name or value, or a non-LOINC-shaped code) disable Monitoring Panels, Hormonal Pathways and All Observations (redirecting to Diagnostic Reports) until fixed; warnings (empty LOINC, missing unit or reference range, a unit whose dimension contradicts the code, a unit that maps to no UCUM code) are informational. See [`docs/tech/README.md#upload--edit-workflow`](docs/tech/README.md#upload--edit-workflow).
+- **Validation:** Two tiers — errors (missing name or value, or a non-LOINC-shaped code) disable Monitoring Panels, Hormonal Pathways, Lipid Transport and All Observations (redirecting to Diagnostic Reports) until fixed; warnings (empty LOINC, missing unit or reference range, a unit whose dimension contradicts the code, a unit that maps to no UCUM code) are informational. See [`docs/tech/diagnostic-reports.md`](docs/tech/diagnostic-reports.md).
 - **LOINC:** All matching/joins use LOINC only; names are provenance. A missing code is a warning (the observation just won't appear in panels), fixable by inline edit in the Diagnostic Report detail view; a "Cross-check LOINCs" pass verifies codes against the local catalog, suggests codes for codeless rows, and can optionally query the NLM online for the rest.
 - **Terminology:** Names borrowed from FHIR (DiagnosticReport, Observation) for alignment but data model is simplified; see [ADR-0002](docs/tech/decisions/adr-0002-borrow-fhir-shapes-not-fhir.md) and [ADR-0008](docs/tech/decisions/adr-0008-fhir-shaped-envelope-not-fhir.md).
 - **Decisions:** every architectural call is an ADR — the index is [`docs/tech/decisions/README.md`](docs/tech/decisions/README.md).
@@ -123,8 +112,6 @@ See [`docs/README.md`](docs/README.md) for:
 - Entry-doc convention (`<section>/README.md` pattern)
 - The `docs/` subtree map and what lives where
 - The `Section, file, folder` rule (start small, extract on growth)
-- Per-folder `<folder>/docs/` policy
-- Multi-product split (rare)
 
 ## Design rationale
 
