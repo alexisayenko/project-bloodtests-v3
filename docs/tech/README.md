@@ -70,7 +70,8 @@ Sections and views:
   through the Worker, Database details, backup and restore, Clear all data
   ([ADR-0018](decisions/adr-0018-firebase-storage-provisional.md),
   [ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md),
-  [ADR-0026](decisions/adr-0026-github-backed-cloud-storage.md)).
+  [ADR-0026](decisions/adr-0026-github-backed-cloud-storage.md),
+  [ADR-0027](decisions/adr-0027-worker-owned-oauth.md)).
 
 Infrastructure:
 
@@ -95,7 +96,7 @@ its own origin (`panels.json`, `monitoring-panels.json`, a share link's
 payload and meta) and, on explicit opt-in, two others: the "Check online
 (NLM)" LOINC lookup, which sends test names — never values — to
 clinicaltables.nlm.nih.gov and is the whole of `web/src/data/loincNlm.ts`,
-and Supabase auth and the Worker's GitHub-backed sync once the user signs in. The format itself carries
+and the Worker's own Google / Apple sign-in and GitHub-backed sync once the user signs in. The format itself carries
 no identity — see [`interchange-format.md#subject`](interchange-format.md#subject).
 
 ## Known limitations

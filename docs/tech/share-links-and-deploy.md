@@ -5,8 +5,8 @@
 The app ships as a Cloudflare Worker (`web/wrangler.jsonc`: worker
 `paneloom`, `main` `./worker/index.ts`, `assets.directory` `./dist`, custom
 domain `paneloom.com`). The Worker script (`web/worker/index.ts`) routes
-`/api/data` to the GitHub-backed sync proxy and lets everything else fall
-through to `env.ASSETS.fetch()` unchanged. `paneloom.com` is the production
+`/auth/*` to the Google / Apple sign-in and `/api/data` to the GitHub-backed
+sync proxy, and lets everything else fall through to `env.ASSETS.fetch()` unchanged. `paneloom.com` is the production
 URL; the old `blood.isayenko.net` domain is retired and no longer served.
 
 Deploys run from CI: the `deploy` job in
@@ -26,12 +26,16 @@ that `npm run deploy` runs locally — authenticated by the
 two pushes cannot overtake each other. A manual `wrangler deploy` from `web/`
 still works and is still needed for share links (below).
 
-The Worker also serves `/api/data`, the cloud-sync proxy to a private GitHub
-repo ([`account-and-sync.md`](account-and-sync.md#the-worker), ADR-0026). It
-needs two secrets, `GITHUB_TOKEN` and `SUPABASE_JWT_SECRET` (set once with
-`wrangler secret put <NAME>` from `web/`; a deploy keeps them), and two vars in
-`wrangler.jsonc`, `GITHUB_REPO` and `ALLOWED_EMAILS` — see
-[Setup](account-and-sync.md#setup). Unset `ALLOWED_EMAILS` denies everyone.
+The Worker also serves `/auth/*`, its own Google / Apple sign-in with a signed
+session cookie (ADR-0027), and `/api/data`, the cloud-sync proxy to a private
+GitHub repo ([`account-and-sync.md`](account-and-sync.md#the-worker),
+ADR-0026). They need secrets — `GITHUB_TOKEN`, `SESSION_SECRET` and the
+Google and Apple credentials (set once with `wrangler secret put <NAME>` from
+`web/`; a deploy keeps them) — and two vars in `wrangler.jsonc`,
+`GITHUB_REPO` and `ALLOWED_EMAILS`; see
+[Setup](account-and-sync.md#setup). Unset `ALLOWED_EMAILS` denies everyone;
+a provider with no secrets is simply off. Redirect URIs follow the request's
+origin, so a preview origin needs its own registered.
 
 A `lighthouse` job `needs: deploy` so it audits the code that is actually
 live, targeting `paneloom.com` directly since there is no staging

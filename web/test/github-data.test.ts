@@ -1,40 +1,26 @@
 import { describe, it, expect } from 'vitest';
+import { SESSION_COOKIE, signSession } from '../worker/auth';
 import {
   gitBlobSha,
   handleDataRequest,
   userFolder,
-  verifySupabaseJwt,
   type DataEnv,
   type FetchFn,
 } from '../worker/githubData';
 
-const SECRET = 'test-secret';
+const SECRET = 'test-secret-'.repeat(4);
 const NOW = 1_700_000_000_000;
-const encoder = new TextEncoder();
-
-function b64url(bytes: Uint8Array | string): string {
-  const data = typeof bytes === 'string' ? encoder.encode(bytes) : bytes;
-  let binary = '';
-  for (const b of data) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function sign(payload: object, secret = SECRET, alg = 'HS256'): Promise<string> {
-  const head = b64url(JSON.stringify({ alg, typ: 'JWT' }));
-  const body = b64url(JSON.stringify(payload));
-  const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(`${head}.${body}`)));
-  return `${head}.${body}.${b64url(sig)}`;
-}
-
-const validPayload = { email: 'Alex.Isayenko@gmail.com', exp: NOW / 1000 + 600 };
 
 const env: DataEnv = {
   GITHUB_REPO: 'o/r',
   ALLOWED_EMAILS: 'alex.isayenko@gmail.com, other@example.com',
   GITHUB_TOKEN: 'gh-secret-token',
-  SUPABASE_JWT_SECRET: SECRET,
+  SESSION_SECRET: SECRET,
 };
+
+async function session(email = 'Alex.Isayenko@gmail.com', now = NOW, secret = SECRET): Promise<string> {
+  return signSession({ SESSION_SECRET: secret }, { email, provider: 'google' }, now);
+}
 
 const FOLDER = 'paneloom/users/alex.isayenko@gmail.com';
 
@@ -104,43 +90,16 @@ async function repoHandlers(existing: Record<string, string>): Promise<Handler[]
   ];
 }
 
-const req = (method: string, token?: string, body?: unknown) =>
-  new Request('https://paneloom.com/api/data', {
+const req = (method: string, cookie?: string, body?: unknown, headers: Record<string, string> = {}) => {
+  const all: Record<string, string> = { ...headers };
+  if (cookie) all.cookie = `${SESSION_COOKIE}=${cookie}`;
+  if (method === 'PUT' && !('x-paneloom' in all)) all['x-paneloom'] = '1';
+  return new Request('https://paneloom.com/api/data', {
     method,
-    headers: token ? { authorization: `Bearer ${token}` } : {},
+    headers: all,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-
-describe('verifySupabaseJwt', () => {
-  it('accepts a valid token and returns the email', async () => {
-    expect(await verifySupabaseJwt(await sign(validPayload), SECRET, NOW)).toBe('Alex.Isayenko@gmail.com');
-  });
-  it('rejects an expired token', async () => {
-    await expect(verifySupabaseJwt(await sign({ ...validPayload, exp: NOW / 1000 - 1 }), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-  });
-  it('rejects a token without exp', async () => {
-    await expect(verifySupabaseJwt(await sign({ email: 'a@b.co' }), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-  });
-  it('rejects a bad signature', async () => {
-    await expect(verifySupabaseJwt(await sign(validPayload, 'other'), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-  });
-  it('rejects a non-HS256 alg', async () => {
-    await expect(verifySupabaseJwt(await sign(validPayload, SECRET, 'none'), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-  });
-  it('rejects a token that is not yet valid and accepts one whose nbf has passed', async () => {
-    await expect(verifySupabaseJwt(await sign({ ...validPayload, nbf: NOW / 1000 + 60 }), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-    await expect(verifySupabaseJwt(await sign({ ...validPayload, nbf: 'soon' }), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-    expect(await verifySupabaseJwt(await sign({ ...validPayload, nbf: NOW / 1000 - 60 }), SECRET, NOW)).toBe('Alex.Isayenko@gmail.com');
-  });
-  it('rejects a token without an email claim', async () => {
-    await expect(verifySupabaseJwt(await sign({ exp: validPayload.exp }), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-    await expect(verifySupabaseJwt(await sign({ exp: validPayload.exp, email: 5 }), SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-  });
-  it('rejects malformed tokens', async () => {
-    await expect(verifySupabaseJwt('abc', SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-    await expect(verifySupabaseJwt('a.b.c', SECRET, NOW)).rejects.toMatchObject({ status: 401 });
-  });
-});
+};
 
 describe('userFolder', () => {
   it('lowercases a plain email', () => {
@@ -157,34 +116,112 @@ describe('userFolder', () => {
 describe('handleDataRequest auth', () => {
   const deps = (fn: FetchFn) => ({ fetch: fn, now: () => NOW });
 
-  it('401 without a token, never touching GitHub', async () => {
+  it('401 without a session cookie, never touching GitHub', async () => {
     const { fn, calls } = stubFetch([]);
     const res = await handleDataRequest(req('GET'), env, deps(fn));
     expect(res.status).toBe(401);
     expect(res.headers.get('content-type')).toContain('application/json');
+    expect(res.headers.get('cache-control')).toBe('no-store');
     expect(await res.json()).toHaveProperty('error');
     expect(calls).toHaveLength(0);
   });
-  it('401 for a bad signature', async () => {
+  it('401 for a session signed with another secret', async () => {
+    const { fn, calls } = stubFetch([]);
+    const res = await handleDataRequest(req('GET', await session('alex.isayenko@gmail.com', NOW, 'n'.repeat(32))), env, deps(fn));
+    expect(res.status).toBe(401);
+    expect(calls).toHaveLength(0);
+  });
+  it('401 for a tampered session payload', async () => {
     const { fn } = stubFetch([]);
-    const res = await handleDataRequest(req('GET', await sign(validPayload, 'nope')), env, deps(fn));
+    const [, sig] = (await session()).split('.');
+    const forged = btoa(JSON.stringify({ email: 'other@example.com', provider: 'google', iat: 1, exp: 9_999_999_999 }))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    const res = await handleDataRequest(req('GET', `${forged}.${sig}`), env, deps(fn));
+    expect(res.status).toBe(401);
+  });
+  it('401 for an expired session', async () => {
+    const { fn } = stubFetch([]);
+    const old = await session('alex.isayenko@gmail.com', NOW - 31 * 24 * 3600 * 1000);
+    const res = await handleDataRequest(req('GET', old), env, deps(fn));
+    expect(res.status).toBe(401);
+  });
+  it('401 for everyone when SESSION_SECRET is unset', async () => {
+    const { fn } = stubFetch([]);
+    const res = await handleDataRequest(req('GET', await session()), { ...env, SESSION_SECRET: undefined }, deps(fn));
     expect(res.status).toBe(401);
   });
   it('403 when the email is not allowed', async () => {
     const { fn, calls } = stubFetch([]);
-    const res = await handleDataRequest(req('GET', await sign({ ...validPayload, email: 'x@evil.com' })), env, deps(fn));
+    const res = await handleDataRequest(req('GET', await session('x@evil.com')), env, deps(fn));
     expect(res.status).toBe(403);
     expect(calls).toHaveLength(0);
   });
+  it('403 immediately once an email is removed from the allowlist', async () => {
+    const { fn } = stubFetch([]);
+    const cookie = await session('other@example.com');
+    const res = await handleDataRequest(req('GET', cookie), { ...env, ALLOWED_EMAILS: 'alex.isayenko@gmail.com' }, deps(fn));
+    expect(res.status).toBe(403);
+  });
   it('403 for everyone when ALLOWED_EMAILS is unset', async () => {
     const { fn } = stubFetch([]);
-    const res = await handleDataRequest(req('GET', await sign(validPayload)), { ...env, ALLOWED_EMAILS: undefined }, deps(fn));
+    const res = await handleDataRequest(req('GET', await session()), { ...env, ALLOWED_EMAILS: undefined }, deps(fn));
     expect(res.status).toBe(403);
   });
   it('405 for other methods', async () => {
     const { fn } = stubFetch([]);
-    const res = await handleDataRequest(req('POST', await sign(validPayload)), env, deps(fn));
+    const res = await handleDataRequest(req('POST', await session()), env, deps(fn));
     expect(res.status).toBe(405);
+  });
+  it('a GET needs neither the CSRF header nor an Origin', async () => {
+    const { fn } = stubFetch([
+      (c) => (c.url === 'https://api.github.com/graphql' ? jsonRes({ data: { repository: { reports: null } } }) : undefined),
+    ]);
+    const res = await handleDataRequest(req('GET', await session()), env, deps(fn));
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('PUT CSRF guards', () => {
+  const deps = (fn: FetchFn) => ({ fetch: fn, now: () => NOW });
+  const body = { files: { 'medications.json': '[]' } };
+
+  it('403 without the X-Paneloom header', async () => {
+    const { fn, calls } = stubFetch([]);
+    const request = new Request('https://paneloom.com/api/data', {
+      method: 'PUT',
+      headers: { cookie: `${SESSION_COOKIE}=${await session()}` },
+      body: JSON.stringify(body),
+    });
+    const res = await handleDataRequest(request, env, deps(fn));
+    expect(res.status).toBe(403);
+    expect(calls).toHaveLength(0);
+  });
+  it('403 for a foreign Origin, even with the header', async () => {
+    const { fn, calls } = stubFetch([]);
+    const res = await handleDataRequest(
+      req('PUT', await session(), body, { origin: 'https://evil.example' }),
+      env,
+      deps(fn),
+    );
+    expect(res.status).toBe(403);
+    expect(calls).toHaveLength(0);
+  });
+  it('accepts a matching Origin', async () => {
+    const { fn, calls } = stubFetch([]);
+    const res = await handleDataRequest(
+      req('PUT', await session(), body, { origin: 'https://paneloom.com' }),
+      env,
+      deps(fn),
+    );
+    expect(res.status).toBe(502);
+    expect(calls.length).toBeGreaterThan(0);
+  });
+  it('401 (not 403) for an unauthenticated PUT', async () => {
+    const { fn } = stubFetch([]);
+    const res = await handleDataRequest(req('PUT', undefined, body), env, deps(fn));
+    expect(res.status).toBe(401);
   });
 });
 
@@ -211,7 +248,7 @@ describe('GET', () => {
         f3: { text: '{"m":1}', isTruncated: false },
       }),
     ]);
-    const res = await handleDataRequest(req('GET', await sign(validPayload)), env, deps(fn));
+    const res = await handleDataRequest(req('GET', await session()), env, deps(fn));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       files: {
@@ -237,27 +274,27 @@ describe('GET', () => {
 
   it('returns empty files when the folder is missing', async () => {
     const { fn } = stubFetch([gql({ reports: null, f0: null, f1: null, f2: null, f3: null })]);
-    const res = await handleDataRequest(req('GET', await sign(validPayload)), env, deps(fn));
+    const res = await handleDataRequest(req('GET', await session()), env, deps(fn));
     expect(await res.json()).toEqual({ files: {} });
   });
 
   it('502 when a blob is truncated', async () => {
     const { fn } = stubFetch([gql({ f0: { text: 'partial', isTruncated: true } })]);
-    const res = await handleDataRequest(req('GET', await sign(validPayload)), env, deps(fn));
+    const res = await handleDataRequest(req('GET', await session()), env, deps(fn));
     expect(res.status).toBe(502);
   });
 
   it('502 on GraphQL errors or a missing repository', async () => {
     for (const handler of [gql(null), gql({}, { errors: [{ message: 'boom' }] })]) {
       const { fn } = stubFetch([handler]);
-      const res = await handleDataRequest(req('GET', await sign(validPayload)), env, deps(fn));
+      const res = await handleDataRequest(req('GET', await session()), env, deps(fn));
       expect(res.status).toBe(502);
     }
   });
 
   it('does not leak the GitHub token on upstream failure', async () => {
     const { fn } = stubFetch([]);
-    const res = await handleDataRequest(req('GET', await sign(validPayload)), env, deps(fn));
+    const res = await handleDataRequest(req('GET', await session()), env, deps(fn));
     expect(res.status).toBe(502);
     expect(await res.text()).not.toContain('gh-secret-token');
   });
@@ -285,7 +322,7 @@ describe('PUT', () => {
       })),
     ]);
     const res = await handleDataRequest(
-      req('PUT', await sign(validPayload), {
+      req('PUT', await session(), {
         files: {
           'reports/same.json': 'same',
           'medications.json': 'meds-v2',
@@ -321,7 +358,7 @@ describe('PUT', () => {
       ...(await repoHandlers({ 'reports/a.json': 'A', 'medications.json': 'M' })),
     ]);
     const res = await handleDataRequest(
-      req('PUT', await sign(validPayload), { files: { 'reports/a.json': 'A', 'medications.json': 'M' } }),
+      req('PUT', await session(), { files: { 'reports/a.json': 'A', 'medications.json': 'M' } }),
       env,
       deps(fn),
     );
@@ -341,7 +378,7 @@ describe('PUT', () => {
       })),
     ]);
     const res = await handleDataRequest(
-      req('PUT', await sign(validPayload), { files: { 'medications.json': 'm' } }),
+      req('PUT', await session(), { files: { 'medications.json': 'm' } }),
       env,
       deps(fn),
     );
@@ -359,7 +396,7 @@ describe('PUT', () => {
       ...(await repoHandlers({ 'reports/constructor.json': 'c', 'medications.json': 'm' })),
     ]);
     const res = await handleDataRequest(
-      req('PUT', await sign(validPayload), { files: { 'medications.json': 'm' } }),
+      req('PUT', await session(), { files: { 'medications.json': 'm' } }),
       env,
       deps(fn),
     );
@@ -372,7 +409,7 @@ describe('PUT', () => {
     for (const status of [422, 409]) {
       const { fn } = stubFetch([...writeHandlers(status), ...(await repoHandlers({}))]);
       const res = await handleDataRequest(
-        req('PUT', await sign(validPayload), { files: { 'medications.json': '[]' } }),
+        req('PUT', await session(), { files: { 'medications.json': '[]' } }),
         env,
         deps(fn),
       );
@@ -394,7 +431,7 @@ describe('PUT', () => {
     [{}],
   ])('400 for invalid body %j', async (body) => {
     const { fn, calls } = stubFetch([]);
-    const res = await handleDataRequest(req('PUT', await sign(validPayload), body), env, deps(fn));
+    const res = await handleDataRequest(req('PUT', await session(), body), env, deps(fn));
     expect(res.status).toBe(400);
     expect(calls).toHaveLength(0);
   });

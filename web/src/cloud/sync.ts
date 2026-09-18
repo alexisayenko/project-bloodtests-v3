@@ -1,6 +1,6 @@
 import { BACKUP_FORMAT, BACKUP_VERSION } from '../data/backupArchive';
+import { readBackup, type BackupContents } from '../data/backupRestore';
 import { mergeFilesToLabReports, splitReportsToFiles } from '../data/reportFiles';
-import { supabaseClient } from './config';
 
 const API_PATH = '/api/data';
 const BASELINE_KEY = 'paneloom_cloud_baseline_v1';
@@ -10,18 +10,25 @@ const MANIFEST_FILE = 'manifest.json';
 
 type Baseline = { digest: string; manifest: string };
 
+export class CloudRequestError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function request(method: 'GET' | 'PUT', files?: Record<string, string>): Promise<Record<string, unknown>> {
-  const { data } = await supabaseClient.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error('Not signed in.');
   const response = await fetch(API_PATH, {
     method,
-    headers: { Authorization: `Bearer ${token}`, ...(files && { 'Content-Type': 'application/json' }) },
+    credentials: 'same-origin',
+    headers: files ? { 'X-Paneloom': '1', 'Content-Type': 'application/json' } : {},
     body: files ? JSON.stringify({ files }) : undefined,
   });
   const body: unknown = await response.json().catch(() => ({}));
   const record = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
-  if (!response.ok) throw new Error(`Cloud request failed (${response.status}): ${String(record.error ?? response.statusText)}`);
+  if (!response.ok) throw new CloudRequestError(response.status, `Cloud request failed (${response.status}): ${String(record.error ?? response.statusText)}`);
   return record;
 }
 
@@ -120,4 +127,30 @@ export async function pushCloudFiles(files: Record<string, string>): Promise<boo
   await request('PUT', { ...payload, [MANIFEST_FILE]: manifest });
   saveBaseline({ digest, manifest });
   return true;
+}
+
+// An empty local backup never overwrites a populated cloud document.
+export function isEmptyBackup(backup: BackupContents): boolean {
+  return !backup.reports?.count && !backup.medications?.rows.length && !backup.scheduled?.visits.length;
+}
+
+export type SignOutSave = 'saved' | 'auth' | 'failed';
+
+function isAuthFailure(error: unknown): boolean {
+  return error instanceof CloudRequestError && (error.status === 401 || error.status === 403);
+}
+
+/**
+ * 'saved': the push succeeded, or local is empty so nothing can be lost (an empty local set is never
+ * pushed over the cloud). 'auth': the cloud answered 401/403, so the session is dead and nothing was
+ * saved. 'failed': any other error, or a push that sent nothing. The caller may wipe local data only on 'saved'.
+ */
+export async function pushBeforeSignOut(localFiles: Record<string, string>): Promise<SignOutSave> {
+  if (isEmptyBackup(readBackup(localFiles))) return 'saved';
+  try {
+    await pullCloudFiles();
+    return (await pushCloudFiles(localFiles)) ? 'saved' : 'failed';
+  } catch (error) {
+    return isAuthFailure(error) ? 'auth' : 'failed';
+  }
 }

@@ -14,7 +14,8 @@ Three things to know before reusing it. "No backend, no accounts" was true
 when it was written; since [ADR-0019](../tech/decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)
 an opt-in sign-in syncs a copy to a private GitHub repo through the app's
 Worker ([ADR-0026](../tech/decisions/adr-0026-github-backed-cloud-storage.md);
-Supabase remains for sign-in only), while no login still keeps everything
+the Worker also does the Google / Apple sign-in itself,
+[ADR-0027](../tech/decisions/adr-0027-worker-owned-oauth.md)), while no login still keeps everything
 local. The candidate list it cites is a
 snapshot — see "Names considered" in [`README.md`](README.md) for the
 current one, including registration status. And it deliberately tells the

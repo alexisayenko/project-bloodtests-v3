@@ -1,8 +1,10 @@
+import { CSRF_HEADER, isAllowed, readSession } from './auth'
+
 export interface DataEnv {
   GITHUB_REPO?: string
   ALLOWED_EMAILS?: string
   GITHUB_TOKEN?: string
-  SUPABASE_JWT_SECRET?: string
+  SESSION_SECRET?: string
 }
 
 export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>
@@ -28,55 +30,12 @@ const KEY_PATTERN = /^(reports\/[A-Za-z0-9._-]+\.json|medications\.json|schedule
 const EMAIL_PATTERN = /^[a-z0-9][a-z0-9._+-]*@[a-z0-9-]+(\.[a-z0-9-]+)+$/
 
 const encoder = new TextEncoder()
-const decoder = new TextDecoder()
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
   })
-}
-
-function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
-  if (!/^[A-Za-z0-9_-]*$/.test(value)) throw new Error('bad base64url')
-  const padded = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=')
-  const binary = atob(padded)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  return bytes
-}
-
-export async function verifySupabaseJwt(token: string, secret: string, nowMs: number): Promise<string> {
-  const parts = token.split('.')
-  if (parts.length !== 3) throw new HttpError(401, 'Invalid token')
-  const [headerPart, payloadPart, signaturePart] = parts
-  try {
-    const header = JSON.parse(decoder.decode(base64UrlToBytes(headerPart)))
-    if (header?.alg !== 'HS256') throw new Error('alg')
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify'],
-    )
-    const valid = await crypto.subtle.verify(
-      'HMAC',
-      key,
-      base64UrlToBytes(signaturePart),
-      encoder.encode(`${headerPart}.${payloadPart}`),
-    )
-    if (!valid) throw new Error('signature')
-    const payload = JSON.parse(decoder.decode(base64UrlToBytes(payloadPart)))
-    if (typeof payload?.exp !== 'number' || payload.exp * 1000 <= nowMs) throw new Error('expired')
-    if (payload.nbf !== undefined && (typeof payload.nbf !== 'number' || payload.nbf * 1000 > nowMs)) {
-      throw new Error('nbf')
-    }
-    if (typeof payload.email !== 'string' || payload.email === '') throw new Error('email')
-    return payload.email
-  } catch {
-    throw new HttpError(401, 'Invalid token')
-  }
 }
 
 export function userFolder(email: string): string {
@@ -87,22 +46,17 @@ export function userFolder(email: string): string {
   return [...ROOT_SEGMENTS, normalized].join('/')
 }
 
-function isAllowed(email: string, allowed: string | undefined): boolean {
-  if (!allowed) return false
-  const target = email.trim().toLowerCase()
-  return allowed
-    .split(',')
-    .map((entry) => entry.trim().toLowerCase())
-    .some((entry) => entry !== '' && entry === target)
+export async function authenticate(request: Request, env: DataEnv, nowMs: number): Promise<string> {
+  const session = await readSession(request, env, nowMs)
+  if (!session) throw new HttpError(401, 'Not signed in')
+  if (!isAllowed(session.email, env.ALLOWED_EMAILS)) throw new HttpError(403, 'Forbidden')
+  return session.email.trim().toLowerCase()
 }
 
-export async function authenticate(request: Request, env: DataEnv, nowMs: number): Promise<string> {
-  const match = /^Bearer\s+(\S+)$/i.exec(request.headers.get('authorization') ?? '')
-  if (!match) throw new HttpError(401, 'Missing bearer token')
-  if (!env.SUPABASE_JWT_SECRET) throw new HttpError(500, 'Server not configured')
-  const email = await verifySupabaseJwt(match[1], env.SUPABASE_JWT_SECRET, nowMs)
-  if (!isAllowed(email, env.ALLOWED_EMAILS)) throw new HttpError(403, 'Forbidden')
-  return email.trim().toLowerCase()
+function assertSameOriginWrite(request: Request): void {
+  if (request.headers.get(CSRF_HEADER) !== '1') throw new HttpError(403, 'Forbidden')
+  const origin = request.headers.get('origin')
+  if (origin !== null && origin !== new URL(request.url).origin) throw new HttpError(403, 'Forbidden')
 }
 
 export async function gitBlobSha(text: string): Promise<string> {
@@ -323,6 +277,7 @@ export async function handleDataRequest(request: Request, env: DataEnv, deps: Da
     if (request.method === 'GET') {
       return json(200, { files: await readFiles(env, deps.fetch, email) })
     }
+    assertSameOriginWrite(request)
     let body: unknown
     try {
       body = await request.json()

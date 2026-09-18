@@ -19,9 +19,9 @@ import {
   buttonStyle,
 } from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
-import { useSupabaseAuthUser } from '../../hooks/useSupabaseAuthUser';
-import { signInWithApple, signInWithGoogle, signOutUser, supabase } from '../../supabase/auth';
-import { pullCloudFiles, pushCloudFiles } from '../../supabase/sync';
+import { useCloudSession } from '../../hooks/useCloudSession';
+import { consumeSigningIn, loginPath, markSigningIn } from '../../cloud/session';
+import { isEmptyBackup, pullCloudFiles, pushBeforeSignOut, pushCloudFiles } from '../../cloud/sync';
 
 const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
 
@@ -35,15 +35,10 @@ async function currentLocalFiles(sessions: DiagnosticReport[]): Promise<Record<s
   });
 }
 
-// An empty local backup never overwrites a populated cloud document on sign-out.
-function isEmptyBackup(backup: BackupContents): boolean {
-  return !backup.reports?.count && !backup.medications?.rows.length && !backup.scheduled?.visits.length;
-}
-
 /**
  * One-time cutover (ADR-0018): sign-in pulls the cloud copy if one exists, else pushes local up; sign-out
- * pushes then wipes. OAuth is redirect-based, so sync is wired to the 'SIGNED_IN' event, never
- * 'INITIAL_SESSION', which fires for an already-signed-in returning visit.
+ * pushes then wipes. OAuth ends in a full page load, so the sign-in click leaves a one-shot marker that is
+ * consumed once /auth/me confirms the session; a returning visit that is already signed in never syncs.
  */
 function AccountAuthCard({
   sessions,
@@ -54,9 +49,8 @@ function AccountAuthCard({
   onImportAll: (backup: BackupContents) => Promise<string[]>;
   onClearAll: () => void;
 }>) {
-  const { user, loading } = useSupabaseAuthUser();
+  const { user, loading, available, notAllowed, signOut } = useCloudSession();
   const [error, setError] = useState<string | null>(null);
-  const [signingIn, setSigningIn] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -76,43 +70,32 @@ function AccountAuthCard({
   }
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event !== 'SIGNED_IN' || !session) return;
-      setError(null);
-      syncAfterSignIn().catch(() => setError('Something went wrong. Please try again.'));
+    if (!user || !consumeSigningIn()) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    syncAfterSignIn().catch(() => {
+      markSigningIn();
+      setError('Sync failed. It will be retried the next time this page loads.');
     });
-    return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessions]);
-
-  async function handleSignIn(signIn: typeof signInWithGoogle) {
-    setError(null);
-    setSigningIn(true);
-    const { error: signInError } = await signIn();
-    if (signInError) {
-      setError('Something went wrong. Please try again.');
-      setSigningIn(false);
-    }
-    // On success the page navigates away to the OAuth provider; nothing more to do here.
-  }
+  }, [user]);
 
   async function handleSignOut() {
     if (!user) return;
     setError(null);
     setSigningOut(true);
     try {
-      const localFiles = await currentLocalFiles(sessions);
-      const cloudFiles = await pullCloudFiles();
-      const localIsEmpty = isEmptyBackup(readBackup(localFiles));
-      const cloudHasData = cloudFiles !== null && !isEmptyBackup(readBackup(cloudFiles));
-      if (!(localIsEmpty && cloudHasData)) {
-        await pushCloudFiles(localFiles);
+      const saved = await pushBeforeSignOut(await currentLocalFiles(sessions));
+      if (saved === 'failed') {
+        setError('Could not back up to the cloud. Nothing was changed -- try again.');
+        return;
       }
-      await signOutUser();
-      onClearAll();
-      flashNotice('✓ Signed out.');
+      await signOut();
+      if (saved === 'saved') {
+        onClearAll();
+        flashNotice('✓ Signed out.');
+      } else {
+        flashNotice('Signed out. Your data stayed on this device -- it was not backed up.');
+      }
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -132,15 +115,19 @@ function AccountAuthCard({
         </Button>
       </div>
     );
+  } else if (!available) {
+    authSection = <span style={{ fontSize: 13, color: COLOR.textMuted }}>Sign-in is unavailable here.</span>;
   } else {
+    const linkStyle = { ...buttonStyle('secondary', 'md'), textDecoration: 'none' };
     authSection = (
-      <div style={{ display: 'flex', gap: SPACE[3], flexWrap: 'wrap' }}>
-        <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithGoogle)}>
-          {signingIn ? 'Signing in…' : 'Sign in with Google'}
-        </Button>
-        <Button variant="secondary" disabled={signingIn} onClick={() => handleSignIn(signInWithApple)}>
-          {signingIn ? 'Signing in…' : 'Sign in with Apple'}
-        </Button>
+      <div style={{ display: 'flex', gap: SPACE[3], flexWrap: 'wrap', alignItems: 'center' }}>
+        {notAllowed && <span style={{ fontSize: 13, color: COLOR.statusBadText }}>This account is not allowed.</span>}
+        <a href={loginPath('google')} onClick={() => markSigningIn()} style={linkStyle}>
+          Sign in with Google
+        </a>
+        <a href={loginPath('apple')} onClick={() => markSigningIn()} style={linkStyle}>
+          Sign in with Apple
+        </a>
       </div>
     );
   }

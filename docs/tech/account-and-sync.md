@@ -5,39 +5,43 @@ errors exist) is where data leaves or enters the browser wholesale. Policy:
 [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md) (the two-tier
 model — no login stays local; signing in switches storage mode directly, no
 separate picker), with identity from
-[ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)'s
-self-hosted Supabase Auth and the data store from
+[ADR-0027](decisions/adr-0027-worker-owned-oauth.md) (the Worker performs
+Google and Apple OAuth itself; it replaced the self-hosted Supabase Auth of
+[ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)) and
+the data store from
 [ADR-0026](decisions/adr-0026-github-backed-cloud-storage.md): a private
-GitHub repo behind the app's own Worker. The wider design-space survey is
+GitHub repo behind the same Worker. The wider design-space survey is
 [`sync-architecture-options.md`](sync-architecture-options.md).
 
 ## Auth card
 
-`AccountAuthCard` offers Google / Apple sign-in through
-`web/src/supabase/auth.ts` (`signInWithGoogle()` / `signInWithApple()`, both
-`supabase.auth.signInWithOAuth` with `redirectTo: window.location.href`) and
-`signOutUser()`. `web/src/supabase/config.ts` hardcodes the project URL
-(`https://api.paneloom.com`) and anon key — designed for public client
-exposure — and sets `flowType: 'pkce'`: the router owns the URL hash
-(`#account`, `#reports`, …), which collides with the implicit flow's
-`#access_token=…` fragment, so the session comes back in a `?code=` query
-param instead.
+`AccountAuthCard` offers Google / Apple sign-in. Signing in is a plain
+full-page navigation to the Worker's `/auth/login/google` or
+`/auth/login/apple` (`loginPath()` in `web/src/cloud/session.ts`); the Worker
+runs the OAuth flow and returns the browser to the app with a session cookie. The browser holds no
+token and no auth library: the card learns who is signed in by `GET /auth/me`
+on load (`fetchSession()`; `401` = signed out, `403` = signed in with an email no
+longer on the allowlist, shown as "This account is not allowed." beside the
+sign-in buttons) and signs out with
+`POST /auth/logout` (`signOutUser()`, both in `web/src/cloud/session.ts`).
+Every mutating call carries the header `X-Paneloom: 1`, the Worker's CSRF
+guard: sign-out and the sync `PUT`.
 
-Supabase is now the identity provider only: a self-hosted instance (own
-Postgres, GoTrue auth behind an Envoy gateway) whose one job is to sign the
-user in and issue the access token the Worker checks. Sign-in needs that
-service reachable; the data does not live there.
+The dev server has no Worker, so sign-in and sync need `wrangler dev`;
+`web/vite.config.ts` proxies `/auth` and `/api` to `http://localhost:8787`.
+When `/auth/me` is not JSON, is a `404`, or the request fails, the session is
+`unavailable` and the card shows "sign-in unavailable" instead of a button.
 
-`web/src/hooks/useSupabaseAuthUser.ts` exposes `{user, loading}` via
-`supabase.auth.getSession()` plus `onAuthStateChange`; the TopBar and Get
-Started's pitch (`ProfileView.tsx`) read it too, swapping their local-only
-copy and "100% private" pillar for "Synced to your account" while signed in.
+`web/src/hooks/useCloudSession.ts` exposes `{user, loading, available,
+notAllowed, signOut}` from that `/auth/me` call; `AccountView.tsx` and Get Started's pitch
+(`ProfileView.tsx`) read it, swapping the local-only copy and "100% private"
+pillar for "Synced to your account" while signed in.
 
 ## Sync: two cutover moments, no ongoing sync
 
-`web/src/supabase/sync.ts`'s `pullCloudFiles()` / `pushCloudFiles(files)` call
-the Worker's `GET` / `PUT /api/data` with the session's access token as a
-bearer; the browser holds no GitHub credential. The data is a folder in the
+`web/src/cloud/sync.ts`'s `pullCloudFiles()` / `pushCloudFiles(files)` call
+the Worker's `GET` / `PUT /api/data` with the session cookie (same-origin
+`fetch`; only the `PUT` sends `X-Paneloom: 1`); the browser holds no GitHub credential. The data is a folder in the
 private repo `alexisayenko/data-storage`, `paneloom/users/<email>/`:
 
 - `reports/YYYY-MM-DD__<lab-slug>.json` — one single-report `bloodtests-3`
@@ -62,32 +66,77 @@ Guards, all client-side in `sync.ts`:
 - **Signing in** pulls and restores an existing folder through the same
   `onImportAll` Import-all-data uses (cloud wins, local discarded) or, if the
   cloud has no data, pushes today's local data up as the account's first cloud
-  copy. Because Supabase's OAuth is redirect-based, `AccountAuthCard` wires the
-  cutover to a `supabase.auth.onAuthStateChange` listener on the `SIGNED_IN`
-  event — never `INITIAL_SESSION`, which fires for an already-authenticated
-  returning visit and must not re-trigger sync.
-- **Signing out** pushes current local state up first (skipped when local is
-  empty and the cloud is not) and only once that succeeds calls
-  `signOutUser()` then `onClearAll()` to wipe the local copy, so a shared
-  browser shows the next person a clean slate; a failed push blocks the rest
-  of sign-out rather than wiping data it could not save.
+  copy. Because sign-in ends in a full page load, the "just signed in" moment
+  is detected on the next load: `AccountAuthCard` calls `markSigningIn()`
+  (a `sessionStorage` flag, valid ten minutes) as the sign-in link is
+  followed, and `consumeSigningIn()` takes it once, after `/auth/me`
+  succeeds. A returning visit with a live session has no flag and
+  never re-triggers sync. If the cutover sync fails, the card marks again and
+  shows a notice, so the next load retries within a fresh ten minutes.
+- **Signing out** first saves local state (`pushBeforeSignOut()` pulls, then
+  pushes) and acts on one of three results. `saved` (the push succeeded, or
+  local is empty so nothing can be lost; an empty local set is never pushed
+  over the cloud) calls `signOut()` from the hook (`POST /auth/logout`) then
+  `onClearAll()` to wipe the local copy, so a shared browser shows the next
+  person a clean slate. `auth` (the pull or push got `401` / `403`: the session
+  is dead or the email was removed) still signs out but keeps the local data and
+  says it was not backed up. `failed` (any other error, such as a `502` or a
+  network drop, or a push that sent nothing) does not sign out and does not
+  clear; it shows "Could not back up to the cloud" so the user can retry.
+  Local data is never wiped unless it was saved.
 
 Signing in and out is the whole interface.
 
 ### The Worker
 
-`web/worker/githubData.ts`, routed from `web/worker/index.ts` for
-`/api/data` only; everything else falls through to `ASSETS`
+`web/worker/auth.ts` (sign-in and the session) and `web/worker/githubData.ts`
+(the data), routed from `web/worker/index.ts` for `/auth/*` and `/api/data`;
+everything else falls through to `ASSETS`
 ([`share-links-and-deploy.md`](share-links-and-deploy.md)). It is a stateless
-proxy that stores nothing itself.
+proxy that stores nothing itself; every `/auth/*` and `/api/data` response is
+`Cache-Control: no-store`. Each piece is disabled, not broken, when its
+config is missing.
 
-1. **Authenticate.** Verifies the bearer as a Supabase JWT — HS256 with
-   `SUPABASE_JWT_SECRET`, `exp` and `nbf` checked — and takes the email from
-   it. `401` on any failure.
-2. **Authorize.** The email must be in `ALLOWED_EMAILS`; unset denies all
-   (`403`). The folder is derived from the verified email, never from the
-   request, so the allowlist is the isolation boundary between users: one
-   token reaches every folder.
+**Sign-in.**
+
+- `GET /auth/login/google|apple` sets the cookie `paneloom_oauth` (random
+  `state`, `nonce` and PKCE verifier, HMAC-signed with `SESSION_SECRET`,
+  HttpOnly, Secure, ten minutes, `SameSite=None` for Apple, whose callback is a
+  cross-site POST, `Lax` for Google) and redirects to the provider: Google with a PKCE (S256)
+  code flow, Apple with `response_mode=form_post`, `scope=email` and a
+  `nonce`. An unknown or unconfigured provider is a `404` JSON error.
+- `GET /auth/callback/google` and `POST /auth/callback/apple` check `state`
+  against the cookie in constant time, exchange the code at the provider's
+  token endpoint, and read `id_token` from that direct response (no signature
+  check needed there, OIDC Core 3.1.3.7). They verify `iss`, `aud` (the
+  client / Service ID), `exp`, `nonce`, and that `email` is present and
+  verified. The lowercased email must be in `ALLOWED_EMAILS`. Success clears
+  `paneloom_oauth`, sets the session and redirects (`303`) to `/#account`;
+  any failure is a small plain HTML page with a back link, never an echoed
+  provider error.
+- Apple's client secret is an ES256 JWT built per login with WebCrypto
+  (`iss` Team ID, `sub` Service ID, `kid` Key ID, five minutes).
+- `GET /auth/me` is `200 {email, provider}`, `401 {}` without a valid session, or
+  `403 {}` when the session's email is no longer in `ALLOWED_EMAILS`.
+  `POST /auth/logout` (needs `X-Paneloom: 1`) expires the cookie, `204`.
+
+**Session.** `paneloom_session`: `HttpOnly; Secure; SameSite=Lax; Path=/`,
+30 days, `base64url({email, provider, iat, exp}).base64url(HMAC-SHA256)` keyed
+with `SESSION_SECRET`. No refresh token: after 30 days the user signs in
+again. Without a `SESSION_SECRET` of at least 32 characters nothing
+authenticates (sessions never verify) and the login routes are `404`.
+
+**`/api/data`.**
+
+1. **Authenticate.** Verifies the session cookie (signature in constant time,
+   `exp`) and takes the email from it. `401` on any failure. `PUT` also
+   needs `X-Paneloom: 1` and, if an `Origin` header is present, it must equal
+   the request's origin (`403` otherwise).
+2. **Authorize.** The email must be in `ALLOWED_EMAILS`, re-checked on every
+   request so a removed email is cut off at once; unset denies all (`403`).
+   The folder is derived from the verified email, never from the request, so
+   the allowlist is the isolation boundary between users: one token reaches
+   every folder.
 3. **Read.** One GraphQL request for the user's folder.
 4. **Write.** One atomic commit through the Git Data API. It deletes only
    app-named files in that user's folder (`reports/*.json`, the four top-level
@@ -96,18 +145,55 @@ proxy that stores nothing itself.
 
 ### Setup
 
-Vars in `web/wrangler.jsonc`: `GITHUB_REPO` (`alexisayenko/data-storage`),
-`ALLOWED_EMAILS`. Secrets, set once from `web/` and never committed:
+One-off, in this order. The redirect URIs use the request's own origin, so
+`https://paneloom.com` is production; a preview or `workers.dev` origin needs
+its own URIs registered.
+
+**Google.** In the Google Cloud Console:
+
+1. Create (or pick) a project.
+2. APIs & Services > OAuth consent screen: User type **External**, publishing
+   status **Testing**, and add your own email under **Test users**. (Testing
+   mode caps the app at those users, which is all the allowlist needs.)
+3. APIs & Services > Credentials > Create credentials > **OAuth client ID**,
+   Application type **Web application**.
+4. Authorized redirect URIs: `https://paneloom.com/auth/callback/google`.
+5. Copy the Client ID and Client secret.
+
+**Apple.** In Apple Developer > Certificates, Identifiers & Profiles (a paid
+developer account):
+
+1. Identifiers > the existing **Service ID** > Sign in with Apple >
+   Configure: Domains and Subdomains `paneloom.com`, Return URLs
+   `https://paneloom.com/auth/callback/apple`.
+2. Keys > create a key with **Sign in with Apple** enabled (Primary App ID
+   set); download the `.p8` once and note its **Key ID**.
+3. Note the **Team ID** (Membership) and the **Service ID** identifier.
+
+**Worker.** Vars in `web/wrangler.jsonc`: `GITHUB_REPO`
+(`alexisayenko/data-storage`), `ALLOWED_EMAILS` (comma-separated; with Apple's
+"Hide My Email" the relay address, not the real one). Secrets, set once from
+`web/` and never committed:
 
 ```
 npx wrangler secret put GITHUB_TOKEN          # fine-grained PAT, contents
                                               # read/write on that repo only
-npx wrangler secret put SUPABASE_JWT_SECRET   # the instance's JWT secret
+npx wrangler secret put SESSION_SECRET        # 32+ random bytes, e.g.
+                                              # openssl rand -base64 32
+npx wrangler secret put GOOGLE_CLIENT_ID
+npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put APPLE_TEAM_ID
+npx wrangler secret put APPLE_KEY_ID
+npx wrangler secret put APPLE_SERVICE_ID
+npx wrangler secret put APPLE_PRIVATE_KEY     # the .p8 (PKCS8 PEM); a
+                                              # literal \n for newlines is fine
 ```
 
-A CI deploy keeps existing secrets. `Env` is typed in `web/worker/env.d.ts`.
-`supabase/migrations/0001_init.sql` (the `user_backups` table) is superseded
-by ADR-0026: kept as a record, not applied to new instances.
+Skip either provider's secrets to leave it off. Rotating `SESSION_SECRET`
+signs everyone out. A CI deploy keeps existing secrets. `Env` is typed in
+`web/worker/env.d.ts`. `supabase/migrations/0001_init.sql` (the
+`user_backups` table) is superseded by ADR-0026: kept as a record, not
+applied to new instances.
 
 ## Database details
 

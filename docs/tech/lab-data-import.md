@@ -121,9 +121,10 @@ accepted), narrowable to
 `patient/Observation.rs?category=http://terminology.hl7.org/CodeSystem/observation-category|laboratory`,
 plus `launch/patient`, `openid fhirUser`, `offline_access` for a refresh token.
 
-This is the shape `web/src/supabase/config.ts` already uses — `flowType:
-'pkce'`, return via `?code=` because the hash belongs to the router — so the
-same redirect handling extends to a second issuer. Bulk Data (`$export`) does
+The Worker's own OAuth (`web/worker/auth.ts`, ADR-0027) already runs this
+shape for Google and Apple — a code flow with PKCE, return through a
+query-string callback because the hash belongs to the router — so the same
+handling extends to a second issuer. Bulk Data (`$export`) does
 not apply: it authorizes with SMART Backend Services (JWT client assertion,
 `system/` scopes, no user), which the spec itself says is not for user-consent
 apps. Verified. `Patient/[id]/$everything` exists in R4 (searchset Bundle,

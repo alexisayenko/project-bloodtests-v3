@@ -53,8 +53,8 @@ Things deliberately out of scope. Each line defends an absence.
 ## Open questions
 
 - Monetization model — when and whether to introduce a paid tier.
-- Cloud sync rollout — Supabase sign-in plus a GitHub-repo data store
-  behind the Worker is decided (ADR-0019, ADR-0026) but not yet shipped
+- Cloud sync rollout — Google / Apple sign-in plus a GitHub-repo data store,
+  both in the Worker, is decided (ADR-0026, ADR-0027) but not yet shipped
   to users; the email allowlist limits it to the owner until then.
 - Mobile concept — navigation, opening screen, and historical-data
   comparison on narrow screens (task-0040).

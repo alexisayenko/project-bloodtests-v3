@@ -17,7 +17,9 @@ non-negotiables:
   an opt-in, values-free LOINC name lookup at NLM, and an opt-in cloud copy
   in a private GitHub repo, written by the app's Worker when the user signs
   in (ADR-0026). That Worker is the one server the app owns: a stateless
-  auth-checking proxy holding a repo-scoped token, storing nothing itself.
+  proxy that performs Google / Apple sign-in itself and issues a signed
+  session cookie (ADR-0027), checks it and an email allowlist, holds a
+  repo-scoped token, and stores nothing itself.
 - **Nothing shown is invented or silently altered.** A printed value is
   stored and displayed exactly as the lab wrote it; a converted or derived
   number is computed at display time, kept visibly separate (`canonical`,
@@ -47,11 +49,12 @@ Monetization: undecided (`docs/business/README.md`).
   `web/public/data/`; uploads are parsed client-side into `localStorage`.
 - Deployed as a Cloudflare Worker serving static assets at `paneloom.com`
   (`web/wrangler.jsonc`, `web/worker/index.ts`), published by CI on every push to `main`.
-- Opt-in cloud sync: identity from `@supabase/supabase-js` against a
-  self-hosted Supabase Auth at `api.paneloom.com` (PKCE flow,
-  `web/src/supabase/`); data as per-report JSON files in the private repo
+- Opt-in cloud sync: identity is Google or Apple sign-in performed by the
+  Worker itself (`/auth/*`, `web/worker/auth.ts`, authorization-code flow, a
+  signed session cookie, no auth service and no database — ADR-0027; client in
+  `web/src/cloud/`); data as per-report JSON files in the private repo
   `alexisayenko/data-storage`, read and written only by the Worker's
-  `/api/data` (`web/worker/githubData.ts`), which checks the Supabase token
+  `/api/data` (`web/worker/githubData.ts`), which checks the session cookie
   and an email allowlist and holds the GitHub token. Signing in and out is
   the whole interface.
 - Charts: uPlot through the vendored `lab-explore` / `chart-kit`
@@ -75,7 +78,7 @@ Monetization: undecided (`docs/business/README.md`).
 | `web/src/hooks/useHashRoute.ts` | hash routing, blocked-route redirect, grid scroll restore |
 | `web/src/hooks/useAllResults.ts` | flattens sessions into `allResults` / `latestByLoinc` / `resultsByDate`, loading a session's items on demand |
 | `web/src/components/conditions/PopupContext.tsx`, `SchedulingContext.tsx` | popup and scheduling state shared by `PanelDetailView`, `ResultTables`, `Popup`, `PlanVisitView` |
-| `web/src/supabase/`, `web/src/data/reportFiles.ts`, `web/worker/githubData.ts` | auth, config, the sync client; per-report file split / merge; the Worker's `/api/data` |
+| `web/src/cloud/`, `web/src/data/reportFiles.ts`, `web/worker/auth.ts`, `web/worker/githubData.ts` | auth and sync client; per-report file split / merge; the Worker's `/auth/*` sign-in and `/api/data` |
 | `web/src/components/conditions/MedicalConditionsPage.tsx` | the app shell: route, results, shared settings, popups; every section a `React.lazy` sibling view |
 | `web/src/components/conditions/*View.tsx`, `ReferenceBookPage.tsx` | the views (grid, panel detail, all observations, reports, report detail, profile, plan, medications, pathways, lipids, account, reference) |
 | `web/src/components/conditions/{markers,routing,resultCells,popupGeometry,scheduling,resultsLookup,statusFilter,reportDetailHelpers,pathwayShared}.ts` | pure helpers and view contracts |
@@ -101,7 +104,8 @@ Monetization: undecided (`docs/business/README.md`).
 - No login stays local; signing in switches storage mode with two cutover
   moments and no ongoing sync — ADR-0018, ADR-0019; the cloud store is a
   private GitHub repo behind the Worker, never a browser-held token —
-  ADR-0026.
+  ADR-0026; identity is Google / Apple through the Worker's own OAuth, no
+  auth service — ADR-0027.
 - Artwork illustrates; any geometry read as a quantity is a circle count or
   drawn from cited data — ADR-0022.
 - Both pathway pages run on one shared overlay engine; wiring is hand-coded
@@ -176,8 +180,8 @@ What each suite covers, and what is deliberately untested:
 - [medications.md](docs/tech/medications.md) — row shape, grid, storage
 - [reference-book.md](docs/tech/reference-book.md) — the Reference Book's
   pages
-- [account-and-sync.md](docs/tech/account-and-sync.md) — auth card, GitHub
-  sync via the Worker, Database details, export / import / clear
+- [account-and-sync.md](docs/tech/account-and-sync.md) — auth card, Worker
+  sign-in and GitHub sync, setup, Database details, export / import / clear
 - [share-links-and-deploy.md](docs/tech/share-links-and-deploy.md) — Worker,
   CI deploy, Lighthouse, share links and their meta
 - [testing.md](docs/tech/testing.md) — suites and CI jobs

@@ -34,14 +34,15 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0016](adr-0016-scheduling-is-a-collection-of-independent-visits.md) | Scheduling is a collection of independent visits, not one global schedule | accepted · 2026-09-13 |
 | [ADR-0017](adr-0017-supabase-storage-self-hosted-then-cloud.md) | Supabase (self-hosted, then managed cloud) replaces the bearer-token server; real accounts/OAuth return | accepted · 2026-09-13 · supersedes 0015 · superseded by 0018 |
 | [ADR-0018](adr-0018-firebase-storage-provisional.md) | Firebase (Auth + Firestore) replaces the Supabase plan, provisionally | accepted · 2026-09-13 · supersedes 0017 · superseded by 0019 |
-| [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) | Self-hosted Supabase replaces Firebase for cloud sync | accepted · 2026-09-14 · supersedes 0018 · data store superseded by 0026, auth stands |
+| [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) | Self-hosted Supabase replaces Firebase for cloud sync | accepted · 2026-09-14 · supersedes 0018 · data store superseded by 0026, auth by 0027 |
 | [ADR-0020](adr-0020-constants-from-cited-data-calculators-are-cross-checks.md) | Physical constants come from cited reference data; external calculators are cross-checks, not gold standards | accepted · 2026-09-16 |
 | [ADR-0021](adr-0021-pathway-pages-share-one-overlay-engine.md) | Pathway pages share one overlay and association engine | accepted · 2026-09-16 |
 | [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
 | [ADR-0023](adr-0023-product-purpose-and-clinical-boundary.md) | Product purpose, audience, and clinical boundary | accepted · 2026-09-18 |
 | [ADR-0024](adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md) | The panel date-range control is header-scoped and changes data only through an explicit binding | accepted · 2026-09-18 |
 | [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md) | MCHC printed in `%` is flagged, not accepted; the fix is the owner's data edit | accepted · 2026-09-19 |
-| [ADR-0026](adr-0026-github-backed-cloud-storage.md) | Cloud data lives in a private GitHub repo behind a Worker; Supabase stays for auth | accepted · 2026-09-19 · supersedes 0019 (data store only) |
+| [ADR-0026](adr-0026-github-backed-cloud-storage.md) | Cloud data lives in a private GitHub repo behind a Worker | accepted · 2026-09-19 · supersedes 0019 (data store only) · identity amended by 0027 |
+| [ADR-0027](adr-0027-worker-owned-oauth.md) | The Worker owns Google / Apple sign-in; Supabase Auth is retired | accepted · 2026-09-19 · supersedes 0019 (auth) · amends 0026 |
 
 ## Where each one bites
 
@@ -130,13 +131,15 @@ Each record opens with `# ADR-NNNN: <title>` and a
   wipes local, unless local is empty and cloud isn't) carries over from
   0018 into 0019 unchanged too — only the backend and the sign-in
   plumbing around it changed. 0026 then replaces 0019's data store, not
-  its auth: Supabase Auth stays, the `user_backups` row goes, and the
+  its auth: the `user_backups` row goes, and the
   synced data becomes per-report JSON files in a private GitHub repo
   (`alexisayenko/data-storage`) written by the app's own Worker at
   `/api/data` with a repo-scoped token the browser never sees — git
   history as version history, files the owner can edit. This amends the
   "no server the app owns" principle: the Worker is a stateless
-  auth-checking proxy. See
+  auth-checking proxy. 0027 then retires Supabase Auth too: the Worker
+  performs Google and Apple OAuth itself and issues a signed session cookie,
+  with no database and no auth service to run. See
   [`../account-and-sync.md`](../account-and-sync.md).
 - **Scheduling** — 0016: a list of independent `ScheduledVisit` entries
   rather than one global schedule object, implemented in

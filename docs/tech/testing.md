@@ -32,7 +32,7 @@ the suites that validate it; fixtures under `web/test/fixtures/`.
   routing, scheduling and month keys, ui helpers, build stamp, format utils,
   lab pricing and the visit plan, medications (rows, bars, schema), backup
   archive and restore, the showcase generator, analyte sort, the Monitoring
-  Panels status filter, cloud sync (the client, the per-report file split, the Worker's GitHub data route), `useHashRoute` (route read from the
+  Panels status filter, cloud sync (the client in `cloud-sync.test.ts`, the session client and its sign-in marker in `cloud-session.test.ts`, the `useCloudSession` hook in `use-cloud-session.test.tsx`, the per-report file split, the Worker's GitHub data route with its session-cookie and allowlist checks, and the Worker's OAuth sign-in — state / nonce / `iss` / `aud` / `exp` / verified-email checks, the Apple client secret, cookie attributes and the CSRF guard — against stubbed `fetch` and Node's WebCrypto), `useHashRoute` (route read from the
   hash, `navigate`, browser back/forward through `popstate`, the
   blocked-route redirect, grid scroll restore), `useViewSettings` (defaults,
   persistence through every setter, share-link seeding without overriding a

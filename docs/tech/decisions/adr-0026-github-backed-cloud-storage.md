@@ -2,7 +2,8 @@
 
 Status: accepted · 2026-09-19 · supersedes
 [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) for the data
-store only; its auth half stands
+store only · identity amended by [ADR-0027](adr-0027-worker-owned-oauth.md)
+(Supabase Auth retired; the Worker owns sign-in and checks a session cookie)
 
 The storage-mode shape and the cutover model are unchanged
 ([ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md),
@@ -10,7 +11,9 @@ The storage-mode shape and the cutover model are unchanged
 [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md)): no login
 stays local; signing in pulls-or-pushes once, signing out pushes then clears;
 no ongoing two-way sync. Supabase Auth (Google / Apple, PKCE, at
-`api.paneloom.com`) stays as the identity provider. What changes is where the
+`api.paneloom.com`) stays as the identity provider (retired by
+[ADR-0027](adr-0027-worker-owned-oauth.md); the Supabase-token, secret and
+client-path details below describe the design as decided). What changes is where the
 signed-in user's data is stored: not the `public.user_backups` row, but plain
 JSON files in a private GitHub repository, reached only through the app's own
 Worker.
@@ -50,7 +53,7 @@ cannot hold a GitHub credential with write access to a private repo.
 - **Writes** are one atomic commit through the Git Data API. The Worker
   deletes only app-named files in that user's folder, rejects an empty or
   trivial `PUT`, and answers `409` if the branch moved under it.
-- **The client** (`web/src/supabase/sync.ts`, `web/src/data/reportFiles.ts`)
+- **The client** (`web/src/cloud/sync.ts`, `web/src/data/reportFiles.ts`)
   splits the local `lab-reports.json` envelope into per-report files on push
   and merges them back on pull. The manifest carries a timestamp, so its
   previous text is reused unless another file changed: an unchanged push

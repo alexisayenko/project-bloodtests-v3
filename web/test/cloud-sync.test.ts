@@ -1,12 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { splitReportsToFiles } from '../src/data/reportFiles';
-import { pullCloudFiles, pushCloudFiles } from '../src/supabase/sync';
-
-const getSession = vi.fn();
-
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: () => ({ auth: { getSession: (...args: unknown[]) => getSession(...args) } }),
-}));
+import { pullCloudFiles, pushBeforeSignOut, pushCloudFiles } from '../src/cloud/sync';
 
 const fetchMock = vi.fn();
 
@@ -27,16 +21,14 @@ beforeEach(() => {
     removeItem: (k: string) => void store.delete(k),
   });
   fetchMock.mockReset();
-  getSession.mockReset();
-  getSession.mockResolvedValue({ data: { session: { access_token: 'tok-1' } } });
   vi.stubGlobal('fetch', fetchMock);
 });
 
 describe('pullCloudFiles', () => {
-  it('sends the bearer token to GET /api/data', async () => {
+  it('sends a cookie-credentialed GET /api/data with no bearer token', async () => {
     reply(200, { files: {} });
     await pullCloudFiles();
-    expect(fetchMock).toHaveBeenCalledWith('/api/data', expect.objectContaining({ method: 'GET', headers: { Authorization: 'Bearer tok-1' } }));
+    expect(fetchMock).toHaveBeenCalledWith('/api/data', expect.objectContaining({ method: 'GET', credentials: 'same-origin', headers: {} }));
   });
 
   it('returns null for an empty cloud folder', async () => {
@@ -93,15 +85,14 @@ describe('pullCloudFiles', () => {
     expect(files).not.toHaveProperty('lab-reports.json');
   });
 
-  it('throws when signed out without calling the API', async () => {
-    getSession.mockResolvedValue({ data: { session: null } });
-    await expect(pullCloudFiles()).rejects.toThrow('Not signed in');
-    expect(fetchMock).not.toHaveBeenCalled();
+  it('throws with the server error when signed out', async () => {
+    reply(401, { error: 'Unauthorized' });
+    await expect(pullCloudFiles()).rejects.toThrow(/401.*Unauthorized/);
   });
 
-  it('throws with the server error on a non-2xx response', async () => {
-    reply(401, { error: 'bad token' });
-    await expect(pullCloudFiles()).rejects.toThrow(/401.*bad token/);
+  it('throws with the status text when the error body is not JSON', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 502, statusText: 'Bad Gateway', json: () => Promise.reject(new Error('not json')) });
+    await expect(pullCloudFiles()).rejects.toThrow(/502.*Bad Gateway/);
   });
 });
 
@@ -130,7 +121,8 @@ describe('pushCloudFiles', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/data');
     expect(init.method).toBe('PUT');
-    expect(init.headers).toEqual({ Authorization: 'Bearer tok-1', 'Content-Type': 'application/json' });
+    expect(init.credentials).toBe('same-origin');
+    expect(init.headers).toEqual({ 'X-Paneloom': '1', 'Content-Type': 'application/json' });
     expect(Object.keys(sentFiles()).sort()).toEqual([
       'manifest.json',
       'medications.json',
@@ -199,5 +191,57 @@ describe('pushCloudFiles', () => {
   it('throws on a 409', async () => {
     reply(409, { error: 'conflict' });
     await expect(pushCloudFiles({ 'medications.json': '{"rows":[{"id":"x"}]}' })).rejects.toThrow(/409.*conflict/);
+  });
+});
+
+describe('pushBeforeSignOut', () => {
+  const manifest = JSON.stringify({ format: 'blood-tests-backup', version: 1, exportedAt: 'T0', files: [] });
+  const local = { 'manifest.json': manifest, 'lab-reports.json': reportEnvelope('2024-05-01') };
+  const puts = () => fetchMock.mock.calls.filter(([, init]) => init.method === 'PUT');
+
+  function replyFail(status: number) {
+    fetchMock.mockResolvedValueOnce({ ok: false, status, statusText: 'x', json: () => Promise.resolve({ error: 'no' }) });
+  }
+
+  it.each([401, 403])("returns 'auth' without pushing when the pull fails with %i", async (status) => {
+    replyFail(status);
+    await expect(pushBeforeSignOut(local)).resolves.toBe('auth');
+    expect(puts()).toHaveLength(0);
+  });
+
+  it("returns 'failed' without pushing when the pull fails with a 500", async () => {
+    replyFail(500);
+    await expect(pushBeforeSignOut(local)).resolves.toBe('failed');
+    expect(puts()).toHaveLength(0);
+  });
+
+  it("returns 'failed' without pushing when the pull hits a network error", async () => {
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    await expect(pushBeforeSignOut(local)).resolves.toBe('failed');
+    expect(puts()).toHaveLength(0);
+  });
+
+  it("returns 'saved' after pushing local data", async () => {
+    reply(200, { files: {} });
+    reply(200, { ok: true });
+    await expect(pushBeforeSignOut(local)).resolves.toBe('saved');
+    expect(puts()).toHaveLength(1);
+  });
+
+  it("returns 'saved' without any request when local is empty, even over a populated cloud", async () => {
+    await expect(pushBeforeSignOut({ 'manifest.json': manifest })).resolves.toBe('saved');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 'failed' when the push fails with a 409", async () => {
+    reply(200, { files: {} });
+    replyFail(409);
+    await expect(pushBeforeSignOut(local)).resolves.toBe('failed');
+  });
+
+  it("returns 'auth' when the push fails with a 401", async () => {
+    reply(200, { files: {} });
+    replyFail(401);
+    await expect(pushBeforeSignOut(local)).resolves.toBe('auth');
   });
 });

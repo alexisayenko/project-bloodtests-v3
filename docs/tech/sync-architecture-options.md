@@ -24,8 +24,9 @@ superseded three times (bespoke Bearer-token server →
 self-hosted-then-cloud Supabase → Firebase, explicitly provisional →
 self-hosted Supabase again, ADR-0019, whose data store
 [ADR-0026](decisions/adr-0026-github-backed-cloud-storage.md) then replaced
-with a private GitHub repo behind the Worker, keeping Supabase for auth;
-current). Before and
+with a private GitHub repo behind the Worker, and finally
+[ADR-0027](decisions/adr-0027-worker-owned-oauth.md) retired Supabase Auth
+for sign-in performed by the Worker itself; current). Before and
 around that chain, a wider set of options was raised. The ones ADR-0015
 already documents in full are only summarized here to keep one place as
 the source of truth:
@@ -153,7 +154,9 @@ Consequences and "What would force revisiting") comes back into focus.
 
 ## 3. What's actually being built right now, for contrast
 
-Distinct from all of the above: [ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)
+Historical (ADR-0026 and ADR-0027 since replaced the Supabase pieces named
+here, with a GitHub repo behind the Worker and Worker-owned sign-in). Distinct
+from all of the above: [ADR-0019](decisions/adr-0019-self-hosted-supabase-replaces-firebase.md)
 (carrying forward [ADR-0018](decisions/adr-0018-firebase-storage-provisional.md)'s
 policy unchanged) now carries the concrete, settled design for the
 near-term build, so it is the single source of truth rather than restated
