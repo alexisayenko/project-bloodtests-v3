@@ -28,9 +28,7 @@ import { PageHeader } from './PageHeader';
 import { EmptyState } from '../primitives';
 import { COLOR } from '../../styles/tokens';
 
-// Not the default tab, and it pulls uPlot plus the vendored
-// lab-explore/chart-kit -- kept out of the initial bundle, same as in
-// PanelDetailView, which shares this chunk.
+// Lazy: pulls uPlot plus the vendored lab-explore/chart-kit, a chunk shared with PanelDetailView.
 const LabExploreView = lazy(() => import('./LabExploreView').then((m) => ({ default: m.LabExploreView })));
 
 // The min-height reserves roughly a chart's worth of room so the tab doesn't jump on load.
@@ -42,9 +40,7 @@ const OBSERVATIONS_TABS: readonly { id: ObservationsTab; label: string }[] = [
   { id: 'in-range', label: "What's in range" },
 ];
 
-// Every distinct observation ever uploaded, regardless of panel membership.
-// A result recorded under an also-ref alias (unit-variant LOINC) folds into
-// its primary marker's row instead of appearing as a bare-LOINC duplicate.
+// An alias-coded result folds into its primary's row instead of appearing as a bare-LOINC duplicate.
 function buildRows(allResults: ResultEntry[], analysesCatalog: Record<string, Analysis>): Observation[] {
   const seen = new Map<string, Observation>();
   for (const { loinc: rawLoinc } of allResults) {
@@ -97,11 +93,7 @@ export function AllObservationsView({
 }: Readonly<{
   allResults: ResultEntry[];
   conditions: Condition[];
-  /**
-   * Panels offered in the table's panel filter. A share link's showPanels
-   * allowlist narrows this, so the picker never names a panel the link hid;
-   * the table itself still defaults to every observation.
-   */
+  /** Narrowed by a share link's showPanels; the table itself still defaults to every observation. */
   panelOptions: Condition[];
   analysesCatalog: Record<string, Analysis>;
   controls: ControlsProps;
@@ -113,13 +105,7 @@ export function AllObservationsView({
   onSelectCell: (loinc: string, date: string) => void;
   onOpenResultPopup: (test: Observation, entry: ResultEntry, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexResultPopup: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
-  /**
-   * Per-date observation lookup, so the "What's in range" tab's picker can
-   * also build computed-index markers -- passed through to LabExploreView
-   * WITHOUT a currentPanel, which is what fans each index out across all of
-   * its own declared panels instead of scoping to just one (see
-   * buildExploreModel's doc comment).
-   */
+  /** Passed to LabExploreView without a currentPanel, which fans each index out across all its panels. */
   resultsByDate: Record<string, Record<string, Result>>;
   /** Shared with Panel Detail, so a row toggled in either view is the same row. One entry per scheduled visit. */
   scheduling: RowScheduling[];
@@ -128,12 +114,10 @@ export function AllObservationsView({
   /** Owned by the route (`#all/<tab>`), so a tab is linkable and back/forward returns to it. */
   tab: ObservationsTab;
   onTabChange: (tab: ObservationsTab) => void;
-  /** Medication history for the "What's in range" tab's lane (task-0053). */
+  /** Medication history for the "What's in range" tab's lane. */
   medications: MedicationRow[];
 }>) {
-  // Deliberately not persisted: a stored filter that hides observations would
-  // outlive the session that chose it, with nothing on screen explaining the
-  // gap -- the failure mode the shared-meta showPanels allowlist already had.
+  // Deliberately not persisted: a stored filter would go on hiding rows with nothing on screen explaining why.
   const [panelFilter, setPanelFilter] = useState<string>(ALL_PANELS);
   // Same reasoning as the panel filter: never persisted.
   const [query, setQuery] = useState('');
@@ -148,9 +132,7 @@ export function AllObservationsView({
         (!covered || covered.has(row.loinc)) && observationMatchesQuery(row, query, rawNamesOf(rawNames, row))
     );
   }, [rows, activePanel, query, rawNames]);
-  // The panel's own indices when one is picked, exactly as Panel Detail scopes
-  // them; otherwise every index the panels on offer declare, which the share
-  // link's allowlist has already narrowed.
+  // The picked panel's indices, else every index the offered (allowlist-narrowed) panels declare.
   const visibleIndexDefs = useMemo(() => {
     const names = new Set(activePanel ? [activePanel.name] : panelOptions.map((c) => c.name));
     return INDEX_DEFS.filter((def) => def.panels.some((p) => names.has(p)) && indexMatchesQuery(def, query));

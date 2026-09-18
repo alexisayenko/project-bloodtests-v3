@@ -107,9 +107,8 @@ function parseRow(value: unknown): MedicationRow | undefined {
     };
   }
 
-  // Pre-redesign shape (name/dosage): migrated losslessly and as-is into brand/notes, with no
-  // attempt to split a parenthetical compound note or align it against a "+"-separated dose --
-  // that pairing is unreliable, so compounds start empty and the user can re-enter them by hand.
+  // Old name/dosage shape: migrated verbatim, compounds left empty — splitting
+  // a dosage note into compounds cannot be done reliably.
   if (typeof row.name === 'string') {
     return {
       id: row.id,
@@ -123,17 +122,14 @@ function parseRow(value: unknown): MedicationRow | undefined {
   return undefined;
 }
 
-/** Whether a payload from outside (a backup) has the stored shape at all, before parseMedications forgives its rows. */
+/** Strict shape check for a backup; `parseMedications` itself forgives rows. */
 export function isMedicationsShape(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false;
   const meds = value as Record<string, unknown>;
   return Array.isArray(meds.years) && Array.isArray(meds.rows);
 }
 
-/**
- * A stored payload read back; anything missing or malformed reads as empty, an unnamed row is
- * dropped, and a row still in the pre-redesign name/dosage shape is migrated transparently.
- */
+/** Lenient: malformed parts read as empty, never as a failure. */
 export function parseMedications(raw: string | null, currentYear: number): Medications {
   try {
     if (raw) {
@@ -143,7 +139,7 @@ export function parseMedications(raw: string | null, currentYear: number): Medic
       return dropUnnamed({ years: withYears(years, rows, currentYear), rows });
     }
   } catch {
-    // corrupt local storage -- start empty
+    // corrupt storage reads as empty
   }
   return emptyMedications(currentYear);
 }
@@ -160,7 +156,7 @@ export function saveMedications(meds: Medications): void {
   try {
     localStorage.setItem(MEDICATIONS_KEY, JSON.stringify(meds));
   } catch {
-    // storage unavailable -- history just won't persist
+    // storage unavailable
   }
 }
 

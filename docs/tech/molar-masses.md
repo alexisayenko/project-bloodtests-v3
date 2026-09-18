@@ -71,7 +71,7 @@ option on the Hormonal Pathways page
 ## The analytes
 
 Eighteen entries. An entry exists because something in the app needs
-it: a [mass/molar LOINC sibling pair](README.md#unit-normalization), a
+it: a [mass/molar LOINC sibling pair](units.md#mass-versus-molar-is-a-code-error), a
 computed index whose formula wants an input in the other unit
 system, or a curated Hormonal Pathways reference range printed in the
 other one (estradiol, added 2026-09-11 for

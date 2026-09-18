@@ -5,9 +5,7 @@ import { useHideOnScroll } from './useHideOnScroll';
 import { COLOR } from '../../styles/tokens';
 
 export function NavBar({ route, navigate, hasValidationErrors = false }: Readonly<{ route: Route; navigate: (r: Route) => void; hasValidationErrors?: boolean }>) {
-  // Mobile pins the nav over the content and slides it away while you read
-  // downwards; the CSS that does so is behind the mobile breakpoint, so on
-  // desktop this state is measured and then ignored.
+  // The hide-on-scroll CSS sits behind the mobile breakpoint, so on desktop this state is measured and ignored.
   const hidden = useHideOnScroll();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -22,8 +20,7 @@ export function NavBar({ route, navigate, hasValidationErrors = false }: Readonl
   }, []);
 
   useEffect(() => {
-    // Fixed overlays elsewhere (a table's pulled-open header row) read
-    // --mc-nav-offset to park below whatever the nav currently occupies.
+    // Fixed overlays elsewhere read --mc-nav-offset to park below the nav.
     document.documentElement.dataset.mcNavHidden = String(hidden);
   }, [hidden]);
 

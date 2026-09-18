@@ -48,7 +48,6 @@ export function isPanelVisible(name: string, allow: string[] | null): boolean {
   return allow === null || allow.includes(name);
 }
 
-/** Allowlist filter for the panels grid; unknown names in the list simply match nothing. */
 export function visiblePanels<T extends { name: string }>(panels: T[], allow: string[] | null): T[] {
   if (allow === null) return panels;
   return panels.filter((p) => allow.includes(p.name));
@@ -68,7 +67,7 @@ export function storeSharedMeta(meta: SharedMeta | null): void {
     const sanitized = meta ? parseSharedMeta(meta) : null;
     if (sanitized) localStorage.setItem(SHARED_META_KEY, JSON.stringify(sanitized));
   } catch {
-    // storage unavailable -- the meta is just re-fetched next visit
+    // storage unavailable
   }
 }
 
@@ -76,15 +75,12 @@ export function clearSharedMeta(): void {
   try {
     localStorage.removeItem(SHARED_META_KEY);
   } catch {
-    // storage unavailable -- there is nothing stored to drop
+    // storage unavailable
   }
 }
 
-/**
- * A share link's presentation config must not outlive the link that supplied
- * it, so applying one always drops whatever a previous link left behind --
- * including when this link carries no meta of its own.
- */
+// Clears first so a previous link's meta never outlives it, even when this
+// link carries none of its own.
 export function applySharedMeta(meta: SharedMeta | null): void {
   clearSharedMeta();
   if (meta) storeSharedMeta(meta);

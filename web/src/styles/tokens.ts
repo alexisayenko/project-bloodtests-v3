@@ -1,13 +1,5 @@
-/**
- * The app's design tokens -- colour roles, type scale, radii, shadows and
- * spacing -- as references to the custom properties declared in
- * `styles/index.css` -- that `:root` block is the single source of truth for
- * the values, and this module is how the inline `style={{}}` objects the
- * codebase is written in reach them. A `var()` resolves anywhere a colour is
- * accepted, so a role can be repointed in one place; only the two chevron
- * data-URIs, which cannot interpolate a variable, carry a literal, and they
- * carry it in that same `:root` block.
- */
+// `styles/index.css`'s `:root` is the single source of truth; this only hands
+// its custom properties to inline styles.
 export const COLOR = {
   accent: 'var(--accent)',
   accentHover: 'var(--accent-hover)',
@@ -56,7 +48,6 @@ export const COLOR = {
   chevronDisabled: 'var(--chevron-disabled)',
 } as const;
 
-/** Monitoring Panels identity tints, one role per hue family (`panelMeta.ts`). */
 const tint = (role: string) => ({
   ink: `var(--tint-${role}-ink)`,
   bg: `var(--tint-${role}-bg)`,

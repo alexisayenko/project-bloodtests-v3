@@ -1,13 +1,7 @@
 import type { Analysis, LoincRef } from '../types';
 import catalog from '../../public/data/analyses.json';
 
-/**
- * The analyte catalog is the single source of truth for everything the app
- * knows about a LOINC code: its names and translations, its short name, the
- * unit it is expected in, any further units accepted for it, and which codes
- * are unit or method variants of which. The lookup maps below are derived from
- * it at load — none of them is hand-maintained.
- */
+/** The single source of truth per LOINC; every lookup map below is derived from it, none hand-kept (ADR-0010). */
 export const ANALYTES = catalog as Analysis[];
 
 export const ANALYTE_BY_LOINC: Record<string, Analysis> = Object.fromEntries(
@@ -50,32 +44,15 @@ export const ALLOWED_UNITS: Record<string, string[]> = Object.fromEntries(
   ANALYTES.filter((a) => a.allowedUnits?.length).map((a) => [a.loinc, a.allowedUnits!])
 );
 
-/**
- * The LOINC "Kind of Property" a long common name states in its bracket —
- * "Mass/volume", "Moles/volume", "Enzymatic activity/volume", "Units/volume".
- * The catalog stores no property field, so the name is the only place it is
- * recorded; a name with no bracket ("Prothrombin time (PT)") yields undefined.
- */
+/** The LOINC property from the long name's bracket — the catalog stores no property field. */
 export function propertyOf(longCommonName: string | undefined): string | undefined {
   return longCommonName?.match(/\[([^[\]]*)\]/)?.[1];
 }
 
 /**
- * Why an analyte's "U" and its "IU" name one and the same unit. Two LOINC
- * properties permit that fold, and they permit it for opposite reasons — which
- * is exactly why the permission is asked of the analyte's property rather than
- * of the spelling, and why one name covers both:
- *
- * - `catalytic-activity`: the measurement is an enzyme activity, whose unit is
- *   the 1964 enzyme unit of 1 µmol/min. That unit's own name is U; a lab that
- *   prints "IU" for it is writing the same unit loosely, so here IU means U.
- * - `arbitrary-unit`: the measurement is against a WHO International Unit, which
- *   LOINC files under "Units/volume". That unit's own name is IU; a lab that
- *   prints "U" for it is writing the same unit loosely, so here U means IU.
- *
- * Under every other property the two are different scales and stay apart, and
- * so does a WHO IU of one analyte against a WHO IU of another — the fold is
- * within one code's own history of spellings, never across analytes.
+ * Why "U" and "IU" are one unit for an analyte: an enzyme activity's unit is U
+ * (a printed IU means U); a WHO International Unit's is IU (a printed U means
+ * IU). The fold is within one code's spellings, never across analytes.
  */
 export type UIuFoldReason = 'catalytic-activity' | 'arbitrary-unit';
 
@@ -87,39 +64,20 @@ const U_IU_FOLD_PROPERTIES: Record<string, UIuFoldReason> = {
   'Arbitrary concentration': 'arbitrary-unit',
 };
 
-/**
- * Each code that permits the U/IU fold, mapped to its reason. Derived from the
- * catalog's own long common names (ADR-0010), never a hand-kept analyte list; a
- * code whose property is absent from the table above is simply not in here. See
- * `sameUnitScale` in unitNormalization.ts, the one place it is acted on.
- */
+/** Derived from the long common names, never a hand-kept list; acted on only in `sameUnitScale`. */
 export const U_IU_FOLD_REASON: Readonly<Record<string, UIuFoldReason>> = Object.fromEntries(
   ANALYTES.map((a) => [a.loinc, U_IU_FOLD_PROPERTIES[propertyOf(a.longCommonName) ?? '']]).filter(
     (entry): entry is [string, UIuFoldReason] => entry[1] !== undefined
   )
 );
 
-/** The codes permitting the fold under one reason — ALT, AST and the rest, or insulin and the WHO-standardised hormones. */
 export function loincsFoldingUAndIu(reason: UIuFoldReason): string[] {
   return Object.keys(U_IU_FOLD_REASON).filter((loinc) => U_IU_FOLD_REASON[loinc] === reason);
 }
 
-/**
- * The specimen a LOINC is measured in, read out of the long common name — LOINC
- * names its system in an "… in Serum or Plasma" / "… of Blood" clause, optionally
- * followed by a method ("… by Automated count"). The catalog stores no specimen
- * field, so this is the only place it can come from; a name that carries no such
- * clause ("Prothrombin time (PT)") yields undefined rather than a guess. The
- * property bracket is excluded so a match can never run through "[Entitic mass]".
- * The clause runs to the end of the name: `start` is where it begins, `specimen`
- * the system, `method` the "by …" tail — kept rather than swallowed so
- * `trimmedLongName` can put it back.
- *
- * A scanner rather than one regex, so no lazy group backtracks against an
- * optional tail. It reproduces `/\s(?:in|of)\s([^[\]]+?)(\s+by\s.*)?$/` exactly:
- * the leftmost opener whose clause parses wins, and the specimen stops at the
- * first " by " after at least one character.
- */
+// The "… in <System> [by <method>]" clause of a long common name. A scanner
+// rather than one regex, so no lazy group backtracks against an optional tail;
+// it reproduces `/\s(?:in|of)\s([^[\]]+?)(\s+by\s.*)?$/` exactly.
 interface SpecimenClause {
   start: number;
   specimen: string;
@@ -155,20 +113,11 @@ export function specimenOf(longCommonName: string | undefined): string | undefin
   return findSpecimenClause(longCommonName)?.specimen;
 }
 
-/**
- * A LOINC property bracket — "[Mass/volume]", "[#/volume]", "[Presence]". Every
- * bracketed token in the catalog is one of these; no long name brackets anything else.
- */
 const PROPERTY_BRACKET = /\[[^[\]]*\]/g;
 
 /**
- * The long common name with the two parts a table can show in columns of their own
- * taken off: the property bracket and the "… in <System>" clause `specimenOf` reads.
- * The trailing "by <method>" is always kept — it is what separates two codes for the
- * same analyte (CRP from high-sensitivity CRP, ESR from Westergren), so dropping it
- * would render genuinely different tests as identical rows. Display only — the stored
- * name stays authoritative, and a name carrying neither part comes back unchanged.
- * Never empties a name: trimming everything away yields the original.
+ * Long name minus the property bracket and specimen clause, for display. The
+ * "by <method>" tail is kept — it is what separates CRP from hs-CRP.
  */
 export function trimmedLongName(longCommonName: string): string {
   const clause = findSpecimenClause(longCommonName);

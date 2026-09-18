@@ -53,8 +53,6 @@ export function useLoincCrossCheck(
     setNlmSuggestions({});
   };
 
-  // Rows the local pass couldn't resolve: unknown codes, or codeless rows
-  // with no local suggestion.
   const unresolvedRows = useMemo(() => {
     if (!checkResults || !items) return [];
     return checkResults

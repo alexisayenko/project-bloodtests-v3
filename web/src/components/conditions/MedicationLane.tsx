@@ -26,43 +26,11 @@ function groupByBrand(bars: MedicationBar[]): { brand: string; bars: MedicationB
 }
 
 /**
- * The medication-history lane inside a panel's/All Observations' "What's in
- * range" chart -- one thin row per medication, bars spanning its active
- * months, stacked as a strip near the top of the plot area, aligned to the
- * SAME visible x-window as the vendored <lab-explore> chart around it and
- * drawn BEHIND its data lines.
- *
- * "Behind" is real z-order, not a tint: this renders via a portal into
- * `.med-lane-slot`, an anchor lab-explore.ts's `#makeChart()` inserts as the
- * very FIRST child of uPlot's own `.u-wrap` on every (re)build -- ahead of
- * `.u-under` (the canvas that actually paints the grid, the reference band
- * and the series strokes) in DOM order, which is what uPlot itself uses as
- * paint order since none of its layers set z-index. The bars sit fully
- * behind the canvas; wherever it draws an opaque or translucent pixel, that
- * pixel wins.
- *
- * That same behind-the-canvas placement also means the bars sit behind
- * `.u-over`, uPlot's transparent interactive overlay, which is what actually
- * receives pointer events for the whole plot (crosshair, drag-pan) -- so a
- * native `title` on a bar element would never fire; the browser always hit-
- * tests the topmost painted element. Hover is therefore done by hand: a
- * `mousemove`/`mouseleave` pair bound directly to `.u-over`, hit-testing the
- * cursor against each bar's live `getBoundingClientRect()`, with the result
- * shown in a small tooltip portaled into `.u-over` itself using its existing
- * `.u-tip` class -- the same DOM home and look the chart's own point tooltip
- * (chart-kit's `tooltip()`) already uses, so it paints on top like that one
- * does, with no new CSS.
- *
- * Alignment itself rides on two things read across the element's OPEN shadow
- * root rather than duplicated here: the "lab-explore-view" CustomEvent
- * lab-explore.ts dispatches with the chart's current {xmin, xmax} on every
- * pan/zoom/rebuild, and the real pixel rects of `.u-wrap`'s `.med-lane-slot`
- * and `.u-over` -- so a date lines up with the same date in the chart above
- * it without this component reimplementing uPlot's own axis-gutter math.
- * Both `.u-wrap` and `.u-over` are destroyed and recreated by `#makeChart()`
- * on every rebuild (a marker toggle included, not just `#render()`), so the
- * portal targets and the `.u-over` listeners are all re-resolved on every
- * such event rather than assumed stable.
+ * Medication bars portaled into `.med-lane-slot`, the first child of uPlot's
+ * `.u-wrap`, so they paint behind the canvas by DOM order. Being behind
+ * `.u-over` means no native `title` can fire, so hover is hit-tested by hand
+ * on `.u-over`; alignment reads the chart's "lab-explore-view" event and live
+ * rects, both re-resolved on every rebuild since `#makeChart()` recreates them.
  */
 export function MedicationLane({
   bars,
@@ -132,12 +100,7 @@ export function MedicationLane({
     const onViewEvent = (e: Event) => {
       setView((e as CustomEvent<ViewRange>).detail);
       measure();
-      // A rebuild (marker toggle, model swap) fires this event the instant its
-      // NEW uPlot instance is constructed, but uPlot applies that instance's own
-      // DOM sizing (`.u-over`'s rect) a tick later -- so the measurement just
-      // above can read a stale/zero rect. One more pass next frame, once uPlot
-      // has actually settled, catches that case; on pan/zoom (`.u-wrap` unchanged)
-      // it just reconfirms the same numbers.
+      // uPlot sizes a new instance's `.u-over` a tick after firing this event, so measure once more next frame.
       requestAnimationFrame(measure);
     };
     host.addEventListener('lab-explore-view', onViewEvent);
@@ -151,11 +114,7 @@ export function MedicationLane({
     };
   }, [hostRef, measure, onMove, onLeave]);
 
-  // The slot found above only takes effect for the bars' own portal once React
-  // commits it into the DOM on the NEXT render, so the render where `slot`
-  // first appears still needs its own measurement -- this is that one. It also
-  // re-attaches the resize watcher to the CURRENT `.chart-wrap`, since a slot
-  // change means lab-explore.ts just rebuilt its whole shadow DOM.
+  // A new slot means lab-explore rebuilt its shadow DOM: measure again and re-attach the resize watcher.
   useEffect(() => {
     if (!slot) return;
     measure();

@@ -3,9 +3,7 @@ import type { FC, SVGProps } from 'react';
 /** Lucide-compatible icon component type. */
 export type IconComponent = FC<SVGProps<SVGSVGElement> & { size?: number; strokeWidth?: number; color?: string }>;
 
-/**
- * Liver organ silhouette — exact vector extracted from design mockup.
- */
+/** Exact vector extracted from the design mockup. */
 export const LiverIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -24,10 +22,7 @@ export const LiverIcon: IconComponent = ({ size = 26, color = 'currentColor', ..
   </svg>
 );
 
-/**
- * Kidney pair whose ureters join below them — a line icon in lucide's 24-unit
- * grid, since the mockup's traced polygon rendered as an unreadable blot.
- */
+/** Line icon in lucide's 24-unit grid; the mockup's traced polygon rendered as a blot. */
 export const KidneyIcon: IconComponent = ({ size = 26, color = 'currentColor', strokeWidth = 2, ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -48,11 +43,7 @@ export const KidneyIcon: IconComponent = ({ size = 26, color = 'currentColor', s
   </svg>
 );
 
-/**
- * Capsule tilted lower-left to upper-right, split across its middle, with a
- * highlight arc under its upper cap — a line icon in lucide's 24-unit grid,
- * drawn upright and rotated so the cap, divider and arc stay concentric.
- */
+/** Drawn upright and rotated, so the cap, divider and arc stay concentric. */
 export const PillIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -75,10 +66,6 @@ export const PillIcon: IconComponent = ({ size = 24, color = 'currentColor', str
   </svg>
 );
 
-/**
- * Three hollow nodes in an inverted V, the top one linked to each bottom one
- * and the bottom pair unlinked — a line icon in lucide's 24-unit grid.
- */
 export const PathwaysIcon: IconComponent = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -100,9 +87,7 @@ export const PathwaysIcon: IconComponent = ({ size = 24, color = 'currentColor',
   </svg>
 );
 
-/**
- * Thyroid gland butterfly outline — exact vector extracted from design mockup.
- */
+/** Exact vector extracted from the design mockup. */
 export const ThyroidIcon: IconComponent = ({ size = 26, color = 'currentColor', ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -247,7 +232,6 @@ const FATTY_ACID_SCATTER = [
   { x: 36, y: 38, r: 160 },
 ];
 
-/** A few loose fatty acids -- short carbon-chain tails, each with its own head, scattered at random positions and angles rather than one tail repeated. */
 export const FattyAcidClusterIcon: IconComponent = ({ size = 48, color = '#c9a227', strokeWidth = 2, ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

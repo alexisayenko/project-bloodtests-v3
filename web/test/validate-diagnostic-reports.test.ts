@@ -7,30 +7,13 @@ import {
   type ValidationIssue,
 } from '../src/data/validateDiagnosticReports';
 import type { DiagnosticReport, Result } from '../src/types';
+import { makeResult, makeSession } from './helpers/fixtures';
 
-const createResult = (overrides?: Partial<Result>): Result => ({
-  loinc: '718-7',
-  rawName: 'Hemoglobin',
-    section: '',
-  value: 14.2,
-  rawValue: '14.2',
-  valueQualifier: '',
-  unit: 'g/dL',
-  refText: '13.5 - 17.5',
-  refMin: 13.5,
-  refMax: 17.5,
-  method: '',
-  ...overrides,
-});
+const createResult = (overrides?: Partial<Result>): Result =>
+  makeResult({ loinc: '718-7', rawName: 'Hemoglobin', value: 14.2, rawValue: '14.2', unit: 'g/dL', refText: '13.5 - 17.5', refMin: 13.5, refMax: 17.5, ...overrides });
 
-const createGroup = (overrides?: Partial<DiagnosticReport>): DiagnosticReport => ({
-  date: '2026-01-10',
-  place: 'Lab A',
-  file: 'test-file',
-  items: [createResult()],
-  itemCount: 1,
-  ...overrides,
-});
+const createGroup = (overrides?: Partial<DiagnosticReport>): DiagnosticReport =>
+  makeSession({ date: '2026-01-10', place: 'Lab A', file: 'test-file', items: [createResult()], ...overrides });
 
 describe('validateDiagnosticReports', () => {
   it('warns when the unit contradicts the curated unit for the code', () => {

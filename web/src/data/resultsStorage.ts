@@ -15,11 +15,7 @@ export function hasStoredResults(): boolean {
 
 type StoredResult = Result & { analysis?: string; symbol?: string };
 
-/**
- * A stored result as the current shape. Sessions saved before the printed name
- * was renamed carry it as `analysis` (beside an always-empty `symbol`); both are
- * read into `rawName` and dropped, so an existing browser's data keeps loading.
- */
+// Older stored sessions carry the printed name as `analysis` (with an empty `symbol`).
 function currentResult(stored: StoredResult): Result {
   const result: StoredResult = { ...stored, rawName: stored.rawName ?? stored.analysis ?? '' };
   delete result.analysis;
@@ -27,7 +23,7 @@ function currentResult(stored: StoredResult): Result {
   return result;
 }
 
-/** The sessions under RESULTS_STORAGE_KEY, old-shape results included; anything unreadable is no sessions. */
+/** Anything unreadable reads as no sessions. */
 export function parseStoredSessions(raw: string | null): DiagnosticReport[] {
   if (!raw) return [];
   try {

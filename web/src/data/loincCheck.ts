@@ -27,20 +27,14 @@ export interface CrossCheckResult {
   derived?: { loinc: string; name: string };
 }
 
-// Trailing "." or "?" only ("mg/dL." → "mg/dl", "fL?" → "fl") — a manual scan
-// instead of a trailing-quantifier regex, which backtracks super-linearly
-// when the string ends in a long run of these chars with no match at $.
+// Manual scan: a trailing-quantifier regex backtracks super-linearly here.
 function trimTrailingUnitPunctuation(s: string): string {
   let end = s.length;
   while (end > 0 && (s[end - 1] === '.' || s[end - 1] === '?')) end -= 1;
   return s.slice(0, end);
 }
 
-// "mIU/L" ≈ "mu/l", "μIU/mL" ≈ "uu/ml", "x10³/µL" ≈ "x10^3/ul", "mg/dL." ≈ "mg/dl";
-// IU and U are interchangeable lab spellings ("µU/mL" ≡ "µIU/mL"), and a
-// curated unit marked uncertain ("fL?") reads as the unit itself. The
-// superscript / micro / multiplication folding is unitNormalization's, shared
-// rather than tabulated twice.
+// IU and U are treated as one lab spelling here ("µU/mL" ≡ "µIU/mL"); "fL?" reads as "fl".
 export function normalizeUnit(unit: string | undefined | null): string {
   return trimTrailingUnitPunctuation(
     foldUnitGlyphs(unit ?? '')
@@ -51,23 +45,18 @@ export function normalizeUnit(unit: string | undefined | null): string {
   );
 }
 
-// μIU/mL ≡ mIU/L, pg/mL ≡ ng/L: a metric prefix over /mL is the same quantity
-// as the prefix shifted up 1000× over /L — fold to the /L spelling so the two
-// compare equal. /dL, /uL and prefixless numerators (IU/mL) are left alone.
+// μIU/mL ≡ mIU/L: a prefix over /mL folds to the next prefix up over /L; /dL, /uL are left alone.
 const PREFIX_UP: Record<string, string> = { p: 'n', n: 'u', u: 'm', m: '' };
 
 const CYRILLIC_RE = /\p{Script=Cyrillic}/u;
 
-// A Cyrillic printed unit ("ммоль/л", "МЕ/мл", "тыс/мкл") matches nothing in the
-// catalog, so transliterate it first. Only Cyrillic input takes this path.
 function latinizeUnit(printed: string): string {
   if (!CYRILLIC_RE.test(printed)) return printed;
   return toLatinUnit(printed) ?? printed;
 }
 
 export function canonicalUnit(unit: string | undefined | null): string {
-  // toLatinUnit and plain lab spellings both yield a bare "10^3/uL" where the
-  // catalog writes count units "x10^3/uL", so the multiplier goes back on.
+  // The catalog writes count units "x10^3/uL", so the multiplier goes back on.
   const u = normalizeUnit(latinizeUnit(unit ?? '')).replace(/^10\^/, 'x10^');
   const m = /^([pnum])(\p{L}+)\/ml$/u.exec(u);
   return m ? `${PREFIX_UP[m[1]!]}${m[2]}/l` : u;
@@ -82,10 +71,8 @@ function knownUnits(loinc: string, unitByLoinc: Record<string, string>): string[
   return catalogUnits(loinc, unitByLoinc).map((u) => canonicalUnit(u));
 }
 
-// A candidate whose every known unit measures another kind of quantity than the
-// row's (HbA1c's % against a hemoglobin row in g/L) is ruled out rather than
-// down-ranked. A unit either side cannot place rules nothing out, and a scale of
-// the same dimension (g/L against g/dL) is left to unitAdjust.
+// A dimension contradiction (HbA1c's % vs a g/L row) rules a candidate out; a
+// same-dimension scale difference is left to unitAdjust.
 function contradictsRowUnit(
   rowDimension: UnitDimension | undefined,
   loinc: string,
@@ -96,8 +83,7 @@ function contradictsRowUnit(
   return dimensions.size > 0 && !dimensions.has(rowDimension);
 }
 
-// Keeps only whitespace-separated words whose letters are all Latin-script,
-// so bilingual lab printouts like "Γλυκόζη Glucose Serum" reduce to "Glucose Serum".
+// "Γλυκόζη Glucose Serum" → "Glucose Serum".
 export function latinPart(name: string): string {
   return name
     .split(/\s+/)
@@ -106,10 +92,7 @@ export function latinPart(name: string): string {
     .trim();
 }
 
-// Words printed beside an analyte's name that name no analyte themselves. They
-// may still settle between siblings ("Whole Blood", "общий"), but a name met on
-// them alone is no match, and a translation carrying one ("Холестерин общий")
-// does not require the printout to repeat it.
+// Words that name no analyte: they may settle between siblings but never make a match alone.
 const GENERIC_TOKENS = new Set([
   'acid',
   'acids',
@@ -144,9 +127,7 @@ function anionOf(acid: string, adjective: string): string | undefined {
   return m ? `${m[1]}ат` : undefined;
 }
 
-// A lab reports an -ic acid under its -ate anion (uric acid is urate, folic
-// acid is folate), so a printed "Folic Acid" reads as the catalog's "folate",
-// and "Фолиевая кислота" / "Фолієва кислота" as "фолат".
+// A printed -ic acid reads as its -ate anion ("Folic Acid" → "folate", "Фолиевая кислота" → "фолат").
 function foldAcidToAnion(tokens: string[]): string[] {
   const out: string[] = [];
   for (const t of tokens) {
@@ -158,9 +139,7 @@ function foldAcidToAnion(tokens: string[]): string[] {
   return out;
 }
 
-// British ae/oe digraphs fold to the American spelling (haemoglobin →
-// hemoglobin, oestradiol → estradiol) so en-GB printouts tokenize like the
-// catalog's en-US names.
+// ae/oe fold to the American spelling so en-GB printouts tokenize like the catalog.
 function plainTokens(text: string): string[] {
   return text
     .toLowerCase()
@@ -173,16 +152,13 @@ function tokensOf(text: string): string[] {
   return foldAcidToAnion(plainTokens(text));
 }
 
-// A catalog name answers to both spellings: "Uric Acid" folded alone would take
-// "acid" out of the vocabulary, leaving "Acid Phosphatase" an unknown word that
-// barely counts beside "phosphatase".
+// Both spellings, else folding "Uric Acid" would drop "acid" from the vocabulary.
 function nameTokensOf(text: string): string[] {
   const plain = plainTokens(text);
   return [...plain, ...foldAcidToAnion(plain)];
 }
 
-// Any-script tokenizer for the translation pass — Greek/Cyrillic printed names
-// must not be stripped there.
+// Any-script tokenizer for the translation pass.
 function unicodeTokens(text: string): string[] {
   return text
     .toLowerCase()
@@ -190,8 +166,7 @@ function unicodeTokens(text: string): string[] {
     .filter((t) => t.length >= 2);
 }
 
-// Fraction of `printed` tokens found among `official` tokens (0..1), with
-// fuzzy equality so "Haemoglobin"/"CORTIZOL" still overlap their entries.
+// Fraction of `printed` tokens found among `official` tokens, fuzzily.
 export function tokenOverlap(printed: string, official: string): number {
   const printedTokens = tokensOf(printed);
   if (printedTokens.length === 0) return 0;
@@ -211,13 +186,10 @@ function catalogNameText(a: Analysis): string {
   return `${a.friendlyName} ${a.longCommonName}`;
 }
 
-// Printed names vary wildly across labs, so any meaningful token overlap
-// counts as a match; only a near-zero overlap is flagged as a mismatch.
+// Printed names vary wildly across labs; only a near-zero overlap is a mismatch.
 const MISMATCH_THRESHOLD = 0.2;
 
-// Rarity (IDF) weight per token across the catalog: "index"/"total"/"serum"
-// appear everywhere and should barely count; "HDL" or "prothrombin" pin the
-// analyte. Weight = 1/log2(2+df).
+// IDF weight per token, 1/log2(2+df): "serum" barely counts, "prothrombin" pins the analyte.
 const UNKNOWN_TOKEN_WEIGHT = 0.25;
 
 function tokenWeights(entries: Analysis[]): Map<string, number> {
@@ -232,32 +204,18 @@ function tokenWeights(entries: Analysis[]): Map<string, number> {
   return weights;
 }
 
-// A candidate whose known units include the row's is boosted; one whose known
-// units all contradict it is heavily penalized — the unit hard-selects among
-// same-named variants (e.g. Prolactin mIU/L vs ng/mL).
+// The unit hard-selects among same-named variants (Prolactin mIU/L vs ng/mL).
 function unitAdjust(base: number, rowUnit: string, candUnits: string[]): number {
   if (base <= 0 || !rowUnit || candUnits.length === 0) return base;
-  // Multiplicative, so the unit signal scales with name similarity instead of
-  // lifting a weak name hit past a strong one.
+  // Multiplicative, so a unit hit cannot lift a weak name hit past a strong one.
   return candUnits.includes(rowUnit) ? base * 1.3 : base * 0.3;
 }
 
-// Rank floor applies to the PRE-unit-adjust name score: a strong name hit
-// whose curated unit contradicts the row's (e.g. FT4 ng/L vs ng/dL) must
-// still surface as a suggestion — the penalty only demotes it from confident.
-// 0.45 (not lower) keeps common-token junk out: "Risk Factor Index" matching
-// TNF-alpha on "factor" alone stays under the floor.
+// Applies to the PRE-unit-adjust score, so a unit contradiction only demotes
+// from confident; 0.45 keeps "Risk Factor Index" from matching TNF-alpha on "factor".
 const RANK_FLOOR = 0.45;
 
-// A primary and its own ALSO_REFS aliases are one analyte, not competing
-// suggestions — collapse them into a single candidate. The kept code is the
-// group member whose known unit matches the row's (the unit picks the variant;
-// panels still join via ALIAS_TO_PRIMARY, so e.g. SHBG nmol/L keeps 13967-5).
-// When the unit doesn't discriminate (no row unit, or several members match),
-// fall back to the primary — but only for same-scale groups (one shared
-// canonical unit, e.g. Glucose 2339-0/2345-7 both mg/dL). Different-scale
-// variants with no deciding unit (Prolactin mIU/L vs ng/mL on a unitless row)
-// stay separate: only the unit tells them apart.
+// A primary and its aliases are one analyte, not competing suggestions.
 function groupByAliasPrimary(ranked: CrossCheckSuggestion[]): Map<string, CrossCheckSuggestion[]> {
   const groups = new Map<string, CrossCheckSuggestion[]>();
   for (const s of ranked) {
@@ -269,8 +227,8 @@ function groupByAliasPrimary(ranked: CrossCheckSuggestion[]): Map<string, CrossC
   return groups;
 }
 
-// The unit picks the variant when it discriminates; otherwise the primary
-// wins, but only for a same-scale group (see collapseAliasGroups above).
+// The unit picks the variant; otherwise the primary wins, but only for a
+// same-scale group — different-scale variants with no deciding unit stay separate.
 function pickAliasGroupMember(
   members: CrossCheckSuggestion[],
   primary: string,
@@ -338,10 +296,7 @@ function stageLatin(
   const rowUnit = canonicalUnit(item.unit);
   const queryTokens = tokensOf(name);
   const vocabByLen = groupVocabByLength(weights.keys());
-  // Per query token: every catalog token it counts as (itself + fuzzy hits)
-  // and its weight. A fuzzy-known token borrows its best match's weight; a
-  // token the whole catalog has never seen ("3rd", "total") can't
-  // discriminate anything, so it barely counts instead of diluting the score.
+  // A token the catalog has never seen can't discriminate, so it barely counts rather than diluting the score.
   const tokenInfo = new Map(
     queryTokens.map((t) => {
       const hits = fuzzyVocabHits(t, vocabByLen);
@@ -381,9 +336,7 @@ function readingTokens(reading: string): string[] {
   return [...new Set(unicodeTokens(reading))];
 }
 
-// A translated name read whole, without its brackets, and as a bracket holding
-// the entire printed name: a bracket is either a synonym a printout may use alone
-// ("(ТТГ)") or a qualifier that only counts beside the rest ("(абс.)").
+// A bracket is either a synonym usable alone ("(ТТГ)") or a qualifier that only counts beside the rest ("(абс.)").
 function nameReadings(name: string, queryTokens: string[]): string[][] {
   const synonyms = [...name.matchAll(/\(([^()]*)\)/g)]
     .map((m) => readingTokens(m[1]!))
@@ -391,11 +344,7 @@ function nameReadings(name: string, queryTokens: string[]): string[][] {
   return [readingTokens(name), readingTokens(name.replace(/\([^()]*\)/g, ' ')), ...synonyms];
 }
 
-// The share of the printed name the translation covers stays the score; the
-// share of the translation the printout leaves out discounts it by up to half,
-// so a candidate carrying a qualifier the printout lacks ("Холестерин ЛПВП"
-// against "Холестерин общий") falls behind one that carries none. A generic
-// qualifier is not one the printout has to repeat.
+// A qualifier the printout lacks ("ЛПВП" vs "общий") discounts by up to half; a generic one need not be repeated.
 function translationScore(queryTokens: string[], name: string): number {
   const nameTokens = new Set(unicodeTokens(name));
   if (!queryTokens.some((t) => isDecisive(t) && nameTokens.has(t))) return 0;
@@ -407,10 +356,8 @@ function translationScore(queryTokens: string[], name: string): number {
   return (queryCoverage * (1 + nameCoverage)) / 2;
 }
 
-// Ladder stage b: the full printed name vs each catalog `lang` translation.
-// The printout is read both as printed and with its acid folded to the anion, so
-// "Мочевая кислота" still meets its own translation while "Фолиевая кислота"
-// meets "фолат".
+// Ladder stage b: the full printed name vs each catalog `lang` translation,
+// read both as printed and acid-folded so "Фолиевая кислота" meets "фолат".
 function stageLang(item: Result, entries: Analysis[], unitByLoinc: Record<string, string>): CrossCheckSuggestion[] {
   const printed = unicodeTokens(item.rawName);
   if (printed.length === 0) return [];
@@ -466,8 +413,7 @@ function resolveWith(
   return { candidates, confident: isConfident(candidates, item, unitByLoinc) };
 }
 
-// Derive a LOINC from the printed name + unit alone — the printed code plays
-// no part here, so the result can corroborate or contradict it.
+// From name + unit alone; the printed code plays no part, so the result can contradict it.
 export function resolveLoinc(
   item: Result,
   catalog: Map<string, Analysis> | Analysis[],
@@ -489,9 +435,7 @@ function unicodeOverlap(printed: string, official: string): number {
   return matched.some(isDecisive) ? matched.length / printedTokens.length : 0;
 }
 
-// A printed name agrees with a code when it is one of the code's own names —
-// display, badge or a translation, up to case, spacing and punctuation — or
-// shares a meaningful share of tokens with its English or translated names.
+// Exact match on any of the code's names (case/punctuation ignored), else token overlap.
 function printedNameAgrees(printed: string, entry: Analysis): boolean {
   const translations = Object.values(entry.lang ?? {});
   const key = nameKey(printed);
@@ -525,13 +469,10 @@ export function crossCheckLocal(
     const entry = byCode.get(code);
     const resolvedName = entry ? entry.friendlyName || entry.longCommonName : undefined;
     const top = candidates[0];
-    // A printed alias of the derived code (or vice versa) is the same analyte —
-    // panels fold it via ALIAS_TO_PRIMARY — so it's a match.
+    // An alias of the derived code is the same analyte, so it's a match.
     const primaryOf = (c: string) => ALIAS_TO_PRIMARY[c] ?? c;
     const agreesWithTop = top !== undefined && primaryOf(top.loinc) === primaryOf(code);
-    // The derivation is the authority: a printed code is only evidence. When
-    // the best derivation is the printed code, the row agrees even without
-    // confidence, and there is nothing to offer in its place.
+    // The derivation is the authority; a printed code is only evidence, so agreement needs no confidence.
     if (agreesWithTop) {
       return { status: 'match' as const, resolvedName: resolvedName ?? top.name, ...(confident ? { confident } : {}) };
     }

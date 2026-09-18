@@ -1,5 +1,4 @@
-// The app's only network call, and its single privacy exception: an explicit
-// opt-in sends test names — never values — to the NLM Clinical Tables API.
+// The app's only network call: an explicit opt-in sends test names — never values — to NLM.
 import { ALLOWED_UNITS } from './analyteCatalog';
 import { canonicalUnit, normalizeUnit } from './loincCheck';
 
@@ -17,17 +16,15 @@ export interface NlmLookupResult {
   byName: Record<string, NlmEntry[]>;
 }
 
-// EXAMPLE_UCUM_UNITS can list several units ("mg/dL;mmol/L"); our own
-// ALLOWED_UNITS extras for the entry's code count as agreement too.
+// EXAMPLE_UCUM_UNITS may list several units ("mg/dL;mmol/L").
 function nlmUnitMatches(entry: NlmEntry, rowUnit: string): boolean {
   return [...(entry.unit ?? '').split(/[;,]/), ...(ALLOWED_UNITS[entry.loinc] ?? [])].some(
     (u) => canonicalUnit(u) === rowUnit
   );
 }
 
-// The same unit selection as the local ladder, for NLM name-search results:
-// entries agreeing with the row's unit win; ones contradicting it are dropped
-// once any agreeing entry exists (unknown-unit entries are kept as fallback).
+// Contradicting entries are dropped only once an agreeing one exists;
+// unknown-unit entries are kept as fallback.
 export function selectByUnit(entries: NlmEntry[], rowUnit: string | undefined): NlmEntry[] {
   const unit = canonicalUnit(rowUnit);
   if (!unit) return entries;

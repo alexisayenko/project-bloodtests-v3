@@ -40,6 +40,45 @@ describe('isEchoRedundant (short-name echo suppression)', () => {
   });
 });
 
+describe('buildConditions', () => {
+  const panels = [
+    { id: 'hpg-axis', name: 'HPG Axis', loincs: ['14913-8', '2991-8'] },
+    { id: 'thyroid', name: 'Thyroid', sections: [{ name: 's', loincs: ['11580-8'] }] },
+    { id: 'glucose-metabolism', name: 'Glucose', loincs: ['2339-0', '1798-8', '59261-8'] },
+  ];
+
+  it('resolves panelId panels plus extraLoincs', () => {
+    const conditions = buildConditions(panels, {}, MONITORING_PANELS);
+    const hypo = conditions.find((c) => c.name === 'Hypogonadism')!;
+    expect(hypo.tests.map((t) => t.loinc)).toEqual(
+      expect.arrayContaining(['14913-8', '2991-8', '1751-7', '4548-4'])
+    );
+  });
+
+  it('reads section-based panels and applies excludeLoincs', () => {
+    const conditions = buildConditions(panels, {}, MONITORING_PANELS);
+    expect(conditions.find((c) => c.name === 'Hypothyroidism')!.tests.map((t) => t.loinc)).toContain('11580-8');
+    const ir = conditions.find((c) => c.name === 'Insulin Resistance')!;
+    expect(ir.tests.map((t) => t.loinc)).not.toContain('1798-8'); // excluded (pancreatic)
+    expect(ir.tests.map((t) => t.loinc)).not.toContain('59261-8'); // excluded (IFCC twin)
+  });
+
+  it('always yields one condition per panel definition', () => {
+    expect(buildConditions([], {}, MONITORING_PANELS).map((c) => c.name)).toEqual(MONITORING_PANELS.map((d) => d.name));
+  });
+
+  it('short names win over catalog friendly names', () => {
+    const conditions = buildConditions(
+      panels,
+      { '14913-8': { loinc: '14913-8', friendlyName: 'Testosterone (Total)', longCommonName: 'x' } },
+      MONITORING_PANELS
+    );
+    const t = conditions.find((c) => c.name === 'Hypogonadism')!.tests.find((x) => x.loinc === '14913-8')!;
+    expect(t.shortName).toBe('T');
+    expect(t.friendlyName).toBe('Testosterone (Total)');
+  });
+});
+
 describe('marker catalog consistency', () => {
   it('every also-ref alias maps back to its primary', () => {
     for (const [primary, refs] of Object.entries(ALSO_REFS)) {

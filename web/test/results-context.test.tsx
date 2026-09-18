@@ -6,23 +6,18 @@ import { ResultsProvider, useResultsContext } from '../src/data/ResultsContext';
 import { storeSharedMeta, loadStoredSharedMeta, SHARED_META_KEY } from '../src/data/sharedMeta';
 import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
 import type { DiagnosticReport } from '../src/types';
+import { makeEnvelope as envelope, makeReport, makeSession } from './helpers/fixtures';
+import { installMemoryStorage } from './helpers/storage';
 
 type Ctx = ReturnType<typeof useResultsContext>;
 
-const report = (lab: string, date: string, loinc: string, rawName: string, value: number) => ({
-  lab,
-  collectedAt: `${date}T00:00:00Z`,
-  observations: [{ loinc, rawName, value }],
-});
-
-const envelope = (...reports: ReturnType<typeof report>[]) => ({ schema: 3, diagnosticReports: reports });
+const report = (lab: string, date: string, loinc: string, rawName: string, value: number) =>
+  makeReport({ lab, collectedAt: `${date}T00:00:00Z`, observations: [{ loinc, rawName, value }] });
 
 const FIRST = envelope(report('Lab A', '2026-01-10', '718-7', 'Hemoglobin', 14.2));
 const SECOND = envelope(report('Lab B', '2025-06-01', '2339-0', 'Glucose', 95));
 
-const GENERATED: DiagnosticReport[] = [
-  { date: '2024-03-03', place: 'Generated', file: '2024-03-03__generated', items: [], itemCount: 0 },
-];
+const GENERATED: DiagnosticReport[] = [makeSession({ date: '2024-03-03', place: 'Generated', file: '2024-03-03__generated' })];
 
 function fileOf(json: unknown): File {
   return { text: async () => JSON.stringify(json) } as unknown as File;
@@ -59,22 +54,6 @@ async function mountProvider(): Promise<void> {
   await flush();
 }
 
-// jsdom's own localStorage is not exposed as a global under this runner.
-function installLocalStorageStub(): void {
-  const store = new Map<string, string>();
-  const stub = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, String(v)),
-    removeItem: (k: string) => void store.delete(k),
-    clear: () => store.clear(),
-    key: (i: number) => [...store.keys()][i] ?? null,
-    get length() {
-      return store.size;
-    },
-  };
-  Object.defineProperty(globalThis, 'localStorage', { value: stub, configurable: true, writable: true });
-}
-
 function setSearch(search: string): void {
   window.history.replaceState(null, '', `/${search}`);
 }
@@ -82,7 +61,7 @@ function setSearch(search: string): void {
 describe('ResultsContext keeps a share link\'s meta from outliving its link', () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    installLocalStorageStub();
+    installMemoryStorage();
     setSearch('');
   });
 

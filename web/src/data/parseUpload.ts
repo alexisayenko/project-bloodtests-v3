@@ -10,26 +10,9 @@ import type {
 /** The interchange format's own spelling of "the report names no lab". */
 export const UNKNOWN_LAB = 'Unknown Lab';
 
-/**
- * Parses a visitor-uploaded JSON file into DiagnosticReport[].
- *
- * One shape is accepted: the v3 interchange envelope,
- * `{ schema: "3.1", diagnosticReports: [...] }` — what this project's export
- * pipeline and the chatbot prompt both produce. Each DiagnosticReport maps
- * to a DiagnosticReport, with observations transformed into results. This is
- * the one place unit normalization runs — every import route (chatbot JSON,
- * Import JSON, share link) passes through here.
- *
- * Any minor within major 3 is read — `"3.0"`, `"3.1"`, a later `"3.2"` — plus
- * the legacy bare number `3`, which means `3.0`; a minor only ever adds an
- * optional field, and fields this build does not know are ignored anyway. See
- * `docs/tech/decisions/adr-0012-envelope-version-is-a-major-minor-string.md`.
- *
- * Older files (envelopes stamped `schema: 1`, project-bloodtests-v2's
- * canonical draws, and the flat/grouped legacy shapes) are no longer read
- * here: they are converted offline with `npm run convert:v3` first. See
- * `docs/tech/decisions/adr-0009-v3-only-and-rawname.md`.
- */
+// Only the v3 envelope is read (any `3.x`, or the legacy bare `3`, ADR-0012);
+// older shapes go through `npm run convert:v3` first (ADR-0009). Every import
+// route passes through here, so this is the one place unit normalization runs.
 
 function slugify(text: string): string {
   const value = (text || 'unknown').trim().toLowerCase().replaceAll('/', ' ');
@@ -39,22 +22,14 @@ function slugify(text: string): string {
   return slug || 'unknown';
 }
 
-/**
- * Extract YYYY-MM-DD from ISO timestamp.
- * Assumes input is ISO 8601 (e.g., "2024-06-15T00:00:00Z").
- */
 function extractDateFromISO(isoString: string): string {
   if (!isoString || typeof isoString !== 'string') return '';
   const match = /^(\d{4}-\d{2}-\d{2})/.exec(isoString);
   return match ? match[1] : '';
 }
 
-/**
- * Import-time unit normalization: derives the canonical form and attaches it
- * alongside the printed pair, which is left untouched. Where the unit can't be
- * placed, or contradicts the code, nothing is attached — the contradiction is
- * reported as a warning by `validateDiagnosticReports` instead.
- */
+// The printed pair stays untouched; a unit that can't be placed attaches
+// nothing and is left for `validateDiagnosticReports` to warn about.
 function withCanonicalUnit(result: Result): Result {
   if (!result.loinc || !result.unit) return result;
   const { canonical } = normalizeObservationUnit({
@@ -74,11 +49,8 @@ function v3ToResult(obs: InterchangeObservation): Result {
     value: obs.value ?? null,
     rawValue: obs.rawValue || '',
     valueQualifier: obs.comparator || '',
-    // The printed unit is what the app displays, validates and normalizes from,
-    // so `rawUnit` wins where a file carries it: `unit` may already hold a
-    // normalized UCUM code (this app's own export writes one), and reading that
-    // instead would lose the string the lab printed. A file without `rawUnit` —
-    // chatbot output, a hand-written one — keeps the printed string in `unit`.
+    // `rawUnit` wins: in a file this app exported, `unit` is already a UCUM
+    // code, and the printed string is what the app displays and validates.
     unit: obs.rawUnit || obs.unit || '',
     refText:
       obs.referenceRanges?.find((r) => r.text)?.text ||
@@ -104,9 +76,8 @@ function v3ToGroup(report: InterchangeReport, index: number): DiagnosticReport {
 
   const items = report.observations.map(v3ToResult);
   const place = report.lab || UNKNOWN_LAB;
-  // The report's own identifier (visit/order/accession) disambiguates two
-  // draws from the same lab on the same date — without it they'd collide on
-  // the same session id and silently replace each other on merge.
+  // Without the identifier, two same-day draws from one lab would share a
+  // session id and silently replace each other on merge.
   const ident = report.identifiers?.visit || report.identifiers?.order || report.identifiers?.accession;
   const identSuffix = ident ? `__${slugify(String(ident))}` : '';
 

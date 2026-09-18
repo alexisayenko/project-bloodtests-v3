@@ -31,20 +31,13 @@ import { CARD_TABLE_TD, CARD_TABLE_TH, TABLE_CARD } from '../primitives/styles';
 import { Card } from '../primitives/Card';
 
 const DATE_COL_WIDTH = 96;
-// The Scheduled columns sit after an empty spacer column so they read as a
-// separate block from the date grid while staying in the same table (exact
-// row alignment for free).
 const GAP_COL_WIDTH = 16;
-// Fits the header's widest row: the month pill at its longest option (91px),
-// the gaps, the remove button and the cell padding. The body cells stay a
-// single glyph.
+// Fits the header's widest row: the month pill at its longest option, gaps, remove button and padding.
 const SCHEDULED_COL_WIDTH = 130;
-// Just wide enough for the "add a visit" button, at the end of the Scheduled block.
 const ADD_COL_WIDTH = 40;
 
 const HAIRLINE = `1px solid ${COLOR.borderSubtle}`;
 
-// A muted band of small uppercase labels, the table's quiet counterpart to the grid's overlines.
 const th = { ...CARD_TABLE_TH, padding: '10px 12px', verticalAlign: 'middle' } as const;
 const td = { ...CARD_TABLE_TD, padding: '8px 12px', cursor: 'pointer' } as const;
 const labelTd = { ...td, whiteSpace: 'normal', overflowWrap: 'anywhere', color: COLOR.navy } as const;
@@ -71,11 +64,7 @@ const addTh = { ...th, textAlign: 'center', padding: '6px 4px' } as const;
 
 const STATUS_TEXT = { ok: COLOR.statusOkText, warn: COLOR.statusWarnText, bad: COLOR.statusBadText } as const;
 
-/**
- * A reading's status as a soft inset tint behind the number rather than a
- * flood across the cell. The negative margin cancels the tint's own padding,
- * so the digits stay on the header's left edge whether a cell is tinted or not.
- */
+/** The negative margin cancels the tint's padding, so digits stay on the header's left edge whether tinted or not. */
 function StatusValue({ tone, bg, children }: Readonly<{ tone: keyof typeof STATUS_TEXT; bg: string; children: ReactNode }>) {
   return (
     <span
@@ -95,11 +84,7 @@ function StatusValue({ tone, bg, children }: Readonly<{ tone: keyof typeof STATU
   );
 }
 
-/**
- * The grid's own px width. The card hugs it (plus its 1px borders), so the
- * trailing auto column comes out empty and the header band and hairlines end
- * where the columns do; past the available width the card caps and scrolls.
- */
+/** The card hugs this width, so the trailing auto column stays empty and the hairlines end where the columns do. */
 function gridWidth(dateCount: number, visitCount: number, showScheduling: boolean): number {
   const scheduleWidth = showScheduling ? GAP_COL_WIDTH + visitCount * SCHEDULED_COL_WIDTH + ADD_COL_WIDTH : 0;
   return LABEL_COL_WIDTH + dateCount * DATE_COL_WIDTH + scheduleWidth;
@@ -144,8 +129,6 @@ function TableHead({
         {onAddVisit && (
           <>
             <th style={gapTh} />
-            {/* The header holds only controls, so aria-label supplies the column
-                name that the removed caption used to give it. */}
             {schedules!.map((schedule) => (
               <th key={schedule.visitId} style={scheduledTh} aria-label="Scheduled visit">
                 <ScheduleHeader {...schedule} />
@@ -218,12 +201,7 @@ function RelationMark({ label }: Readonly<{ label: string | undefined }>) {
 
 type CellPress = (e: { currentTarget: HTMLElement }) => void;
 
-/**
- * The two-step data-cell interaction shared by observation and index rows: a
- * first click selects the row and arms the cell, a second click on the armed
- * cell opens its popup. `onOpen` is undefined for a cell with no value, which
- * therefore never leaves the arming step.
- */
+/** First click arms the cell, second opens its popup; `onOpen` undefined (no value) never leaves the arming step. */
 function armedCellHandler({
   selectedCell, rowKey, date, onSelect, onSelectCell, onOpen,
 }: Readonly<{
@@ -278,9 +256,7 @@ function ObservationCells({
         }
         const hasRef = hasReference(match.result);
         const outOfRange = isOutOfRange(match.result);
-        // Coloring always uses the as-reported value/range (self-consistent);
-        // only the displayed number is converted for the toggle, and then it is
-        // shown under the unit it was converted TO (see displayedResult).
+        // Coloring uses the as-reported value/range; only the displayed number is converted.
         const text = !display.converted && preferRaw ? display.rawValue || fmtNum(display.value) : fmtNum(display.value);
         const unit = showCellUnits && display.unit && <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {display.unit}</span>;
         return (
@@ -303,15 +279,10 @@ function ObservationCells({
   );
 }
 
-/**
- * The header band repeated mid-table, so both section labels read alike. Spans
- * exactly the grid's real columns -- never the trailing auto column, which no
- * other row fills -- and keeps the Scheduled column's side rules unbroken.
- */
+/** Spans exactly the grid's real columns, never the trailing auto column, so the Scheduled side rules stay unbroken. */
 function SectionDividerRow({
   label, dateCount, visitCount, showScheduling,
 }: Readonly<{ label: string; dateCount: number; visitCount: number; showScheduling: boolean }>) {
-  // gap column + one per visit + the add column.
   const scheduleColSpan = visitCount + 2;
   return (
     <tr>
@@ -511,14 +482,7 @@ export type ResultsTableProps = {
   onOpenIndexResultPopup?: (def: IndexDef, date: string, value: number, e: { currentTarget: HTMLElement }) => void;
   /** Show the lab's raw string (qualifiers like "<0.1") when no unit conversion applies. */
   preferRaw?: boolean;
-  /**
-   * One entry per scheduled visit -- in the same order, and naming the same
-   * visits, as `indexScheduling` -- rendered as one Scheduled column each,
-   * plus an "add a visit" column at the end. Passing `onAddVisit` is what
-   * turns the Scheduled block on at all; an empty `scheduling` array with
-   * `onAddVisit` set is a valid, if sparse, table -- no visit columns, just
-   * the add control.
-   */
+  /** Same order as `indexScheduling`; `onAddVisit` alone turns the Scheduled block on, even with zero visits. */
   scheduling?: RowScheduling[];
   indexScheduling?: IndexScheduling[];
   onAddVisit?: () => void;

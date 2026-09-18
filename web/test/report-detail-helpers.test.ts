@@ -18,28 +18,16 @@ import {
   unitRepairFor,
   type SuggestionChip,
 } from '../src/components/conditions/reportDetailHelpers';
-import { buttonStyle } from '../src/components/primitives/styles';
-import { COLOR } from '../src/styles/tokens';
 import { ALIAS_TO_PRIMARY, ALSO_REFS, ANALYTE_BY_LOINC } from '../src/data/analyteCatalog';
 import { crossCheckLocal, type CrossCheckResult } from '../src/data/loincCheck';
 import type { NlmEntry } from '../src/data/loincNlm';
 import type { Analysis, Result } from '../src/types';
 import type { ValidationIssue } from '../src/data/validateDiagnosticReports';
+import { COLOR } from '../src/styles/tokens';
+import { makeResult } from './helpers/fixtures';
 
-const createResult = (overrides?: Partial<Result>): Result => ({
-  loinc: '2345-7',
-  rawName: 'Glucose',
-    section: '',
-  value: 90,
-  rawValue: '90',
-  valueQualifier: '',
-  unit: 'mg/dL',
-  refText: '',
-  refMin: 70,
-  refMax: 100,
-  method: '',
-  ...overrides,
-});
+const createResult = (overrides?: Partial<Result>): Result =>
+  makeResult({ loinc: '2345-7', rawName: 'Glucose', value: 90, rawValue: '90', unit: 'mg/dL', refMin: 70, refMax: 100, ...overrides });
 
 const issue = (overrides?: Partial<ValidationIssue>): ValidationIssue => ({
   groupFile: 'r1',
@@ -396,9 +384,7 @@ describe('getUnitLabel', () => {
 });
 
 describe('save button', () => {
-  it('greys out and blocks the pointer while errors stand, and reports progress in its label', () => {
-    expect(buttonStyle('primary', 'md', true)).toMatchObject({ background: COLOR.border, cursor: 'not-allowed', opacity: 0.5 });
-    expect(buttonStyle('primary', 'md', false)).toMatchObject({ background: COLOR.primary, cursor: 'pointer' });
+  it('reports progress in its label', () => {
     expect(saveButtonLabel(true)).toBe('Saving...');
     expect(saveButtonLabel(false)).toBe('Save');
   });

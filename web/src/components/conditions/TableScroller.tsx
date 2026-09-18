@@ -6,12 +6,7 @@ import { LABEL_COL_WIDTH, RESULT_TABLE } from './ui';
 /** Invisible drag target around the column sliver: 5px is nowhere near a thumb-sized handle. */
 const GRAB = 22;
 
-/**
- * The header's handle is deliberately thin -- it straddles the sliver and
- * nothing more, because it sits at the top edge of the screen where a wide
- * target used to eat page scrolling. The chip is the target you are meant to
- * hit; this is only the shortcut for people who find the sliver.
- */
+/** Deliberately thin: a wide target at the top edge eats page scrolling; the chip is the intended control. */
 const GRAB_HEAD = SLIVER * 2;
 
 /** Clear of the header's own edge, so the chip never sits on the date row it toggles. */
@@ -27,25 +22,10 @@ function navOffset(): number {
 }
 
 /**
- * The horizontally scrolling box around a results table. The marker-name
- * column is frozen on every screen size -- the real first column, held by
- * `position: sticky` at the left edge, so it can never drift out of line
- * with the rows -- picking up an edge shadow (`mc-col-cut`, from this
- * component's own scroll tracking) once the table is actually scrolled
- * under it, the same treatment Medications' sticky column uses.
- *
- * On mobile only, this also renders the pull-to-reveal handles for the two
- * things narrow screens still can't just leave on screen: the date header
- * row (off the top, with the page) and the frozen column itself, parked at a
- * SLIVER instead of shown in full. Neither is pinned open; each is dragged or
- * tapped open and collapses again on the next scroll or a tap elsewhere.
- *
- * The header reveal has to be a copy -- vertical sticky would resolve against
- * this scrolling box rather than the page -- and it is kept aligned by
- * rendering the SAME colgroup and thead inside a box of the same width, with
- * the horizontal scroll mirrored onto it. It also gets the floating "Dates"
- * chip, which is the control people are actually expected to find; the pull
- * is the shortcut.
+ * The frozen column is the real first column (sticky), so it cannot drift from
+ * the rows; the mobile header reveal must be a copy, since vertical sticky
+ * would resolve against this box rather than the page, kept aligned by
+ * rendering the same colgroup/thead at the same width with the scroll mirrored.
  */
 export function TableScroller({
   colgroup,
@@ -110,17 +90,13 @@ export function TableScroller({
     };
   }, [isMobile]);
 
-  // Tracks horizontal scroll on every screen size -- desktop included -- since
-  // `scrollLeft` alone is what drives the frozen column's edge shadow
-  // (`mc-col-cut`, below). The pull-reveal collapse it also triggers only
-  // matters on mobile, where the column can be dragged open in the first place.
+  // Tracked on every screen size, since `scrollLeft` drives the frozen column's edge shadow.
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
     const onScroll = () => {
       setScrollLeft(wrap.scrollLeft);
-      // Only the column reveal lives on this axis; a header left open follows
-      // the scroll instead, which is how you read across to a far date.
+      // An open header follows the scroll instead, which is how you read across to a far date.
       if (isMobile && !live.current.column.dragging) live.current.column.collapse();
     };
     wrap.addEventListener('scroll', onScroll, { passive: true });
@@ -151,8 +127,7 @@ export function TableScroller({
   const showHeader = isMobile && headerCut && headHeight > 0;
   const showColumn = isMobile && scrollLeft > SLIVER;
 
-  // Non-passive, so the handle can take the one direction it needs instead of
-  // reserving an axis up front with `touch-action`; React only offers passive.
+  // Non-passive (React only offers passive), so the handle claims one direction instead of an axis via `touch-action`.
   const headerClaim = header.claimTouch;
   const columnClaim = column.claimTouch;
   useEffect(() => {
@@ -165,8 +140,7 @@ export function TableScroller({
       col?.removeEventListener('touchmove', columnClaim);
     };
   }, [showHeader, showColumn, headerClaim, columnClaim]);
-  // Keyboard activation of a <button> arrives as a click with no pointer
-  // detail; pointer taps are already handled by the drag gesture itself.
+  // Keyboard activation arrives as a click with detail 0; pointer taps are handled by the drag gesture.
   const keyOnly = (toggle: () => void) => (e: { detail: number }) => {
     if (e.detail === 0) toggle();
   };

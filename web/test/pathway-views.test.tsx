@@ -1,22 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { act, useState } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import { useState } from 'react';
 import { HormonalPathwaysView } from '../src/components/conditions/HormonalPathwaysView';
 import { LipidTransportView } from '../src/components/conditions/LipidTransportView';
 import type { Observation } from '../src/components/conditions/markers';
 import type { ResultEntry } from '../src/components/conditions/resultsLookup';
 import { formatMonthYear } from '../src/data/months';
 import type { Result } from '../src/types';
+import { makeEntry, makeObservation, makeResult } from './helpers/fixtures';
+import { buttonNamed, click, mount as mountElement, pressEscape, q, selectOption, unmount } from './helpers/render';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 beforeAll(() => {
-  globalThis.ResizeObserver ??= class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  } as unknown as typeof ResizeObserver;
   if (!('fonts' in document)) {
     Object.defineProperty(document, 'fonts', { value: { ready: Promise.resolve() }, configurable: true });
   }
@@ -24,11 +20,10 @@ beforeAll(() => {
 
 type View = typeof HormonalPathwaysView | typeof LipidTransportView;
 
-function reading(loinc: string, value: number, unit: string, refMin: number | null = null, refMax: number | null = null): Result {
-  return { loinc, rawName: loinc, section: '', value, rawValue: String(value), valueQualifier: '', unit, refText: '', refMin, refMax, method: '' };
-}
+const reading = (loinc: string, value: number, unit: string, refMin: number | null = null, refMax: number | null = null): Result =>
+  makeResult({ loinc, rawName: loinc, value, unit, refMin, refMax });
 
-const entry = (date: string, result: Result): ResultEntry => ({ loinc: result.loinc, date, place: 'Synthetic Lab', result });
+const entry = (date: string, result: Result): ResultEntry => makeEntry({ loinc: result.loinc, date, place: 'Synthetic Lab', result });
 
 function byDate(entries: readonly ResultEntry[]): Record<string, Record<string, Result>> {
   const map: Record<string, Record<string, Result>> = {};
@@ -36,56 +31,19 @@ function byDate(entries: readonly ResultEntry[]): Record<string, Record<string, 
   return map;
 }
 
-const observation = (loinc: string, shortName: string): Observation => ({ loinc, shortName, friendlyName: shortName, longCommonName: shortName });
+const observation = (loinc: string, shortName: string): Observation => makeObservation({ loinc, shortName, longCommonName: shortName });
 
-let root: Root | null = null;
-let container: HTMLDivElement | null = null;
+afterEach(unmount);
 
-afterEach(() => {
-  act(() => root?.unmount());
-  container?.remove();
-  root = null;
-  container = null;
-});
-
-async function mount(Component: View, entries: readonly ResultEntry[], panelTests: readonly Observation[]): Promise<HTMLDivElement> {
+function mount(Component: View, entries: readonly ResultEntry[], panelTests: readonly Observation[]): Promise<HTMLDivElement> {
   function Harness() {
     const [unitSystem, setUnitSystem] = useState<'si' | 'us'>('si');
     return <Component allResults={entries} resultsByDate={byDate(entries)} panelTests={panelTests} unitSystem={unitSystem} onUnitSystemChange={setUnitSystem} />;
   }
-  container = document.createElement('div');
-  document.body.appendChild(container);
-  root = createRoot(container);
-  await act(async () => {
-    root!.render(<Harness />);
-  });
-  return container;
+  return mountElement(<Harness />);
 }
-
-const q = (el: ParentNode, selector: string) => {
-  const found = el.querySelector<HTMLElement>(selector);
-  if (!found) throw new Error(`nothing matches ${selector}`);
-  return found;
-};
-
-const buttonNamed = (el: ParentNode, name: string) => {
-  const found = [...el.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === name);
-  if (!found) throw new Error(`no button ${name}`);
-  return found;
-};
-
-const click = (el: HTMLElement) => act(async () => el.click());
 
 const chipValue = (el: ParentNode, id: string) => q(el, `[data-caption="${id}"] .mc-pathway-node-value`).textContent ?? '';
-
-async function selectOption(select: HTMLSelectElement, value: string) {
-  await act(async () => {
-    select.value = value;
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-}
-
-const pressEscape = () => act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
 
 // ---- Hormonal Pathways ----
 

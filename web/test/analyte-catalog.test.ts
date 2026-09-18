@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ANALYSES } from './dataFiles';
-import { specimenOf, trimmedLongName } from '../src/data/analyteCatalog';
+import { SPECIMENS, specimenOf, trimmedLongName } from '../src/data/analyteCatalog';
 
 // The specimen scanner replaced /\s(?:in|of)\s([^[\]]+?)(\s+by\s.*)?$/ and the
 // bracket pattern lost its leading \s*. These pin the edges those expressions
@@ -59,5 +59,96 @@ describe('specimen clause scanner — edges of the regex it replaced', () => {
       expect(specimen).not.toMatch(/[[\]]/);
       expect(a.longCommonName).toContain(specimen);
     }
+  });
+});
+
+describe('specimen derived from the long common name', () => {
+  it('reads the system out of an "in …" clause, dropping any method', () => {
+    expect(specimenOf('Glucose [Mass/volume] in Serum or Plasma')).toBe('Serum or Plasma');
+    expect(specimenOf('Hemoglobin [Mass/volume] in Blood by Automated count')).toBe('Blood');
+    expect(specimenOf('Reticulocytes/Erythrocytes [Pure number fraction] in Red Blood Cells')).toBe('Red Blood Cells');
+  });
+
+  it('reads an "of …" clause the same way', () => {
+    expect(specimenOf('Hematocrit [Volume Fraction] of Blood by Automated count')).toBe('Blood');
+  });
+
+  it('never runs a match through the property bracket', () => {
+    expect(specimenOf('MCH [Entitic mass] by Automated count')).toBeUndefined();
+  });
+
+  it('returns nothing rather than guessing when the name states no specimen', () => {
+    expect(specimenOf('Prothrombin time (PT)')).toBeUndefined();
+    expect(specimenOf(undefined)).toBeUndefined();
+  });
+
+  it('derives a specimen for all but the handful of names that omit one', () => {
+    const without = ANALYSES.filter((a) => !SPECIMENS[a.loinc]);
+    expect(without.length).toBeLessThanOrEqual(8);
+    for (const a of without) expect(a.longCommonName).not.toMatch(/\s(?:in|of)\s/);
+  });
+});
+
+describe('long common name trimmed for display', () => {
+  it('drops both the property bracket and the specimen clause', () => {
+    expect(trimmedLongName('25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma')).toBe('25-hydroxyvitamin D3');
+  });
+
+  it('keeps the method whether or not a specimen clause preceded it', () => {
+    // The method is what tells two codes for one analyte apart, so it always stays.
+    expect(trimmedLongName('MCH [Entitic mass] by Automated count')).toBe('MCH by Automated count');
+    expect(trimmedLongName('Erythrocytes [#/volume] in Blood by Automated count')).toBe(
+      'Erythrocytes by Automated count'
+    );
+    expect(trimmedLongName('Hematocrit [Volume Fraction] of Blood by Automated count')).toBe(
+      'Hematocrit by Automated count'
+    );
+    expect(
+      trimmedLongName('C reactive protein [Mass/volume] in Serum or Plasma by High sensitivity method')
+    ).toBe('C reactive protein by High sensitivity method');
+  });
+
+  it('drops a specimen clause from a name that carries no property', () => {
+    expect(trimmedLongName('Hemoglobin A1c/Hemoglobin.total in Blood by calculation')).toBe(
+      'Hemoglobin A1c/Hemoglobin.total by calculation'
+    );
+  });
+
+  it('drops only the trailing clause, not an "in" that is part of the analyte name', () => {
+    expect(trimmedLongName('Cholesterol in HDL [Mass/volume] in Serum or Plasma')).toBe('Cholesterol in HDL');
+  });
+
+  it('leaves a name carrying neither part alone, parentheses included', () => {
+    expect(trimmedLongName('Prothrombin time (PT)')).toBe('Prothrombin time (PT)');
+    expect(trimmedLongName('Thrombin time')).toBe('Thrombin time');
+  });
+
+  it('never returns an empty name', () => {
+    expect(trimmedLongName('[Mass/volume] in Serum')).toBe('[Mass/volume] in Serum');
+    expect(trimmedLongName('')).toBe('');
+  });
+
+  it('leaves every catalog name non-empty and no longer than the stored one', () => {
+    for (const a of ANALYSES) {
+      const trimmed = trimmedLongName(a.longCommonName);
+      expect(trimmed).not.toBe('');
+      expect(trimmed.length).toBeLessThanOrEqual(a.longCommonName.length);
+      expect(trimmed).not.toMatch(/[[\]]/);
+    }
+  });
+
+  it('leaves no two catalog entries looking identical in the LOINC database table', () => {
+    // Name, specimen and unit are the three columns a reader tells rows apart by.
+    // Two codes agreeing on all three are indistinguishable on screen — which is
+    // what dropping the method used to do to CRP, ESR and HbA1c.
+    const seen = new Map<string, string>();
+    const collisions: string[] = [];
+    for (const a of ANALYSES) {
+      const key = [trimmedLongName(a.longCommonName), SPECIMENS[a.loinc] ?? '', a.unit ?? ''].join(' | ');
+      const first = seen.get(key);
+      if (first) collisions.push(`${first} vs ${a.loinc}: ${key}`);
+      else seen.set(key, a.loinc);
+    }
+    expect(collisions).toEqual([]);
   });
 });

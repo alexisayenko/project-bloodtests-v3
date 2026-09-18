@@ -10,6 +10,7 @@ import {
 } from '../src/data/generateTestData';
 import { parseUploadedResults } from '../src/data/parseUpload';
 import { validateDiagnosticReports } from '../src/data/validateDiagnosticReports';
+import { installMemoryStorage } from './helpers/storage';
 import { computeIndex } from '../src/data/computedIndices';
 import { INDEX_DEFS } from '../src/data/indexDefs';
 import { ALIAS_TO_PRIMARY } from '../src/data/analyteCatalog';
@@ -150,7 +151,7 @@ describe('withTestSchedule', () => {
 });
 
 describe('applyTestData', () => {
-  const store = new Map<string, string>();
+  let store: Map<string, string>;
   let sessions: DiagnosticReport[] = [];
   const merge = (groups: DiagnosticReport[]) => {
     const byFile = new Map(sessions.map((g) => [g.file, g]));
@@ -159,12 +160,8 @@ describe('applyTestData', () => {
   };
 
   beforeEach(() => {
-    store.clear();
+    store = installMemoryStorage();
     sessions = [];
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => void store.set(k, String(v)),
-    });
   });
   afterEach(() => vi.unstubAllGlobals());
 

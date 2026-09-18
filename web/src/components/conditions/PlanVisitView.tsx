@@ -13,7 +13,6 @@ import { PageHeader } from './PageHeader';
 import { CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
-/** A tab's label: the visit's own target month, or the same "No month" copy its own MonthSelect shows for that state. */
 function visitTabLabel(visit: ScheduledVisit): string {
   return visit.month ? formatMonthFullYear(visit.month) : 'No month';
 }
@@ -74,12 +73,10 @@ function TotalCell({ lab, quote, cheapest }: Readonly<{ lab: Laboratory; quote: 
   );
 }
 
-/** Stop a click/keypress on a nested control (a lab's own link) from also firing the row's popup handler. */
 function stopBubble(e: { stopPropagation: () => void }): void {
   e.stopPropagation();
 }
 
-/** One visit's own card: its target month, its rows, its per-lab prices and its own laboratory radio group. */
 function VisitPlanCard({
   visit,
   index,
@@ -88,7 +85,7 @@ function VisitPlanCard({
   onSetMonth,
 }: Readonly<{
   visit: ScheduledVisit;
-  /** Distinguishes this visit's radio-button group from every other visit's, so picking a lab in one never touches another. */
+  /** Keys this visit's own radio group, so picking a lab in one visit never touches another. */
   index: number;
   onOpenPopup?: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onSelectLab: (labId: string | undefined) => void;
@@ -251,7 +248,6 @@ function VisitPlanCard({
   );
 }
 
-/** What each scheduled visit's draw costs at each laboratory, row by row and in total -- one visit shown at a time, picked by tab. */
 export function PlanVisitView({
   visits,
   onOpenPopup,
@@ -263,9 +259,7 @@ export function PlanVisitView({
   onSelectLab: (visitId: string, labId: string | undefined) => void;
   onSetMonth: (visitId: string, month: string | undefined) => void;
 }>) {
-  // Page-navigation state, not a stored preference -- and visits are added/removed
-  // dynamically, so a stale id is expected and simply falls back below rather than
-  // being treated as an error.
+  // Visits come and go, so a stale id is expected and falls back below.
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const activeIndex = visits.findIndex((v) => v.id === selectedId);
   const activeVisit = activeIndex >= 0 ? visits[activeIndex] : visits[0];

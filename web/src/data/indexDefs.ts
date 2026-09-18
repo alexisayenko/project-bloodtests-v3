@@ -2,22 +2,15 @@ import { molarPerMass, type IndexDef, type Markers } from './computedIndices';
 import { martinHopkinsFactor } from './martinHopkinsLdl';
 import { molarMassOf } from './molarMasses';
 
-/**
- * The clinical definitions the index engine in `computedIndices.ts` runs:
- * formulas, cut-points, prose and cited sources. Imports the engine's types
- * one-directionally -- the engine never reaches back for the definitions,
- * every function there takes an `IndexDef` as an argument.
- */
+// Imports the engine's types one-directionally; the engine never reaches back here.
 
 const has = (m: Markers, ...keys: string[]): boolean => keys.every((k) => m[k] != null);
 
 const T_NGDL_TO_NMOLL = molarPerMass('testosterone');
-// Used inside the cortisol/DHEA-S index's fn, which needs both sides in nmol/L.
 const CORTISOL_UGDL_TO_NMOLL = molarPerMass('cortisol');
 const DHEAS_UGDL_TO_NMOLL = molarPerMass('dheas');
 
-// ---- calculated free testosterone (Vermeulen equation), ported verbatim from
-// engine/src/indices/free-testosterone.ts ----
+// ---- calculated free testosterone (Vermeulen equation) ----
 
 const ALBUMIN_MW = 69000; // g/mol, Vermeulen/ISSAM calculator convention (not albumin's true MW)
 const KA_ALBUMIN = 3.6e4; // L/mol, testosterone-albumin association constant
@@ -41,50 +34,42 @@ function calculatedFreeTestosterone(totalT_ngdl: number, shbg_nmoll: number, alb
   return (FT / 1e-9 / T_NGDL_TO_NMOLL) * 10; // mol/L -> nmol/L -> ng/dL -> pg/mL
 }
 
-// ---- calculated free testosterone (Ly & Handelsman 2005 empirical
-// regression), no albumin term. Two branches on total T, coefficients as
-// published -- ported verbatim, not re-derived. ----
+// ---- calculated free testosterone (Ly & Handelsman 2005), coefficients as published ----
 
-/** Ly & Handelsman's two-branch regression: T and S in nmol/L, result FT in pmol/L. */
+/** T and S in nmol/L, result in pmol/L. */
 function lyHandelsmanFreeT_pmolL(T: number, S: number): number {
   return T >= 5
     ? -52.65 + 24.4 * T - 0.704 * S - 0.0782 * T * S - 0.0584 * T * T
     : -6.593 + 19.304 * T + 0.056 * S - 0.0959 * T * S;
 }
 
-/**
- * Free T in pg/mL (same displayed unit as cFT/Vermeulen), or null when the
- * regression itself returns a negative value -- not a physiological result,
- * so no number is shown, the same handling ldlf/ldls give a validity-range
- * breach.
- */
+// A negative regression result is not physiological, so null is shown rather than a number.
 function calculatedFreeTestosteroneLyHandelsman(totalT_nmoll: number, shbg_nmoll: number): number | null {
   const FT_pmolL = lyHandelsmanFreeT_pmolL(totalT_nmoll, shbg_nmoll);
   if (FT_pmolL < 0) return null;
   return (FT_pmolL / 1000 / T_NGDL_TO_NMOLL) * 10; // pmol/L -> nmol/L -> ng/dL -> pg/mL
 }
 
-/** Ly & Handelsman free T as % of total T, both nmol/L; null exactly where cftlh is. */
+/** Null exactly where cftlh is. */
 function lyHandelsmanFreePercent(totalT_nmoll: number, shbg_nmoll: number): number | null {
   const FT_pmolL = lyHandelsmanFreeT_pmolL(totalT_nmoll, shbg_nmoll);
   if (FT_pmolL < 0) return null;
   return (FT_pmolL / 1000 / totalT_nmoll) * 100;
 }
 
-/** Vermeulen free T as % of total T (nmol/L); the fraction ISSAM's worked example prints as [S] %. */
+/** The fraction ISSAM's worked example prints as [S] %. */
 function vermeulenFreePercent(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl?: number): number {
   const T = totalT_nmoll * 1e-9;
   return (vermeulenFreeT(T, shbg_nmoll * 1e-9, albuminMolL(albumin_gdl)) / T) * 100;
 }
 
-// Mayo Clinic Laboratories' bioavailable testosterone reference limits (test
-// TTBS), ng/dL: the men's lower limits for ages 20-29 and 60-69, the women's
-// (20-50, non-oophorectomized) upper limits on and off oral estrogen.
+// Mayo Clinic Laboratories TTBS reference limits, ng/dL: men's lower limits at
+// 20-29 and 60-69, women's (20-50) upper limits on and off oral estrogen.
 const BIOT_NGDL = { male20s: 83, male60s: 40, femaleOralEstrogen: 4, female: 10 } as const;
 const biotNmol = (ngdl: number) => ngdl * T_NGDL_TO_NMOLL;
 const biotShown = (ngdl: number) => Number(biotNmol(ngdl).toPrecision(3));
 
-/** Free plus albumin-bound testosterone, nmol/L: free T × (1 + Ka·albumin). */
+/** nmol/L: free T × (1 + Ka·albumin). */
 function bioavailableTestosterone(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl?: number): number {
   const A = albuminMolL(albumin_gdl);
   const FT = vermeulenFreeT(totalT_nmoll * 1e-9, shbg_nmoll * 1e-9, A);
@@ -93,11 +78,8 @@ function bioavailableTestosterone(totalT_nmoll: number, shbg_nmoll: number, albu
 
 export const TESTOSTERONE_MOLAR_MASS = molarMassOf('testosterone');
 
-/**
- * Testosterone's three pools, nmol/L: free, albumin-bound (free × Ka·albumin) and SHBG-bound (the rest).
- * `solveMolarMass` (g/mol) changes only the total T fed to the quadratic, so only the free fraction;
- * each pool stays that fraction of `totalT_nmoll` -- issam.ch's calculator solves at 280 g/mol this way.
- */
+// `solveMolarMass` rescales only the total T fed to the quadratic (issam.ch
+// solves at 280 g/mol); each pool stays a fraction of `totalT_nmoll`.
 export function testosteronePools(totalT_nmoll: number, shbg_nmoll: number, albumin_gdl: number, solveMolarMass?: number) {
   const A = albuminMolL(albumin_gdl);
   const scale = solveMolarMass == null ? 1 : TESTOSTERONE_MOLAR_MASS / solveMolarMass;
@@ -202,8 +184,7 @@ export const INDEX_DEFS: IndexDef[] = [
       { organization: "National Cholesterol Education Program (NCEP) Expert Panel", document: "Third Report (ATP III), JAMA", year: 2001, url: "https://pubmed.ncbi.nlm.nih.gov/11368702/", doi: "10.1001/jama.285.19.2486", quote: "LDL-C descriptive categories (mg/dL): <100 optimal, 100–129 near optimal/above optimal, 130–159 borderline high, 160–189 high, ≥190 very high — the source of the bands used here." },
       { organization: "European Society of Cardiology / European Atherosclerosis Society", document: "2019 ESC/EAS Guidelines for the management of dyslipidaemias (Mach F et al.)", year: 2020, url: "https://academic.oup.com/eurheartj/article/41/1/111/5556353", doi: "10.1093/eurheartj/ehz455", quote: "LDL-C goals are risk-stratified, not universal: <1.4 mmol/L (~55 mg/dL) very-high risk, <1.8 (~70) high, <2.6 (~100) moderate, <3.0 (~115) low risk." },
     ],
-    // Friedewald's TG/5 term stops approximating VLDL-C above TG 400 mg/dL, so
-    // no value is produced there rather than a confidently wrong one.
+    // Null above TG 400 mg/dL rather than a confidently wrong number.
     fn: (m) =>
       has(m, 'TC', 'HDL-C', 'TRIG') && m['TRIG']! < 400
         ? m['TC']! - m['HDL-C']! - m['TRIG']! / 5
@@ -222,7 +203,7 @@ export const INDEX_DEFS: IndexDef[] = [
       { organization: "American College of Cardiology / American Heart Association Joint Committee on Clinical Practice Guidelines", document: "2026 ACC/AHA/AACVPR/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Dyslipidemia, JACC", year: 2026, url: "https://www.jacc.org/doi/10.1016/j.jacc.2025.11.016", doi: "10.1016/j.jacc.2025.11.016", quote: "Use of either the Martin/Hopkins equation or the Sampson/National Institutes of Health (NIH) equation is preferred over calculation by the Friedewald equation to estimate LDL-C. (1, B-NR)" },
       { organization: "National Cholesterol Education Program (NCEP) Expert Panel", document: "Third Report (ATP III), JAMA", year: 2001, url: "https://pubmed.ncbi.nlm.nih.gov/11368702/", doi: "10.1001/jama.285.19.2486", quote: "LDL-C descriptive categories (mg/dL): <100 optimal, 100–129 near optimal/above optimal, 130–159 borderline high, 160–189 high, ≥190 very high — the source of the bands used here." },
     ],
-    // Derived and validated only to TG 800 mg/dL; above that no value is produced.
+    // Validated only to TG 800 mg/dL.
     fn: (m) => {
       if (!has(m, 'TC', 'HDL-C', 'TRIG') || m['TRIG']! > 800) return null;
       const tc = m['TC']!;
@@ -244,8 +225,7 @@ export const INDEX_DEFS: IndexDef[] = [
       { organization: "American College of Cardiology / American Heart Association Joint Committee on Clinical Practice Guidelines", document: "2026 ACC/AHA/AACVPR/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Dyslipidemia, JACC", year: 2026, url: "https://www.jacc.org/doi/10.1016/j.jacc.2025.11.016", doi: "10.1016/j.jacc.2025.11.016", quote: "Use of either the Martin/Hopkins equation or the Sampson/National Institutes of Health (NIH) equation is preferred over calculation by the Friedewald equation to estimate LDL-C. (1, B-NR)" },
       { organization: "National Cholesterol Education Program (NCEP) Expert Panel", document: "Third Report (ATP III), JAMA", year: 2001, url: "https://pubmed.ncbi.nlm.nih.gov/11368702/", doi: "10.1001/jama.285.19.2486", quote: "LDL-C descriptive categories (mg/dL): <100 optimal, 100–129 near optimal/above optimal, 130–159 borderline high, 160–189 high, ≥190 very high — the source of the bands used here." },
     ],
-    // The table has no cell outside TG 7-13975 mg/dL (all non-HDL-C values are
-    // covered), so a factor lookup miss is the only validity-range failure.
+    // A factor lookup miss (TG outside 7-13975 mg/dL) is the only validity-range failure.
     fn: (m) => {
       if (!has(m, 'TC', 'HDL-C', 'TRIG')) return null;
       const nonHdl = m['TC']! - m['HDL-C']!;
@@ -256,8 +236,7 @@ export const INDEX_DEFS: IndexDef[] = [
   {
     key: 'apobapoa', friendlyName: 'ApoB / ApoA1', shortName: 'ApoB/ApoA', panels: ['Cardiovascular Risk'],
     formula: 'ApoB / ApoA1', cut: [0.7, 0.9], inputKeys: ['ApoB', 'ApoA1'], level: 'consensus', loinc: '1874-7',
-    // The ratio itself is unit-free, but only if both sides are on one scale:
-    // labs print apolipoproteins as mg/dL or as g/L, a factor of 100 apart.
+    // Unit-free only when both sides share a scale: labs print mg/dL or g/L.
     inputUnits: { ApoB: 'mg/dL', ApoA1: 'mg/dL' },
     meaning: 'Atherogenic particles (ApoB) per protective particle (ApoA1) — essentially \'bad\' particles per \'good\'. One of the strongest lipid predictors of MI. Men: <0.7 low, 0.7–0.9 moderate, >0.9 high.',
     consensus: 'Strong predictor in large studies (INTERHEART). Needs ApoB and ApoA1 from the same draw — not yet measured.',
@@ -500,8 +479,7 @@ export const INDEX_DEFS: IndexDef[] = [
     references: [
       { organization: "European Journal of Endocrinology (Phillips AC, Carroll D, Gale CR, Lord JM, Arlt W, Batty GD)", document: "Cortisol, DHEAS, their ratio and the metabolic syndrome: evidence from the Vietnam Experience Study", year: 2010, url: "https://pubmed.ncbi.nlm.nih.gov/20164211/", doi: "10.1530/EJE-09-1078", quote: "A higher cortisol:DHEAS ratio was associated with greater metabolic-syndrome risk; the ratio is a research/functional-medicine marker of catabolic-anabolic balance with no agreed diagnostic cutoff — bands here are orientation only." },
     ],
-    // Both sides converted to nmol/L from the tabulated molar masses, not from
-    // literals: cortisol 362.466 g/mol, DHEA-S 368.488 g/mol.
+    // Both sides to nmol/L from the tabulated molar masses, never literals.
     fn: (m) =>
       has(m, 'Cortisol', 'DHEA-S')
         ? (m['Cortisol']! * CORTISOL_UGDL_TO_NMOLL) / (m['DHEA-S']! * DHEAS_UGDL_TO_NMOLL)

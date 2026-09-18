@@ -14,7 +14,7 @@ import {
   type ScheduledVisits,
 } from '../components/conditions/scheduled';
 
-/** How a lab prints one test: code, name, unit and reference range, with null for an open end. */
+/** null = an open end of the reference range. */
 type Printed = readonly [loinc: string, rawName: string, unit: string, low: number | null, high: number | null];
 
 const EN = {
@@ -161,7 +161,7 @@ const UK = {
   zinc: ['5763-8', 'Цинк', 'мкг/дл', 70, 120],
   pth: ['2731-8', 'Паратгормон', 'пг/мл', 15, 65],
   fibrinogen: ['3255-7', 'Фібриноген', 'г/л', 2.0, 4.0],
-  // "у.о." (conventional units) is in no unit table, so this row carries the lower-severity unit warning.
+  // Deliberately unmappable unit: exercises the lower-severity unit warning.
   inr: ['6301-6', 'МНВ', 'у.о.', 0.8, 1.2],
 } satisfies Record<string, Printed>;
 
@@ -187,7 +187,7 @@ const RU = {
   ft4: ['14920-3', 'Т4 свободный', 'пмоль/л', 9.0, 19.0],
   ft3: ['3051-0', 'Т3 свободный', 'пг/мл', 2.0, 4.4],
   creatinine: ['14682-9', 'Креатинин', 'мкмоль/л', 62, 106],
-  // A molar unit under the mass code: the one deliberate code error, answered by the sibling-code warning and its chip.
+  // Deliberate molar-under-mass code error: exercises the sibling-code warning and chip.
   creatinineMiscoded: ['2160-0', 'Креатинин', 'мкмоль/л', 62, 106],
   urea: ['22664-7', 'Мочевина', 'ммоль/л', 2.8, 7.2],
   uricAcid: ['14933-6', 'Мочевая кислота', 'мкмоль/л', 202, 416],
@@ -224,18 +224,14 @@ function report<K extends string>(
   return {
     lab,
     collectedAt: `${date}T07:30:00Z`,
-    // Keeps a generated report's session id apart from any real report of the same lab and date.
+    // Keeps the session id apart from a real report of the same lab and date.
     identifiers: { accession: `demo-${String(accession).padStart(2, '0')}` },
     observations: (Object.entries(values) as [K, number | string][]).map(([key, value]) => observation(printed[key], value)),
   };
 }
 
-/**
- * One synthetic patient over five years across five labs (Synevo, Esculab,
- * Medis and NeoGenesis are priced, Dila is not), 2023 left as a
- * gap. Fixed dates keep every session id stable, so generating again
- * replaces these reports rather than adding a second copy.
- */
+// Fixed dates keep every session id stable, so generating again replaces
+// these reports rather than adding a second copy; 2023 is a deliberate gap.
 export function buildTestEnvelope(): InterchangeEnvelope {
   return {
     schema: SCHEMA_VERSION,
@@ -353,7 +349,7 @@ export function buildTestEnvelope(): InterchangeEnvelope {
   };
 }
 
-/** The demo reports, read through the same parse path as an upload so normalization runs on them. */
+/** Through the same parse path as an upload, so normalization runs. */
 export function generateTestData(): DiagnosticReport[] {
   return parseUploadedResults(buildTestEnvelope());
 }
@@ -370,7 +366,7 @@ const TEST_MEDICATIONS: { brand: string; notes: string; taken: (previousYear: bo
   },
 ];
 
-/** The demo medications appended, marked across last year and this year up to `today`; a brand already present is skipped. */
+/** A brand already present is skipped. */
 export function withTestMedications(meds: Medications, today: Date, newId: () => string): Medications {
   const year = today.getFullYear();
   const present = new Set(meds.rows.map((row) => row.brand.trim().toLowerCase()));
@@ -392,11 +388,10 @@ export function withTestMedications(meds: Medications, today: Date, newId: () =>
   };
 }
 
-// An FBC pair (priced once, as a bundle), TSH (priced at Esculab and
-// NeoGenesis, among these four labs), and the inputs of a few indices.
+// Chosen to exercise a bundle, a partly-priced code and a few index inputs.
 export const TEST_SCHEDULE_LOINCS = ['718-7', '6690-2', '2345-7', '20448-7', '4548-4', '2093-3', '2085-9', '2571-8', '11580-8'];
 
-/** A demo visit for next month, seeded only where nothing is scheduled yet; any existing visit is returned untouched. */
+/** Seeded only when nothing is scheduled yet. */
 export function withTestSchedule(scheduled: ScheduledVisits, today: Date, newId: () => string = newRowId): ScheduledVisits {
   if (scheduled.visits.length > 0) return scheduled;
   const withVisit = addVisit(scheduled, newId());
@@ -406,7 +401,6 @@ export function withTestSchedule(scheduled: ScheduledVisits, today: Date, newId:
   return setScheduleMonth(seeded, visitId, monthKeyOf(next));
 }
 
-/** What Generate Test Data does: merges the reports, then seeds medications and a schedule without overwriting either. */
 export function applyTestData(loadReports: (groups: DiagnosticReport[]) => void, today = new Date()): void {
   loadReports(generateTestData());
   const meds = loadMedications(today.getFullYear());

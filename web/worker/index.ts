@@ -1,8 +1,4 @@
-// Fronts the static-asset Worker to enforce one canonical domain: any
-// request to the retired blood.isayenko.net host is redirected permanently
-// to the same path+query on paneloom.com; every other host (paneloom.com,
-// the workers.dev preview) is served straight from ./dist via the ASSETS
-// binding, unchanged.
+// Enforces one canonical domain; every other host is served from ASSETS unchanged.
 const RETIRED_HOST = 'blood.isayenko.net'
 const CANONICAL_HOST = 'paneloom.com'
 

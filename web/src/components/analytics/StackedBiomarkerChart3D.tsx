@@ -29,11 +29,7 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
   const [toYear, setToYear] = useState<number | null>(null);
   const initialOpacityMode = useRef(opacityMode);
 
-  // The canvas element itself is always mounted (see the empty-state overlay
-  // below, rendered alongside rather than instead of it) so this effect's
-  // empty dependency array is safe -- the engine is created exactly once per
-  // mount and torn down on unmount; series/opacity/window changes flow
-  // through the handle's own setters, not through re-running this effect.
+  // The canvas is always mounted (the empty state overlays it), so the engine is created once per mount.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -63,8 +59,7 @@ export function StackedBiomarkerChart3D({ entries, nameFor }: Readonly<Props>) {
     handleRef.current?.update(series);
   }, [series]);
 
-  // Only the years the data actually has -- a gap year stays absent from the
-  // list rather than being filled in.
+  // A gap year stays absent rather than being filled in.
   const years = useMemo(() => {
     const seen = new Set<number>();
     for (const s of series) for (const p of s.points) seen.add(new Date(p.t).getFullYear());

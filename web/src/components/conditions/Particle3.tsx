@@ -3,44 +3,22 @@ import { CarrierIcon, CholesterolIcon, type IconComponent } from './customIcons'
 import { SIZE, TRIGLYCERIDE_ART } from './pathwayShared';
 import { Glyph } from './PathwayParts';
 
-/** ApoB-100's own drawing spans ~42.6 of its 48-unit viewBox (HormonalPathwaysView's CARRIER_SIZE), so its box is enlarged to bring the drawing itself to molecular-actor size. */
+/** CarrierIcon's drawing spans ~42.6 of its 48-unit viewBox, so the box is enlarged to bring the drawing to molecular size. */
 const CARGO_APO_SIZE = Math.round((SIZE.molecular * 48) / 42.6);
 const CARGO_BUBBLE_SIZE = SIZE.molecular;
-/**
- * Every bond line in this chain (TRIG-ApoB and Chol-ApoB) is tuned to the
- * same ~75px length, so the chain reads as one consistent unit of "distance
- * a bond spans" rather than particle-specific line lengths.
- */
-/** How far ApoB-100 drops below TRIG/Chol, so the two bonds meet it at a sharp angle. IDL/LDL drop the same amount to line up with it, since they're the same particle further down the chain. */
+// The three VLDL_* values are tuned together for a ~75px bond length on every particle.
 const VLDL_APO_DROP = 160;
-/** TRIG and Chol also drop partway down their own bond lines, toward ApoB-100, so the V reads as a shorter, tighter shape rather than spanning the full height. Tuned together with VLDL_CARGO_GAP for a ~75px bond length. */
 const VLDL_CARGO_DROP = 51;
-/** Horizontal gap either side of ApoB-100, tuned together with VLDL_CARGO_DROP. */
 const VLDL_CARGO_GAP = 4;
-/**
- * Circle size for each compound's individual unit-bubble in a stack (below) --
- * the same 32px diameter as `CARGO_BUBBLE_SIZE` and as `BUBBLE_SIZE`
- * (`SIZE.molecular`) on Hormonal Pathways' own docked bubbles, so a bubble
- * reads as the same size everywhere it appears on either page.
- */
 const STACK_TRIG_CIRCLE_SIZE = CARGO_BUBBLE_SIZE;
 const STACK_CHOL_CIRCLE_SIZE = CARGO_BUBBLE_SIZE;
-/** Scaled up from Hormonal Pathways' DOCKED_SIZE (21, sized for a 25px stack circle) to keep the same fill ratio now the circle itself is bigger (32px, matching Hormonal Pathways' own bubble diameter). */
 const STACK_TRIG_ICON_SIZE = 27;
-/** The cholesterol glyph's own drawing reads smaller than TRIG's at the same size, so its icon runs bigger than its own circle to fill it as fully -- scaled up together with STACK_CHOL_CIRCLE_SIZE to keep the same proportion. */
+/** The cholesterol glyph reads smaller than TRIG's at the same size, so it runs bigger than its circle. */
 const STACK_CHOL_ICON_SIZE = 34;
-/**
- * TRIG: 3 for VLDL, 2 for IDL (shed via lipoprotein lipase), 1 for LDL
- * (essentially none left), 4 for chylomicron (the fattiest particle). Chol:
- * 3 for VLDL, 2 for IDL, 1 for LDL/chylomicron/HDL/Lp(a). Illustrative
- * counts, not to scale: the sourced data (lipoprotein-particles.json) only
- * gives % of each particle's own mass, and IDL's isn't sourced at all.
- */
 
-/** Adapts TRIGLYCERIDE_ART to the `IconComponent` shape `CompoundStack`'s `icon` prop expects. */
 const TriglycerideGlyphIcon: IconComponent = ({ size = 48 }) => <Glyph art={{ ...TRIGLYCERIDE_ART, size }} alt="Triglyceride" />;
 
-/** A cargo diagram's own anchor: an icon (or docked bubble) with a caption below it, sized to line up with the apoprotein's own height. `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it looking off-center. */
+/** `labelOffset` nudges the caption sideways (px, positive = right) when the bond geometry leaves it off-center. */
 function CargoAnchor({ children, label, labelOffset = 0 }: Readonly<{ children: ReactNode; label: string; labelOffset?: number }>) {
   return (
     <div className="mc-pathway-anchor" style={{ height: CARGO_APO_SIZE, alignItems: 'center' }}>
@@ -52,7 +30,7 @@ function CargoAnchor({ children, label, labelOffset = 0 }: Readonly<{ children: 
   );
 }
 
-/** A vertical stack of identical small bubbles: how many circles is how much of that compound is aboard, not one bigger blob -- a discrete count rather than a scaled size, so "more" never looks like "bigger". */
+/** The circle count, not the icon's size, depicts how much of a compound is aboard, so "more" never reads as "bigger". */
 function CompoundStack({
   dataNode,
   count,
@@ -94,7 +72,7 @@ function CompoundStack({
                 : { width: circleSize, height: circleSize }
             }
           >
-            {/* Cascaded circles overlap, so only the frontmost (topmost z-index) one draws its icon -- the ones behind it are bare discs, otherwise their icons show through as visual clutter. The count still depicts the amount; only which layer carries the icon changes. */}
+            {/* Only the frontmost cascaded circle draws its icon; the ones behind would show through as clutter. */}
             {(!overlap || i === count - 1) && <Icon size={iconSize} />}
           </span>
         ))}
@@ -106,13 +84,7 @@ function CompoundStack({
   );
 }
 
-/**
- * One stage of the endogenous chain, drawn as a holder-plus-cargo row:
- * the holder apoprotein carries its own stack of Chol circles and a stack
- * of TRIG circles, bonded to it at the same sharp angle VLDL uses. Every
- * particle rendered here still carries at least one TRIG circle (down to 1
- * for LDL/HDL/Lp(a)), so there is no bare-Chol-only variant to draw.
- */
+/** A holder apoprotein bonded to a Chol stack and a TRIG stack; every particle carries at least one of each. */
 export function ParticleNode({
   id,
   label,
@@ -124,11 +96,10 @@ export function ParticleNode({
 }: Readonly<{
   id: string;
   label: string;
-  /** The particle's structural apolipoprotein -- ApoB-100 for the endogenous chain, ApoB-48 for chylomicron, ApoA-I for HDL. */
+  /** The structural apolipoprotein: ApoB-100, ApoB-48 (chylomicron) or ApoA-I (HDL). */
   holder?: string;
-  /** Lp(a) carries a second protein, apo(a), disulfide-linked to its ApoB-100 -- drawn as a small pill hanging off the holder icon. */
+  /** A second protein, e.g. Lp(a)'s apo(a), drawn as a small pill on the holder icon. */
   extraApo?: string;
-  /** At least 1 for every particle rendered here -- see the note above ParticleNode. */
   trigCount: number;
   cholCount: number;
   trigOverlap?: number;

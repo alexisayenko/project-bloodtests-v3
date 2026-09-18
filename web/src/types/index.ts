@@ -2,21 +2,18 @@ export interface Analysis {
   loinc: string;
   longCommonName: string;
   friendlyName: string;
-  /** Our short name (not LOINC's SHORTNAME), shown on badges in Monitoring Panels and All Observations. */
+  /** Our badge abbreviation, not LOINC's SHORTNAME. */
   shortName?: string;
-  /** The unit this analyte is expected in — the reference for unit checks. */
   unit?: string;
-  /** Further units accepted for the same code (a LOINC fixes the quantity, not the scale). */
+  /** A LOINC fixes the quantity, not the scale. */
   allowedUnits?: string[];
-  /** Set when this entry is a unit or method variant of another code, which owns the row. */
+  /** The primary code that owns this variant's row. */
   aliasOf?: string;
-  /** How this variant differs from its primary, e.g. "nmol/L unit". */
   aliasLabel?: string;
   lang: Record<string, string>;
   info?: AnalysisInfo;
 }
 
-/** A variant code shown alongside its primary marker (see Analysis.aliasOf). */
 export interface LoincRef {
   aliasLabel: string;
   loinc: string;
@@ -49,11 +46,6 @@ export interface Panel {
   sections?: PanelSection[];
 }
 
-/**
- * One Monitoring Panel's composition over the lab groups in panels.json:
- * `panelId`/`panelIds` pull a group's LOINCs in, `loincs` states them
- * outright, then `excludeLoincs` and `extraLoincs` adjust the result.
- */
 export interface MonitoringPanelDef {
   name: string;
   panelId?: string;
@@ -65,7 +57,7 @@ export interface MonitoringPanelDef {
 
 export interface Result {
   loinc: string;
-  /** The printed name: the test name exactly as the lab printed it, kept as provenance. */
+  /** Exactly as the lab printed it. */
   rawName: string;
   section: string;
   value: number | null;
@@ -76,18 +68,14 @@ export interface Result {
   refMin: number | null;
   refMax: number | null;
   method: string;
-  /**
-   * The same reading in the code's canonical UCUM unit, derived at import for
-   * comparability. `value`/`unit` above stay exactly as the lab printed them,
-   * and this field is never written to the interchange envelope.
-   */
+  /** Derived at import; never exported, and `value`/`unit` stay as printed (ADR-0003). */
   canonical?: { value: number; unit: string };
 }
 
 export interface DiagnosticReport {
   date: string;
   place: string;
-  file: string; // stable id for this session, derived from date + place
+  file: string; // stable session id
   items: Result[] | null;
   itemCount: number;
 }

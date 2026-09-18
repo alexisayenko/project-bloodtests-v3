@@ -8,33 +8,17 @@ import type { ResultEntry } from './resultsLookup';
 import type { Result } from '../../types';
 import { COLOR } from '../../styles/tokens';
 
-// 3-zone coloring for computed indices (see data/computedIndices.ts's `zone()`).
 export const ZONE_BG = { ok: COLOR.statusOkBg, warn: COLOR.statusWarnBg, bad: COLOR.statusBadBg } as const;
-// Selected-row variants, blended with the row-selection tint (--accent-soft).
 export const SELECTED_ZONE_BG = { ok: COLOR.statusOkBgSelected, warn: COLOR.statusWarnBgSelected, bad: COLOR.statusBadBgSelected } as const;
-// Saturated dot colors for the same zones live in primitives/tones.ts's TONE_DOT.
 
 export const POPUP_WIDTH = 260;
 export const INDEX_POPUP_WIDTH = 380;
-/** Breathing room kept between a popup and each edge of the viewport. */
 const POPUP_MARGIN = 8;
 
-// Shared across observations and both indices tables so they line up as one
-// block -- and read by the mobile reveal, whose overlays borrow the same grid.
 export const LABEL_COL_WIDTH = 180;
 
-// Fixed layout only kicks in with a non-auto table width; every column width
-// then comes from the colgroup, so tables given the same dates share one grid
-// whatever their content. The mobile header overlay renders the same colgroup
-// inside a box of the same width, which is what keeps it aligned.
-//
-// `border-collapse: collapse` makes browsers paint cell backgrounds/borders
-// through the table's own collapsed-border algorithm instead of normal
-// z-index stacking, so a sticky first column's `.mc-col-cut` box-shadow (index.css)
-// stopped painting over a scrolled-under sibling once the two overlap --
-// the same issue Medications' own sticky column hit and fixed by switching to
-// `separate` (MedicationsView.tsx). Match that here so the frozen column's edge
-// shadow actually looks the same in both places.
+// Fixed layout needs a non-auto width; `separate` borders keep the sticky
+// column's `.mc-col-cut` shadow painting over scrolled-under cells.
 export const RESULT_TABLE = {
   borderCollapse: 'separate',
   borderSpacing: 0,
@@ -48,10 +32,7 @@ export function formatFullDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// The optimal (green-zone) range implied by an index's cut-points, formatted
-// like a lab reference range -- same orientation `zone()` uses to color a cell.
-// Without a profile it describes every band an index has, sex-dependent ones
-// labeled, as a profile-independent page (the Reference Book) needs.
+/** The green-zone range as a lab-style reference range; without a profile, every band, sex-labelled. */
 export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
   const unit = def.unit ? ` ${def.unit}` : '';
   const format = (b: IndexBands) => `${b.hi ? '>' : '<'} ${fmtNum(b.cut[0])}${unit}`;
@@ -64,10 +45,6 @@ export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
   return def.bandsBySex && !profile?.sex ? 'depends on sex, not set' : 'none';
 }
 
-// The table controls (unit system, samplings shown) are one shared setting
-// across every panel and All Observations (component-level state, not
-// per-panel) -- persisted here so they also survive a page refresh. The
-// Monitoring Panels grid's Compact view rides along as a view preference.
 export const VIEW_SETTINGS_KEY = 'bloodtests_view_settings_v1';
 export type ViewSettings = { unitSystem: 'si' | 'us'; sampleLimit: number | 'all' };
 type StoredViewSettings = ViewSettings & { compactPanels: boolean };
@@ -125,11 +102,7 @@ export function seedViewSettings(seed: Partial<ViewSettings> | undefined): Store
   return { ...DEFAULT_VIEW_SETTINGS, ...seed };
 }
 
-/**
- * Props that make a styled non-native element (div/span/td used as a control)
- * keyboard-activatable: role, tab stop, and Enter/Space triggering the same
- * handler as click (Sonar S6848/S1082).
- */
+/** Makes a styled non-native element keyboard-activatable (Sonar S6848/S1082). */
 export function pressable(handler: (e: { currentTarget: HTMLElement }) => void) {
   return {
     role: 'button' as const,
@@ -144,11 +117,7 @@ export function pressable(handler: (e: { currentTarget: HTMLElement }) => void) 
   };
 }
 
-/**
- * The active/inactive look shared by the top nav and the in-page tab strips.
- * The bold of an active tab is a text-shadow rather than a fontWeight: a real
- * weight change is wider, so switching tabs would shift its neighbours.
- */
+/** Active bold is a text-shadow, not a fontWeight, so switching tabs never shifts neighbours. */
 export function tabStyle(active: boolean) {
   return {
     borderBottom: active ? `2px solid ${COLOR.accent}` : '2px solid transparent',
@@ -157,17 +126,9 @@ export function tabStyle(active: boolean) {
   };
 }
 
-/** What one reading is displayed as: a number and the unit it is labelled with. */
 type DisplayedResult = { value: number | null; rawValue: string; unit: string; converted: boolean };
 
-/**
- * The reading's own printed unit, in the app's spelling of it: the catalog's
- * own form when the print means the same unit ("mcg/dL", "мкг/дл"), otherwise
- * the canonical Latin form, otherwise the print verbatim. Only a SPELLING is
- * chosen here -- the unit itself is always the one the reading carries, and
- * with nothing printed it is the reading's OWN code's expected unit, never the
- * unit of the primary whose row it happens to fold into.
- */
+/** Only a spelling is chosen here; the unit itself is always the reading's own, never the row primary's. */
 function ownUnitOf(result: Pick<Result, 'loinc' | 'unit'>): string {
   const expected = DEFAULT_UNITS[result.loinc];
   const printed = result.unit?.trim();
@@ -179,17 +140,9 @@ function ownUnitOf(result: Pick<Result, 'loinc' | 'unit'>): string {
 }
 
 /**
- * The number and the unit label always move together. A reading recorded under
- * a unit-variant alias (e.g. VLDL-C's molar 25371-6 folded into mass 13458-5's
- * row) keeps ITS OWN unit, never the row's primary one -- pairing a printed
- * value with another code's unit is exactly the mislabel ADR-0003 forbids.
- * Only a verified SI/US conversion for this marker may change the number, and
- * then the label changes with it; where no such conversion exists the reading
- * stays as printed, unit included.
- *
- * `marker` is the row's marker (markers.ts's LOINC_TO_MARKER), not the
- * reading's code: an alias is the same analyte, so its molar reading converts
- * on the primary's rules.
+ * The number and its unit label always move together: an alias reading keeps
+ * its own unit, never the row primary's (ADR-0003), and only a verified SI/US
+ * conversion for `marker` (the row's marker, not the reading's code) changes both.
  */
 export function displayedResult(
   marker: string | undefined,
@@ -218,25 +171,10 @@ export function mostCommon(units: readonly string[]): string | undefined {
 }
 
 /**
- * The single unit a set of displayed cells can be labelled with, or undefined
- * when they disagree -- a row whose readings sit on two scales (a lab that
- * switched from mg/dL to umol/L mid-history) gets no row-level unit at all,
- * and each cell carries its own instead.
- *
- * Two spellings of the SAME unit are not a disagreement: uIU/mL and mIU/L are
- * the identical unit (ratio 1), so a TSH history printed both ways is one
- * scale and carries one label. That is a comparison of computed scale
- * (`sameUnitScale`), never of spelling, and it changes no number -- a pair
- * whose ratio is anything but exactly 1 still splits onto the cells, because
- * converting to force a shared label is what ADR-0003 rules out. `preferred`
- * (the row's own catalog/SI-US unit) picks the spelling when it belongs to the
- * same unit; otherwise the readings' own majority spelling does.
- *
- * `loinc` is the row's code, and it is here because one question about two
- * spellings cannot be settled without knowing the analyte: an enzyme printed
- * U/L and IU/L is printed in one unit, a hormone printed both is not. Rows are
- * the only place in the app where the analyte and the spellings are both known,
- * so this is where it gets asked; omitting it keeps the conservative answer.
+ * The one unit a row can be labelled with, or undefined when the readings sit
+ * on two scales. Two spellings of the same unit (ratio exactly 1) are one
+ * scale and change no number (ADR-0003); `loinc` settles U vs IU, which
+ * depends on the analyte, and omitting it keeps the conservative answer.
  */
 export function sharedUnit(units: string[], preferred?: string, loinc?: string): string | undefined {
   const first = units[0];
@@ -246,19 +184,9 @@ export function sharedUnit(units: string[], preferred?: string, loinc?: string):
   return preferred && sameUnitScale(preferred, first, loinc) ? preferred : mostCommon(units);
 }
 
-/** One visible date column of an observation row: the reading, if any, as displayed. */
 export type RowCell = { date: string; match: ResultEntry | null; display: DisplayedResult | null };
 
-/**
- * An observation row's cells plus the unit to label them with. `rowUnit` labels
- * the whole row when every reading agrees; when they don't -- a lab that
- * switched scales mid-history, or a mass code and its molar alias folded into
- * one row -- `showCellUnits` moves the unit onto each cell instead, so a number
- * is never shown under another reading's unit. A reading with no unit at all
- * makes no competing claim and stays out of that comparison. With no readings
- * to speak for the row, the label falls back to the SI/US target, then to the
- * row's own catalog unit.
- */
+/** `rowUnit` labels the row when every reading agrees; otherwise `showCellUnits` moves the unit onto each cell. */
 export function buildRowCells(
   test: Observation,
   visibleDates: string[],
@@ -281,19 +209,15 @@ export function buildRowCells(
   };
 }
 
-/** Background for a result cell: reference presence, range status, row selection. */
 export function cellBg(hasRef: boolean, outOfRange: boolean, selected: boolean): string {
   if (!hasRef) return selected ? COLOR.accentSoft : 'transparent';
   if (outOfRange) return selected ? COLOR.statusBadBgSelected : COLOR.statusBadBg;
   return selected ? COLOR.statusOkBgSelected : COLOR.statusOkBg;
 }
 
-// A cell-level selection: which one data cell (row identity + date) is
-// "armed" for the click-to-select-then-click-to-open interaction, distinct
-// from the row-level `selectedLoinc` that drives the row highlight.
+/** The one cell "armed" for click-to-select-then-click-to-open, distinct from the row-level `selectedLoinc`. */
 export type SelectedCell = { loinc: string; date: string } | null;
 
-/** Whether the given (row identity, date) cell is the currently armed one. */
 export function isCellArmed(selectedCell: SelectedCell, loinc: string, date: string): boolean {
   return selectedCell?.loinc === loinc && selectedCell?.date === date;
 }
@@ -313,12 +237,7 @@ export function namedLab(place: string): string | undefined {
   return NAMES_A_LAB.test(name) && name !== UNKNOWN_LAB ? name : undefined;
 }
 
-/**
- * Where to anchor a popup opened from the given element, and how wide it may
- * actually be. The width is returned rather than taken on trust because a fixed
- * 380 cannot fit a 375px viewport: clamping the left edge alone would only
- * trade an overflow off the left for one off the right.
- */
+/** The width is returned too: a fixed 380 cannot fit a 375px viewport, and clamping left alone only moves the overflow. */
 export function popupPosition(
   rect: DOMRect,
   maxWidth: number
@@ -328,9 +247,6 @@ export function popupPosition(
   const left = Math.max(Math.min(center - width / 2, window.innerWidth - width - POPUP_MARGIN), POPUP_MARGIN);
   const spaceBelow = window.innerHeight - rect.bottom;
   const spaceAbove = rect.top;
-  // Open upward when there's little room below and more room above --
-  // keeps the popup from running off the bottom of the viewport for a
-  // row near the end of a long page.
   if (spaceBelow < 200 && spaceAbove > spaceBelow) {
     return { left, width, bottom: window.innerHeight - rect.top + 8 };
   }

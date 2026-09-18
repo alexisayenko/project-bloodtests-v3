@@ -1,36 +1,5 @@
-// Adapted from project-moodtracker's web/chart3d-stacked.js
-// (initStackedChart3D). The camera (yaw/pitch/zoom, projection) is ported
-// verbatim via chart3d-camera.ts; everything below -- ribbons, depth
-// slotting, per-series normalization, the painter's-algorithm sort -- is
-// the same algorithm, generalized from a fixed 8-series layout to an
-// arbitrary, dynamic list of series (blood-test biomarkers instead of
-// mood/energy/health metrics), and stripped of moodtracker-specific
-// concerns that don't apply here:
-//   - No localStorage persistence (moodtracker.stackedChartPrefs.v1) --
-//     the host React component owns opacity mode / series selection as
-//     plain state and calls back into this engine.
-//   - No DOM controls wired in-engine (opacity/window/pan/edit/debug
-//     buttons) -- the host component renders its own controls and calls
-//     `setOpacityMode`/`setRange`/`resetView` on
-//     the returned handle.
-//   - No edit-mode drag-to-reorder of series/depth slots or "hidden but
-//     shown" series -- which biomarkers appear is entirely decided by what
-//     the caller includes in `update()`, so there is no separate hidden
-//     state to track here.
-//
-// Kept, because it's the actually hard, already-solved part: each series is
-// normalized against its OWN observed min/max within the shared visible
-// time range (mirrors buildHealthSeries in the source -- the same shape of
-// problem: wildly different units/scales plotted on one chart), the ribbon
-// face/edge/point rendering, PATH_STEPS subdivision, the depth-sorted
-// painter's algorithm, and the time window (all, or an explicit range
-// clamped to the data extent).
-//
-// One departure from the source: the time axis follows the canvas width.
-// Height and depth keep the source's min(W, H)-based scales, but the room's
-// x half-extent is stretched on every draw until the projected room spans
-// X_FILL of the canvas width (see fitXHalf), so a wide card isn't mostly
-// empty and a narrow one doesn't overflow.
+// Ported from project-moodtracker's chart3d-stacked.js, generalized from 8
+// fixed slots to N series; the host component owns state and controls.
 
 import {
   DEG,
@@ -51,29 +20,17 @@ const DEFAULT_ZOOM = 1;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.5;
 
-// Ratio of a series' ribbon half-width to the spacing between adjacent
-// depth slots. In the source, 8 fixed slots spanning -1..1 gave a spacing
-// of 0.25 and a HALF_WIDTH of 0.08 -- this is that same ratio (0.08 / 0.25),
-// applied to however many slots the current series count produces, so
-// ribbons stay solid-looking without touching their neighbors whether
-// there are 2 biomarkers or 12. Capped at HALF_WIDTH_MAX so one or two
-// series still read as ribbons rather than slabs filling their slot.
+// Ribbon half-width as a ratio of depth-slot spacing (0.08/0.25 in the source),
+// capped so one or two series still read as ribbons rather than slabs.
 const HALF_WIDTH_RATIO = 0.32;
 const HALF_WIDTH_MAX = 0.25;
 
-// Each raw segment is split into this many equal sub-segments before the
-// front/back/top ribbon faces are built -- see the source's own comment:
-// this fixes painter's-algorithm depth-sort accuracy on long/steep
-// segments, not visual smoothing.
+// Sub-segments per raw segment: fixes painter's-algorithm depth-sort accuracy, not smoothing.
 const PATH_STEPS = 6;
 
-// The time axis spans -1..1 in world space, so a zero-span data set (every
-// point on one date) sits at the axis midpoint rather than an edge.
 const X_CENTER = 0;
 
-// The y and z axes span -1..1 in world space; the time axis spans
-// -xHalf..xHalf, stretched per draw so the projected room fills X_FILL of
-// the canvas width, within these bounds.
+// The time axis spans -xHalf..xHalf, stretched per draw so the projected room fills X_FILL of the width.
 const X_HALF_MIN = 1;
 const X_HALF_MAX = 6;
 const X_FILL = 0.9;
@@ -122,17 +79,12 @@ interface PlotSeries {
   values: PlotPoint[];
 }
 
-// Blood-test histories span years, so unlike the source's day-scale mood
-// chart the axis labels carry the year: "1 Oct 2018", local time.
 const fmtDate = (ms: number) => {
   const d = new Date(ms);
   return `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })} ${d.getFullYear()}`;
 };
 
-// A plain yyyy-MM-dd is parsed to LOCAL midnight (as the source's
-// parseHealthDate does) so it round-trips through fmtDate's local-time
-// formatting without slipping to the previous day west of UTC; anything
-// else falls through to Date.parse.
+// yyyy-MM-dd parses to LOCAL midnight so fmtDate's local formatting doesn't slip a day west of UTC.
 export const parseObservationDate = (dateStr: string): number => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
   if (!m) return Date.parse(dateStr);
@@ -148,8 +100,7 @@ export const initStackedChart3D = (
   options: StackedChart3DOptions = {},
 ): StackedChart3DHandle => {
   const ctx = canvas.getContext("2d");
-  // No-op handle if the canvas can't give us a 2D context -- lets callers
-  // treat this the same as a normal handle instead of null-checking it.
+  // No-op handle rather than null, so callers need no null check.
   if (!ctx) {
     return {
       update: () => {},
@@ -169,9 +120,6 @@ export const initStackedChart3D = (
   let hasPlottableData = false;
   let rafPending = false;
 
-  // "all" is the series' own combined extent; "range", set by setRange, is a
-  // [windowStart, windowEnd] that points get clipped to instead. Not
-  // persisted, as in the source: every mount starts on "all".
   let windowKind: "all" | "range" = "all";
   let windowStart = 0;
   let windowEnd = 0;
@@ -228,10 +176,8 @@ export const initStackedChart3D = (
 
   let xHalf = X_HALF_MIN;
 
-  // Perspective makes the projected width only roughly proportional to
-  // xHalf, so this iterates a few times from the last draw's value. Zoom is
-  // factored out of the measurement so it still magnifies on top instead of
-  // being cancelled by the fit.
+  // Perspective makes projected width only roughly proportional to xHalf, so
+  // iterate; zoom is factored out so the fit doesn't cancel it.
   const fitXHalf = (W: number, p: Params) => {
     const zoom = camera.getZoom();
     for (let i = 0; i < 3; i += 1) {
@@ -301,8 +247,6 @@ export const initStackedChart3D = (
     for (const s of series) {
       const zFront = s.zOffset + halfWidth;
       const zBack = s.zOffset - halfWidth;
-      // One fixed color per series -- shape alone carries the value, color
-      // just identifies which series this is (same call as the source).
       const edgeColor = toRgb(s.color);
       const frontFill = toRgba(s.color, alpha.front);
       const backFill = toRgba(s.color, alpha.back);
@@ -437,19 +381,11 @@ export const initStackedChart3D = (
     window.addEventListener("resize", onWindowResize);
   }
 
-  // Depth slots: N series evenly distributed across the -1..1 z-range
-  // (generalized from the source's fixed 8-slot SERIES_DEFS array). Slot i
-  // of n sits at the midpoint of the i-th equal partition of [-1, 1].
+  // Slot i of n sits at the midpoint of the i-th equal partition of [-1, 1].
   const zOffsetFor = (index: number, count: number) => -1 + (2 * index + 1) / count;
 
-  // Per-series normalization against its OWN observed min/max -- the same
-  // approach as the source's buildHealthSeries, which is exactly this
-  // problem: wildly different scales/units (there, steps/sleep/calories/
-  // macros; here, e.g. glucose in mg/dL next to a hormone in pg/mL)
-  // plotted on one chart. A flat (min === max) or empty series still
-  // renders (valueT defaults to 0.5, or an empty ribbon) rather than
-  // dividing by zero. Points are pre-filtered to the visible window by
-  // applyWindow(), so normalization is against the window only.
+  // Each series normalizes against its OWN min/max within the visible window,
+  // so mixed units share one chart; a flat series gets valueT 0.5, not a divide by zero.
   const buildSeries = (input: StackedSeriesInput, index: number, count: number, span: number): PlotSeries => {
     const zOffset = zOffsetFor(index, count);
     const points = input.points
@@ -487,10 +423,7 @@ export const initStackedChart3D = (
     return { min: Math.min(...times), max: Math.max(...times) };
   };
 
-  // Same clamp as the source: the window's near edge may not pass the data's
-  // boundary (windowEnd never earlier than the first date, windowStart never
-  // later than the last), so a range at an extreme still leaves the boundary
-  // date in view rather than sailing into empty space.
+  // The window's near edge may not pass the data's boundary, so an extreme range keeps the boundary date in view.
   const clampWindow = () => {
     const overall = computeOverallRange();
     if (!overall) return;
@@ -525,9 +458,7 @@ export const initStackedChart3D = (
     scheduleDraw();
   };
 
-  // Unlike the source, the series set changes at runtime (biomarkers toggled
-  // on/off), which can move the data extent out from under a set range --
-  // so re-clamp here too, not only in setRange.
+  // Toggling series can move the data extent out from under a set range, so re-clamp here too.
   const update = (nextSeries: StackedSeriesInput[]) => {
     rawSeries = nextSeries;
     if (windowKind !== "all") clampWindow();

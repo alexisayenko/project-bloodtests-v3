@@ -3,38 +3,20 @@ import { importResults, replaceStoredSessions } from '../src/data/importResults'
 import { RESULTS_STORAGE_KEY } from '../src/data/resultsStorage';
 import { UploadParseError } from '../src/data/parseUpload';
 import type { DiagnosticReport } from '../src/types';
-
-function installLocalStorageStub(): void {
-  const store = new Map<string, string>();
-  const stub = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, String(v)),
-    removeItem: (k: string) => void store.delete(k),
-    clear: () => store.clear(),
-    key: (i: number) => [...store.keys()][i] ?? null,
-    get length() {
-      return store.size;
-    },
-  };
-  Object.defineProperty(globalThis, 'localStorage', { value: stub, configurable: true, writable: true });
-}
+import { makeEnvelope as envelope, makeReport } from './helpers/fixtures';
+import { installMemoryStorage } from './helpers/storage';
 
 const stored = (): DiagnosticReport[] => JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY) ?? '[]');
 
-const report = (lab: string, date: string, loinc: string, rawName: string, value: number) => ({
-  lab,
-  collectedAt: `${date}T00:00:00Z`,
-  observations: [{ loinc, rawName, value }],
-});
-
-const envelope = (...reports: ReturnType<typeof report>[]) => ({ schema: 3, diagnosticReports: reports });
+const report = (lab: string, date: string, loinc: string, rawName: string, value: number) =>
+  makeReport({ lab, collectedAt: `${date}T00:00:00Z`, observations: [{ loinc, rawName, value }] });
 
 const FIRST = envelope(report('Lab A', '2026-01-10', '718-7', 'Hemoglobin', 14.2));
 const SECOND = envelope(report('Lab B', '2025-06-01', '2339-0', 'Glucose', 95));
 
 describe('importResults', () => {
   beforeEach(() => {
-    installLocalStorageStub();
+    installMemoryStorage();
   });
 
   it('replaces prior sessions instead of merging them', () => {
@@ -72,7 +54,7 @@ describe('importResults', () => {
 
 describe('replaceStoredSessions', () => {
   beforeEach(() => {
-    installLocalStorageStub();
+    installMemoryStorage();
   });
 
   it('writes an empty set when given no sessions', () => {

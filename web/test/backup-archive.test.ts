@@ -3,7 +3,8 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { backupFilename, buildBackupFiles, zipBackupFiles, type StorageReader } from '../src/data/backupArchive';
 import { buildExportEnvelope } from '../src/utils/exportData';
 import laboratories from '../public/data/laboratories.json';
-import type { DiagnosticReport, Result } from '../src/types';
+import type { DiagnosticReport } from '../src/types';
+import { makeResult, makeSession } from './helpers/fixtures';
 
 const NOW = new Date('2026-09-10T08:30:00Z');
 const APP = { commit: 'abc1234', builtAt: '2026-09-10T08:00:00Z' };
@@ -27,20 +28,7 @@ function fakeStorage(entries: Record<string, string>): StorageReader {
   };
 }
 
-const result: Result = {
-  loinc: '2093-3',
-  rawName: 'Total Cholesterol',
-    section: '',
-  value: 186,
-  rawValue: '186',
-  valueQualifier: '',
-  unit: 'mg/dL',
-  refText: '',
-  refMin: null,
-  refMax: 200,
-  method: '',
-};
-const session: DiagnosticReport = { date: '2026-08-26', place: 'Quest', file: 'quest_2026-08-26', items: [result], itemCount: 1 };
+const session = makeSession({ items: [makeResult({ loinc: '2093-3', rawName: 'Total Cholesterol', value: 186, unit: 'mg/dL', refMax: 200 })] });
 
 async function unzip(storage: StorageReader, sessions: DiagnosticReport[]) {
   const files = await buildBackupFiles({ sessions, meta: { subject: 'Alex' }, storage, app: APP, now: NOW });

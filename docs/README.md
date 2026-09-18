@@ -24,20 +24,12 @@ more top-level code folders** (`mobile/`, `web/`, `workers/`,
 - project-bloodtests-v3 — LOINC-coded blood-test monitoring app;
   uploads a lab-results JSON export, visualizes it client-side.
 
-If a second product ever appears (rare), see
-[Multi-product split](#multi-product-split).
-
 ## Guiding principle
 
-> **Strategy + UX → root `docs/`. Per-folder implementation
-> details → `<folder>/docs/` (when needed).**
+> **Strategy, UX and implementation docs all live in root `docs/`.**
 
-Test: *"If a PM would care about it, root. If only an engineer
-would care, the code folder."*
-
-Default to root `docs/`. Per-folder `docs/` is reserved for
-implementation-specific notes that genuinely need to live with
-code (build pipelines, deploy scripts, folder-specific ADRs).
+Implementation detail belongs in [`tech/`](tech/README.md), one page per
+subsystem; `web/` carries no docs of its own.
 
 ## Glossary
 
@@ -178,8 +170,24 @@ docs/
 ├── tech/                               # entry: tech/README.md
 │   ├── decisions/                      # entry: decisions/README.md
 │   │   └── adr-NNNN-<slug>.md          # one file per decision
+│   ├── README.md                       # index of the subsystem pages below
 │   ├── interchange-format.md           # lab-data file envelope (spec)
+│   ├── reference-data.md               # every JSON under web/public/data/ and its schema
 │   ├── molar-masses.md                 # mass↔molar reference data
+│   ├── units.md                        # unit normalization, folding, conversion
+│   ├── computed-indices.md             # index definitions and engine
+│   ├── diagnostic-reports.md           # upload, validation, LOINC cross-check, export
+│   ├── navigation-and-shell.md         # routes, blocking, app shell, tokens
+│   ├── monitoring-panels.md            # grid and Panel Detail
+│   ├── results-tables.md               # the results table, mobile reveal, scheduled columns
+│   ├── scheduling-and-visits.md        # visits, cascade, Scheduled Visits page
+│   ├── charts.md                       # What's in range and the 3D chart
+│   ├── pathway-pages.md                # Hormonal Pathways and Lipid Transport
+│   ├── medications.md                  # Medications table
+│   ├── reference-book.md               # Reference Book pages
+│   ├── account-and-sync.md             # auth, Supabase sync, backup, clear
+│   ├── share-links-and-deploy.md       # Worker, CI deploy, share links
+│   ├── testing.md                      # suites and CI jobs
 │   └── sync-architecture-options.md    # sync/multi-user design-space survey (not an ADR)
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
@@ -190,9 +198,6 @@ docs/
 ├── README.md                           # this file
 └── concerns.md                         # cross-cutting axes (C1, C2, …)
 ```
-
-Obsolete docs go to `archive/docs/` at repo root, not inside
-`docs/` — see [`../README.md#archive`](../README.md#archive).
 
 ### What lives where
 
@@ -215,6 +220,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Architecture decision records (one file per decision) | [`tech/decisions/README.md`](tech/decisions/README.md) | Asking why an architectural call was made, or recording a new one |
 | Lab-data interchange file envelope (prose spec + published [JSON Schema](https://blood.isayenko.net/schema/bloodtests-3.schema.json)) | [`tech/interchange-format.md`](tech/interchange-format.md) | Reading or writing an exported lab-data file |
 | Molar masses and mass↔molar conversion (per-analyte table + citations) | [`tech/molar-masses.md`](tech/molar-masses.md) | Adding or checking a conversion factor; asking where a mass↔molar number came from |
+| One page per subsystem (reference data, units, indices, reports, shell, tables, scheduling, charts, pathways, medications, reference book, account, deploy, testing) | [`tech/README.md`](tech/README.md) | Changing how a subsystem works, or checking what the code does today |
 | Screens (where the user is) | [`ui-ux/screens/`](ui-ux/screens/) | Building or changing a screen |
 | Journeys (paths across screens) | [`ui-ux/journeys.md`](ui-ux/journeys.md) | Designing or changing a multi-screen flow |
 | UX style standards (visual + interaction) | [`ui-ux/style-guide.md`](ui-ux/style-guide.md) | Picking a color, type, motion, or interaction pattern |
@@ -268,47 +274,3 @@ first real entry:
   journeys grow their own branch tables, screen-by-screen notes,
   or open questions.
 
-## `<folder>/docs/` — per-folder implementation
-
-Reserved for implementation-specific notes that drift from code
-if separated (build pipelines, deploy scripts, folder-specific
-ADRs). Default is **empty** — strategy and product docs live at
-root `docs/`.
-
-When a code folder needs implementation docs:
-
-| Folder | Used per-code-folder? | Notes |
-| --- | --- | --- |
-| `tech/` | When implementation docs accrue | Architecture, deploy specifics |
-| `ui-ux/` | When folder-specific screens exist | Folder-specific anatomy |
-| `content/` | When folder microcopy needs separation | In-app folder-only copy |
-| `business/` | No | Business is project-level → `docs/business/` |
-| `brand/` | No | Brand is shared → `docs/brand/` |
-| `tasks/` | No | Tasks are project-level → `docs/tasks/` |
-| `archive/` | No | Archive is project-level → `archive/` |
-
-## Multi-product split
-
-Rare. If a second product appears, rename `product/` to
-`products/<product-1>/` and add `products/<product-2>/`
-alongside. Cross-product concerns (`brand/`, `business/`,
-`milestones.md`, `tasks/`, `concerns.md`) stay at `docs/` root:
-
-```text
-docs/
-├── brand/
-├── business/
-├── concerns.md
-├── milestones.md
-├── products/
-│   ├── <product-1>/
-│   │   ├── README.md
-│   │   ├── concepts/
-│   │   └── features/
-│   └── <product-2>/
-│       └── …
-└── tasks/
-```
-
-The split is a move + rename, not a rewrite — `docs/product/`
-becomes `docs/products/<product-1>/`, no internal restructure.

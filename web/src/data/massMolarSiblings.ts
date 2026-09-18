@@ -1,24 +1,10 @@
 import { DEFAULT_UNITS } from './analyteCatalog';
 import { massPerMolarUnit, molarMassOf } from './molarMasses';
 
-// Curated mass↔molar LOINC sibling pairs: the same analyte measured on a
-// [Mass/volume] scale and on a [Moles/volume] scale, which LOINC gives two
-// different codes. Long common names are as published by LOINC (verified
-// against the NLM Clinical Tables loinc_items API).
-//
-// A pair states only what nothing else knows: which two codes are the same
-// analyte, and which molar-mass entry that analyte is. Everything else is
-// derived — each code's unit from the analyte catalog (ADR-0010), the factor
-// and the molar mass from `web/public/data/molar-masses.json` (ADR-0011) — so
-// a pair cannot drift from either source. Several pairs share one molar-mass
-// entry: total, HDL and LDL cholesterol are all cholesterol.
-//
-// The factor converts a value in `molar.unit` to `mass.unit`. It is never
-// applied to a stored or exported value: a molar unit under a mass code is a
-// CODE problem, and the remedy is the sibling code, never a rewritten number
-// (ADR-0003). Its one use is display-time normalization — the "What's in
-// range" chart places a history that crosses the mass/molar divide onto the
-// one scale its reference band is expressed in (exploreModel.ts).
+// A pair states only which two codes are one analyte and which molar-mass
+// entry it is; units and factors are derived (ADR-0010/0011) so nothing drifts.
+// The factor is display-only: a molar unit under a mass code is fixed by the
+// sibling code, never by rewriting the number (ADR-0003).
 
 interface SiblingCodeDef {
   loinc: string;
@@ -32,7 +18,7 @@ export interface SiblingCode extends SiblingCodeDef {
 
 interface MassMolarSiblingDef {
   analyte: string;
-  /** Key into MOLAR_MASS_BY_ID — where this pair's molar mass and its sources live. */
+  /** Key into MOLAR_MASS_BY_ID. */
   molarMass: string;
   mass: SiblingCodeDef;
   molar: SiblingCodeDef;
@@ -44,7 +30,6 @@ export interface MassMolarSibling extends MassMolarSiblingDef {
   molar: SiblingCode;
   /** Derived: how much of `mass.unit` one unit of `molar.unit` is. */
   massPerMolarUnit: number;
-  /** Derived: the tabulated molar mass, restated here for readers of a pair. */
   molarMassGPerMol: number;
 }
 
@@ -179,8 +164,7 @@ const PAIRS: MassMolarSiblingDef[] = [
   },
 ];
 
-// A code the catalog does not carry has no unit to derive, and a silent
-// undefined would reach the factor arithmetic and the dimension check alike.
+// Throws rather than let an undefined unit reach the factor arithmetic.
 function withUnit(code: SiblingCodeDef): SiblingCode {
   const unit = DEFAULT_UNITS[code.loinc];
   if (!unit) throw new Error(`no analyte-catalog unit for sibling code ${code.loinc} (${code.longCommonName})`);

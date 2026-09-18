@@ -52,8 +52,7 @@ function readReports(files: Record<string, string>): BackupContents['reports'] {
   const text = files['lab-reports.json'];
   if (text === undefined) return undefined;
   const envelope = parsePart(files, 'lab-reports.json');
-  // Exporting an empty database writes an envelope with no reports, which the
-  // upload parser rejects -- here it is a valid backup of nothing.
+  // An empty envelope is rejected by the upload parser but is a valid backup of nothing.
   const empty =
     isRecord(envelope) &&
     isAcceptedSchemaVersion(envelope.schema) &&
@@ -84,7 +83,7 @@ function readSettings(files: Record<string, string>): BackupContents['settings']
   return settings;
 }
 
-/** Validates every part of an unzipped backup without touching storage; throws BackupImportError on the first problem. */
+/** Validates every part without touching storage, so a bad file changes nothing. */
 export function readBackup(files: Record<string, string>): BackupContents {
   if (files['manifest.json'] === undefined) {
     throw new BackupImportError('The zip has no manifest.json, so it is not a blood tests backup.');
@@ -123,12 +122,11 @@ function storedUserDataKeys(): string[] {
       if (key !== null && isUserDataKey(key)) keys.add(key);
     }
   } catch {
-    // storage unavailable -- nothing stored to find
+    // storage unavailable
   }
   return [...keys];
 }
 
-/** Removes every user-data key: the reports' own Clear and the share-link meta first, then a sweep over the shared key list. */
 export function clearAllData(clearReports: () => void): void {
   clearReports();
   clearSharedMeta();
@@ -136,7 +134,7 @@ export function clearAllData(clearReports: () => void): void {
     try {
       localStorage.removeItem(key);
     } catch {
-      // storage unavailable -- nothing to remove
+      // storage unavailable
     }
   }
 }
@@ -174,7 +172,7 @@ function restoreSetting(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
   } catch {
-    // storage unavailable -- the preference just won't persist
+    // storage unavailable
   }
 }
 
@@ -190,7 +188,7 @@ function laboratoryPricesLine(hasLaboratoryPrices: boolean): string {
     : 'Laboratory prices: ship with the app, nothing to restore.';
 }
 
-/** Clears everything, then writes back each validated part through its own module; returns one line per part. */
+/** Returns one report line per part. */
 export async function restoreBackup(backup: BackupContents, deps: RestoreDeps): Promise<string[]> {
   clearAllData(deps.clearReports);
   const reportsLine = await restoreReports(backup.reports, deps.importReports);

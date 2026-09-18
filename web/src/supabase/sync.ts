@@ -1,9 +1,6 @@
 import { supabaseClient } from './config';
 
-// Maps a backup-bundle filename to the column it lives in on
-// `user_backups` (id references auth.users(id)). laboratory-prices.json is
-// deliberately absent: the shipped registry always wins, so it is never
-// pushed or pulled (backupRestore.ts's laboratoryPricesLine).
+// laboratory-prices.json is deliberately absent: the shipped registry always wins.
 const FIELD_BY_FILE: Record<string, string> = {
   'manifest.json': 'manifest',
   'lab-reports.json': 'lab_reports',

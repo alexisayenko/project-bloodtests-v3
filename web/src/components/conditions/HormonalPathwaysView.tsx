@@ -128,12 +128,7 @@ function labRangeOf(key: MarkerKey, result: Result, unit: string, unitSystem: Un
   return { low: low?.value, high: high?.value, unit: (low ?? high)?.unit ?? unit };
 }
 
-/**
- * What to use for albumin when the selected draw has no reading of its own:
- * `none` computes without it, `nearest` prefers the patient's own measurement
- * from the draw closest in time, before or after, `default` falls back to the
- * fixed ISSAM-calculator constant (`DEFAULT_ALBUMIN_GDL`).
- */
+/** Exclusive choices for a draw with no albumin reading, not a cascade; a same-draw reading always wins. */
 const ALBUMIN_FALLBACKS = ['none', 'nearest', 'default'] as const;
 type AlbuminFallback = (typeof ALBUMIN_FALLBACKS)[number];
 
@@ -150,19 +145,7 @@ function albuminFallbackLabel(fallback: AlbuminFallback, unitSystem: 'si' | 'us'
   }
 }
 
-/**
- * Albumin in g/dL for the selected draw: a same-draw reading always wins;
- * otherwise the fallback picks between no albumin, the reading nearest in time
- * on another date (converted the same way a same-draw one is, via
- * `markersForIndex`), or the fixed constant. `nearest` with nothing to find
- * yields no albumin --
- * the fallbacks are exclusive choices, not a cascade.
- */
-/**
- * The testosterone molar mass the Vermeulen solve converts total T at: the
- * molar-masses.json value, or the ~280 g/mol issam.ch's calculator script uses
- * (T / 2.8 × 1e-10), to reproduce its figures.
- */
+/** issam.ch's calculator converts T at ~280 g/mol (T / 2.8 × 1e-10); offered only to reproduce its figures (ADR-0020). */
 const T_MOLAR_MASSES = ['pubchem', 'issam'] as const;
 type TMolarMass = (typeof T_MOLAR_MASSES)[number];
 const T_MOLAR_MASS_GPERMOL: Record<TMolarMass, number> = { pubchem: TESTOSTERONE_MOLAR_MASS, issam: 280 };
@@ -522,7 +505,6 @@ function TestesDiagram() {
   );
 }
 
-/** Refactored onto particle1 (`Particle1`/`Particle1Node` in pathwayShared.ts/PathwayParts.tsx) -- same bare-glyph-plus-caption output, no backdrop (task-0024: bare icons only here). */
 function Enzyme({
   label,
   node,
@@ -758,7 +740,7 @@ const ASSOCIATIONS: Readonly<Record<string, readonly string[]>> = {
 
 type CenterX = (rect: DOMRect) => number;
 
-/** Aligns the two conversion enzymes under T and docks the estrogen-receptor box under blood E2 — a DOM mutation, not a line to draw. */
+/** A DOM mutation, not a line to draw. */
 function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX, zoom: number): void {
   const tNode = el.querySelector('[data-node="t"]');
   const enzymes = el.querySelector<HTMLElement>('.mc-pathway-enzymes');
@@ -781,7 +763,6 @@ function positionEnzymes(el: HTMLDivElement, base: DOMRect, centerX: CenterX, zo
   er.style.top = `${(e2Rect.top + e2Rect.height / 2 - box.top - er.getBoundingClientRect().height / 2) / zoom}px`;
 }
 
-/** Centres the hypothalamus–pituitary icon on T's vertical axis, the same x the T → androgen-receptor trunk runs down. */
 function positionPituitary(el: HTMLDivElement, centerX: CenterX, zoom: number): void {
   const hp = el.querySelector<HTMLElement>('.mc-pathway-hp');
   const icon = hp?.querySelector('[data-node="pituitary"] .mc-pathway-glyph');
@@ -794,11 +775,7 @@ function positionPituitary(el: HTMLDivElement, centerX: CenterX, zoom: number): 
 
 const bandsZoom = (bands: HTMLElement): number => Number(bands.style.getPropertyValue('zoom')) || 1;
 
-/**
- * Zooms the site bands out just enough for the diagram's right-most node to clear the badge column, once the
- * container-relative spacing has tightened as far as it goes; back to 1 whenever it already fits. The natural
- * extent is measured unzoomed-equivalent, so the result does not feed back into itself.
- */
+/** The natural extent is measured unzoomed-equivalent, so the zoom does not feed back into itself. */
 function fitBands(el: HTMLDivElement, base: DOMRect, centerX: CenterX): void {
   const main = el.querySelector<HTMLElement>('.mc-pathway-main');
   const bands = el.querySelector<HTMLElement>('.mc-pathway-bands');
@@ -997,7 +974,7 @@ interface Badge {
   low: string;
   high: string;
   caveats: string;
-  /** No formula is implemented for this badge: render a fixed placeholder instead of looking up `measure` in the Snapshot. */
+  /** Render a fixed placeholder instead of looking up `measure`. */
   unavailable?: boolean;
 }
 

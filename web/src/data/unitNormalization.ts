@@ -1,21 +1,8 @@
 // Printed unit → Latin unit → UCUM code, plus a code-vs-unit dimension check.
-//
-// The tables here are a curated subset, not a UCUM parser: UCUM is an
-// expression grammar, so a valid unit can be written that no lookup table
-// anticipated. The eventual upgrade path is the NLM JavaScript UCUM library
-// (ADR-0007 / task-0008); until then an unrecognized unit returns undefined
-// rather than a guess.
-//
-// Nothing here rewrites a value or a stored unit. A molar unit under a
-// mass-concentration code is a CODE problem — the remedy is the sibling code
-// (see massMolarSiblings.ts), never a converted number.
-//
-// `convertValue` and the `canonical` field exist for a different reason:
-// comparability across a history that mixes units. The printed value and unit
-// are the authoritative provenance — `rawValue` / `rawUnit` in the interchange
-// format — and a canonical form is DERIVED alongside them, never a replacement.
-// Every function here is pure: no argument is mutated, nothing is stored, and
-// the untouched printed pair is always part of the result.
+// Curated tables, not a UCUM parser: an unrecognized unit returns undefined
+// rather than a guess (ADR-0007). Nothing here rewrites a printed value or unit
+// (ADR-0003); a molar unit under a mass code is a CODE problem, fixed by the
+// sibling code, never by a converted number.
 
 import { DEFAULT_UNITS, ALLOWED_UNITS, U_IU_FOLD_REASON } from './analyteCatalog';
 import { MASS_MOLAR_SIBLINGS, SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from './massMolarSiblings';
@@ -41,11 +28,8 @@ interface UnitToken {
   kind: TokenKind;
 }
 
-// IU and U share a KIND on purpose — both are arbitrary-per-volume as far as the
-// dimension check is concerned, so "Ед/л" and "МЕ/л" for ALT do not raise a
-// mismatch that isn't one, and loincCheck folds them the same way. Whether they
-// are the same SCALE is a separate and narrower question, answered by analyte
-// rather than by spelling: see `sameUnitScale`.
+// IU and U share a KIND on purpose (so "Ед/л" vs "МЕ/л" is no dimension
+// mismatch); whether they are the same SCALE is answered per analyte in `sameUnitScale`.
 export const LATIN_TOKENS: Record<string, UnitToken> = {
   mol: { latin: 'mol', ucum: 'mol', kind: 'substance' },
   mmol: { latin: 'mmol', ucum: 'mmol', kind: 'substance' },
@@ -87,9 +71,7 @@ export const LATIN_TOKENS: Record<string, UnitToken> = {
   '1.73m2': { latin: '1.73m2', ucum: '{1.73_m2}', kind: 'area' },
 };
 
-// Cyrillic (and mixed-script) unit words as labs print them, mapped to the
-// canonical Latin token. Values are keys of LATIN_TOKENS' `latin` column, or a
-// power-of-ten token which resolveToken handles on its own.
+// Values are LATIN_TOKENS keys or a power-of-ten token resolveToken handles itself.
 export const CYRILLIC_TO_LATIN: Record<string, string> = {
   моль: 'mol',
   ммоль: 'mmol',
@@ -118,8 +100,7 @@ export const CYRILLIC_TO_LATIN: Record<string, string> = {
   мме: 'mIU',
   мкме: 'uIU',
   кме: 'kIU',
-  // Ukrainian МО (міжнародна одиниця) is the same international unit as the
-  // Russian МЕ, so the whole prefix family maps onto the IU spellings.
+  // Ukrainian МО is the same international unit as Russian МЕ.
   мо: 'IU',
   ммо: 'mIU',
   мкмо: 'uIU',
@@ -145,20 +126,14 @@ function foldSuperscripts(text: string): string {
   );
 }
 
-/**
- * Superscript exponents ("x10³" → "x10^3"), micro sign and Greek mu (µ/μ/Μ →
- * "u") and multiplication signs (×, Cyrillic х/Х → "x") folded onto the ASCII
- * spellings every table here — and the analyte catalog — is written in. Case is
- * left alone, so a caller that needs its own casing keeps it.
- */
+/** Folds superscripts, µ/μ and ×/х onto ASCII; case is left alone on purpose. */
 export function foldUnitGlyphs(text: string): string {
   return foldSuperscripts(String(text ?? '').trim())
     .replace(/[µμΜ]/g, 'u')
     .replace(/[×хХ]/g, 'x');
 }
 
-// Lowercase, whitespace-free, glyphs folded, caret and star exponents unified,
-// and the trailing "." / "?" the curated tables carry ("fL?") dropped.
+// The trailing "." / "?" some curated tables carry ("fL?") is dropped.
 function clean(printed: string): string {
   return foldUnitGlyphs(printed)
     .toLowerCase()
@@ -210,12 +185,7 @@ export function toUcum(latinUnit: string): string | undefined {
   return ucum.join('/');
 }
 
-/**
- * Stages 1–2 in one call: a printed spelling to its UCUM code, or undefined
- * when the curated tables cannot place it. Spelling only — the quantity is
- * unchanged, so a value labelled with the result stays the value that was
- * printed (ADR-0003). This is what the exporter writes to `unit`.
- */
+/** Stages 1–2 in one call. Spelling only — no value is converted (ADR-0003). */
 export function ucumUnitFor(printedUnit: string): string | undefined {
   const latin = toLatinUnit(printedUnit);
   return latin === undefined ? undefined : toUcum(latin);
@@ -246,9 +216,8 @@ const SOLE_KIND: Partial<Record<TokenKind, UnitDimension>> = {
   ratio: 'dimensionless',
 };
 
-// A ratio of two same-kind quantities (mg/g, mmol/mol, %) is dimensionless, so
-// HbA1c in % and in mmol/mol compare equal — deliberately, since neither is a
-// code error.
+// Same-kind ratios (mg/g, mmol/mol, %) are all dimensionless, so HbA1c in % and
+// in mmol/mol compare equal on purpose — neither is a code error.
 function dimensionFromKinds(kinds: TokenKind[]): UnitDimension | undefined {
   if (kinds.length === 1) return SOLE_KIND[kinds[0]];
   if (kinds.length === 2) {
@@ -283,8 +252,7 @@ type CodeUnitCheck =
   | { kind: 'unknown-unit' }
   | { kind: 'dimension-mismatch'; expected: string; suggestedLoinc?: string; note: string };
 
-// The sibling table knows the scale of codes the curated marker tables don't
-// carry (the molar twins), so a suggested code is itself checkable.
+// Covers the molar twins the marker tables lack, so a suggested code is itself checkable.
 const SIBLING_UNITS: Record<string, string> = Object.fromEntries(
   MASS_MOLAR_SIBLINGS.flatMap((pair) => [
     [pair.mass.loinc, pair.mass.unit],
@@ -305,11 +273,7 @@ function siblingFor(loinc: string, actual: UnitDimension): { pair: MassMolarSibl
   return undefined;
 }
 
-/**
- * Stage 3: does the unit's dimension fit what the LOINC measures? A code whose
- * expected units are not dimensional at all (Positive/Negative) reads as ok —
- * there is nothing to contradict.
- */
+/** Stage 3: does the unit's dimension fit the LOINC? Non-dimensional codes (Positive/Negative) read as ok. */
 export function checkCodeUnit(loinc: string, ucumUnit: string): CodeUnitCheck {
   const expectedUnits = expectedUnitsFor(loinc);
   if (expectedUnits.length === 0) return { kind: 'unknown-code' };
@@ -352,13 +316,9 @@ const SI_PREFIX: Record<string, number> = {
   f: 1e-15,
 };
 
-// Only bases with a defined magnitude. Counts (10*3), areas and the opaque
-// annotation units ({ratio}) are deliberately absent, so nothing built on them
-// converts.
+// Counts, areas and annotation units ({ratio}) are deliberately absent, so nothing built on them converts.
 const SCALE_BASES = new Set(['mol', 'g', 'L', 'U', '[IU]']);
 
-// The base a UCUM token is a prefixed multiple of, with that multiple: "mmol" is
-// mol × 1e-3, "U" is U × 1. Undefined for anything with no defined magnitude.
 function baseOfUcum(ucum: string): { base: string; factor: number } | undefined {
   if (SCALE_BASES.has(ucum)) return { base: ucum, factor: 1 };
   const prefix = SI_PREFIX[ucum.slice(0, 1)];
@@ -368,9 +328,7 @@ function baseOfUcum(ucum: string): { base: string; factor: number } | undefined 
 
 interface UnitScale {
   kinds: TokenKind[];
-  // The base unit of each part, prefix stripped: mol, g, L, U, [IU].
   bases: string[];
-  // Multiplier onto the dimension's base unit: g/L, mol/L, U/L, g, L.
   factor: number;
 }
 
@@ -398,30 +356,17 @@ function sameKinds(a: TokenKind[], b: TokenKind[]): boolean {
   return a.length === b.length && a.every((kind, i) => kind === b[i]);
 }
 
-// The two arbitrary bases. UCUM keeps them strictly apart: U is defined as
-// exactly 1 umol/min, while [IU] is declared an arbitrary unit and is
-// commensurable with nothing at all -- the WHO fixes each International Unit
-// against its own reference preparation, so one analyte's IU says nothing about
-// another's. Labs nonetheless print both spellings for analytes measured in only
-// ONE of the two, and there the loose spelling means the other: "IU/L" on an
-// enzyme is the 1964 enzyme unit, and "uU/mL" on insulin is the WHO unit. Which
-// of the two an analyte is measured in is a fact about the analyte, so the
-// question is asked of it and not of the string -- see U_IU_FOLD_REASON.
+// UCUM keeps U and [IU] incommensurable, but labs print both spellings for
+// analytes measured in only ONE of them, so whether they fold is a fact about
+// the analyte, not the string — see U_IU_FOLD_REASON.
 const ARBITRARY_BASES = new Set(['U', '[IU]']);
 
-// Whether this analyte is measured in exactly one arbitrary unit, so that its
-// two printed spellings of that unit are one unit. Both LOINC properties that
-// say so are treated alike here; their reasons differ and are recorded with the
-// data. Undefined loinc means no analyte was supplied, and the answer is the
-// conservative one.
+// No analyte supplied → the conservative answer.
 function foldsUAndIu(loinc: string | undefined): boolean {
   return loinc !== undefined && U_IU_FOLD_REASON[loinc] !== undefined;
 }
 
-// Base-by-base equality, with U and [IU] treated as one base only for an analyte
-// whose property permits it. Without that permission the two stay apart, so
-// nothing folds on a guess: mIU/L and uIU/mL still meet here (both [IU]), and so
-// do mg/L and ug/mL, because those are decimal prefixes of one base.
+// U and [IU] are one base only for an analyte whose property permits it.
 function sameBases(a: string[], b: string[], foldArbitraryBases: boolean): boolean {
   return (
     a.length === b.length &&
@@ -432,36 +377,17 @@ function sameBases(a: string[], b: string[], foldArbitraryBases: boolean): boole
   );
 }
 
-// Fold the printed spelling to Latin first: "mcg/dL" is a two-letter prefix
-// that only resolveToken's mc→u rule understands, and the catalog writes the
-// folded form ("ug/dL") anyway.
+// Fold to Latin first: only resolveToken's mc→u rule understands "mcg/dL".
 function latinScale(unit: string): UnitScale | undefined {
   const latin = toLatinUnit(unit);
   return latin === undefined ? undefined : unitScale(latin);
 }
 
 /**
- * Do two spellings denote the IDENTICAL unit — same base quantities in the same
- * order, and a ratio of exactly one? uIU/mL and mIU/L do (1e-6/1e-3 = 1e-3 =
- * mIU/L), as do mg/L and ug/mL, or ng/mL and ug/L. A pair that shares a
- * dimension on a DIFFERENT scale (mg/dL vs g/L, mg/dL vs mmol/L) does not, and
- * an unrecognized unit never does — the answer is "no", never a throw and never
- * an optimistic yes.
- *
- * `loinc` is the analyte the two spellings were printed for, and it decides one
- * question a pair of strings cannot: whether a printed U and a printed IU are
- * the same unit written two ways. They are whenever the analyte is measured in
- * only one of the two, which its LOINC property states — and it happens in both
- * directions. On a catalytic-activity code the unit is the 1964 enzyme unit, so
- * a printed "IU/L" is U/L; on a "Units/volume" code (insulin, the WHO-
- * standardised hormones) the unit is the International Unit, so a printed
- * "uU/mL" is uIU/mL. Under any other property, and with no analyte supplied at
- * all, the answer stays the conservative one — U and IU are different scales —
- * so an anonymous caller can never fold them by accident.
- *
- * Comparing computed scale rather than spelling is the whole point. Nothing is
- * converted here: callers use it to decide whether ONE label may stand for
- * several readings whose numbers are already directly comparable.
+ * Do two spellings denote the IDENTICAL unit (same bases, ratio exactly 1)?
+ * uIU/mL = mIU/L, mg/L = ug/mL; mg/dL vs g/L does not. An unrecognized unit
+ * is "no", never a throw. `loinc` decides whether a printed U and IU fold —
+ * only where the analyte's LOINC property says it is measured in just one.
  */
 export function sameUnitScale(a: string, b: string, loinc?: string): boolean {
   const left = latinScale(a);
@@ -472,20 +398,8 @@ export function sameUnitScale(a: string, b: string, loinc?: string): boolean {
 }
 
 /**
- * The families of spellings that denote one and the same unit, found by asking
- * `sameUnitScale` — there is no second notion of equivalence here. Each input
- * is folded to its canonical Latin spelling first, so two prints of one
- * spelling ("fL?" and "fL") count once, and a unit the tables cannot place is
- * dropped rather than grouped on a guess.
- *
- * Only families of more than one member are returned: a spelling with no
- * synonym is not a family, and a unit with no computable scale (a count, a
- * percentage, an annotation) can never join one.
- *
- * `loinc` is passed straight through, so a caller grouping one analyte's
- * spellings gets that analyte's answer about IU and U; a caller grouping units
- * from across the catalog has no single analyte to name and gets the
- * conservative one.
+ * Families of spellings that are one unit, per `sameUnitScale` (the only notion
+ * of equivalence). Singletons and unplaceable units are dropped, not guessed.
  */
 export function unitScaleFamilies(units: Iterable<string>, loinc?: string): string[][] {
   const seen = new Set<string>();
@@ -502,14 +416,9 @@ export function unitScaleFamilies(units: Iterable<string>, loinc?: string): stri
 }
 
 /**
- * Convert a value between two UCUM units for one analyte: scale-only within a
- * dimension (g/L ↔ mg/dL, ug/L ↔ ng/mL), or across the mass/molar divide using
- * the sibling table's molar mass. Returns undefined whenever the conversion is
- * not exactly known — an unlisted pair, an analyte with no tabulated molar
- * mass, or two units that merely look compatible.
- *
- * This is for reading a history that mixes units. It is not a remedy for a
- * code/unit mismatch: see checkCodeUnit, whose answer stays "change the code".
+ * Scale-only within a dimension, or mass↔molar via the sibling table's molar
+ * mass; undefined whenever the conversion is not exactly known. For reading a
+ * mixed-unit history, never a remedy for a code/unit mismatch (checkCodeUnit).
  */
 export function convertValue(
   value: number,
@@ -522,9 +431,7 @@ export function convertValue(
   const to = unitScale(toUcum);
   if (!from || !to) return undefined;
   if (sameKinds(from.kinds, to.kinds)) {
-    // Same kinds is not enough across the arbitrary bases: unless the analyte is
-    // measured in exactly one of them, there is no factor to apply and the honest
-    // answer is undefined.
+    // Across U/[IU] there is no factor unless the analyte permits the fold.
     if (!sameBases(from.bases, to.bases, foldsUAndIu(loinc))) return undefined;
     return { value: (value * from.factor) / to.factor, unit: toUcum };
   }
@@ -534,19 +441,12 @@ export function convertValue(
   if (!molarToMass && !massToMolar) return undefined;
   const pair = SIBLING_BY_MASS_LOINC[loinc] ?? SIBLING_BY_MOLAR_LOINC[loinc];
   if (!pair) return undefined;
-  // Every pair carries a molar mass, derived from the molar-mass reference
-  // data — including urea nitrogen, whose 28.014 g/mol is two nitrogen atoms
-  // rather than a molecule (see its entry's note).
   const grams = pair.molarMassGPerMol;
   const base = value * from.factor;
   return { value: (molarToMass ? base * grams : base / grams) / to.factor, unit: toUcum };
 }
 
-/**
- * The UCUM unit this project treats as canonical for a code — its curated
- * reference unit (the analyte catalog's DEFAULT_UNITS, with the sibling table
- * covering the molar twins), expressed in UCUM.
- */
+/** The code's curated reference unit (DEFAULT_UNITS, or the sibling table), in UCUM. */
 export function canonicalUnitFor(loinc: string): string | undefined {
   const primary = expectedUnitsFor(loinc)[0];
   return primary === undefined ? undefined : toUcum(primary);
@@ -565,12 +465,7 @@ export interface UnitNormalization {
   ucumUnit?: string;
   check: CodeUnitCheck;
   message: string;
-  /**
-   * The same reading expressed in the code's canonical unit, derived for
-   * comparability and present only when the conversion is known and the unit
-   * already fits the code. `printedUnit` (with the caller's own value) remains
-   * the authoritative record.
-   */
+  /** Derived for comparability only; the printed pair stays authoritative. */
   canonical?: { value: number; unit: string };
 }
 
@@ -602,10 +497,7 @@ function canonicalForm(
   return target === undefined ? undefined : convertValue(observation.value, ucumUnit, target, loinc);
 }
 
-/**
- * Stage 1–3 in one reviewable result, plus the optional derived canonical form.
- * Never mutates its argument and never rewrites the printed value or unit.
- */
+/** Stages 1–3 in one result plus the derived canonical form; never rewrites the printed pair. */
 export function normalizeObservationUnit(observation: ObservationUnit): UnitNormalization {
   const printedUnit = observation.unit ?? '';
   const loinc = observation.loinc ?? '';

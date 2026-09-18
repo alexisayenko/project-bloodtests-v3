@@ -2,6 +2,17 @@
 
 Status: accepted · 2026-09-16
 
+> **Amended 2026-09-16 ([task-0062](../../tasks/task-0062.md)).** The
+> data-drawn glyphs this record describes — `LipidParticleGlyph.tsx`,
+> `lipidArtwork.ts`, `lipidParticleGeometry.ts`, `web/src/assets/lipids/*.svg`
+> and `lipid-artwork.test.ts`, with the Artwork / Data switch — were retired
+> when Lipid Transport was redrawn as a holder-plus-cargo diagram. The
+> principle survives unchanged: a bubble's TRIG and Chol cargo is encoded as
+> the **count** of identical circles in its `CompoundStack`, every circle at
+> one fixed size whatever icon fills it, so no artwork's shape or area is read
+> as a quantity, and the counts are stated on the page as illustrative rather
+> than scaled to the sourced shares. The file names below are history.
+
 ## Context
 
 The [pathway](../../product/concepts/pathway.md) concept's icon rule, written

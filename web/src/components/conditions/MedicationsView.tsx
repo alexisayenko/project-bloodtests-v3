@@ -8,9 +8,7 @@ import { PageHeader } from './PageHeader';
 import { Button, CARD_TABLE_TD, CARD_TABLE_TH, Card, EmptyState, FIELD_INPUT, TABLE, TABLE_CARD } from '../primitives';
 import { COLOR, RADIUS, SPACE } from '../../styles/tokens';
 
-// Subtle column zebra-striping so a given month can be tracked vertically across many rows: odd columns
-// (by continuous index across years, so the pattern doesn't jump at year boundaries) get this tint, even
-// columns stay whatever the row's own background already is.
+// Column zebra by continuous index across years, so the stripe pattern does not jump at year boundaries.
 const COLUMN_STRIPE = COLOR.surfaceMuted;
 
 const NAME_COL_WIDTH = 260;
@@ -19,8 +17,7 @@ const YEAR_EDGE = `1px solid ${COLOR.borderMuted}`;
 const BAR_FILL = `color-mix(in srgb, ${COLOR.brandTeal} 38%, ${COLOR.surface})`;
 const BAR_INSET = 3;
 const BAR_HEIGHT = 16;
-// Same right-edge cut used by the mobile results-table reveal (index.css's `.mc-col-cut`), reused here so a
-// frozen pane reads the same way everywhere in the app.
+// Same `.mc-col-cut` edge the results tables' frozen column uses.
 const STICKY_EDGE_SHADOW = '2px 0 5px rgba(0, 0, 0, 0.14)';
 
 const th = { ...CARD_TABLE_TH, verticalAlign: 'bottom' } as const;
@@ -59,9 +56,7 @@ function monthTh(monthIndex: number, columnIndex: number, isLastColumn = false) 
     fontWeight: 500,
     letterSpacing: '0.04em',
     borderLeft: monthEdge(monthIndex),
-    // Closes the table's right edge with the same line used at every other year boundary --
-    // otherwise only the left side of each year block is ever drawn, and the last column's
-    // right edge is left visually open.
+    // Year edges are left borders only, so the last column closes the table's right edge itself.
     borderRight: isLastColumn ? YEAR_EDGE : 'none',
     background: columnIndex % 2 === 1 ? COLUMN_STRIPE : 'transparent',
   } as const;
@@ -101,8 +96,7 @@ function MonthBar({ joinsPrevious, joinsNext }: Readonly<{ joinsPrevious: boolea
       aria-hidden="true"
       style={{
         position: 'absolute',
-        // `top`/`bottom: 0` with `margin: auto 0` centers the bar in the cell's actual height -- whatever the
-        // row ends up needing -- rather than assuming a row height to derive a fixed inset from.
+        // `top`/`bottom: 0` with `margin: auto 0` centers the bar in whatever height the row ends up with.
         top: 0,
         bottom: 0,
         margin: 'auto 0',
@@ -130,15 +124,9 @@ function compoundsLine(row: MedicationRow): string {
 }
 
 /**
- * `Compound` carries no id of its own, and its name/dose are edited in place, so neither the array
- * index nor the compound's own fields make a stable React key. `compoundKeys` mints one synthetic
- * key per compound slot instead: this tops up a row's key array whenever its `compounds` array has
- * grown past it -- covers initial load, import/restore and adding a compound alike, since every one
- * of those only ever appends -- while removal (the one case that doesn't) splices the exact removed
- * slot out in the click handler itself, so a key always tracks the compound it was minted for rather
- * than a position. Called during render rather than an effect, following React's supported "adjust
- * state while rendering" pattern, so a freshly added compound's key exists on the very render that
- * needs it instead of a tick later.
+ * `Compound` has no id and is edited in place, so neither index nor fields make a stable React key;
+ * synthetic keys are minted per slot here (appends only; removal splices in its handler), during
+ * render so a new compound's key exists on the render that needs it.
  */
 function padCompoundKeys(
   keys: Readonly<Record<string, readonly string[]>>,
@@ -195,27 +183,16 @@ export function MedicationsView() {
     if (focusId) nameInputs.current.get(focusId)?.focus();
   }, [focusId]);
 
-  // Initial scroll only: bring the current year's columns into view on first
-  // paint, scrolling every earlier year out of sight behind the sticky
-  // Medication column. A manual scroll afterward is left alone -- this never
-  // re-runs, and years/rows are read fresh from the ref's own scroll width,
-  // not tracked as effect dependencies.
+  // Initial scroll only: the current year's January lands right after the sticky column; never re-runs.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const currentYear = new Date().getFullYear();
     const yearIndex = years.indexOf(currentYear);
     if (yearIndex <= 0) return;
-    // Month columns already flow after the sticky Medication column in the table's own
-    // content, so scrollLeft is measured from the start of the year columns, not from the
-    // table's left edge -- adding NAME_COL_WIDTH here double-counted it and overshot into
-    // the target year itself instead of landing on its January.
+    // scrollLeft is measured from the start of the month columns, so NAME_COL_WIDTH must not be added.
     const target = yearIndex * MONTH_COL_WIDTH * 12;
-    // When the current year is the last one (the common case), the table may not have
-    // enough width to its right to fill the container once scrolled this far, so the
-    // browser silently clamps scrollLeft short -- which is what actually produced the
-    // under-shoot, leaving the previous year's tail months in view. Pad the container so
-    // the full target is reachable instead of merely the content that happens to exist.
+    // The browser clamps scrollLeft to the content that exists, so pad the container until the target is reachable.
     const shortfall = target - (el.scrollWidth - el.clientWidth);
     if (shortfall > 0) el.style.paddingRight = `${shortfall}px`;
     el.scrollLeft = target;
@@ -266,11 +243,7 @@ export function MedicationsView() {
             <table
               style={{
                 ...TABLE,
-                // `border-collapse: collapse` (the shared TABLE default) makes browsers paint cell
-                // backgrounds/borders through the table's own collapsed-border algorithm instead of normal
-                // z-index stacking, so a sticky cell's box-shadow stops painting over a scrolled-under sibling
-                // once the two overlap. `.mc-col-cut`'s sticky shadow (index.css) never hits this: those tables
-                // rely on the browser default of `separate`. Match that here instead of `collapse`.
+                // `collapse` would stop the sticky cell's box-shadow painting over a scrolled-under sibling.
                 borderCollapse: 'separate',
                 borderSpacing: 0,
                 tableLayout: 'fixed',
@@ -311,9 +284,7 @@ export function MedicationsView() {
                 {rows.map((row, r) => {
                   const last = r === rows.length - 1;
                   const cell = last ? lastTd : td;
-                  // Chronological, not scoped to a year's own 12 columns: December of one year and
-                  // January of the next are adjacent calendar months, so a run marked across that
-                  // boundary still joins into one bar instead of resetting at each year's column group.
+                  // Chronological across years, so December and the next January join into one bar.
                   const isMarked = (year: number, monthIndex: number) => {
                     let rolloverYear = year;
                     if (monthIndex < 0) rolloverYear = year - 1;
@@ -396,9 +367,7 @@ export function MedicationsView() {
                             >
                               {row.brand}
                             </span>
-                            {/* Always rendered, even with nothing to show: a reserved second line keeps every
-                                row's Medication cell -- and so every row -- the same height, whether or not
-                                this medication has compounds. */}
+                            {/* Always rendered, so every row keeps the same height with or without compounds. */}
                             <span
                               style={{
                                 display: 'block',
