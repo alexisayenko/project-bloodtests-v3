@@ -57,7 +57,7 @@ the index.
 | [task-0037](task-0037.md) | Hide Get Started for signed-in users | to do |
 | [task-0038](task-0038.md) | Reconcile lab-reported observations with their app-computed index twins | to do |
 | [task-0039](task-0039.md) | Decide on Observations/Indices naming (or an alternative split) | to do |
-| [task-0040](task-0040.md) | Design the mobile app shell (nav pattern, layout mockups) | to do |
+| [task-0040](task-0040.md) | Design the mobile app shell (nav pattern, layout mockups) | done |
 | [task-0041](task-0041.md) | Add a collapsible FBC group to reduce marker-row noise (FBC only, not a generic mechanism) | to do |
 | [task-0042](task-0042.md) | Make the albumin-fallback choice a persisted global setting, not just a Hormonal Pathways toggle | to do |
 | [task-0043](task-0043.md) | Add a show/hide toggle for the Scheduled block in results tables | to do |

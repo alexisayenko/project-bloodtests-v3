@@ -100,6 +100,18 @@ reference, not a spec — the app keeps its own shell, the `AppShell`
 sidebar and top bar, and its `PageHeader` banner rather than redrawing
 them to match, and the mockups' light/dark toggle is not built.
 
+## Mobile design reference
+
+[`../assets/mobile-app-shell-design.png`](../assets/mobile-app-shell-design.png)
+(also archived in [`designs/`](designs/)) is the ChatGPT visual reference (2026-09-18)
+for the mobile phone application shell, showcasing:
+1. **Diagnostic Reports list** with date, laboratory name, observation count, and status badge.
+2. **Monitoring Panels overview** with aggregate summary counter cards (In range, Borderline, Out of range, Not tested), quick search/filter toolbar, and accordion/card-style panel groups with marker chips.
+3. **Slide-out Navigation Drawer** behind the hamburger toggle, displaying the brand mark, section list (matching desktop `NAV_ITEMS`), and pinned Account footer.
+
+See [`../tasks/task-0040.md`](../tasks/task-0040.md) and [`../tasks/task-0020.md`](../tasks/task-0020.md) for UX analysis, interaction notes, and implementation mapping.
+
+
 ## Where applications live
 
 Cross-folder assets (mark sources, font licenses) live here.
