@@ -2,16 +2,12 @@ import { useCallback, useMemo, useRef, useState, type CSSProperties, type RefObj
 import { Copy } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { CarrierIcon, CholesterolIcon } from './customIcons';
-import { SegmentedControl } from '../primitives';
 import { ParticleNode } from './Particle3';
-import { LIPOPROTEIN_PARTICLES } from '../../data/lipoproteinParticles';
-import { MARKER_CANDIDATE_LOINCS, computeIndex, indexBands, indexZone } from '../../data/computedIndices';
-import { INDEX_DEFS } from '../../data/indexDefs';
+import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
 import { convertConcentration } from '../../data/pathwayReferenceRanges';
 import type { Result, UnitSystem } from '../../types';
 import { fmtNum, isOutOfRange } from '../../utils/format';
-import { clamp } from '../../utils/math';
-import { panelDates, type Observation } from './markers';
+import type { Observation } from './markers';
 import { hasReference, type ResultEntry } from './resultsLookup';
 import {
   CARD_WIDTH,
@@ -22,14 +18,14 @@ import {
   NO_REFERENCE,
   associationFor,
   combinedZones,
+  indexDefOf,
   keepSources,
   labReference,
   mergeReferences,
-  useDismiss,
+  useAxisPage,
   useMeasuredLayout,
   useNodeDrag,
   valueText,
-  withVariants,
   zoneReference,
   type Association,
   type CitedSource,
@@ -37,46 +33,45 @@ import {
   type Measure,
   type ReferenceInfo,
 } from './pathwayShared';
-import { ArtworkNote, AssociationLayer, Cites, DateStepper, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
+import { ArtworkNote, AssociationLayer, AxisToolbar, BadgeColumn, Cites, Glyph, ReferenceBlock, SourcesBlock } from './PathwayParts';
+import {
+  chainHopArrows,
+  computeRetentionArrows,
+  edgeToEdgeArrow,
+  faSupplyArrowPath,
+  ldlUptakeArrow,
+  liverToApobArrowPath,
+  liverToTrigArrowPath,
+  lplArrowPath,
+  particleBondsAndOutlines,
+  presentTargets,
+  type Arrow,
+  type Outline,
+} from './LipidTransport.geometry';
+import {
+  BADGES,
+  CHOLESTEROL_UNITS,
+  HMGCR,
+  HMGCR_NOTE,
+  HMGCR_SOURCES,
+  RETENTION,
+  RETENTION_NOTE,
+  RETENTION_SOURCES,
+  idx,
+  type BadgeSpec,
+  type IndexSpec,
+  type MarkerSpec,
+  type MethodsSpec,
+} from './LipidTransport.badges';
 
 /** The monitoring panel whose results-table dates this page steps through. */
 const PANEL_NAME = 'Cardiovascular Risk';
 
 // ---- measures ----
 
-interface MarkerSpec {
-  kind: 'marker';
-  loincs: string[];
-  display?: { si: string; us: string; molarMass: string };
-}
-
-interface IndexSpec {
-  kind: 'index';
-  key: string;
-}
-
-const CHOLESTEROL_UNITS = { si: 'mmol/L', us: 'mg/dL', molarMass: 'cholesterol' } as const;
-const TRIGLYCERIDE_UNITS = { si: 'mmol/L', us: 'mg/dL', molarMass: 'triglyceride' } as const;
-
-const indexInput = (marker: string) => MARKER_CANDIDATE_LOINCS[marker] ?? [];
-
-const MARKERS = {
-  TC: { kind: 'marker', loincs: indexInput('TC'), display: CHOLESTEROL_UNITS },
-  TG: { kind: 'marker', loincs: indexInput('TRIG'), display: TRIGLYCERIDE_UNITS },
-  HDL: { kind: 'marker', loincs: indexInput('HDL-C'), display: CHOLESTEROL_UNITS },
-  LDL: { kind: 'marker', loincs: indexInput('LDL-C'), display: CHOLESTEROL_UNITS },
-  VLDL: { kind: 'marker', loincs: withVariants('13458-5'), display: CHOLESTEROL_UNITS },
-  APOB: { kind: 'marker', loincs: indexInput('ApoB') },
-  APOA1: { kind: 'marker', loincs: indexInput('ApoA1') },
-  LPA: { kind: 'marker', loincs: withVariants('10835-7') },
-} as const satisfies Record<string, MarkerSpec>;
-
-const idx = (key: string): IndexSpec => ({ kind: 'index', key });
-const defOf = (key: string) => INDEX_DEFS.find((d) => d.key === key);
-
 /** A computed index in mg/dL of cholesterol is shown on the same scale as the lab's cholesterol readings. */
 function indexDisplay(key: string) {
-  return defOf(key)?.unit === 'mg/dL' ? CHOLESTEROL_UNITS : undefined;
+  return indexDefOf(key)?.unit === 'mg/dL' ? CHOLESTEROL_UNITS : undefined;
 }
 
 function place(value: number, unit: string, display: MarkerSpec['display'], unitSystem: UnitSystem): { value: number; unit: string } {
@@ -118,7 +113,7 @@ function snapshotOf(
       };
     },
     index: (key) => {
-      const def = defOf(key);
+      const def = indexDefOf(key);
       const value = def ? computeIndex(def, resultsByLoinc) : null;
       if (!def || value == null) return EMPTY;
       return { text: quantityText(place(value, def.unit ?? '', indexDisplay(key), unitSystem)), status: indexZone(def, value) ?? 'none' };
@@ -131,7 +126,7 @@ const measureOf = (spec: MarkerSpec | IndexSpec, snapshot: Snapshot) =>
 
 function referenceOf(spec: MarkerSpec | IndexSpec, measure: Measure, unitSystem: UnitSystem): ReferenceInfo {
   if (spec.kind === 'marker') return measure.lab ? labReference(measure.lab) : NO_REFERENCE;
-  const def = defOf(spec.key);
+  const def = indexDefOf(spec.key);
   if (!def) return NO_REFERENCE;
   return zoneReference(def, indexBands(def), (cut) => place(cut, def.unit ?? '', indexDisplay(spec.key), unitSystem));
 }
@@ -142,109 +137,10 @@ function CalcTag() {
 
 // ---- badges ----
 
-const regions = (region: string, particles: readonly string[]) => particles.map((p) => `${p}-${region}`);
-const ALL_PARTICLES = LIPOPROTEIN_PARTICLES.map((p) => p.id);
-const APOB_PILLS = regions('apo', ['vldl', 'idl', 'ldl', 'lpa']);
-
-const APOB_MEANING =
-  'Each VLDL, IDL, LDL and Lp(a) particle carries exactly one ApoB-100, so ApoB counts atherogenic particles, while LDL-C measures their cholesterol cargo. When they disagree — e.g. many small, cholesterol-poor LDL particles — ApoB tracks risk more accurately.';
-
-const APOB_SOURCES: readonly CitedSource[] = [
-  {
-    organization: 'JAMA Cardiology (Sniderman AD, Thanassoulis G, Glavinovic T, et al.)',
-    title: 'Apolipoprotein B Particles and Cardiovascular Disease: A Narrative Review',
-    url: 'https://doi.org/10.1001/jamacardio.2019.3780',
-    year: 2019,
-    retrieved: '2026-09-16',
-    quote: 'apoB more accurately measures the atherogenic risk owing to the apoB lipoproteins than does low-density lipoprotein cholesterol',
-  },
-];
-
 /** A block's own citations followed by the spec's, and the numbers the spec's take in that list. */
 function withSources(info: ReferenceInfo, sources: readonly CitedSource[] = []): { info: ReferenceInfo; cites: number[] } {
   return { info: { ...info, sources: [...info.sources, ...sources] }, cites: sources.map((_, i) => info.sources.length + i + 1) };
 }
-
-interface MethodsSpec {
-  reported: MarkerSpec;
-  /** The estimate the face falls back to when the lab reported none. */
-  fallback: string;
-  calculated: readonly (readonly [key: string, method: string])[];
-  /** The badge cites only these, in this order, matched by title; INDEX_DEFS keeps the full lists. */
-  sourceTitles: readonly string[];
-}
-
-interface BadgeSpec {
-  id: string;
-  name: string;
-  measure: MarkerSpec | IndexSpec;
-  meaning: string;
-  sources?: readonly CitedSource[];
-  methods?: MethodsSpec;
-  /** The particles the badge's association lines ring. */
-  targets: readonly string[];
-}
-
-const indexBadge = (key: string, targets: readonly string[]): BadgeSpec => {
-  const def = defOf(key);
-  return { id: key, name: def?.shortName ?? key, measure: idx(key), meaning: def?.meaning ?? '', targets };
-};
-
-const LDL_METHODS: MethodsSpec = {
-  reported: MARKERS.LDL,
-  fallback: 'ldlmh',
-  calculated: [
-    ['ldlf', 'Friedewald'],
-    ['ldls', 'Sampson'],
-    ['ldlmh', 'Martin-Hopkins'],
-  ],
-  sourceTitles: [
-    'Estimation of the concentration of low-density lipoprotein cholesterol',
-    'A New Equation for Calculation of Low-Density Lipoprotein Cholesterol',
-    'Comparison of a Novel Method vs the Friedewald Equation',
-    'Third Report (ATP III)',
-  ],
-};
-
-const BADGES: readonly BadgeSpec[] = [
-  {
-    id: 'tc',
-    name: 'Total cholesterol',
-    measure: MARKERS.TC,
-    meaning: 'Cholesterol carried by every particle in the sample, free plus esterified.',
-    targets: regions('chol', ALL_PARTICLES),
-  },
-  {
-    id: 'ldl',
-    name: 'LDL-C',
-    measure: MARKERS.LDL,
-    methods: LDL_METHODS,
-    meaning:
-      'Cholesterol carried in LDL particles. The lab may report it; here it is also estimated from total cholesterol, HDL-C and triglycerides by three equations. Friedewald (1972) subtracts TG ÷ 5 and is not valid at TG ≥ 400 mg/dL; Sampson (2020) stays valid up to TG 800 mg/dL; Martin-Hopkins (2013) replaces the fixed 5 with a divisor looked up from a 180-cell table. Where the estimates agree the value is solid. Targets are risk-stratified; the bands are the NCEP ATP III descriptive categories.',
-    targets: ['ldl-chol'],
-  },
-  {
-    id: 'tg',
-    name: 'Triglycerides',
-    measure: MARKERS.TG,
-    meaning: 'Triglycerides carried by every particle in the sample; mostly VLDL when fasting, chylomicrons adding to it after a meal.',
-    targets: regions('trig', ALL_PARTICLES),
-  },
-  {
-    id: 'apob',
-    name: 'ApoB',
-    measure: MARKERS.APOB,
-    meaning: APOB_MEANING,
-    sources: APOB_SOURCES,
-    targets: APOB_PILLS,
-  },
-  indexBadge('nonhdl', regions('chol', ['chylomicron', 'vldl', 'idl', 'ldl', 'lpa'])),
-  indexBadge('remnant', regions('chol', ['chylomicron', 'vldl', 'idl'])),
-  indexBadge('tchdl', regions('chol', ALL_PARTICLES)),
-  indexBadge('ldlhdl', ['ldl-chol', 'hdl-chol']),
-  indexBadge('aip', [...regions('trig', ALL_PARTICLES), 'hdl-chol']),
-  indexBadge('apobapoa', [...APOB_PILLS, 'hdl-apo']),
-];
 
 /** The reported value when there is one, otherwise the fallback estimate. */
 function badgeFace(b: BadgeSpec, snapshot: Snapshot): { measure: Measure; calculated: boolean } {
@@ -295,60 +191,19 @@ function MethodsBody({ badge, methods, snapshot, unitSystem }: Readonly<{ badge:
   );
 }
 
-function Badges({
-  snapshot,
-  unitSystem,
-  open,
-  setOpen,
-  setHovered,
-}: Readonly<{ snapshot: Snapshot; unitSystem: UnitSystem; open: string | null; setOpen: (id: string | null) => void; setHovered: (id: string | null) => void }>) {
+function BadgeBody({ badge, scope, snapshot, unitSystem }: Readonly<{ badge: BadgeSpec; scope: string; snapshot: Snapshot; unitSystem: UnitSystem }>) {
+  if (badge.methods) return <MethodsBody badge={badge} methods={badge.methods} snapshot={snapshot} unitSystem={unitSystem} />;
+  const { measure } = badgeFace(badge, snapshot);
+  const cited = withSources(referenceOf(badge.measure, measure, unitSystem), badge.sources);
   return (
-    <aside className="mc-pathway-badges" aria-label="Measures and ratios">
-      {BADGES.map((b) => {
-        const expanded = open === b.id;
-        const { measure, calculated } = badgeFace(b, snapshot);
-        const scope = `lipid-${b.id}`;
-        const cited = expanded && !b.methods ? withSources(referenceOf(b.measure, measure, unitSystem), b.sources) : null;
-        return (
-          <div
-            key={b.id}
-            className={expanded ? 'mc-pathway-badge mc-pathway-badge-open' : 'mc-pathway-badge'}
-            data-badge={b.id}
-            onMouseEnter={() => setHovered(b.id)}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <button
-              type="button"
-              className="mc-pathway-badge-toggle"
-              aria-expanded={expanded}
-              onClick={() => setOpen(expanded ? null : b.id)}
-              onFocus={() => setHovered(b.id)}
-              onBlur={() => setHovered(null)}
-            >
-              <span className="mc-pathway-badge-head">
-                <span className="mc-pathway-badge-name">{b.name}</span>
-                <span className={`mc-pathway-dot mc-pathway-dot-${measure.status}`} />
-              </span>
-              <span className="mc-pathway-badge-value">
-                {valueText(measure)}
-                {calculated && <CalcTag />}
-              </span>
-            </button>
-            {expanded && b.methods && <MethodsBody badge={b} methods={b.methods} snapshot={snapshot} unitSystem={unitSystem} />}
-            {cited && (
-              <div className="mc-pathway-badge-body">
-                <ReferenceBlock scope={scope} info={cited.info} />
-                <span>
-                  <b>Meaning</b> {b.meaning}
-                  <Cites scope={scope} cites={cited.cites} />
-                </span>
-                <SourcesBlock scope={scope} info={cited.info} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </aside>
+    <div className="mc-pathway-badge-body">
+      <ReferenceBlock scope={scope} info={cited.info} />
+      <span>
+        <b>Meaning</b> {badge.meaning}
+        <Cites scope={scope} cites={cited.cites} />
+      </span>
+      <SourcesBlock scope={scope} info={cited.info} />
+    </div>
   );
 }
 
@@ -358,34 +213,12 @@ const INTESTINE_ART: GlyphArt = { src: '/pathways/intestine.png?v=1', width: 237
 
 // ---- liver ----
 
-const HMGCR = 'hmgcr';
-const HMGCR_NOTE = 'Rate-limiting enzyme of cholesterol synthesis; the target of statins.';
-
 const LIVER_ART: GlyphArt = { src: '/pathways/liver.png?v=1', width: 256, height: 176, box: [4, 4, 252, 172], size: SIZE.organ };
 
 const VLDL_ASSEMBLY_NOTE = "The liver assembles VLDL from triglyceride, cholesterol and ApoB-100 before secreting it into blood.";
 const VLDL_FATTY_ACID_SUPPLY_NOTE = 'Fatty acids the liver imports from blood (adipose lipolysis, chylomicron remnants) rather than makes itself, feeding VLDL triglyceride synthesis.';
 /** A plain descriptive tooltip, not a footnoted claim. */
 const LIVER_TRIG_SYNTH_NOTE = 'The liver esterifies fatty acids into triglyceride (DGAT, via the glycerol-3-phosphate pathway)';
-
-const HMGCR_SOURCES: readonly CitedSource[] = [
-  {
-    organization: 'Endotext (Feingold KR)',
-    title: 'Introduction to Lipids and Lipoproteins',
-    url: 'https://www.ncbi.nlm.nih.gov/books/NBK305896/',
-    year: 2024,
-    retrieved: '2026-09-16',
-    quote: 'HMG-CoA reductase, the rate limiting enzyme in cholesterol synthesis',
-  },
-  {
-    organization: 'Endotext (Feingold KR)',
-    title: 'Cholesterol Lowering Drugs',
-    url: 'https://www.ncbi.nlm.nih.gov/books/NBK395573/',
-    year: 2026,
-    retrieved: '2026-09-16',
-    quote: 'Statins are competitive inhibitors of HMG-CoA reductase, which leads to a decrease in cholesterol synthesis in the liver',
-  },
-];
 
 /** The liver at organ size, with HMG-CoA reductase docked on it at molecular size. */
 function LiverNode({ open, onToggle }: Readonly<{ open: string | null; onToggle: (id: string, el: HTMLElement) => void }>) {
@@ -440,177 +273,15 @@ function EnzymeCard({ left, top }: Readonly<{ left: number; top: number }>) {
   );
 }
 
-type Point = { x: number; y: number };
-const rectCenter = (r: DOMRect, base: DOMRect): Point => ({ x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top });
-/** A point `radius` px along the line from `from` to `to`, so a bond meets a circle radially. */
-const onEdge = (from: Point, to: Point, radius: number): Point => {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const dist = Math.hypot(dx, dy);
-  return { x: from.x + (dx / dist) * radius, y: from.y + (dy / dist) * radius };
-};
-
-/** A straight arrow between two rects' centers, each end pulled back to its rect's edge; null when either rect is missing. */
-function edgeToEdgeArrow(
-  from: DOMRect | undefined,
-  to: DOMRect | undefined,
-  base: DOMRect,
-  fromExtra = 3,
-  toExtra = 5,
-  dim: 'width' | 'height' = 'width'
-): string | null {
-  if (!from || !to) return null;
-  const r = rectCenter(from, base);
-  const s = rectCenter(to, base);
-  const fromRadius = (dim === 'width' ? from.width : from.height) / 2 + fromExtra;
-  const toRadius = (dim === 'width' ? to.width : to.height) / 2 + toExtra;
-  const start = onEdge(r, s, fromRadius);
-  const end = onEdge(s, r, toRadius);
-  return `M${start.x},${start.y} L${end.x},${end.y}`;
-}
-
-function ldlUptakeArrow(ldl: DOMRect | undefined, targetCells: DOMRect | undefined, ldlApo: DOMRect | undefined, base: DOMRect): string | null {
-  if (!ldl || !targetCells || !ldlApo) return null;
-  const x = ldlApo.left + ldlApo.width / 2 - base.left;
-  const y0 = ldl.bottom - base.top;
-  const y1 = targetCells.top + targetCells.height / 2 - base.top;
-  const x1 = targetCells.left - base.left;
-  return `M${x},${y0} L${x},${y1} L${x1},${y1}`;
-}
-
-/** Each hop runs through the gap at the holder apoprotein's height, so it never crosses a TRIG/Chol circle. */
-function chainHopArrows(
-  vldl: DOMRect | undefined,
-  idl: DOMRect | undefined,
-  ldl: DOMRect | undefined,
-  vldlApo: DOMRect | undefined,
-  idlApo: DOMRect | undefined,
-  base: DOMRect
-): { id: string; d: string }[] {
-  const chain: { id: string; d: string }[] = [];
-  if (vldl && idl && vldlApo) {
-    const y = vldlApo.top + vldlApo.height / 2 - base.top;
-    chain.push({ id: 'vldl-idl', d: `M${vldl.right - base.left},${y} L${idl.left - base.left},${y}` });
-  }
-  if (idl && ldl && idlApo) {
-    const y = idlApo.top + idlApo.height / 2 - base.top;
-    chain.push({ id: 'idl-ldl', d: `M${idl.right - base.left},${y} L${ldl.left - base.left},${y}` });
-  }
-  return chain;
-}
-
-/** Never from VLDL, which the diagram omits per RETENTION_SOURCES' size ceiling. */
-function computeRetentionArrows(
-  idlApo: DOMRect | undefined,
-  ldlApo: DOMRect | undefined,
-  lpaApo: DOMRect | undefined,
-  arteryGap: DOMRect | undefined,
-  base: DOMRect
-): { id: string; d: string }[] {
-  if (!arteryGap) return [];
-  const apos: readonly (readonly [string, DOMRect | undefined])[] = [
-    ['idl', idlApo],
-    ['ldl', ldlApo],
-    ['lpa', lpaApo],
-  ];
-  return apos.flatMap(([id, apo]) => {
-    const d = edgeToEdgeArrow(apo, arteryGap, base, 3, 3);
-    return d ? [{ id, d }] : [];
-  });
-}
-
-function lplArrowPath(
-  vldl: DOMRect | undefined,
-  lplBubble: DOMRect | undefined,
-  fattyAcids: DOMRect | undefined,
-  lplMuscle: DOMRect | undefined,
-  lplAdipocytes: DOMRect | undefined,
-  base: DOMRect
-): string | null {
-  if (!vldl || !lplBubble || !fattyAcids) return null;
-  const segments = [
-    `M${vldl.left - base.left + 20},${vldl.bottom - base.top + 2} L${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.top - base.top - 4}`,
-    `M${lplBubble.left + lplBubble.width / 2 - base.left},${lplBubble.bottom - base.top + 2} L${fattyAcids.left + fattyAcids.width / 2 - base.left},${fattyAcids.top - base.top - 2}`,
-  ];
-  const toMuscle = edgeToEdgeArrow(fattyAcids, lplMuscle, base);
-  if (toMuscle) segments.push(toMuscle);
-  const toAdipocytes = edgeToEdgeArrow(fattyAcids, lplAdipocytes, base);
-  if (toAdipocytes) segments.push(toAdipocytes);
-  return segments.join(' ');
-}
-
-function particleBondsAndOutlines(
-  el: Element,
-  base: DOMRect
-): { bonds: { id: string; d: string }[]; outlines: { id: string; x: number; y: number; w: number; h: number }[] } {
-  const bonds: { id: string; d: string }[] = [];
-  const outlines: { id: string; x: number; y: number; w: number; h: number }[] = [];
-  for (const id of ['vldl', 'idl', 'ldl', 'chylomicron', 'hdl', 'lpa', 'vldl-construction']) {
-    const trig = el.querySelector(`[data-node="${id}-trig"]`)?.getBoundingClientRect();
-    const apo = el.querySelector(`[data-node="${id}-apo"]`)?.getBoundingClientRect();
-    const chol = el.querySelector(`[data-node="${id}-chol"]`)?.getBoundingClientRect();
-    if (!trig || !apo || !chol) continue;
-    const a = rectCenter(apo, base);
-    const c = rectCenter(chol, base);
-    const t = rectCenter(trig, base);
-    const apoRadius = apo.width / 2 + 3;
-    const cholEdge = onEdge(c, a, chol.width / 2 + 2);
-    const apoFromC = onEdge(a, c, apoRadius);
-    const trigEdge = onEdge(t, a, trig.width / 2 + 2);
-    const apoFromT = onEdge(a, t, apoRadius);
-    const bond = `M${cholEdge.x},${cholEdge.y} L${apoFromC.x},${apoFromC.y} M${trigEdge.x},${trigEdge.y} L${apoFromT.x},${apoFromT.y}`;
-    // The ApoB caption is wider than its icon, so the box must include it.
-    const apoCaption = el.querySelector(`[data-node="${id}-apo"]`)?.closest('.mc-pathway-anchor')?.querySelector('.mc-pathway-caption')?.getBoundingClientRect();
-    const left = Math.min(chol.left, apo.left, trig.left, apoCaption?.left ?? Infinity) - base.left;
-    const right = Math.max(chol.right, apo.right, apoCaption?.right ?? -Infinity) - base.left;
-    const top = Math.min(chol.top, apo.top, trig.top) - base.top;
-    bonds.push({ id, d: bond });
-    const pad = 10;
-    outlines.push({ id, x: left - pad, y: top - pad, w: right - left + pad * 2, h: apo.bottom - base.top + 26 - (top - pad) });
-  }
-  return { bonds, outlines };
-}
-
-/** Lands on the liver itself, not liver-trig: the liver takes fatty acids up, then hands them to its own TRIG synthesis. */
-function faSupplyArrowPath(faSupply: DOMRect | undefined, liverOrgan: DOMRect | undefined, base: DOMRect): string | null {
-  if (!faSupply || !liverOrgan) return null;
-  const x = faSupply.left + faSupply.width / 2 - base.left;
-  const fromY = faSupply.top - base.top - 3;
-  const toY = liverOrgan.bottom - base.top + 5;
-  return `M${x},${fromY} L${x},${toY}`;
-}
-
-/** Starts from the liver's bottom edge, not its center, which would land beside HMG-CoA reductase and imply the enzyme makes TRIG. */
-function liverToTrigArrowPath(liverOrgan: DOMRect | undefined, liverTrig: DOMRect | undefined, base: DOMRect): string | null {
-  if (!liverOrgan || !liverTrig) return null;
-  const from = { x: liverOrgan.left + liverOrgan.width / 2 - base.left, y: liverOrgan.bottom - base.top - 3 };
-  const s = rectCenter(liverTrig, base);
-  const to = onEdge(s, from, liverTrig.width / 2 + 5);
-  return `M${from.x},${from.y} L${to.x},${to.y}`;
-}
-
-function liverToApobArrowPath(liverOrgan: DOMRect | undefined, liverApob: DOMRect | undefined, base: DOMRect): string | null {
-  if (!liverOrgan || !liverApob) return null;
-  const x = liverApob.left + liverApob.width / 2 - base.left;
-  const fromY = liverOrgan.bottom - base.top - 3;
-  const toY = liverApob.top - base.top + 5;
-  return `M${x},${fromY} L${x},${toY}`;
-}
-
-/** A region with no sourced area in Data mode is not drawn, so its particle's outline is ringed instead. */
-function presentTargets(el: Element, targets: readonly string[]): string[] {
-  return [...new Set(targets.map((t) => (el.querySelector(`[data-node="${t}"]`) ? t : t.split('-')[0])))];
-}
-
 function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root: RefObject<HTMLDivElement | null>; active: string | null; focused: string | null; layoutKey: string }>) {
   const [associations, setAssociations] = useState<Association[]>([]);
   const [veil, setVeil] = useState<{ w: number; h: number } | null>(null);
   const [secretion, setSecretion] = useState<string | null>(null);
   const [ldlUptake, setLdlUptake] = useState<string | null>(null);
-  const [chainArrows, setChainArrows] = useState<{ id: string; d: string }[]>([]);
+  const [chainArrows, setChainArrows] = useState<Arrow[]>([]);
   const [lplArrow, setLplArrow] = useState<string | null>(null);
-  const [particleBonds, setParticleBonds] = useState<{ id: string; d: string }[]>([]);
-  const [particleOutlines, setParticleOutlines] = useState<{ id: string; x: number; y: number; w: number; h: number }[]>([]);
+  const [particleBonds, setParticleBonds] = useState<Arrow[]>([]);
+  const [particleOutlines, setParticleOutlines] = useState<Outline[]>([]);
   const [synthArrow, setSynthArrow] = useState<string | null>(null);
   const [enterocyteTrigArrow, setEnterocyteTrigArrow] = useState<string | null>(null);
   const [enterocyteApoB48Arrow, setEnterocyteApoB48Arrow] = useState<string | null>(null);
@@ -622,7 +293,7 @@ function LipidAssociations({ root, active, focused, layoutKey }: Readonly<{ root
   const [faSupplyArrow, setFaSupplyArrow] = useState<string | null>(null);
   const [liverToTrigArrow, setLiverToTrigArrow] = useState<string | null>(null);
   const [liverToApobArrow, setLiverToApobArrow] = useState<string | null>(null);
-  const [retentionArrows, setRetentionArrows] = useState<{ id: string; d: string }[]>([]);
+  const [retentionArrows, setRetentionArrows] = useState<Arrow[]>([]);
   useMeasuredLayout(root, layoutKey, (el) => {
     const base = el.getBoundingClientRect();
     const vldl = el.querySelector('[data-node="vldl"]')?.getBoundingClientRect();
@@ -806,38 +477,7 @@ function LipoproteinChain() {
 /** ~4.8:1 content, so sized as a horizontal band rather than SIZE.organ's square. */
 const ARTERY_WALL_ART: GlyphArt = { src: '/pathways/artery-wall.png?v=1', width: 1648, height: 355, box: [6, 6, 1642, 349], size: 760 };
 
-const RETENTION = 'retention';
 const ARTERY_GAP = 'artery-gap';
-
-/** Hover summary only; the gap chip carries the cited claim (RetentionCard). */
-const RETENTION_NOTE =
-  'LDL, IDL and Lp(a) cross a damaged endothelium and are retained by ApoB-100 binding intima proteoglycans; particles above ~70 nm, including VLDL, mostly cannot cross this way, so no arrow is drawn from it.';
-
-/**
- * One source (the 2020 EAS Consensus Panel review) for both the retention
- * mechanism and the ~70 nm size ceiling; VLDL sits above the ceiling, so its
- * arrow is omitted rather than drawn against an invented threshold.
- */
-const RETENTION_SOURCES: readonly CitedSource[] = [
-  {
-    organization: 'European Heart Journal (Borén J, Chapman MJ, Krauss RM, et al.; European Atherosclerosis Society Consensus Panel)',
-    title: 'Low-density lipoproteins cause atherosclerotic cardiovascular disease: pathophysiological, genetic, and therapeutic insights',
-    // SourcesBlock keys sources by title|url, so the two entries need distinct URL fragments.
-    url: 'https://doi.org/10.1093/eurheartj/ehz962#retention',
-    year: 2020,
-    retrieved: '2026-09-17',
-    quote:
-      'positively charged amino acyl residues (arginine and lysine) in apoB100 with negatively charged sulfate and carboxylic acid groups of arterial wall proteoglycans',
-  },
-  {
-    organization: 'European Heart Journal (Borén J, Chapman MJ, Krauss RM, et al.; European Atherosclerosis Society Consensus Panel)',
-    title: 'Low-density lipoproteins cause atherosclerotic cardiovascular disease: pathophysiological, genetic, and therapeutic insights',
-    url: 'https://doi.org/10.1093/eurheartj/ehz962#size-limit',
-    year: 2020,
-    retrieved: '2026-09-17',
-    quote: 'Apolipoprotein B-containing lipoproteins of up to ∼70 nm in diameter […] can cross the endothelium',
-  },
-];
 
 /** `Glyph` renders a square box, which would leave a ~4.8:1 strip a sliver; this sizes the height from the aspect. */
 function WideGlyph({ art, alt = '' }: Readonly<{ art: GlyphArt; alt?: string }>) {
@@ -902,10 +542,6 @@ export function LipidTransportView({
   onUnitSystemChange: (unitSystem: UnitSystem) => void;
 }>) {
   const layoutRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState<string | null>(null);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const [cardAt, setCardAt] = useState<{ left: number; top: number } | null>(null);
-  const [picked, setPicked] = useState<string | null>(null);
   const [debugOn, setDebug] = useState(false);
   const debug = import.meta.env.DEV && debugOn;
   const { drags, activeId, reset: resetDrags } = useNodeDrag(layoutRef, debug);
@@ -915,39 +551,17 @@ export function LipidTransportView({
       return !prev;
     });
   }, [resetDrags]);
-  const dates = useMemo(() => panelDates(PANEL_NAME, panelTests, allResults).reverse(), [panelTests, allResults]);
-  const date = picked && dates.includes(picked) ? picked : dates.at(-1);
+  const page = useAxisPage({
+    panelName: PANEL_NAME,
+    panelTests,
+    allResults,
+    rootRef: layoutRef,
+    keepSelector: '.mc-pathway-pop, [data-caption], [data-badge]',
+    isCardId: (id) => id === HMGCR || id === RETENTION,
+  });
+  const { dates, date, open, cardAt, hovered, badgeOpen, toggleChip } = page;
   const snapshot = useMemo(() => snapshotOf(allResults, resultsByDate, date, unitSystem), [allResults, resultsByDate, date, unitSystem]);
 
-  const placeCard = useCallback((chip: Element) => {
-    const layout = layoutRef.current;
-    if (!layout) return null;
-    const a = chip.getBoundingClientRect();
-    const box = layout.getBoundingClientRect();
-    const left = clamp(a.left + a.width / 2 - box.left - CARD_WIDTH / 2, 0, Math.max(box.width - CARD_WIDTH, 0));
-    return { left, top: a.bottom - box.top + 6 };
-  }, []);
-
-  const toggleChip = useCallback(
-    (id: string, el: HTMLElement) => {
-      if (open === id) {
-        setOpen(null);
-        return;
-      }
-      setCardAt(placeCard(el));
-      setOpen(id);
-    },
-    [open, placeCard]
-  );
-
-  const close = useCallback(() => setOpen(null), []);
-  const replaceCard = useCallback(() => {
-    const chip = layoutRef.current?.querySelector(`[data-caption="${open}"]`);
-    if (chip) setCardAt(placeCard(chip));
-  }, [open, placeCard]);
-  useDismiss(open, close, '.mc-pathway-pop, [data-caption], [data-badge]', replaceCard);
-
-  const badgeOpen = open === HMGCR || open === RETENTION ? null : open;
   return (
     <div>
       <PageHeader
@@ -956,18 +570,7 @@ export function LipidTransportView({
         titleAccent="Transport"
         description={['How fat and cholesterol travel through the blood, particle by particle']}
       />
-      <div className="mc-pathway-toolbar">
-        <DateStepper dates={dates} index={date ? dates.indexOf(date) : -1} onChange={(i) => setPicked(dates[i] ?? null)} />
-        <div className="mc-pathway-check">
-          <span aria-hidden="true">Unit system</span>
-          <SegmentedControl
-            label="Unit system"
-            options={['si', 'us'] as const}
-            value={unitSystem}
-            onChange={onUnitSystemChange}
-            format={(sys) => sys.toUpperCase()}
-          />
-        </div>
+      <AxisToolbar dates={dates} date={date} onPickDate={page.pickDate} unitSystem={unitSystem} onUnitSystemChange={onUnitSystemChange}>
         {import.meta.env.DEV && (
           <button
             type="button"
@@ -989,7 +592,7 @@ export function LipidTransportView({
             {debug ? 'Debug: ON' : 'Debug'}
           </button>
         )}
-      </div>
+      </AxisToolbar>
       <ArtworkNote>The liver and artery-wall images are illustrative.</ArtworkNote>
       <div className="mc-pathway-layout" ref={layoutRef} style={debug ? { cursor: 'grab' } : undefined}>
         <LipidAssociations root={layoutRef} active={hovered ?? badgeOpen} focused={badgeOpen} layoutKey={`${date ?? ''}|${unitSystem}`} />
@@ -1073,7 +676,26 @@ export function LipidTransportView({
             </section>
           </div>
         </div>
-        <Badges snapshot={snapshot} unitSystem={unitSystem} open={badgeOpen} setOpen={setOpen} setHovered={setHovered} />
+        <BadgeColumn
+          badges={BADGES}
+          scopePrefix="lipid"
+          open={badgeOpen}
+          setOpen={page.setOpen}
+          setHovered={page.setHovered}
+          renderFace={(b) => {
+            const { measure, calculated } = badgeFace(b, snapshot);
+            return {
+              status: measure.status,
+              value: (
+                <>
+                  {valueText(measure)}
+                  {calculated && <CalcTag />}
+                </>
+              ),
+            };
+          }}
+          renderBody={(b, scope) => <BadgeBody badge={b} scope={scope} snapshot={snapshot} unitSystem={unitSystem} />}
+        />
         {open === HMGCR && cardAt && <EnzymeCard left={cardAt.left} top={cardAt.top} />}
         {open === RETENTION && cardAt && <RetentionCard left={cardAt.left} top={cardAt.top} />}
       </div>
