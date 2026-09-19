@@ -27,8 +27,22 @@ describe('fetchSession', () => {
   });
 
   it('reads a 401 as signed out', async () => {
-    reply(401, {});
-    expect(await fetchSession()).toEqual({ status: 'signedOut' });
+    reply(401, { providers: ['google', 'apple'] });
+    expect(await fetchSession()).toEqual({ status: 'signedOut', providers: ['google', 'apple'] });
+  });
+
+  it('keeps only the listed, known providers of a 401', async () => {
+    reply(401, { providers: ['apple', 'github'] });
+    expect(await fetchSession()).toEqual({ status: 'signedOut', providers: ['apple'] });
+  });
+
+  it.each([
+    ['an empty object', {}],
+    ['a non-array list', { providers: 'google' }],
+    ['not JSON', undefined],
+  ])('reads a 401 with %s as signed out with no providers', async (_label, body) => {
+    reply(401, body);
+    expect(await fetchSession()).toEqual({ status: 'signedOut', providers: [] });
   });
 
   it('reads a 403 as not allowed', async () => {

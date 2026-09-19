@@ -222,6 +222,10 @@ function providerConfig(provider: string, env: AuthEnv): ProviderConfig | null {
   return null
 }
 
+export function configuredProviders(env: AuthEnv): Provider[] {
+  return (['google', 'apple'] as const).filter((provider) => providerConfig(provider, env) !== null)
+}
+
 interface OAuthState {
   provider: Provider
   state: string
@@ -371,7 +375,7 @@ export async function handleAuthRequest(request: Request, env: AuthEnv, deps: Au
   if (path === '/auth/me') {
     if (request.method !== 'GET') return jsonResponse(405, { error: 'Method not allowed' }, { allow: 'GET' })
     const session = await readSession(request, env, nowMs)
-    if (!session) return jsonResponse(401, {})
+    if (!session) return jsonResponse(401, { providers: configuredProviders(env) })
     if (!isAllowed(session.email, env.ALLOWED_EMAILS)) return jsonResponse(403, {})
     return jsonResponse(200, { email: session.email, provider: session.provider })
   }

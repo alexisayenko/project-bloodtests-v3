@@ -20,8 +20,10 @@ import {
 } from '../primitives';
 import { COLOR, SPACE } from '../../styles/tokens';
 import { useCloudSession } from '../../hooks/useCloudSession';
-import { consumeSigningIn, loginPath, markSigningIn } from '../../cloud/session';
+import { consumeSigningIn, loginPath, markSigningIn, type CloudProvider } from '../../cloud/session';
 import { isEmptyBackup, pullCloudFiles, pushBeforeSignOut, pushCloudFiles } from '../../cloud/sync';
+
+const PROVIDER_LABEL: Record<CloudProvider, string> = { google: 'Google', apple: 'Apple' };
 
 const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
 
@@ -49,7 +51,7 @@ function AccountAuthCard({
   onImportAll: (backup: BackupContents) => Promise<string[]>;
   onClearAll: () => void;
 }>) {
-  const { user, loading, available, notAllowed, signOut } = useCloudSession();
+  const { user, loading, available, notAllowed, providers, signOut } = useCloudSession();
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -115,19 +117,18 @@ function AccountAuthCard({
         </Button>
       </div>
     );
-  } else if (!available) {
+  } else if (!available || providers.length === 0) {
     authSection = <span style={{ fontSize: 13, color: COLOR.textMuted }}>Sign-in is unavailable here.</span>;
   } else {
     const linkStyle = { ...buttonStyle('secondary', 'md'), textDecoration: 'none' };
     authSection = (
       <div style={{ display: 'flex', gap: SPACE[3], flexWrap: 'wrap', alignItems: 'center' }}>
         {notAllowed && <span style={{ fontSize: 13, color: COLOR.statusBadText }}>This account is not allowed.</span>}
-        <a href={loginPath('google')} onClick={() => markSigningIn()} style={linkStyle}>
-          Sign in with Google
-        </a>
-        <a href={loginPath('apple')} onClick={() => markSigningIn()} style={linkStyle}>
-          Sign in with Apple
-        </a>
+        {providers.map((provider) => (
+          <a key={provider} href={loginPath(provider)} onClick={() => markSigningIn()} style={linkStyle}>
+            Sign in with {PROVIDER_LABEL[provider]}
+          </a>
+        ))}
       </div>
     );
   }

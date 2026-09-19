@@ -29,12 +29,12 @@ function Harness() {
   useEffect(() => {
     handle.signOut = state.signOut;
   });
-  return <div data-loading={String(state.loading)} data-user={state.user?.email ?? ''} data-available={String(state.available)} data-not-allowed={String(state.notAllowed)} />;
+  return <div data-loading={String(state.loading)} data-user={state.user?.email ?? ''} data-available={String(state.available)} data-not-allowed={String(state.notAllowed)} data-providers={state.providers.join(',')} />;
 }
 
 const state = () => {
   const el = container.querySelector('div')!;
-  return { loading: el.dataset.loading, user: el.dataset.user, available: el.dataset.available, notAllowed: el.dataset.notAllowed };
+  return { loading: el.dataset.loading, user: el.dataset.user, available: el.dataset.available, notAllowed: el.dataset.notAllowed, providers: el.dataset.providers };
 };
 
 async function mount(): Promise<void> {
@@ -64,31 +64,31 @@ afterEach(async () => {
 describe('useCloudSession', () => {
   it('is loading with no user until /auth/me answers', async () => {
     await mount();
-    expect(state()).toEqual({ loading: 'true', user: '', available: 'true', notAllowed: 'false' });
+    expect(state()).toEqual({ loading: 'true', user: '', available: 'true', notAllowed: 'false', providers: '' });
   });
 
   it('settles signed out', async () => {
     await mount();
-    await settle({ status: 'signedOut' });
-    expect(state()).toEqual({ loading: 'false', user: '', available: 'true', notAllowed: 'false' });
+    await settle({ status: 'signedOut', providers: ['google'] });
+    expect(state()).toEqual({ loading: 'false', user: '', available: 'true', notAllowed: 'false', providers: 'google' });
   });
 
   it('settles on the signed-in user', async () => {
     await mount();
     await settle(signedIn('u1@example.com'));
-    expect(state()).toEqual({ loading: 'false', user: 'u1@example.com', available: 'true', notAllowed: 'false' });
+    expect(state()).toEqual({ loading: 'false', user: 'u1@example.com', available: 'true', notAllowed: 'false', providers: '' });
   });
 
   it('reports a not-allowed account, still offering sign-in', async () => {
     await mount();
     await settle({ status: 'notAllowed' });
-    expect(state()).toEqual({ loading: 'false', user: '', available: 'true', notAllowed: 'true' });
+    expect(state()).toEqual({ loading: 'false', user: '', available: 'true', notAllowed: 'true', providers: 'google,apple' });
   });
 
   it('reports sign-in unavailable when there is no Worker', async () => {
     await mount();
     await settle({ status: 'unavailable' });
-    expect(state()).toEqual({ loading: 'false', user: '', available: 'false', notAllowed: 'false' });
+    expect(state()).toEqual({ loading: 'false', user: '', available: 'false', notAllowed: 'false', providers: '' });
   });
 
   it('drops the user after signing out', async () => {

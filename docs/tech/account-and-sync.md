@@ -20,9 +20,10 @@ full-page navigation to the Worker's `/auth/login/google` or
 `/auth/login/apple` (`loginPath()` in `web/src/cloud/session.ts`); the Worker
 runs the OAuth flow and returns the browser to the app with a session cookie. The browser holds no
 token and no auth library: the card learns who is signed in by `GET /auth/me`
-on load (`fetchSession()`; `401` = signed out, `403` = signed in with an email no
+on load (`fetchSession()`; `401 {providers}` = signed out, the body listing only the
+providers whose secrets are set; `403` = signed in with an email no
 longer on the allowlist, shown as "This account is not allowed." beside the
-sign-in buttons) and signs out with
+sign-in buttons for both providers) and signs out with
 `POST /auth/logout` (`signOutUser()`, both in `web/src/cloud/session.ts`).
 Every mutating call carries the header `X-Paneloom: 1`, the Worker's CSRF
 guard: sign-out and the sync `PUT`.
@@ -30,10 +31,12 @@ guard: sign-out and the sync `PUT`.
 The dev server has no Worker, so sign-in and sync need `wrangler dev`;
 `web/vite.config.ts` proxies `/auth` and `/api` to `http://localhost:8787`.
 When `/auth/me` is not JSON, is a `404`, or the request fails, the session is
-`unavailable` and the card shows "sign-in unavailable" instead of a button.
+`unavailable`, and a `401` listing no providers behaves the same: the card shows
+"Sign-in is unavailable here." instead of a button. Otherwise it renders one
+button per listed provider, so a link never lands on the Worker's `404` JSON.
 
 `web/src/hooks/useCloudSession.ts` exposes `{user, loading, available,
-notAllowed, signOut}` from that `/auth/me` call; `AccountView.tsx` and Get Started's pitch
+notAllowed, providers, signOut}` from that `/auth/me` call; `AccountView.tsx` and Get Started's pitch
 (`ProfileView.tsx`) read it, swapping the local-only copy and "100% private"
 pillar for "Synced to your account" while signed in.
 
@@ -116,7 +119,8 @@ config is missing.
   provider error.
 - Apple's client secret is an ES256 JWT built per login with WebCrypto
   (`iss` Team ID, `sub` Service ID, `kid` Key ID, five minutes).
-- `GET /auth/me` is `200 {email, provider}`, `401 {}` without a valid session, or
+- `GET /auth/me` is `200 {email, provider}`, `401 {providers: [...]}` without a valid session (the providers whose secrets are set;
+empty when `SESSION_SECRET` is missing or short), or
   `403 {}` when the session's email is no longer in `ALLOWED_EMAILS`.
   `POST /auth/logout` (needs `X-Paneloom: 1`) expires the cookie, `204`.
 

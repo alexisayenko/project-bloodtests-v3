@@ -465,11 +465,25 @@ describe('/auth/me and /auth/logout', () => {
     expect(await res.json()).toEqual({});
   });
 
-  it('me: 401 {} without a session, no-store', async () => {
+  it('me: 401 lists the configured providers without a session, no-store', async () => {
     const res = await handleAuthRequest(new Request(`${ORIGIN}/auth/me`), baseEnv, deps(async () => new Response()));
     expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({});
+    expect(await res.json()).toEqual({ providers: ['google', 'apple'] });
     expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('me: 401 lists only the providers whose secrets are set', async () => {
+    const me = async (env: AuthEnv) =>
+      (await handleAuthRequest(new Request(`${ORIGIN}/auth/me`), env, never)).json();
+    expect(await me({ ...baseEnv, APPLE_PRIVATE_KEY: undefined })).toEqual({ providers: ['google'] });
+    expect(await me({ ...baseEnv, GOOGLE_CLIENT_SECRET: undefined })).toEqual({ providers: ['apple'] });
+  });
+
+  it('me: 401 lists no providers when SESSION_SECRET is missing or short', async () => {
+    const me = async (env: AuthEnv) =>
+      (await handleAuthRequest(new Request(`${ORIGIN}/auth/me`), env, never)).json();
+    expect(await me({ ...baseEnv, SESSION_SECRET: undefined })).toEqual({ providers: [] });
+    expect(await me({ ...baseEnv, SESSION_SECRET: 'x'.repeat(31) })).toEqual({ providers: [] });
   });
 
   it('me: 200 with a valid session, no-store', async () => {

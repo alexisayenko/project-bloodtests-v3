@@ -102,7 +102,7 @@ cookie.**
   Worker treats it as unset.
 - **Sign-in needs the Worker.** The Vite dev server has none; sign-in and
   sync need `wrangler dev` (or a proxy of `/auth` and `/api` to it), and the
-  Account page shows "sign-in unavailable" when `/auth/me` is not the Worker.
+  Account page shows "sign-in unavailable" when `/auth/me` is not the Worker or lists no configured provider (its `401` body is `{providers}`).
 - **The Worker holds more secrets** (session key, Google and Apple
   credentials) beside the GitHub token; none reaches the browser.
 

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchSession, signOutUser, type CloudSession, type CloudUser } from '../cloud/session';
+import { fetchSession, signOutUser, type CloudProvider, type CloudSession, type CloudUser } from '../cloud/session';
+
+const ALL_PROVIDERS: CloudProvider[] = ['google', 'apple'];
 
 export function useCloudSession(): {
   user: CloudUser | null;
   loading: boolean;
   available: boolean;
   notAllowed: boolean;
+  providers: CloudProvider[];
   signOut: () => Promise<void>;
 } {
   const [session, setSession] = useState<CloudSession | null>(null);
@@ -22,7 +25,7 @@ export function useCloudSession(): {
 
   const signOut = useCallback(async () => {
     await signOutUser();
-    setSession({ status: 'signedOut' });
+    setSession({ status: 'signedOut', providers: [] });
   }, []);
 
   return {
@@ -30,6 +33,7 @@ export function useCloudSession(): {
     loading: session === null,
     available: session?.status !== 'unavailable',
     notAllowed: session?.status === 'notAllowed',
+    providers: session?.status === 'signedOut' ? session.providers : session?.status === 'notAllowed' ? ALL_PROVIDERS : [],
     signOut,
   };
 }
