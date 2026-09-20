@@ -6,7 +6,7 @@ import { ParticleNode } from './Particle3';
 import { computeIndex, indexBands, indexZone } from '../../data/computedIndices';
 import { convertConcentration } from '../../data/pathwayReferenceRanges';
 import type { Result, UnitSystem } from '../../types';
-import { fmtNum, isOutOfRange } from '../../utils/format';
+import { displayUnitOf, fmtNum, isOutOfRange } from '../../utils/format';
 import type { Observation } from './markers';
 import { hasReference, type ResultEntry } from './resultsLookup';
 import {
@@ -74,10 +74,17 @@ function indexDisplay(key: string) {
   return indexDefOf(key)?.unit === 'mg/dL' ? CHOLESTEROL_UNITS : undefined;
 }
 
-function place(value: number, unit: string, display: MarkerSpec['display'], unitSystem: UnitSystem): { value: number; unit: string } {
+/** `label` names an unconverted number's unit (the stored unit); the conversion itself reads the printed `unit`. */
+function place(
+  value: number,
+  unit: string,
+  display: MarkerSpec['display'],
+  unitSystem: UnitSystem,
+  label = unit
+): { value: number; unit: string } {
   const to = display?.[unitSystem];
   const converted = to ? convertConcentration(value, unit, to, display?.molarMass) : undefined;
-  return converted === undefined || !to ? { value, unit } : { value: converted, unit: to };
+  return converted === undefined || !to ? { value, unit: label } : { value: converted, unit: to };
 }
 
 const quantityText = (shown: { value: number; unit: string }) => `${fmtNum(shown.value)} ${shown.unit}`.trim();
@@ -100,15 +107,16 @@ function snapshotOf(
       const hit = onDate.find((e) => spec.loincs.includes(e.loinc));
       if (hit?.result.value == null) return EMPTY;
       const unit = hit.result.unit ?? '';
-      const shown = place(hit.result.value, unit, spec.display, unitSystem);
+      const label = displayUnitOf(hit.result);
+      const shown = place(hit.result.value, unit, spec.display, unitSystem, label);
       if (!hasReference(hit.result)) return { text: quantityText(shown), unit: shown.unit, status: 'none' };
-      const bound = (v: number | null) => (v == null ? undefined : place(v, unit, spec.display, unitSystem));
+      const bound = (v: number | null) => (v == null ? undefined : place(v, unit, spec.display, unitSystem, label));
       const low = bound(hit.result.refMin);
       const high = bound(hit.result.refMax);
       return {
         text: quantityText(shown),
         unit: shown.unit,
-        lab: { low: low?.value, high: high?.value, unit: (low ?? high)?.unit ?? unit },
+        lab: { low: low?.value, high: high?.value, unit: (low ?? high)?.unit ?? label },
         status: isOutOfRange(hit.result) ? 'bad' : 'ok',
       };
     },

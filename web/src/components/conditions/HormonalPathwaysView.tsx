@@ -157,21 +157,25 @@ const DISPLAY_UNITS: Partial<Record<MeasureKey, { si: string; us: string; molarM
 const SHARE_KEYS: readonly MeasureKey[] = ['FT', 'cft', 'cftlh', 'biot', 'shbgBound', 'albBound'];
 
 /** The value in this unit system's unit, or as given when no exact conversion exists (ADR-0003). */
-function inDisplayUnit(key: MeasureKey, value: number, unit: string, unitSystem: UnitSystem): { value: number; unit: string } {
+function inDisplayUnit(key: MeasureKey, value: number, unit: string, unitSystem: UnitSystem): { value: number; unit: string; converted: boolean } {
   const target = DISPLAY_UNITS[key];
   const to = target?.[unitSystem];
   const converted = to ? convertConcentration(value, unit, to, target?.molarMass) : undefined;
-  return converted === undefined || !to ? { value, unit } : { value: converted, unit: to };
+  return converted === undefined || !to ? { value, unit, converted: false } : { value: converted, unit: to, converted: true };
 }
 
 const formatShare = (percent: number) => `${percent.toFixed(percent < 1 ? 2 : 1)}%`;
 
+/** A converted number names its target unit; an unconverted one keeps the reading's own label (the stored unit). */
+const labelOf = (shown: { unit: string; converted: boolean }, own: string) => (shown.converted ? shown.unit : own);
+
 /** The lab-printed bounds, converted exactly as the shown value was. */
-function labRangeOf(key: MarkerKey, result: Result, unit: string, unitSystem: UnitSystem): LabRange {
+function labRangeOf(key: MarkerKey, result: Result, unit: string, label: string, unitSystem: UnitSystem): LabRange {
   const place = (v: number | null) => (v == null ? undefined : inDisplayUnit(key, v, unit, unitSystem));
   const low = place(result.refMin);
   const high = place(result.refMax);
-  return { low: low?.value, high: high?.value, unit: (low ?? high)?.unit ?? unit };
+  const shown = low ?? high;
+  return { low: low?.value, high: high?.value, unit: shown ? labelOf(shown, label) : label };
 }
 
 /** Exclusive choices for a draw with no albumin reading, not a cascade; a same-draw reading always wins. */
@@ -229,19 +233,19 @@ function snapshotOf(
   const resultsByLoinc = (date && resultsByDate[date]) || {};
   const nmolOf: Partial<Record<MeasureKey, number>> = {};
 
-  const quantity = (key: MeasureKey, value: number, unit: string) => {
+  const quantity = (key: MeasureKey, value: number, unit: string, label = unit) => {
     if (DISPLAY_UNITS[key]?.molarMass === 'testosterone') nmolOf[key] = convertConcentration(value, unit, 'nmol/L', 'testosterone');
     const shown = inDisplayUnit(key, value, unit, unitSystem);
-    return { text: `${fmtNum(shown.value)} ${shown.unit}`.trim(), unit: shown.unit, value: shown.value };
+    return { text: `${fmtNum(shown.value)} ${labelOf(shown, label)}`.trim(), unit: shown.unit, value: shown.value };
   };
 
   const marker = (key: MarkerKey): Measure => {
     const hit = onDate.find((e) => MARKER_CODES[key].includes(e.loinc));
     const own = hit && displayedResult(undefined, hit.result, unitSystem);
     if (!hit || own?.value == null) return EMPTY;
-    const shown = quantity(key, own.value, own.unit);
+    const shown = quantity(key, own.value, own.unit, own.label);
     if (hasReference(hit.result)) {
-      const lab = labRangeOf(key, hit.result, own.unit, unitSystem);
+      const lab = labRangeOf(key, hit.result, own.unit, own.label, unitSystem);
       return { text: shown.text, unit: shown.unit, lab, status: isOutOfRange(hit.result) ? 'bad' : 'ok' };
     }
     const curated = pathwayRangesFor(MARKER_CODES[key]);

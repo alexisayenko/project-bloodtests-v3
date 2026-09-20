@@ -109,6 +109,7 @@ describe('displayedResult', () => {
       value: 0.98,
       rawValue: '0.98',
       unit: 'mmol/L',
+      label: 'mmol/L',
       converted: false,
     });
   });
@@ -208,6 +209,29 @@ describe('sharedUnit', () => {
   it('still splits a genuine scale gap on a folding row', () => {
     expect(sharedUnit(['U/mL', 'µIU/mL'], 'uIU/mL', '20448-7')).toBeUndefined();
     expect(sharedUnit(['U/L', 'mIU/L'], 'U/L', '1742-6')).toBeUndefined();
+  });
+});
+
+describe('stored unit label', () => {
+  it('labels an unconverted reading with the stored unit while unit stays the printed one', () => {
+    const d = displayedResult(undefined, { ...reading('786-4', 33.9, '%'), storedUnit: 'g/dL' }, 'si');
+    expect(d).toMatchObject({ value: 33.9, unit: '%', label: 'g/dL', converted: false });
+  });
+
+  it('a verified conversion reads the printed unit and labels the target', () => {
+    const us = displayedResult('TC', { ...reading('14647-2', 5.2, 'ммоль/л'), storedUnit: 'mmol/L' }, 'us');
+    expect(us).toMatchObject({ unit: 'mg/dL', label: 'mg/dL', converted: true });
+  });
+
+  it('without a stored unit the label is the printed one', () => {
+    expect(displayedResult(undefined, reading('786-4', 33.9, '%'), 'si').label).toBe('%');
+  });
+
+  it('a grid row is labelled with the stored unit', () => {
+    const entries = [makeEntry({ loinc: '786-4', date: '2026-05-07', result: { value: 33.9, unit: '%', storedUnit: 'g/dL' } })];
+    const row = buildRowCells(obs('786-4'), ['2026-05-07'], entries, 'si');
+    expect(row.rowUnit).toBe('g/dL');
+    expect(row.cells[0]!.display).toMatchObject({ unit: '%', label: 'g/dL', value: 33.9 });
   });
 });
 

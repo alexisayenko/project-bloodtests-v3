@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  displayUnitOf,
   fmtNum,
   formatFrequencyText,
   formatFullDate,
@@ -36,6 +37,12 @@ describe('formatResultValue / formatResultReference', () => {
     expect(formatResultValue(result({ rawValue: '<0.1', value: 0.1 }))).toBe('<0.1');
   });
 
+  it('shows the stored unit when the file has one, else the printed unit', () => {
+    expect(formatResultValue(result({ rawValue: '33.9', value: 33.9, unit: '%', storedUnit: 'g/dL' }))).toBe('33.9 g/dL');
+    expect(formatResultValue(result({ rawValue: '', value: 33.9, unit: '%', storedUnit: 'g/dL' }))).toBe('33.9 g/dL');
+    expect(formatResultValue(result({ rawValue: '33.9', value: 33.9, unit: '%' }))).toBe('33.9 %');
+  });
+
   it('reference shows a range, a bound, or a dash', () => {
     expect(formatResultReference(result({ refMin: 13, refMax: 17 }))).toBe('13 – 17');
     expect(formatResultReference(result({ refMin: 13 }))).toBe('> 13');
@@ -67,5 +74,12 @@ describe('isOutOfRange / isNearOutOfRange', () => {
     expect(isNearOutOfRange(result({ value: 13.1, refMin: 13, refMax: 17 }))).toBe(true);
     expect(isNearOutOfRange(result({ value: 15, refMin: 13, refMax: 17 }))).toBe(false);
     expect(isNearOutOfRange(result({ value: 13.1, refMin: 13 }))).toBe(false);
+  });
+});
+
+describe('displayUnitOf', () => {
+  it('prefers the stored unit and falls back to the printed one', () => {
+    expect(displayUnitOf({ unit: '%', storedUnit: 'g/dL' })).toBe('g/dL');
+    expect(displayUnitOf({ unit: '%' })).toBe('%');
   });
 });

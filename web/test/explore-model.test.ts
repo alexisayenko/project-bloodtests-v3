@@ -600,3 +600,13 @@ describe('buildExploreModel — computed indices (All Observations: resultsByDat
     expect(model.notTaken.some((n) => n.key === `${INDEX_MARKER_KEY_PREFIX}tyg`)).toBe(false);
   });
 });
+
+describe('buildExploreModel — stored unit label', () => {
+  it('labels the axis with the stored unit while the printed one still places the points', () => {
+    const conditions: Condition[] = [{ name: 'PanelA', tests: [obs('MARK1', 'M1', 'U/L')] }];
+    const allResults = [entry('MARK1', '2024-06-01', 12, { unit: 'U/L', storedUnit: 'IU/L', refMin: 5, refMax: 15 })];
+    const marker = buildExploreModel(conditions, allResults, 'si', 'PanelA').markers['MARK1']!;
+    expect(marker.unit).toBe('IU/L');
+    expect(marker.data).toEqual([['2024-06-01', 12, 'Lab']]);
+  });
+});

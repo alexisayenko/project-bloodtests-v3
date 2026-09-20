@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { fmtNum, formatResultReference, isOutOfRange } from '../../utils/format';
+import { displayUnitOf, fmtNum, formatResultReference, isOutOfRange } from '../../utils/format';
 import { computeIndex, indexZone, type IndexDef, type SubjectProfile } from '../../data/computedIndices';
 import { loadEnvelopeMeta } from '../../data/envelopeMeta';
 import type { Result } from '../../types';
@@ -26,7 +26,7 @@ function LatestValue({ latestByLoinc, loincs }: Readonly<{ latestByLoinc: Latest
     <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${COLOR.borderSubtle}` }}>
       <div style={{ fontWeight: 500, color: COLOR.text }}>Latest taken on {formatMonthYear(current.date)}</div>
       <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: bg }}>
-        {value} {current.result.unit}
+        {value} {displayUnitOf(current.result)}
         <span style={{ color: COLOR.textMuted }}> (Ref: {formatResultReference(current.result)})</span>
       </div>
     </div>
@@ -75,7 +75,7 @@ function ResultPopupBody({ test, entry }: Readonly<{ test: Observation; entry: R
         {formatMonthYear(entry.date)} · {entry.place}
       </div>
       <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: bg, fontSize: 13, color: COLOR.textSecondary }}>
-        {value} {entry.result.unit}
+        {value} {displayUnitOf(entry.result)}
         <span style={{ color: COLOR.textMuted }}> (Ref: {formatResultReference(entry.result)})</span>
       </div>
     </>
@@ -108,7 +108,7 @@ function IndexResultPopupBody({
         <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8 }}>
           <div style={{ fontWeight: 500, color: COLOR.text }}>Lab reported, same draw</div>
           <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: COLOR.surfaceMuted }}>
-            {reported.rawValue || fmtNum(reported.value)} {reported.unit}
+            {reported.rawValue || fmtNum(reported.value)} {displayUnitOf(reported)}
           </div>
         </div>
       )}
@@ -170,7 +170,7 @@ function IndexPopupBody({
         <div style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 8 }}>
           <div style={{ fontWeight: 500, color: COLOR.text }}>Lab reported, {formatMonthYear(reported.date)}</div>
           <div style={{ marginTop: 4, padding: '4px 8px', borderRadius: 6, background: COLOR.surfaceMuted }}>
-            {reported.result.rawValue || fmtNum(reported.result.value)} {reported.result.unit}
+            {reported.result.rawValue || fmtNum(reported.result.value)} {displayUnitOf(reported.result)}
           </div>
         </div>
       )}

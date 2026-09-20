@@ -49,8 +49,16 @@ Three callers:
   with a small "printed: %" note when the two differ; editing it changes the
   stored `unit` only, never `rawUnit`, stamps `lastUpdatedDate` on that file,
   and drops `storedUnit`. With no stored unit the cell shows the printed one.
-  Other surfaces (grid, popup, charts, trends, pathways, share link) still
-  show the printed unit.
+  Every other surface shows the stored unit too, through one helper,
+  `displayUnitOf(result)` (`utils/format.ts`: `storedUnit ?? unit`): the grid
+  (`displayedResult.label`, which `buildRowCells` groups a row's readings by),
+  the popup, `formatResultValue`, the chart axis label, Trends and the Lipid
+  and Hormonal pathway pages. It is a label only: `displayedResult.unit`, the
+  conversion inputs, chart placement onto the band's scale, `sameUnitScale`
+  and the pathway pages' curated-range conversion keep reading the printed
+  unit, and a converted number is labelled with its target unit. A share link
+  carries the envelope's `unit` and `rawUnit` through the same parse, so
+  `storedUnit` reaches the shared view unchanged.
 - Export no longer calls `ucumUnitFor`: a stored `unit` and `rawUnit` are
   carried verbatim (ADR-0028), so nothing is folded on the way out. Only a
   file the app builds for a session with no stored file has `rawUnit` and no

@@ -1,5 +1,5 @@
 import type { Analysis, Result } from '../../types';
-import { fmtNum } from '../../utils/format';
+import { displayUnitOf, fmtNum } from '../../utils/format';
 import type { ValidationIssue } from '../../data/validateDiagnosticReports';
 import { latinPart, type CrossCheckResult, type CrossCheckSuggestion } from '../../data/loincCheck';
 import { selectByUnit, type NlmEntry } from '../../data/loincNlm';
@@ -31,8 +31,8 @@ export function pluralize(n: number): string {
 
 /** The Unit cell shows the file's stored `unit` when it has one, with the differing printed unit as a note. */
 export function unitCellOf(item: Result): { unit: string; printed: string | null } {
-  if (item.storedUnit === undefined) return { unit: item.unit, printed: null };
-  return { unit: item.storedUnit, printed: item.unit && item.unit !== item.storedUnit ? item.unit : null };
+  const unit = displayUnitOf(item);
+  return { unit, printed: item.storedUnit !== undefined && item.unit && item.unit !== unit ? item.unit : null };
 }
 
 export function applyFieldEdit(item: Result, field: EditableField, newValue: string): Result {

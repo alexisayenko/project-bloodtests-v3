@@ -1,4 +1,4 @@
-import { fmtNum } from '../../utils/format';
+import { displayUnitOf, fmtNum } from '../../utils/format';
 import {
   LOINC_TO_MARKER,
   SI_US_UNIT,
@@ -44,7 +44,8 @@ export function greenRangeOf(def: IndexDef, profile?: SubjectProfile): string {
   return def.bandsBySex && !profile?.sex ? 'depends on sex, not set' : 'none';
 }
 
-type DisplayedResult = { value: number | null; rawValue: string; unit: string; converted: boolean };
+/** `unit` is what the number is on (printed, or the SI/US target); `label` is what to show for it (the stored unit when the file has one). */
+type DisplayedResult = { value: number | null; rawValue: string; unit: string; label: string; converted: boolean };
 
 /** Only a spelling is chosen here; the unit itself is always the reading's own, never the row primary's. */
 function ownUnitOf(result: Pick<Result, 'loinc' | 'unit'>): string {
@@ -64,18 +65,19 @@ function ownUnitOf(result: Pick<Result, 'loinc' | 'unit'>): string {
  */
 export function displayedResult(
   marker: string | undefined,
-  result: Pick<Result, 'loinc' | 'value' | 'rawValue' | 'unit'>,
+  result: Pick<Result, 'loinc' | 'value' | 'rawValue' | 'unit' | 'storedUnit'>,
   unitSystem: UnitSystem
 ): DisplayedResult {
   const own = ownUnitOf(result);
+  const ownLabel = ownUnitOf({ loinc: result.loinc, unit: displayUnitOf(result) });
   const target = marker ? SI_US_UNIT[marker]?.[unitSystem] : undefined;
   if (target && result.value != null) {
     const converted = convertUnit(result.value, marker!, own, target);
     if (converted !== undefined) {
-      return { value: converted, rawValue: result.rawValue, unit: target, converted: true };
+      return { value: converted, rawValue: result.rawValue, unit: target, label: target, converted: true };
     }
   }
-  return { value: result.value, rawValue: result.rawValue, unit: own, converted: false };
+  return { value: result.value, rawValue: result.rawValue, unit: own, label: ownLabel, converted: false };
 }
 
 /** The spelling most of the readings used; ties go to the earliest column, and no readings name none. */
@@ -117,7 +119,7 @@ export function buildRowCells(
     const match = allResults.find((r) => r.date === date && rowLoincs.includes(r.loinc)) ?? null;
     return { date, match, display: match ? displayedResult(marker, match.result, unitSystem) : null };
   });
-  const units = cells.map((c) => c.display?.unit).filter((u): u is string => !!u);
+  const units = cells.map((c) => c.display?.label).filter((u): u is string => !!u);
   const preferred = (marker && SI_US_UNIT[marker]?.[unitSystem]) || test.unit;
   const shared = sharedUnit(units, preferred, test.loinc);
   return {

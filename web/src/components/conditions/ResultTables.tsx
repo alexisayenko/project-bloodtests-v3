@@ -239,7 +239,7 @@ function ObservationCells({
         const outOfRange = isOutOfRange(match.result);
         // Coloring uses the as-reported value/range; only the displayed number is converted.
         const text = !display.converted && preferRaw ? display.rawValue || fmtNum(display.value) : fmtNum(display.value);
-        const unit = showCellUnits && display.unit && <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {display.unit}</span>;
+        const unit = showCellUnits && display.label && <span style={{ color: COLOR.textMuted, fontWeight: 400 }}> {display.label}</span>;
         return (
           <td key={date} {...pressable(handleClick)} style={td}>
             {hasRef ? (

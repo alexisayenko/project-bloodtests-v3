@@ -10,7 +10,9 @@ status a soft tint behind the number rather than across the cell.
 
 The number and its unit label always move together: `resultCells.ts`'s
 `displayedResult` / `sharedUnit` / `buildRowCells` label a reading with its
-own code's unit, and a row whose readings sit on two scales loses its
+own code's unit (the file's stored `unit` when it sits beside a different printed
+`rawUnit`, `DisplayedResult.label`; the number and any conversion still read the
+printed unit), and a row whose readings sit on two scales loses its
 row-level unit and labels each cell instead — with two spellings of one unit
 folded to one label by `sameUnitScale` ([`units.md`](units.md)). A cell's
 first press selects the row and arms that cell; a second press on the armed

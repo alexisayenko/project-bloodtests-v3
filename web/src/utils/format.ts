@@ -18,12 +18,18 @@ export function formatFullDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/** The unit label to show: the file's stored `unit` when it has one, else the printed one. Label only, never a basis for conversion. */
+export function displayUnitOf(result: Pick<Result, 'unit' | 'storedUnit'>): string {
+  return result.storedUnit ?? result.unit;
+}
+
 export function formatResultValue(result: Result): string {
+  const unit = displayUnitOf(result) || '';
   if (result.rawValue != null && result.rawValue !== '') {
-    return `${result.rawValue} ${result.unit || ''}`.trim();
+    return `${result.rawValue} ${unit}`.trim();
   }
   if (result.value == null) return '—';
-  return `${fmtNum(result.value)} ${result.unit || ''}`.trim();
+  return `${fmtNum(result.value)} ${unit}`.trim();
 }
 
 export function formatResultReference(result: Result): string {

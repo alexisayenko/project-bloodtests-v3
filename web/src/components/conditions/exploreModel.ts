@@ -85,7 +85,13 @@ function collectByDate(loincs: string[], allResults: ResultEntry[]): Map<string,
 type RefBandOverride = (typeof REF_BAND_OVERRIDES)[string];
 
 type RefBand =
-  | { kind: 'band'; refMinRaw: number | null | undefined; refMaxRaw: number; refFromUnit: string | null | undefined }
+  | {
+      kind: 'band';
+      refMinRaw: number | null | undefined;
+      refMaxRaw: number;
+      refFromUnit: string | null | undefined;
+      refFromStoredUnit?: string;
+    }
   | { kind: 'degenerate' }
   | { kind: 'no-upper-bound' };
 
@@ -104,8 +110,9 @@ function resolveRefBand(byDate: Map<string, ResultEntry>, override: RefBandOverr
     const refMaxRaw = refSource.result.refMax!;
     const refMinRaw = refSource.result.refMin;
     const refFromUnit = refSource.result.unit;
+    const refFromStoredUnit = refSource.result.storedUnit;
     if (refMinRaw != null && refMinRaw === refMaxRaw) return { kind: 'degenerate' };
-    return { kind: 'band', refMinRaw, refMaxRaw, refFromUnit };
+    return { kind: 'band', refMinRaw, refMaxRaw, refFromUnit, refFromStoredUnit };
   }
   if (override) {
     return { kind: 'band', refMinRaw: override.refMin, refMaxRaw: override.refMax, refFromUnit: override.rawUnit };
@@ -202,11 +209,18 @@ function buildTestMarker(
   bandConfig: BandConfig
 ): { marker: ExploreMarker; data: [string, number, string?][]; omitted: string[] } {
   const { band, unitSystem, override } = bandConfig;
-  const { refMinRaw, refMaxRaw, refFromUnit } = band;
+  const { refMinRaw, refMaxRaw, refFromUnit, refFromStoredUnit } = band;
   const unitMarker = LOINC_TO_MARKER[loinc];
   // The band is what every reading is normalized against, so its displayed unit is the series' unit.
   const bandUnit = displayedResult(unitMarker, { loinc, value: refMaxRaw, rawValue: '', unit: refFromUnit ?? '' }, unitSystem);
   const unit = bandUnit.unit || test.unit || '';
+  // Only the axis label follows the stored unit; placing readings on the band's scale keeps reading the printed one.
+  const unitLabel =
+    displayedResult(
+      unitMarker,
+      { loinc, value: refMaxRaw, rawValue: '', unit: refFromUnit ?? '', storedUnit: refFromStoredUnit },
+      unitSystem
+    ).label || test.unit || '';
   // The bounds are already in `unit`, so an unplaceable one keeps its number rather than losing the band.
   const convert = (value: number, from: string | null | undefined): number =>
     placeOnBandScale(value, from, unit, loinc, unitMarker) ?? value;
@@ -215,7 +229,7 @@ function buildTestMarker(
 
   const marker: ExploreMarker = {
     label,
-    unit,
+    unit: unitLabel,
     refMin: refMinRaw != null ? convert(refMinRaw, refFromUnit) : 0,
     refMax: convert(refMaxRaw, refFromUnit),
     panel,

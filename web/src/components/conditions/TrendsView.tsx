@@ -17,7 +17,7 @@ import { PALETTE } from '../analytics/palette';
 import { LOINC_TO_MARKER } from '../../data/computedIndices';
 import { displayedResult, cellBg } from './resultCells';
 import { molarPerMassUnit } from '../../data/molarMasses';
-import { fmtNum, isOutOfRange } from '../../utils/format';
+import { displayUnitOf, fmtNum, isOutOfRange } from '../../utils/format';
 import { specimenOf } from '../../data/analyteCatalog';
 import { hasReference } from './resultsLookup';
 import { StatusValue } from './ResultTables';
@@ -242,7 +242,7 @@ export function TrendsView({
       return {
         test,
         latestValue: disp?.value != null ? fmtNum(disp.value) : (latest?.result.rawValue || '—'),
-        unit: disp?.unit || latest?.result.unit || test.unit || '',
+        unit: disp?.label || (latest && displayUnitOf(latest.result)) || test.unit || '',
         deltaPct,
         sparkPoints,
       };
