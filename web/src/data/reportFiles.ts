@@ -136,7 +136,7 @@ function setValue(obs: Record<string, unknown>, after: Result): void {
 
 /**
  * An edit patches the touched observation fields in the stored file (never `unit` derived from
- * `rawUnit`), refreshes `lastUpdatedDate`, and keeps `contentHash` current only if the file has one.
+ * `rawUnit`; an edited stored unit writes `unit` and leaves `rawUnit` alone), refreshes `lastUpdatedDate`, and keeps `contentHash` current only if the file has one.
  */
 export function patchEditedFile(text: string, index: number, before: Result[], after: Result[], now: Date): string {
   const envelope = JSON.parse(text) as Record<string, unknown>;
@@ -149,6 +149,10 @@ export function patchEditedFile(text: string, index: number, before: Result[], a
     if (next.loinc !== prev.loinc) obs.loinc = next.loinc;
     if (next.value !== prev.value || next.rawValue !== prev.rawValue) setValue(obs, next);
     if (next.unit !== prev.unit) obs['unit' in obs && !('rawUnit' in obs) ? 'unit' : 'rawUnit'] = next.unit;
+    if (next.storedUnit !== prev.storedUnit && next.storedUnit !== undefined) {
+      if (next.storedUnit === '') delete obs.unit;
+      else obs.unit = next.storedUnit;
+    }
   });
   envelope.lastUpdatedDate = now.toISOString();
   if ('contentHash' in envelope) envelope.contentHash = contentHashOf(envelope.diagnosticReports as unknown[]);

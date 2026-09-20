@@ -120,6 +120,15 @@ describe('patchEditedFile', () => {
     expect(parsed.contentHash).toBe(contentHashOf(parsed.diagnosticReports));
   });
 
+  it('writes an edited stored unit to `unit` and never touches `rawUnit`', () => {
+    const withStored = [{ ...before[0]!, storedUnit: 'mmol/L' }];
+    const after = [{ ...withStored[0]!, storedUnit: 'mol/L' }];
+    const parsed = JSON.parse(patchEditedFile(stored, 0, withStored, after, NOW));
+    const o = parsed.diagnosticReports[0].observations[0];
+    expect(o).toMatchObject({ unit: 'mol/L', rawUnit: 'mg/dL', value: 5.1 });
+    expect(parsed.lastUpdatedDate).toBe(NOW.toISOString());
+  });
+
   it('adds no contentHash to a file that had none', () => {
     const bare = JSON.stringify({ schema: '3.1', diagnosticReports: [report('Ygia', '2024-01-01')] });
     const after = [{ ...before[0]!, value: 6, rawValue: '6.0' }];

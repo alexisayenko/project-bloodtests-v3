@@ -15,6 +15,7 @@ import {
   referenceRangeOf,
   resolvedNameOf,
   saveButtonLabel,
+  unitCellOf,
   unitRepairFor,
   type SuggestionChip,
 } from '../src/components/conditions/reportDetailHelpers';
@@ -54,6 +55,20 @@ describe('pluralize', () => {
   });
 });
 
+describe('unitCellOf', () => {
+  it('shows the stored unit with the printed one as a note when they differ', () => {
+    expect(unitCellOf(createResult({ unit: '%', storedUnit: 'g/dL' }))).toEqual({ unit: 'g/dL', printed: '%' });
+  });
+
+  it('shows the printed unit and no note when there is no stored unit', () => {
+    expect(unitCellOf(createResult({ unit: '%' }))).toEqual({ unit: '%', printed: null });
+  });
+
+  it('shows no note when the stored and printed units are identical', () => {
+    expect(unitCellOf(createResult({ unit: 'g/dL', storedUnit: 'g/dL' }))).toEqual({ unit: 'g/dL', printed: null });
+  });
+});
+
 describe('applyFieldEdit', () => {
   it('sets the loinc or the unit without touching the value', () => {
     const edited = applyFieldEdit(createResult(), 'loinc', '2339-0');
@@ -62,9 +77,14 @@ describe('applyFieldEdit', () => {
     expect(applyFieldEdit(createResult(), 'unit', 'mmol/L').unit).toBe('mmol/L');
   });
 
-  it('drops the stored unit when the unit is edited, so the edit is what gets checked', () => {
-    const edited = applyFieldEdit(createResult({ unit: '%', storedUnit: 'g/dL' }), 'unit', 'mmol/L');
-    expect(edited).toMatchObject({ unit: 'mmol/L' });
+  it('edits the stored unit, not the printed one, when the observation has a stored unit', () => {
+    const edited = applyFieldEdit(createResult({ unit: '%', storedUnit: 'g/dL' }), 'unit', 'g/L');
+    expect(edited).toMatchObject({ unit: '%', storedUnit: 'g/L' });
+  });
+
+  it('edits the printed unit when there is no stored unit', () => {
+    const edited = applyFieldEdit(createResult({ unit: '%' }), 'unit', 'g/dL');
+    expect(edited).toMatchObject({ unit: 'g/dL' });
     expect(edited.storedUnit).toBeUndefined();
   });
 

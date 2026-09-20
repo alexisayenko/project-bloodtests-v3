@@ -29,13 +29,15 @@ export function pluralize(n: number): string {
   return n === 1 ? '' : 's';
 }
 
+/** The Unit cell shows the file's stored `unit` when it has one, with the differing printed unit as a note. */
+export function unitCellOf(item: Result): { unit: string; printed: string | null } {
+  if (item.storedUnit === undefined) return { unit: item.unit, printed: null };
+  return { unit: item.storedUnit, printed: item.unit && item.unit !== item.storedUnit ? item.unit : null };
+}
+
 export function applyFieldEdit(item: Result, field: EditableField, newValue: string): Result {
   if (field === 'loinc') return { ...item, loinc: newValue };
-  if (field === 'unit') {
-    const edited = { ...item, unit: newValue };
-    delete edited.storedUnit;
-    return edited;
-  }
+  if (field === 'unit') return item.storedUnit === undefined ? { ...item, unit: newValue } : { ...item, storedUnit: newValue };
   const numVal = Number.parseFloat(newValue);
   return { ...item, value: Number.isNaN(numVal) ? null : numVal, rawValue: newValue };
 }

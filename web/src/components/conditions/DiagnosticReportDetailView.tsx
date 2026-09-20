@@ -18,6 +18,7 @@ import {
   referenceRangeOf,
   resolvedNameOf,
   saveButtonLabel,
+  unitCellOf,
   unitRepairFor,
   type EditableField,
 } from './reportDetailHelpers';
@@ -100,6 +101,7 @@ function ReportResultsSection({
               const nlmResolvedName = check?.status === 'unknown-code' ? nlmByCode[item.loinc] : undefined;
               const chipSuggestions = getChipSuggestions(check, nlmSuggestions[i], unitRepairs[i]);
               const linkedName = resolvedName ?? nlmResolvedName;
+              const unitCell = unitCellOf(item);
               return (
                 <Fragment key={`${item.loinc}-${i}`}>
                   <tr>
@@ -140,11 +142,16 @@ function ReportResultsSection({
                     <td style={td}>
                       <input
                         type="text"
-                        value={item.unit}
+                        value={unitCell.unit}
                         onChange={(e) => onEditItem(i, 'unit', e.currentTarget.value)}
                         onBlur={() => {}}
                         style={{ ...cellInput, width: 80 }}
                       />
+                      {unitCell.printed && (
+                        <div data-testid="printed-unit" style={{ fontSize: 11, color: COLOR.textMuted, marginTop: 2 }}>
+                          printed: {unitCell.printed}
+                        </div>
+                      )}
                     </td>
                     <td style={td}>{referenceRangeOf(item)}</td>
                     <td style={td}>{item.method}</td>
