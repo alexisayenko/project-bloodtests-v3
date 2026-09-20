@@ -55,6 +55,41 @@ upload, or an edit) and never on import, pull or export of an unmodified file.
 in the schema as a deprecated optional property, and a legacy file that
 carries it imports with no error or warning and passes through verbatim.
 
+## Push invariants
+
+The first build of this decision still pushed the whole local set on sign-out.
+A browser whose cache predated held files rebuilt every report from the parsed
+model (`rawUnit` only, no derived `unit`, a bumped schema and a fresh
+`lastUpdatedDate`) and wrote 32 files over the cloud's. The rules that now hold,
+enforced in `web/src/cloud/sync.ts` and tested in `web/test/cloud-push-guard.test.ts`:
+
+1. **No push without a user change.** The held store records which files the
+   user added, edited or removed (`pending`), and which of `medications.json`,
+   `scheduled-visits.json`, `settings.json` drifted from their held state.
+   Sign-in, pull, settle and reload change none of that, so they send nothing;
+   with nothing pending sign-out makes no request but the read.
+2. **A report with no held verbatim file is never fabricated over a cloud
+   file.** A push reads the cloud first and lays only the pending files over it;
+   every other path keeps the cloud's text. Local data the cloud lacks and the
+   user did not change is not sent and is not wiped: sign-out then keeps it on
+   the device (`kept`). The same holds for a local file of unknown origin
+   (a cache from before held files).
+3. **`lastUpdatedDate` and `schema` are stamped only on the file whose data
+   was edited**, by `patchEditedFile` or when a new upload's file is created.
+4. **A rebuilt file never loses fields.** An edit patches the original
+   objects, so `unit` and everything else stay. If the original text is not
+   available (a session with no held file) the file built for it is refused by
+   invariant 5 rather than written.
+5. **Last-line guard** (`keepsStoredFields`): a pending report file is sent
+   only if it describes the same reports (lab, `collectedAt`) and keeps every
+   field the cloud's file has, envelope, report and observation level, except
+   the `value` / `rawValue` an edit may clear. Otherwise the cloud text stays
+   and the file is reported as skipped.
+
+A pull always replaces the held files with the cloud's text, so a copy that
+holds a corrupted file heals on the next sign-in; a corrupted copy that is
+never edited is never pushed.
+
 ## Amendments
 
 - **ADR-0003**: "the printed value is never converted" now also means "the
@@ -77,5 +112,8 @@ carries it imports with no error or warning and passes through verbatim.
 - An edited file is re-serialized (`4.50` becomes `4.5` in that file only).
 - A cloud folder with no manifest gets one on the first push.
 - The data-loss guards stay: an empty local backup never overwrites a
-  populated cloud, and sign-out pushes first and wipes only when saved.
+  populated cloud, and sign-out pushes first and wipes only when everything
+  local is in the cloud (`saved`).
+- A push costs one extra `GET`, and a lossy or unattributable file is skipped
+  rather than fatal: the user's other changes still go up.
 - Revisit if the held store nears the quota (move it to IndexedDB).

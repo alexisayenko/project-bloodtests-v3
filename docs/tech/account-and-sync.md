@@ -42,7 +42,7 @@ pillar for "Synced to your account" while signed in.
 
 ## Sync: two cutover moments, no ongoing sync
 
-`web/src/cloud/sync.ts`'s `pullCloudFiles()` / `pushCloudFiles(files)` call
+`web/src/cloud/sync.ts`'s `pullCloudFiles()` / `pushCloudFiles(files, changes)` call
 the Worker's `GET` / `PUT /api/data` with the session cookie (same-origin
 `fetch`; only the `PUT` sends `X-Paneloom: 1`); the browser holds no GitHub credential. The data is a folder in the
 private repo `alexisayenko/data-storage`, `paneloom/users/<email>/`:
@@ -59,40 +59,52 @@ next to the parsed sessions (`data/storage/heldFiles.ts`, key
 `paneloom_held_files_v1`), and a push sends those texts back byte for byte. A
 new upload is split into per-report files by `data/reportFiles.ts` from the
 original objects; an edit re-serializes only its own file; a deleted report's
-file is removed from the next push.
+file is removed from the next push. The held store also records what the user
+changed here (`pending`); a push sends those changes and nothing else.
 
 Guards, all client-side in `sync.ts`:
 
 - A pull with no reports, medications or visits returns `null` and is never
   imported, so an empty or settings-only folder cannot wipe local data.
-- A push with none of those returns `false` and sends nothing; the Worker
-  rejects it too.
+- A push with none of those sends nothing; the Worker rejects it too.
+- A push is a merge over the cloud, never a rebuild ([ADR-0028](decisions/adr-0028-verbatim-import-export.md)
+  invariants). It reads the cloud first and changes only the files the user
+  added, edited or removed here; every other file keeps the cloud's text, so a
+  stale, old-shape or corrupted local copy cannot overwrite it. A changed
+  report file that would lose any stored field (`unit`, `rawUnit`,
+  `referenceRanges`, `interpretation`, ...) or that is a different report under
+  the same name is skipped. With nothing to change no request but the read is
+  made. An empty cloud is the one case that takes the whole local set.
 - The manifest carries a timestamp, so the held one is resent verbatim while
   the payload digest is unchanged (kept in `paneloom_held_files_v1`); a
   pull-then-push with no edits therefore makes no commit. A cloud folder with
   no manifest gets one on the first push.
-- Sign-out pushes the held files first, without pulling, and wipes local data
-  only when that push saved; an empty local set is never pushed over the cloud.
+- Sign-out saves first and wipes local data only when everything local is in the
+  cloud; an empty local set is never pushed over the cloud.
 
 - **Signing in** pulls and restores an existing folder through the same
   `onImportAll` Import-all-data uses (cloud wins, local discarded) or, if the
   cloud has no data, pushes today's local data up as the account's first cloud
-  copy. Because sign-in ends in a full page load, the "just signed in" moment
+  copy (`syncOnSignIn()`). A pull leaves nothing pending and replaces the held
+  files with the cloud's text, so a corrupted local copy heals. Because sign-in ends in a full page load, the "just signed in" moment
   is detected on the next load: `AccountAuthCard` calls `markSigningIn()`
   (a `sessionStorage` flag, valid ten minutes) as the sign-in link is
   followed, and `consumeSigningIn()` takes it once, after `/auth/me`
   succeeds. A returning visit with a live session has no flag and
   never re-triggers sync. If the cutover sync fails, the card marks again and
   shows a notice, so the next load retries within a fresh ten minutes.
-- **Signing out** first saves local state (`pushBeforeSignOut()` pulls, then
-  pushes) and acts on one of three results. `saved` (the push succeeded, or
+- **Signing out** first saves local state (`pushBeforeSignOut()` reads the
+  cloud, then sends the user's changes) and acts on one of four results. `kept`
+  (a changed file was skipped as lossy, or local data has no counterpart in
+  the cloud and is not the user's change) signs out but keeps the local data and
+  says so. `saved` (the push succeeded or nothing needed sending, or
   local is empty so nothing can be lost; an empty local set is never pushed
   over the cloud) calls `signOut()` from the hook (`POST /auth/logout`) then
   `onClearAll()` to wipe the local copy, so a shared browser shows the next
   person a clean slate. `auth` (the pull or push got `401` / `403`: the session
   is dead or the email was removed) still signs out but keeps the local data and
   says it was not backed up. `failed` (any other error, such as a `502` or a
-  network drop, or a push that sent nothing) does not sign out and does not
+  network drop) does not sign out and does not
   clear; it shows "Could not back up to the cloud" so the user can retry.
   Local data is never wiped unless it was saved.
 

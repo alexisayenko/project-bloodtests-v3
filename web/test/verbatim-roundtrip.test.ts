@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { pullCloudFiles, pushCloudFiles } from '../src/cloud/sync';
+import { pendingChanges, pullCloudFiles, pushCloudFiles } from '../src/cloud/sync';
 import { buildBackupFiles, zipBackupFiles } from '../src/data/backupArchive';
 import { readBackup, restoreBackup, unzipBackup } from '../src/data/backupRestore';
 import { addResults, editSession, importResults, replaceReportFiles, settleStoredSessions } from '../src/data/importResults';
@@ -116,83 +116,78 @@ describe('zip export -> import -> export', () => {
 });
 
 describe('cloud pull -> push', () => {
-  const pushed = () => {
-    const call = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.find(([, init]) => init.method === 'PUT')!;
-    return JSON.parse(call[1].body).files as Record<string, string>;
-  };
+  let cloud: Record<string, string>;
+  const calls = () => (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls as [string, { method: string; body?: string }][];
+  const puts = () => calls().filter(([, init]) => init.method === 'PUT');
+  const pushed = (n = 0) => JSON.parse(puts()[n]![1].body!).files as Record<string, string>;
+  const push = () => pushCloudFiles(exportFiles(), pendingChanges());
 
   beforeEach(() => {
+    cloud = STORED_FOLDER;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (_url: string, init: { method: string }) =>
-        init.method === 'PUT'
-          ? { ok: true, status: 200, statusText: 'OK', json: async () => ({}) }
-          : { ok: true, status: 200, statusText: 'OK', json: async () => ({ files: STORED_FOLDER }) }
-      )
+      vi.fn(async (_url: string, init: { method: string; body?: string }) => {
+        if (init.method === 'PUT') cloud = JSON.parse(init.body!).files;
+        return { ok: true, status: 200, statusText: 'OK', json: async () => (init.method === 'PUT' ? {} : { files: cloud }) };
+      })
     );
   });
 
   async function pullAndImport() {
-    const cloud = (await pullCloudFiles())!;
-    await restoreBackup(readBackup(cloud, { manifestOptional: true }), deps);
+    const pulled = (await pullCloudFiles())!;
+    await restoreBackup(readBackup(pulled, { manifestOptional: true }), deps, { fromCloud: true });
     remountHooks();
   }
 
-  it('sends exactly the pulled texts, manifest included', async () => {
+  it('sends nothing after a pull that changed nothing', async () => {
     await pullAndImport();
 
-    expect(await pushCloudFiles(exportFiles())).toBe(true);
+    expect((await push()).sent).toBe(false);
 
-    expect(pushed()).toEqual(STORED_FOLDER);
+    expect(puts()).toHaveLength(0);
   });
 
   it('leaves the untouched report files byte-identical when only settings changed', async () => {
     await pullAndImport();
     store.set(VIEW_SETTINGS_KEY, JSON.stringify({ unitSystem: 'si', sampleLimit: 'all' }));
 
-    await pushCloudFiles(exportFiles());
+    await push();
 
     const sent = pushed();
     for (const [path, text] of Object.entries(REPORT_FILES)) expect(sent[path]).toBe(text);
     expect(sent['manifest.json']).not.toBe(MANIFEST);
+    expect(JSON.parse(sent['settings.json']!)).toHaveProperty(VIEW_SETTINGS_KEY);
   });
 
-  it('resends the manifest it pushed while nothing changed since', async () => {
+  it('sends nothing more once a push has gone through', async () => {
     await pullAndImport();
     store.set(MEDICATIONS_KEY, JSON.stringify({ years: [2026], rows: [] }));
-    await pushCloudFiles(exportFiles());
-    const first = pushed()['manifest.json'];
+    await push();
 
-    await pushCloudFiles(buildBackupFiles({ sessions: sessionsNow(), storage: localStorage, app: APP, now: new Date('2026-11-15T12:00:00Z') }));
+    expect((await push()).sent).toBe(false);
 
-    const puts = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.filter(([, init]) => init.method === 'PUT');
-    expect(JSON.parse(puts[1]![1].body).files['manifest.json']).toBe(first);
+    expect(puts()).toHaveLength(1);
   });
 
   it('sends no file for a report that was deleted', async () => {
     await pullAndImport();
-    replaceReportFiles({ [FULL_REPORT_PATH]: FULL_REPORT }, NOW);
+    replaceReportFiles({ [FULL_REPORT_PATH]: FULL_REPORT }, NOW, { paths: [FULL_REPORT_PATH] });
 
-    await pushCloudFiles(exportFiles());
+    await push();
 
     expect(Object.keys(pushed()).filter((name) => name.startsWith('reports/'))).toEqual([FULL_REPORT_PATH]);
   });
 
-  it('gives a cloud that has no manifest one on the first push', async () => {
-    const withoutManifest = Object.fromEntries(Object.entries(STORED_FOLDER).filter(([name]) => name !== 'manifest.json'));
-    (fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation(async (_url: string, init: { method: string }) => ({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => (init.method === 'PUT' ? {} : { files: withoutManifest }),
-    }));
+  it('gives a cloud that has no manifest one with its first change', async () => {
+    cloud = Object.fromEntries(Object.entries(STORED_FOLDER).filter(([name]) => name !== 'manifest.json'));
     await pullAndImport();
+    expect((await push()).sent).toBe(false);
+    store.set(VIEW_SETTINGS_KEY, JSON.stringify({ unitSystem: 'si', sampleLimit: 'all' }));
 
-    await pushCloudFiles(exportFiles());
+    await push();
 
-    const sent = pushed();
-    expect(JSON.parse(sent['manifest.json']!)).toMatchObject({ format: 'blood-tests-backup', version: 1 });
-    for (const [path, text] of Object.entries({ ...REPORT_FILES, ...OTHER_FILES })) expect(sent[path]).toBe(text);
+    expect(JSON.parse(pushed()['manifest.json']!)).toMatchObject({ format: 'blood-tests-backup', version: 1 });
+    for (const [path, text] of Object.entries(REPORT_FILES)) expect(pushed()[path]).toBe(text);
   });
 });
 

@@ -21,7 +21,7 @@ import {
 import { COLOR, SPACE } from '../../styles/tokens';
 import { useCloudSession } from '../../hooks/useCloudSession';
 import { consumeSigningIn, loginPath, markSigningIn, type CloudProvider } from '../../cloud/session';
-import { isEmptyBackup, pullCloudFiles, pushBeforeSignOut, pushCloudFiles } from '../../cloud/sync';
+import { pendingChanges, pushBeforeSignOut, syncOnSignIn } from '../../cloud/sync';
 
 const PROVIDER_LABEL: Record<CloudProvider, string> = { google: 'Google', apple: 'Apple' };
 
@@ -47,7 +47,7 @@ function AccountAuthCard({
   onClearAll,
 }: Readonly<{
   sessions: DiagnosticReport[];
-  onImportAll: (backup: BackupContents) => Promise<string[]>;
+  onImportAll: (backup: BackupContents, options?: { fromCloud?: boolean }) => Promise<string[]>;
   onClearAll: () => void;
 }>) {
   const { user, loading, available, notAllowed, providers, signOut } = useCloudSession();
@@ -61,14 +61,9 @@ function AccountAuthCard({
   }
 
   async function syncAfterSignIn() {
-    const cloudFiles = await pullCloudFiles();
-    const backup = cloudFiles ? readBackup(cloudFiles, { manifestOptional: true }) : null;
-    if (backup && !isEmptyBackup(backup)) {
-      await onImportAll(backup);
-      flashNotice('✓ Synced from cloud.');
-    } else if (await pushCloudFiles(currentLocalFiles(sessions))) {
-      flashNotice('✓ Backed up to cloud.');
-    }
+    const done = await syncOnSignIn(() => currentLocalFiles(sessions), onImportAll);
+    if (done === 'pulled') flashNotice('✓ Synced from cloud.');
+    else if (done === 'pushed') flashNotice('✓ Backed up to cloud.');
   }
 
   useEffect(() => {
@@ -86,7 +81,7 @@ function AccountAuthCard({
     setError(null);
     setSigningOut(true);
     try {
-      const saved = await pushBeforeSignOut(await currentLocalFiles(sessions));
+      const saved = await pushBeforeSignOut(currentLocalFiles(sessions), pendingChanges());
       if (saved === 'failed') {
         setError('Could not back up to the cloud. Nothing was changed -- try again.');
         return;
@@ -95,6 +90,8 @@ function AccountAuthCard({
       if (saved === 'saved') {
         onClearAll();
         flashNotice('✓ Signed out.');
+      } else if (saved === 'kept') {
+        flashNotice('Signed out. Some of your data stayed on this device -- it could not be backed up safely.');
       } else {
         flashNotice('Signed out. Your data stayed on this device -- it was not backed up.');
       }

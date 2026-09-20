@@ -133,6 +133,10 @@ function localFiles(storage: StorageReader, held: ReturnType<typeof parseHeldFil
   return files;
 }
 
+export function manifestText(payload: Record<string, string>, app: BackupInput['app'], now: Date): string {
+  return json({ format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt: now.toISOString(), app, files: Object.keys(payload) });
+}
+
 /**
  * Exactly the stored layout: one file per report, held texts unchanged, plus the three local files and a manifest.
  * The held manifest is reused while the payload is unchanged, so an untouched round trip is byte-identical.
@@ -143,7 +147,7 @@ export function buildBackupFiles({ sessions, storage, app, now = new Date() }: B
   const manifest =
     held.manifest !== undefined && held.digest === payloadDigest(payload)
       ? held.manifest
-      : json({ format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt: now.toISOString(), app, files: Object.keys(payload) });
+      : manifestText(payload, app, now);
   return { 'manifest.json': manifest, ...payload };
 }
 

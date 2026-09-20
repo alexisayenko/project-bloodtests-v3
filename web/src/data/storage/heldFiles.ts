@@ -7,15 +7,45 @@ export const HELD_FILES_KEY = 'paneloom_held_files_v1';
  * back unchanged. `state` records what the local view of each non-report file looked like right
  * after the import, so a later change is told from an untouched file.
  */
+export type PendingChanges = {
+  /** Report files the user added or edited in this browser since the last pull or push. */
+  reports: string[];
+  /** Report files the user removed. */
+  removed: string[];
+  /** medications.json, scheduled-visits.json, settings.json written by an import here. */
+  other: string[];
+};
+
+export const NO_PENDING: PendingChanges = { reports: [], removed: [], other: [] };
+
 export type HeldFiles = {
   reports: Record<string, string>;
   other: Record<string, string>;
   state: Record<string, string | null>;
   manifest?: string;
   digest?: string;
+  pending: PendingChanges;
 };
 
-export const NO_HELD_FILES: HeldFiles = { reports: {}, other: {}, state: {} };
+export const NO_HELD_FILES: HeldFiles = { reports: {}, other: {}, state: {}, pending: NO_PENDING };
+
+function isTextList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === 'string');
+}
+
+function parsePending(value: unknown): PendingChanges {
+  if (typeof value !== 'object' || value === null) return NO_PENDING;
+  const { reports, removed, other } = value as Record<string, unknown>;
+  return { reports: isTextList(reports) ? reports : [], removed: isTextList(removed) ? removed : [], other: isTextList(other) ? other : [] };
+}
+
+/** Records what the user changed here, so a later push sends those files and nothing else. */
+export function withPending(held: HeldFiles, add: Partial<PendingChanges>): HeldFiles {
+  const union = (a: string[], b: readonly string[] = []) => [...new Set([...a, ...b])];
+  const removed = union(held.pending.removed, add.removed).filter((path) => !(path in held.reports));
+  const reports = union(held.pending.reports, add.reports).filter((path) => path in held.reports);
+  return { ...held, pending: { reports, removed, other: union(held.pending.other, add.other) } };
+}
 
 function isTextMap(value: unknown): value is Record<string, string> {
   return typeof value === 'object' && value !== null && Object.values(value).every((v) => typeof v === 'string');
@@ -32,6 +62,7 @@ export function parseHeldFiles(raw: string | null): HeldFiles {
       reports: parsed.reports,
       other: parsed.other,
       state,
+      pending: parsePending(parsed.pending),
       ...(typeof parsed.manifest === 'string' && typeof parsed.digest === 'string' && { manifest: parsed.manifest, digest: parsed.digest }),
     };
   } catch {

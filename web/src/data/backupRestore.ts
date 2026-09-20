@@ -5,7 +5,7 @@ import { isAcceptedSchemaVersion } from './envelopeSchema';
 import { isMedicationsShape, parseMedications, saveMedications, type Medications } from './storage/medications';
 import { parseUploadedResults, UploadParseError } from './parseUpload';
 import { filesFromUpload, isReportPath } from './reportFiles';
-import { loadHeldFiles, payloadDigest, saveHeldFiles } from './storage/heldFiles';
+import { loadHeldFiles, NO_PENDING, payloadDigest, saveHeldFiles, type PendingChanges } from './storage/heldFiles';
 import { clearSharedMeta } from './sharedMeta';
 import { isScheduledShape, parseScheduled, saveScheduled, type ScheduledVisits } from './storage/scheduledVisits';
 import { saveViewSettings, VIEW_SETTINGS_KEY, type ViewSettings } from './storage/viewSettings';
@@ -240,13 +240,15 @@ function laboratoryPricesLine(hasLaboratoryPrices: boolean): string {
     : 'Laboratory prices: ship with the app, nothing to restore.';
 }
 
-// The texts are what export sends back; `state` lets it tell them from a later local change.
-function holdFiles(backup: BackupContents): void {
+// The texts are what export sends back; `state` lets it tell them from a later local change. A cloud
+// pull leaves nothing pending; a zip the user imported is a change the next sync has to send.
+function holdFiles(backup: BackupContents, pending: PendingChanges): void {
   const held = loadHeldFiles();
   saveHeldFiles({
     reports: held.reports,
     other: backup.other,
     state: localFileStates(localStorage, new Date()),
+    pending,
     ...(backup.manifest !== undefined && {
       manifest: backup.manifest,
       digest: payloadDigest({ ...backup.reports?.files, ...backup.other }),
@@ -254,8 +256,14 @@ function holdFiles(backup: BackupContents): void {
   });
 }
 
-/** Returns one report line per part. */
-export async function restoreBackup(backup: BackupContents, deps: RestoreDeps): Promise<string[]> {
+function importedChanges(backup: BackupContents, previous: string[]): PendingChanges {
+  const reports = Object.keys(backup.reports?.files ?? {});
+  return { reports, removed: previous.filter((path) => !reports.includes(path)), other: Object.keys(backup.other) };
+}
+
+/** Returns one report line per part. `fromCloud`: the files are the cloud's own, so nothing is left to push. */
+export async function restoreBackup(backup: BackupContents, deps: RestoreDeps, { fromCloud = false } = {}): Promise<string[]> {
+  const previous = Object.keys(loadHeldFiles().reports);
   clearAllData(deps.clearReports);
   const reportsLine = await restoreReports(backup.reports, deps.importReports);
   const lines = [
@@ -265,6 +273,6 @@ export async function restoreBackup(backup: BackupContents, deps: RestoreDeps): 
     restoreSettings(backup.settings),
     laboratoryPricesLine(backup.hasLaboratoryPrices),
   ];
-  holdFiles(backup);
+  holdFiles(backup, fromCloud ? NO_PENDING : importedChanges(backup, previous));
   return lines;
 }

@@ -67,11 +67,8 @@ export function MedicalConditionsPage() {
     reloadStoredState();
   };
 
-  const onImportAll = async (backup: BackupContents) => {
-    const lines = await restoreBackup(backup, {
-      clearReports: clearData,
-      importReports: restoreReportFiles,
-    });
+  const onImportAll = async (backup: BackupContents, options?: { fromCloud?: boolean }) => {
+    const lines = await restoreBackup(backup, { clearReports: clearData, importReports: restoreReportFiles }, options);
     reloadStoredState();
     return lines;
   };
