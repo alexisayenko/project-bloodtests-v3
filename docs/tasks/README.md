@@ -19,7 +19,7 @@ the index.
 | Task | Title | Status |
 | --- | --- | --- |
 | [task-0001](task-0001.md) | Build the diagnostic-reports import, edit, export and LOINC workflow | done |
-| [task-0002](task-0002.md) | Round-trip envelope metadata on import | to do |
+| [task-0002](task-0002.md) | Round-trip envelope metadata on import | done |
 | [task-0003](task-0003.md) | Add the interchange JSON Schema file to the repo | done |
 | [task-0004](task-0004.md) | Use sex and birth year to select sex- and age-banded reference ranges | to do |
 | [task-0005](task-0005.md) | Test the chatbot prompt against every lab format in the history | to do |

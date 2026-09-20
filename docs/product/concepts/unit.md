@@ -2,13 +2,13 @@
 
 The measurement scale a result is expressed in — `mmol/L`, `10^9/L`, `ng/mL` — recorded per entry in a [diagnostic report](lab-report.md), not fixed by the [observation](observation.md).
 
-> **Status: partly built.** A unit now travels as a pair: an exported file carries the canonical UCUM code in `unit` and the string the lab printed in `rawUnit`, and import displays the printed one while the unit checks read the stored `unit`. Deriving the canonical form is a pure module, computing on demand, and it runs at import over every observation of every import route, attaching a derived *value* pair beside the printed one in memory — that one is never stored or exported. What the derivation cannot settle it reports as a warning, and where the warning has a repair — a mass/molar sibling code — the report detail view offers it as a chip to confirm. What is still missing is a real UCUM parser: the tables are curated, so a unit outside them resolves to nothing. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
+> **Status: partly built.** A unit now travels as a pair: a stored file carries the canonical UCUM code in `unit` and the string the lab printed in `rawUnit`, and import displays the printed one while the unit checks read the stored `unit`. Deriving the canonical form is a pure module, computing on demand, and it runs at import over every observation of every import route, attaching a derived *value* pair beside the printed one in memory — that one is never stored or exported. The app itself derives and writes no `unit`. What the derivation cannot settle it reports as a warning, and where the warning has a repair — a mass/molar sibling code — the report detail view offers it as a chip to confirm. What is still missing is a real UCUM parser: the tables are curated, so a unit outside them resolves to nothing. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
 
 ## What a unit is today
 
 Provenance, plus a derived scale beside it. The printed string is kept exactly as the lab wrote it and rewritten never — same rule that governs every other field a report carries. A result that came back as `mmol/l` is still `mmol/l` on the record; the `mmol/L` beside it is the app's reading of that string, not a replacement for it, and no number moves when the spelling folds.
 
-Inside the app a result carries the printed unit, and it is the printed unit the tables show and the report detail view edits. The canonical code appears when the data is written out — see [`unit` versus `rawUnit`](#unit-versus-rawunit) below.
+Inside the app a result carries the printed unit, and it is the printed unit the tables show and the report detail view edits. The canonical code is a stored field the data's owner sets, and the app carries it as it is — see [`unit` versus `rawUnit`](#unit-versus-rawunit) below.
 
 One helper does fold spellings today, and it is worth being exact about its reach: `canonicalUnit` in `web/src/data/loincCheck.ts` transliterates a Cyrillic unit, folds superscript digits, the micro sign and the multiplication sign (all borrowed from the normalization module rather than tabulated twice), lowercases the result, and folds a per-mL prefix up to its per-L equivalent (`µIU/mL` → `miu/l`). It exists so the LOINC cross-check can compare a row's unit against a code's allowed set. It is a **matching key only** — it never touches stored data, is never displayed, and is not UCUM.
 
@@ -54,7 +54,7 @@ Not every mismatch has a sibling to point at. A lab that prints MCHC in `%` mean
 
 ## `unit` versus `rawUnit`
 
-A derived unit is now written down, and the two fields split the roles the interchange format already splits elsewhere:
+A canonical unit can be written down beside the printed one, and the two fields split the roles the interchange format already splits elsewhere:
 
 | Field | Holds | Role |
 | --- | --- | --- |

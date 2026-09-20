@@ -28,8 +28,8 @@ Three callers:
 
 - `parseUpload.ts` runs it over every observation of every import route and
   attaches the derived pair to the in-memory `Result` as `canonical` — an
-  optional, clearly derived field nothing treats as lab-reported and the
-  exporter never emits.
+  optional, clearly derived field nothing treats as lab-reported and that is
+  never stored or exported.
 - `validateDiagnosticReports.ts` raises what it cannot settle silently as
   warnings: a dimension contradiction (naming the printed unit, the current
   code, and the sibling code where `massMolarSiblings.ts` knows one, else the
@@ -45,7 +45,12 @@ Three callers:
   raises no warning, while `%` with no stored `unit` still does. LOINC
   derivation from the printed name and unit (`loincCheck.ts`, ADR-0004),
   `sameUnitScale`, the U/IU fold and chart unit grouping keep reading the
-  printed unit. Editing the unit in report detail drops `storedUnit`.
+  printed unit. The report-detail Unit cell shows the stored `unit` (`g/dL`)
+  with a small "printed: %" note when the two differ; editing it changes the
+  stored `unit` only, never `rawUnit`, stamps `lastUpdatedDate` on that file,
+  and drops `storedUnit`. With no stored unit the cell shows the printed one.
+  Other surfaces (grid, popup, charts, trends, pathways, share link) still
+  show the printed unit.
 - Export no longer calls `ucumUnitFor`: a stored `unit` and `rawUnit` are
   carried verbatim (ADR-0028), so nothing is folded on the way out. Only a
   file the app builds for a session with no stored file has `rawUnit` and no

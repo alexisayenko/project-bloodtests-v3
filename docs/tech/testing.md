@@ -15,13 +15,21 @@ the suites that validate it; fixtures under `web/test/fixtures/`.
   bioavailable testosterone and sex-dependent bands; Ly & Handelsman and
   Martin-Hopkins ([`computed-indices.md`](computed-indices.md#tests)).
 - **Interchange** — upload parsing (the v3 envelope, and every non-v3 shape
-  rejected), import-replace, export envelope, published JSON Schema
-  conformance and generated-type drift (ajv and json-schema-to-typescript,
+  rejected), import-replace, published JSON Schema conformance of the files
+  the app writes and generated-type drift (ajv and json-schema-to-typescript,
   devDependencies only), verbatim round trips (`verbatim-roundtrip.test.ts`: zip and cloud
   pull → push byte-identical on synthetic stored files, `lastUpdatedDate`
   set only on new or edited files), the per-report file writers
-  (`report-files.test.ts`), the sync guards, old-shape stored sessions.
-- **Diagnostic reports** — validation tiers, LOINC cross-check, the NLM
+  (`report-files.test.ts`) and the synchronous `contentHash`
+  (`content-hash.test.ts`), the push guards (`cloud-push-guard.test.ts`:
+  nothing pushed without a user change, a changed file that would lose a
+  field skipped, unchanged local data never sent or wiped, a pull healing the
+  held files), the stored unit surviving the persisted model
+  (`stored-unit-persistence.test.ts`), Database details reading subject, sex
+  and birth year from the held files (`stored-file-meta.test.ts`), old-shape
+  stored sessions.
+- **Diagnostic reports** — validation tiers (the unit checks read the stored
+  `unit` first, so an MCHC `%` with `unit: g/dL` raises no warning), LOINC cross-check, the NLM
   lookup's unit selection (pure, no request made), the report-detail row
   helpers, the results context.
 - **Units** — Latin / UCUM stages, dimension check, conversion, the

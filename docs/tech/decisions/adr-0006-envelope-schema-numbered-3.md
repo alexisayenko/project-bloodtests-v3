@@ -42,7 +42,7 @@ isn't recognised and the file falls through to the "unrecognized
 JSON shape" error.
 
 Both facts live in one module, `web/src/data/envelopeSchema.ts`:
-`SCHEMA_VERSION` (what the exporter stamps and the chatbot prompt
+`SCHEMA_VERSION` (what the app stamps on a file it builds and the chatbot prompt
 instructs) and `ACCEPTED_SCHEMA_VERSIONS` (`{1, 3}`, what the
 upload parser accepts). Neither side repeats a literal.
 

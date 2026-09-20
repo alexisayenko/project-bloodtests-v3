@@ -36,7 +36,7 @@ Data and formats:
   form is published at
   [`paneloom.com/schema/bloodtests-3.schema.json`](https://paneloom.com/schema/bloodtests-3.schema.json)
   (JSON Schema draft 2020-12, source `web/public/schema/`, major version 3
-  only), held to the exporter's output by `web/test/envelope-schema.test.ts`.
+  only), held to the files the app writes by `web/test/envelope-schema.test.ts`.
 - [`lab-data-import.md`](lab-data-import.md) — research note, not an ADR:
   the legal basis (HIPAA, Cures Act, GDPR, EHDS, Ukraine's ЕСОЗ) and the
   technology (SMART on FHIR public client, FHIR R4 lab queries, Apple Health /

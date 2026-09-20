@@ -1,6 +1,7 @@
 # ADR-0025: MCHC printed in `%` is flagged, not accepted
 
-Status: accepted · 2026-09-19
+Status: accepted · 2026-09-19 · amended by [ADR-0028](adr-0028-verbatim-import-export.md)
+(the owner's `unit` relabel survives export and clears the warning)
 
 Applies [ADR-0003](adr-0003-store-only-what-the-lab-printed.md) and
 [ADR-0007](adr-0007-ucum-as-the-unit-vocabulary.md) to one analyte where

@@ -24,7 +24,9 @@ on load (`fetchSession()`; `401 {providers}` = signed out, the body listing only
 providers whose secrets are set; `403` = signed in with an email no
 longer on the allowlist, shown as "This account is not allowed." beside the
 sign-in buttons for both providers) and signs out with
-`POST /auth/logout` (`signOutUser()`, both in `web/src/cloud/session.ts`).
+`POST /auth/logout` (`signOutUser()`, both in `web/src/cloud/session.ts`); after
+sign-out the hook refetches `/auth/me` to list the providers again, rather than
+showing sign-in as unavailable.
 Every mutating call carries the header `X-Paneloom: 1`, the Worker's CSRF
 guard: sign-out and the sync `PUT`.
 
@@ -75,10 +77,11 @@ Guards, all client-side in `sync.ts`:
   `referenceRanges`, `interpretation`, ...) or that is a different report under
   the same name is skipped. With nothing to change no request but the read is
   made. An empty cloud is the one case that takes the whole local set.
-- The manifest carries a timestamp, so the held one is resent verbatim while
-  the payload digest is unchanged (kept in `paneloom_held_files_v1`); a
-  pull-then-push with no edits therefore makes no commit. A cloud folder with
-  no manifest gets one on the first push.
+- The manifest carries a timestamp. A push whose merged files equal the cloud's
+  sends nothing, so a pull-then-push with no edits makes no commit; when a file
+  did change the manifest is rewritten, and a cloud folder with no manifest gets
+  one on the first push. The zip export reuses the held manifest while the
+  payload digest (kept in `paneloom_held_files_v1`) is unchanged.
 - Sign-out saves first and wipes local data only when everything local is in the
   cloud; an empty local set is never pushed over the cloud.
 
@@ -226,7 +229,8 @@ Subject, sex and birth year, read at display time from the held report files
 each). Sex also picks a sex-dependent index's band
 ([`computed-indices.md`](computed-indices.md)): the files' `sex` wins, and only
 when none carries one is the dropdown offered, its value persisted on this
-device under `bloodtests_envelope_meta_v1`. Nothing here is written into a
+device under `bloodtests_envelope_meta_v1` (a restore seeds it from the zip's
+sex when the folder carries one). Nothing here is written into a
 file or an export, and the card does not edit subject or birth year.
 
 ## Export, import, clear

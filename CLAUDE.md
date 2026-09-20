@@ -23,7 +23,8 @@ non-negotiables:
 - **Nothing shown is invented or silently altered.** A printed value is
   stored and displayed exactly as the lab wrote it; a converted or derived
   number is computed at display time, kept visibly separate (`canonical`,
-  chart-only series), and never written back or exported. An index outside
+  chart-only series), and never written back or exported; a stored file is
+  carried byte for byte, never rebuilt from the parsed model. An index outside
   its validity range renders "–", and every formula and reference range
   carries a cited primary source.
 
@@ -93,7 +94,9 @@ Monetization: undecided (`docs/business/README.md`).
 - Printed value and unit are never converted in storage or export, and a
   stored file is never rebuilt: import and export carry the data repo's
   files byte for byte; derived numbers exist at display time only —
-  ADR-0003, ADR-0028.
+  ADR-0003, ADR-0028. The unit-vs-LOINC checks read the stored `unit`
+  (`Result.storedUnit`), else the printed one; `rawUnit` stays as printed —
+  ADR-0025.
 - Reference data is data: `analyses.json`, panels, labs, pathway JSON are
   the source of truth, never mirrored in TypeScript — ADR-0010.
 - Molar masses are data, factors are derived from them — ADR-0011.
@@ -106,7 +109,10 @@ Monetization: undecided (`docs/business/README.md`).
 - No login stays local; signing in switches storage mode with two cutover
   moments and no ongoing sync — ADR-0018, ADR-0019; the cloud store is a
   private GitHub repo behind the Worker, never a browser-held token —
-  ADR-0026; identity is Google / Apple through the Worker's own OAuth, no
+  ADR-0026; a push reads the cloud first and lays only the user's own
+  changes over it, skipping any changed file that would lose a stored
+  field, and a pull replaces the held files with the cloud's text —
+  ADR-0028; identity is Google / Apple through the Worker's own OAuth, no
   auth service — ADR-0027.
 - Artwork illustrates; any geometry read as a quantity is a circle count or
   drawn from cited data — ADR-0022.

@@ -18,7 +18,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | --- | --- | --- |
 | [ADR-0001](adr-0001-content-hash-plain-stringify.md) | `contentHash` over plain `JSON.stringify`, not a canonical serialization | accepted · 2026-08-27 |
 | [ADR-0002](adr-0002-borrow-fhir-shapes-not-fhir.md) | Borrow FHIR's shapes, without adopting FHIR | accepted · 2026-08-27 |
-| [ADR-0003](adr-0003-store-only-what-the-lab-printed.md) | Store only what the lab printed, no `us` / `si` blocks | accepted · 2026-08-27 |
+| [ADR-0003](adr-0003-store-only-what-the-lab-printed.md) | Store only what the lab printed, no `us` / `si` blocks | accepted · 2026-08-27 · amended by 0028 (stored file never rebuilt) |
 | [ADR-0004](adr-0004-derive-loinc-from-name-and-unit.md) | Derive LOINC from printed name + unit, demote printed codes to evidence | accepted · 2026-08-28 |
 | [ADR-0005](adr-0005-companion-observations-are-not-panels.md) | Companion observations are a third relation kind, not panels | accepted · 2026-09-07 |
 | [ADR-0006](adr-0006-envelope-schema-numbered-3.md) | Envelope `schema` numbered 3 to match the project | accepted · 2026-09-07 · partially superseded by 0009, 0012 |
@@ -40,10 +40,10 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
 | [ADR-0023](adr-0023-product-purpose-and-clinical-boundary.md) | Product purpose, audience, and clinical boundary | accepted · 2026-09-18 |
 | [ADR-0024](adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md) | The panel date-range control is header-scoped and changes data only through an explicit binding | accepted · 2026-09-18 |
-| [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md) | MCHC printed in `%` is flagged, not accepted; the fix is the owner's data edit | accepted · 2026-09-19 |
-| [ADR-0026](adr-0026-github-backed-cloud-storage.md) | Cloud data lives in a private GitHub repo behind a Worker | accepted · 2026-09-19 · supersedes 0019 (data store only) · identity amended by 0027 |
+| [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md) | MCHC printed in `%` is flagged, not accepted; the fix is the owner's data edit | accepted · 2026-09-19 · amended by 0028 (checks read the stored `unit`) |
+| [ADR-0026](adr-0026-github-backed-cloud-storage.md) | Cloud data lives in a private GitHub repo behind a Worker | accepted · 2026-09-19 · supersedes 0019 (data store only) · identity amended by 0027 · client split / merge amended by 0028 |
 | [ADR-0027](adr-0027-worker-owned-oauth.md) | The Worker owns Google / Apple sign-in; Supabase Auth is retired | accepted · 2026-09-19 · supersedes 0019 (auth) · amends 0026 |
-| [ADR-0028](adr-0028-verbatim-import-export.md) | Import and export carry the stored files verbatim | accepted · 2026-09-20 · amends 0003 (export wording) and 0026 (client split / merge) |
+| [ADR-0028](adr-0028-verbatim-import-export.md) | Import and export carry the stored files verbatim | accepted · 2026-09-20 · amends 0003 (export wording), 0025 (unit checks read the stored `unit`) and 0026 (client split / merge, push as a merge over the cloud) |
 
 ## Where each one bites
 
@@ -142,8 +142,9 @@ Each record opens with `# ADR-NNNN: <title>` and a
   performs Google and Apple OAuth itself and issues a signed session cookie,
   with no database and no auth service to run. 0028 then makes import and
   export verbatim: the stored per-report files are held as they arrived and
-  returned byte for byte, never rebuilt; `lastUpdatedDate` replaces the
-  removed `generatedAt`. See
+  returned byte for byte, never rebuilt; a push lays only the user's own
+  changes over the cloud copy; `lastUpdatedDate` replaces the removed
+  `generatedAt`. See
   [`../account-and-sync.md`](../account-and-sync.md).
 - **Scheduling** — 0016: a list of independent `ScheduledVisit` entries
   rather than one global schedule object, implemented in

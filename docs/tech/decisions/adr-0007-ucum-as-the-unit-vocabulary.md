@@ -49,8 +49,10 @@ vocabulary so that the `ALLOWED_UNITS` table and any future mapping
 pass are written against one answer instead of accreting an ad-hoc
 house format. The work was tracked as
 [task-0011](../../tasks/task-0011.md) and shipped 2026-09-09 — export
-writes the folded spelling to `unit` and the printed string to
-`rawUnit`, and no value is converted. Adopting the NLM UCUM library is
+then wrote the folded spelling to `unit` and the printed string to
+`rawUnit`, and no value is converted. Since
+[ADR-0028](adr-0028-verbatim-import-export.md) the app derives neither: both
+fields are carried as stored. Adopting the NLM UCUM library is
 still [task-0008](../../tasks/task-0008.md).
 
 ## Alternatives considered

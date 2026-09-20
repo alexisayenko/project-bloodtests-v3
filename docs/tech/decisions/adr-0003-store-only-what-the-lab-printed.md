@@ -1,6 +1,7 @@
 # ADR-0003: store only what the lab printed, no `us` / `si` blocks
 
-Status: accepted · 2026-08-27
+Status: accepted · 2026-08-27 · amended by [ADR-0028](adr-0028-verbatim-import-export.md)
+(a stored file is never rebuilt on export)
 
 ## Context
 

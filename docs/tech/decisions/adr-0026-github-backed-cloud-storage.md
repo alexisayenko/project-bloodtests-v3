@@ -5,7 +5,7 @@ Status: accepted · 2026-09-19 · supersedes
 store only · identity amended by [ADR-0027](adr-0027-worker-owned-oauth.md)
 (Supabase Auth retired; the Worker owns sign-in and checks a session cookie)
 · the client's split / merge amended by
-[ADR-0028](adr-0028-verbatim-import-export.md) (files moved verbatim)
+[ADR-0028](adr-0028-verbatim-import-export.md) (files moved verbatim, a push a merge over the cloud)
 
 The storage-mode shape and the cutover model are unchanged
 ([ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md),
@@ -55,11 +55,11 @@ cannot hold a GitHub credential with write access to a private repo.
 - **Writes** are one atomic commit through the Git Data API. The Worker
   deletes only app-named files in that user's folder, rejects an empty or
   trivial `PUT`, and answers `409` if the branch moved under it.
-- **The client** (`web/src/cloud/sync.ts`, `web/src/data/reportFiles.ts`)
-  splits the local `lab-reports.json` envelope into per-report files on push
-  and merges them back on pull. The manifest carries a timestamp, so its
-  previous text is reused unless another file changed: an unchanged push
-  makes no commit.
+- **The client** (`web/src/cloud/sync.ts`, `web/src/data/storage/heldFiles.ts`)
+  moves the per-report files as stored ([ADR-0028](adr-0028-verbatim-import-export.md)):
+  a pull holds the cloud's texts, a push reads the cloud first and lays only
+  the user's own changes over it. The manifest carries a timestamp and is
+  rewritten only when another file changed: an unchanged push makes no commit.
 - **Two guards against wiping data.** A cloud pull with no reports,
   medications or visits is never imported, and a local set with none is never
   pushed. Settings and a manifest alone do not count as data.

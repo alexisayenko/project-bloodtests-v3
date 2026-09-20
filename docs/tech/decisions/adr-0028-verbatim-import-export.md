@@ -1,7 +1,8 @@
 # ADR-0028: Import and export carry the stored files verbatim
 
 Status: accepted · 2026-09-20 · amends [ADR-0003](adr-0003-store-only-what-the-lab-printed.md)
-(its export wording) · amends [ADR-0026](adr-0026-github-backed-cloud-storage.md)
+(its export wording) · amends [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md)
+(the unit checks read the stored `unit`) · amends [ADR-0026](adr-0026-github-backed-cloud-storage.md)
 (the client's split / merge)
 
 ## Context
@@ -46,7 +47,10 @@ The app writes a file in three places only:
 A deleted report has its file removed. Local view files (`medications.json`,
 `scheduled-visits.json`, `settings.json`) are held as imported and rebuilt from
 browser storage only once they change. Export never sources envelope metadata
-from `localStorage`; Database details reads subject, sex and birth year from the held files at display time and edits only a device-local sex fallback.
+from `localStorage`; Database details reads subject, sex and birth year from the
+held files at display time (nothing written back) and offers a sex dropdown,
+kept on the device, only when no file carries one; sex from the files drives
+the reference ranges first.
 
 **`lastUpdatedDate`** (schema `3.2`, optional, ISO 8601 UTC) is set or
 refreshed only when report data is modified in the app (a new report from an
@@ -57,38 +61,38 @@ carries it imports with no error or warning and passes through verbatim.
 
 ## Push invariants
 
-The first build of this decision still pushed the whole local set on sign-out.
-A browser whose cache predated held files rebuilt every report from the parsed
-model (`rawUnit` only, no derived `unit`, a bumped schema and a fresh
-`lastUpdatedDate`) and wrote 32 files over the cloud's. The rules that now hold,
-enforced in `web/src/cloud/sync.ts` and tested in `web/test/cloud-push-guard.test.ts`:
+A file rebuilt from the parsed model can silently drop a field the stored file
+has (a relabelled `unit`, `interpretation`, a second reference band), and the
+loss is invisible in the app because the parsed model never showed it. So a
+push never rebuilds: it lays the user's own changes over what the cloud holds.
+Enforced in `web/src/cloud/sync.ts`, tested in
+`web/test/cloud-push-guard.test.ts`:
 
-1. **No push without a user change.** The held store records which files the
-   user added, edited or removed (`pending`), and which of `medications.json`,
-   `scheduled-visits.json`, `settings.json` drifted from their held state.
-   Sign-in, pull, settle and reload change none of that, so they send nothing;
-   with nothing pending sign-out makes no request but the read.
-2. **A report with no held verbatim file is never fabricated over a cloud
-   file.** A push reads the cloud first and lays only the pending files over it;
-   every other path keeps the cloud's text. Local data the cloud lacks and the
-   user did not change is not sent and is not wiped: sign-out then keeps it on
-   the device (`kept`). The same holds for a local file of unknown origin
-   (a cache from before held files).
-3. **`lastUpdatedDate` and `schema` are stamped only on the file whose data
-   was edited**, by `patchEditedFile` or when a new upload's file is created.
-4. **A rebuilt file never loses fields.** An edit patches the original
-   objects, so `unit` and everything else stay. If the original text is not
-   available (a session with no held file) the file built for it is refused by
-   invariant 5 rather than written.
-5. **Last-line guard** (`keepsStoredFields`): a pending report file is sent
-   only if it describes the same reports (lab, `collectedAt`) and keeps every
-   field the cloud's file has, envelope, report and observation level, except
-   the `value` / `rawValue` an edit may clear. Otherwise the cloud text stays
-   and the file is reported as skipped.
-
-A pull always replaces the held files with the cloud's text, so a copy that
-holds a corrupted file heals on the next sign-in; a corrupted copy that is
-never edited is never pushed.
+1. **Nothing is pushed unless the user changed data.** The held store records
+   which files the user added, edited or removed (`pending`), and which of
+   `medications.json`, `scheduled-visits.json`, `settings.json` drifted from
+   their held state. Sign-in, pull, settle and reload change none of that, so
+   they send nothing; with nothing pending, sign-out makes no request but the
+   read. The one exception is an empty cloud, which takes the local set as it
+   is.
+2. **A push reads the cloud first and lays only the tracked changes over it.**
+   Every other path keeps the cloud's text, whatever this browser's copy looks
+   like. Local data the cloud lacks and the user did not change (a cache of
+   unknown origin) is neither sent nor wiped: sign-out returns `kept` and
+   leaves it on the device.
+3. **`lastUpdatedDate` is stamped only on the file whose data was edited** (or
+   created from an upload), by `patchEditedFile` and `filesFromUpload`. An
+   edit changes no other envelope field.
+4. **A changed file that would lose a field is skipped.** An edit patches the
+   original objects, so `unit` and everything else stay. The last-line guard
+   (`keepsStoredFields`) sends a pending report file only if it describes the
+   same reports (lab, `collectedAt`) and keeps every field the cloud's file
+   has, at envelope, report and observation level, except the `value` /
+   `rawValue` an edit may clear. Otherwise the cloud text stays and the file
+   is reported as skipped.
+5. **A pull replaces the held files with the cloud's text and clears the
+   tracked changes**, so a damaged local copy heals on the next sign-in; a
+   damaged copy that is never edited is never pushed.
 
 ## Amendments
 
@@ -100,7 +104,8 @@ never edited is never pushed.
   `rawUnit` (`rawUnit` only when `unit` is absent), so the relabel also clears
   the warning.
 - **ADR-0026**: the client no longer splits and merges a `lab-reports.json`;
-  it moves the per-report files as they are.
+  it moves the per-report files as they are, and a push is a merge over the
+  cloud copy (see Push invariants).
 
 ## Consequences
 
