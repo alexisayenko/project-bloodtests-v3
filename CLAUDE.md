@@ -98,7 +98,8 @@ Monetization: undecided (`docs/business/README.md`).
 - UCUM is the unit vocabulary; a molar unit under a mass code is a code
   error, fixed by the sibling code, not a conversion — ADR-0007, ADR-0003.
 - `U` and `IU` fold only where the LOINC property says which one the
-  analyte is measured in — ADR-0013.
+  analyte is measured in — ADR-0013; a legacy printed unit (MCHC `%`) maps
+  to the code's own unit through a data alias, `rawUnit` kept — ADR-0028.
 - The envelope's `schema` is a `"major.minor"` string; any `"3.x"` is read,
   nothing else — ADR-0009, ADR-0012.
 - No login stays local; signing in switches storage mode with two cutover

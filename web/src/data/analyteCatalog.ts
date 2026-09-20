@@ -44,6 +44,11 @@ export const ALLOWED_UNITS: Record<string, string[]> = Object.fromEntries(
   ANALYTES.filter((a) => a.allowedUnits?.length).map((a) => [a.loinc, a.allowedUnits!])
 );
 
+/** Per-LOINC printed-unit aliases (ADR-0010): a printed spelling that denotes the code's reference unit. */
+export const PRINTED_UNIT_ALIASES: Record<string, Record<string, string>> = Object.fromEntries(
+  ANALYTES.filter((a) => a.printedUnitAliases).map((a) => [a.loinc, a.printedUnitAliases!])
+);
+
 /** The LOINC property from the long name's bracket — the catalog stores no property field. */
 export function propertyOf(longCommonName: string | undefined): string | undefined {
   return longCommonName?.match(/\[([^[\]]*)\]/)?.[1];

@@ -9,6 +9,8 @@ export interface Analysis {
   unit?: string;
   /** A LOINC fixes the quantity, not the scale. */
   allowedUnits?: string[];
+  /** Printed unit → the reference unit it denotes for this code (MCHC printed as "%" is g/dL). */
+  printedUnitAliases?: Record<string, string>;
   /** The primary code that owns this variant's row. */
   aliasOf?: string;
   aliasLabel?: string;

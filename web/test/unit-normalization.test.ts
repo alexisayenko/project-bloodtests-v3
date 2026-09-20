@@ -5,6 +5,7 @@ import {
   dimensionOf,
   checkCodeUnit,
   normalizeObservationUnit,
+  ucumUnitFor,
   convertValue,
   canonicalUnitFor,
   sameUnitScale,
@@ -485,5 +486,33 @@ describe('unitScaleFamilies', () => {
     expect(unitScaleFamilies(['U/L', 'IU/L'], '1742-6')).toEqual([['U/L', 'IU/L']]);
     expect(unitScaleFamilies(['U/L', 'IU/L'], '15067-2')).toEqual([['U/L', 'IU/L']]);
     expect(unitScaleFamilies(['U/L', 'IU/L'], '2093-3')).toEqual([]);
+  });
+});
+
+describe('printed-unit aliases (MCHC printed as %)', () => {
+  it('reads % on 786-4 as g/dL: the check is ok and the printed unit stays as printed', () => {
+    const result = normalizeObservationUnit({ loinc: '786-4', unit: '%', value: 33.4 });
+    expect(result.printedUnit).toBe('%');
+    expect(result.latinUnit).toBe('g/dL');
+    expect(result.ucumUnit).toBe('g/dL');
+    expect(result.check).toEqual({ kind: 'ok' });
+    expect(result.canonical).toEqual({ value: 33.4, unit: 'g/dL' });
+  });
+
+  it('gives ucumUnitFor the alias only when it is handed the code', () => {
+    expect(ucumUnitFor('%', '786-4')).toBe('g/dL');
+    expect(ucumUnitFor('%')).toBe('%');
+    expect(ucumUnitFor('%', '2093-3')).toBe('%');
+  });
+
+  it('leaves every other code with % as a dimension mismatch', () => {
+    expect(normalizeObservationUnit({ loinc: '2093-3', unit: '%' }).check.kind).toBe('dimension-mismatch');
+    expect(normalizeObservationUnit({ loinc: '718-7', unit: '%' }).check.kind).toBe('dimension-mismatch');
+  });
+
+  it('still reads the reference spelling of the aliased code as before', () => {
+    const result = normalizeObservationUnit({ loinc: '786-4', unit: 'г/дл' });
+    expect(result.ucumUnit).toBe('g/dL');
+    expect(result.check.kind).toBe('ok');
   });
 });

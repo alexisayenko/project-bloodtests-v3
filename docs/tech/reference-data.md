@@ -42,9 +42,12 @@ LOINC's SHORTNAME), `unit` (the expected unit), `allowedUnits`, and
 spellings use the app's canonical Latin form (`ug/…`, never `mcg/…` or `µg`),
 which is what `molarMasses.ts`'s `concentrationScale` can parse a prefix out
 of.
-`allowedUnits` holds same-dimension variants only; a cross-dimension label such
-as MCHC's `%` is never added
-([ADR-0025](decisions/adr-0025-mchc-percent-is-not-an-accepted-unit.md)).
+`allowedUnits` holds same-dimension variants only. A legacy printed label that
+means the code's own unit goes in the optional `printedUnitAliases` map
+(`{"%": "g/dL"}` on MCHC `786-4`): normalization resolves that printed unit to
+the map's value for this code alone, `rawUnit` keeps the print, and no
+warning is raised
+([ADR-0028](decisions/adr-0028-mchc-printed-percent-alias.md)).
 
 `analyteCatalog.ts` derives every lookup from it at load: `SHORT_NAMES`,
 `DEFAULT_UNITS`, `ALLOWED_UNITS`, the reverse alias maps `ALSO_REFS` /

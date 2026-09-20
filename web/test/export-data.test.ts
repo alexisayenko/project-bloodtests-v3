@@ -75,6 +75,45 @@ describe('buildExportEnvelope — normalized unit, printed rawUnit', () => {
     expect(second.contentHash).toBe(first.contentHash);
   });
 
+  describe('an analyte-scoped printed-unit alias (MCHC printed as %)', () => {
+    const mchcSource = {
+      schema: 3,
+      diagnosticReports: [
+        {
+          lab: 'Ygia',
+          collectedAt: '2026-01-10T00:00:00Z',
+          observations: [
+            { loinc: '786-4', rawName: 'MCHC', value: 33.4, rawValue: '33,4', unit: '%' },
+            { loinc: '2093-3', rawName: 'Cholesterol', value: 5, rawValue: '5', unit: '%' },
+          ],
+        },
+      ],
+    };
+
+    it('exports g/dL as the normalized unit with the printed % and the value untouched', async () => {
+      const envelope = await buildExportEnvelope(parseUploadedResults(mchcSource));
+      const [mchc, other] = envelope.diagnosticReports[0]!.observations;
+
+      expect(mchc).toMatchObject({ loinc: '786-4', value: 33.4, rawValue: '33,4', unit: 'g/dL', rawUnit: '%' });
+      expect(other).toMatchObject({ loinc: '2093-3', unit: '%', rawUnit: '%' });
+    });
+
+    it('keeps the printed % on the imported item and settles across a round trip', async () => {
+      const imported = parseUploadedResults(mchcSource);
+      expect(imported[0]!.items![0]).toMatchObject({ unit: '%', value: 33.4 });
+
+      const first = await buildExportEnvelope(imported);
+      const reimported = parseUploadedResults({ schema: 3, ...first });
+      expect(reimported[0]!.items![0]).toMatchObject({ unit: '%', value: 33.4 });
+
+      const second = await buildExportEnvelope(reimported);
+      expect(JSON.stringify(second.diagnosticReports, null, 2)).toBe(
+        JSON.stringify(first.diagnosticReports, null, 2)
+      );
+      expect(second.contentHash).toBe(first.contentHash);
+    });
+  });
+
   it('reads rawUnit back as the printed unit, so a re-export writes the same pair', async () => {
     const reimported = parseUploadedResults({
       schema: 3,

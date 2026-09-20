@@ -1,6 +1,6 @@
 # ADR-0025: MCHC printed in `%` is flagged, not accepted
 
-Status: accepted · 2026-09-19
+Status: accepted · 2026-09-19 · MCHC policy superseded by [0028](adr-0028-mchc-printed-percent-alias.md) (the differential-counts note stands)
 
 Applies [ADR-0003](adr-0003-store-only-what-the-lab-printed.md) and
 [ADR-0007](adr-0007-ucum-as-the-unit-vocabulary.md) to one analyte where
