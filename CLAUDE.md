@@ -70,7 +70,7 @@ Monetization: undecided (`docs/business/README.md`).
 | `web/src/data/analyteCatalog.ts` | derives every lookup map from `analyses.json` |
 | `web/src/data/indexDefs.ts` / `computedIndices.ts` | index definitions / engine |
 | `web/src/data/unitNormalization.ts` | the three unit stages; `massMolarSiblings.ts`, `molarMasses.ts` beside it |
-| `web/src/data/parseUpload.ts`, `validateDiagnosticReports.ts`, `utils/exportData.ts` | import, validation, export |
+| `web/src/data/parseUpload.ts`, `validateDiagnosticReports.ts`, `importResults.ts`, `storage/heldFiles.ts` | import, validation, the held verbatim files |
 | `web/src/data/loincCheck.ts`, `loincNlm.ts`, `fuzzyMatch.ts` | LOINC cross-check; the NLM call is alone in its file |
 | `web/src/data/sharedLink.ts`, `sharedMeta.ts`, `backupArchive.ts`, `backupRestore.ts` | share links, backup zip |
 | `web/src/data/storage/{resultsStorage,scheduledVisits,medications,viewSettings,sidebarCollapsed}.ts` | every localStorage key with its parse / load / save and pure reducers; no React |
@@ -78,7 +78,7 @@ Monetization: undecided (`docs/business/README.md`).
 | `web/src/hooks/useHashRoute.ts` | hash routing, blocked-route redirect, grid scroll restore |
 | `web/src/hooks/useAllResults.ts` | flattens sessions into `allResults` / `latestByLoinc` / `resultsByDate`, loading a session's items on demand |
 | `web/src/components/conditions/PopupContext.tsx`, `SchedulingContext.tsx` | popup and scheduling state shared by `PanelDetailView`, `ResultTables`, `Popup`, `PlanVisitView` |
-| `web/src/cloud/`, `web/src/data/reportFiles.ts`, `web/worker/auth.ts`, `web/worker/githubData.ts` | auth and sync client; per-report file split / merge; the Worker's `/auth/*` sign-in and `/api/data` |
+| `web/src/cloud/`, `web/src/data/reportFiles.ts`, `web/worker/auth.ts`, `web/worker/githubData.ts` | auth and sync client; per-report files, split only for a new upload; the Worker's `/auth/*` sign-in and `/api/data` |
 | `web/src/components/conditions/MedicalConditionsPage.tsx` | the app shell: route, results, shared settings, popups; every section a `React.lazy` sibling view |
 | `web/src/components/conditions/*View.tsx`, `ReferenceBookPage.tsx` | the views (grid, panel detail, all observations, reports, report detail, profile, plan, medications, pathways, lipids, account, reference) |
 | `web/src/components/conditions/{markers,routing,resultCells,popupGeometry,scheduling,resultsLookup,statusFilter,reportDetailHelpers,pathwayShared}.ts` | pure helpers and view contracts |
@@ -90,8 +90,10 @@ Monetization: undecided (`docs/business/README.md`).
 
 ## Invariants
 
-- Printed value and unit are never converted in storage or export; derived
-  numbers exist at display time only — ADR-0003.
+- Printed value and unit are never converted in storage or export, and a
+  stored file is never rebuilt: import and export carry the data repo's
+  files byte for byte; derived numbers exist at display time only —
+  ADR-0003, ADR-0028.
 - Reference data is data: `analyses.json`, panels, labs, pathway JSON are
   the source of truth, never mirrored in TypeScript — ADR-0010.
 - Molar masses are data, factors are derived from them — ADR-0011.

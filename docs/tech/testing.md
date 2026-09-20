@@ -17,8 +17,10 @@ the suites that validate it; fixtures under `web/test/fixtures/`.
 - **Interchange** — upload parsing (the v3 envelope, and every non-v3 shape
   rejected), import-replace, export envelope, published JSON Schema
   conformance and generated-type drift (ajv and json-schema-to-typescript,
-  devDependencies only), the stable second round trip (export → import →
-  export byte-identical), old-shape stored sessions.
+  devDependencies only), verbatim round trips (`verbatim-roundtrip.test.ts`: zip and cloud
+  pull → push byte-identical on synthetic stored files, `lastUpdatedDate`
+  set only on new or edited files), the per-report file writers
+  (`report-files.test.ts`), the sync guards, old-shape stored sessions.
 - **Diagnostic reports** — validation tiers, LOINC cross-check, the NLM
   lookup's unit selection (pure, no request made), the report-detail row
   helpers, the results context.

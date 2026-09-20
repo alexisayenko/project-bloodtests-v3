@@ -27,10 +27,9 @@ const PROVIDER_LABEL: Record<CloudProvider, string> = { google: 'Google', apple:
 
 const FIELD_LABEL = { color: COLOR.textSecondary, fontWeight: 600, textAlign: 'right' } as const;
 
-async function currentLocalFiles(sessions: DiagnosticReport[]): Promise<Record<string, string>> {
+function currentLocalFiles(sessions: DiagnosticReport[]): Record<string, string> {
   return buildBackupFiles({
     sessions,
-    meta: loadEnvelopeMeta(),
     storage: localStorage,
     app: { commit: __BUILD_COMMIT__, builtAt: __BUILD_TIME__ },
     now: new Date(),
@@ -63,10 +62,11 @@ function AccountAuthCard({
 
   async function syncAfterSignIn() {
     const cloudFiles = await pullCloudFiles();
-    if (cloudFiles && !isEmptyBackup(readBackup(cloudFiles))) {
-      await onImportAll(readBackup(cloudFiles));
+    const backup = cloudFiles ? readBackup(cloudFiles, { manifestOptional: true }) : null;
+    if (backup && !isEmptyBackup(backup)) {
+      await onImportAll(backup);
       flashNotice('✓ Synced from cloud.');
-    } else if (await pushCloudFiles(await currentLocalFiles(sessions))) {
+    } else if (await pushCloudFiles(currentLocalFiles(sessions))) {
       flashNotice('✓ Backed up to cloud.');
     }
   }
@@ -149,7 +149,7 @@ function AccountAuthCard({
   );
 }
 
-/** Subject/sex/birth-year/notes written into every export. */
+/** Sex only, kept on this device: it selects the reference ranges and is never written into a stored file. */
 function DatabaseDetailsCard() {
   const [meta, setMeta] = useState<EnvelopeMeta>(() => loadEnvelopeMeta());
 
@@ -166,7 +166,7 @@ function DatabaseDetailsCard() {
       <CardHeader
         icon={<IconBadge icon={Database} size={36} />}
         title="Database details"
-        description="Subject, sex, birth year and notes written into each export."
+        description="Sex, kept on this device, selects the reference ranges. Stored files are exported exactly as they were imported."
       />
       <div
         style={{
@@ -176,23 +176,10 @@ function DatabaseDetailsCard() {
           display: 'grid',
           gridTemplateColumns: '90px minmax(0, 480px)',
           columnGap: 14,
-          rowGap: 12,
           alignItems: 'center',
           fontSize: 13,
         }}
       >
-        <span style={{ color: COLOR.textMuted, textAlign: 'right' }}>Generated at</span>
-        <span style={{ color: COLOR.textMuted }}>
-          {meta.generatedAt ? new Date(meta.generatedAt).toLocaleString() : '—'}
-          <span style={{ color: COLOR.textDisabled, fontSize: 11, marginLeft: 8 }}>updates on each export</span>
-        </span>
-        <span style={FIELD_LABEL}>Subject</span>
-        <input
-          type="text"
-          value={meta.subject ?? ''}
-          onChange={(e) => updateMeta({ subject: e.currentTarget.value || undefined })}
-          style={{ ...FIELD_INPUT, width: '100%', boxSizing: 'border-box' }}
-        />
         <span style={FIELD_LABEL}>Sex</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <select
@@ -207,27 +194,7 @@ function DatabaseDetailsCard() {
             <option value="female">female</option>
             <option value="male">male</option>
           </select>
-          <span style={{ color: COLOR.textSecondary, fontWeight: 600 }}>Birth year</span>
-          <input
-            type="number"
-            min={1900}
-            max={new Date().getFullYear()}
-            step={1}
-            value={meta.birthYear ?? ''}
-            onChange={(e) => {
-              const v = e.currentTarget.value;
-              updateMeta({ birthYear: v === '' ? undefined : Number(v) });
-            }}
-            style={{ ...FIELD_INPUT, width: 90 }}
-          />
         </div>
-        <span style={{ ...FIELD_LABEL, alignSelf: 'start', marginTop: 6 }}>Notes</span>
-        <textarea
-          rows={4}
-          value={meta.notes ?? ''}
-          onChange={(e) => updateMeta({ notes: e.currentTarget.value || undefined })}
-          style={{ ...FIELD_INPUT, width: '100%', boxSizing: 'border-box', resize: 'vertical' }}
-        />
       </div>
     </Card>
   );
@@ -360,8 +327,7 @@ async function downloadBackup(sessions: DiagnosticReport[]): Promise<void> {
     import('fflate'),
     buildBackupFiles({
       sessions,
-      meta: loadEnvelopeMeta(),
-      storage: localStorage,
+        storage: localStorage,
       app: { commit: __BUILD_COMMIT__, builtAt: __BUILD_TIME__ },
       now,
     }),

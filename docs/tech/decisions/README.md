@@ -43,6 +43,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md) | MCHC printed in `%` is flagged, not accepted; the fix is the owner's data edit | accepted · 2026-09-19 |
 | [ADR-0026](adr-0026-github-backed-cloud-storage.md) | Cloud data lives in a private GitHub repo behind a Worker | accepted · 2026-09-19 · supersedes 0019 (data store only) · identity amended by 0027 |
 | [ADR-0027](adr-0027-worker-owned-oauth.md) | The Worker owns Google / Apple sign-in; Supabase Auth is retired | accepted · 2026-09-19 · supersedes 0019 (auth) · amends 0026 |
+| [ADR-0028](adr-0028-verbatim-import-export.md) | Import and export carry the stored files verbatim | accepted · 2026-09-20 · amends 0003 (export wording) and 0026 (client split / merge) |
 
 ## Where each one bites
 
@@ -139,7 +140,10 @@ Each record opens with `# ADR-NNNN: <title>` and a
   "no server the app owns" principle: the Worker is a stateless
   auth-checking proxy. 0027 then retires Supabase Auth too: the Worker
   performs Google and Apple OAuth itself and issues a signed session cookie,
-  with no database and no auth service to run. See
+  with no database and no auth service to run. 0028 then makes import and
+  export verbatim: the stored per-report files are held as they arrived and
+  returned byte for byte, never rebuilt; `lastUpdatedDate` replaces the
+  removed `generatedAt`. See
   [`../account-and-sync.md`](../account-and-sync.md).
 - **Scheduling** — 0016: a list of independent `ScheduledVisit` entries
   rather than one global schedule object, implemented in

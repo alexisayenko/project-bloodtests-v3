@@ -61,7 +61,7 @@ A derived unit is now written down, and the two fields split the roles the inter
 | `unit` | the canonical UCUM code | what code computes on |
 | `rawUnit` | the string the lab printed | the record of what was read |
 
-Export writes both: `unit` from folding the printed spelling to UCUM, `rawUnit` from the report itself, whenever a unit was printed at all. Import reads `rawUnit` back in preference to `unit`, so the printed string is what the app goes on displaying and validating, and a re-export writes the identical pair — the transformation settles instead of drifting. The fields are [specified in the interchange format](../../tech/interchange-format.md#rawunit).
+The stored file carries both, and export returns them exactly as stored: the app derives neither (ADR-0028), so a `unit` corrected in the data repo survives. Import reads `rawUnit` in preference to `unit`, so the printed string is what the app goes on displaying and validating. The fields are [specified in the interchange format](../../tech/interchange-format.md#rawunit).
 
 This is the format's existing pattern, twice over: `rawValue` preserves a printed `< 0.01` that `value` plus `comparator` parse lossily, and the app keeps each observation's printed name as provenance against the official LOINC name it resolves. In each pair the derived field is the one code uses, and the raw one is the receipt.
 

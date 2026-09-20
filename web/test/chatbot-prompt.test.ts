@@ -14,7 +14,7 @@ function exampleEnvelope(): unknown {
 describe('CHATBOT_PROMPT', () => {
   it('pins the envelope to the current schema version, as a string', () => {
     expect(CHATBOT_PROMPT).toContain(`"schema": "${SCHEMA_VERSION}"`);
-    expect(CHATBOT_PROMPT).toMatch(/"schema": always the literal string "3\.1"[^\n]*string and not a number/);
+    expect(CHATBOT_PROMPT).toMatch(/"schema": always the literal string "3\.2"[^\n]*string and not a number/);
   });
 
   it('shows an example envelope that is valid JSON and validates against the published schema', () => {

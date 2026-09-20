@@ -56,11 +56,11 @@ name.
 ## Divergences from FHIR
 
 Verified against `web/public/schema/bloodtests-3.schema.json`,
-`web/src/data/parseUpload.ts` and `web/src/utils/exportData.ts`.
+`web/src/data/parseUpload.ts` and `web/src/data/reportFiles.ts`.
 
 - **No resources and no Bundle.** The file is one plain object,
-  `{ schema, generatedAt, contentHash, subject?, sex?, birthYear?,
-  notes?, diagnosticReports[] }` — not a Bundle with `type`,
+  `{ schema, lastUpdatedDate?, contentHash?, subject?, sex?,
+  birthYear?, notes?, diagnosticReports[] }` (`generatedAt` deprecated in 3.2) — not a Bundle with `type`,
   `timestamp` and `entry[]`. Nothing carries `resourceType`, `id`,
   `meta` or a `text` narrative.
 - **Observations inline, not referenced.** FHIR's
@@ -111,9 +111,10 @@ Verified against `web/public/schema/bloodtests-3.schema.json`,
 - **Dates renamed and coarsened.** `collectedAt` and `issuedAt`
   stand where FHIR has `effectiveDateTime` and `issued`, and
   collection time in FHIR properly belongs to
-  `Specimen.collection.collectedDateTime`. Export writes
-  `` `${date}T00:00:00Z` `` — a date padded to a midnight instant
-  it does not actually know.
+  `Specimen.collection.collectedDateTime`. A file the app builds itself
+  writes `` `${date}T00:00:00Z` `` — a date padded to a midnight instant
+  it does not actually know; a stored file keeps its own `collectedAt`
+  verbatim (ADR-0028).
 - **Report identifiers are a flat open map.** `identifiers` holds
   `visit` / `order` / `accession` plus any lab-specific key, all
   plain strings, rather than `identifier: [Identifier]` with

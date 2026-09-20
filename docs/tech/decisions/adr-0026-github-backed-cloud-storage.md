@@ -4,6 +4,8 @@ Status: accepted · 2026-09-19 · supersedes
 [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) for the data
 store only · identity amended by [ADR-0027](adr-0027-worker-owned-oauth.md)
 (Supabase Auth retired; the Worker owns sign-in and checks a session cookie)
+· the client's split / merge amended by
+[ADR-0028](adr-0028-verbatim-import-export.md) (files moved verbatim)
 
 The storage-mode shape and the cutover model are unchanged
 ([ADR-0015](adr-0015-dedicated-server-storage-via-bearer-token.md),

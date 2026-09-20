@@ -1,8 +1,8 @@
 import type { strToU8, zipSync } from 'fflate';
 import type { DiagnosticReport } from '../types';
-import { ENVELOPE_META_KEY, type EnvelopeMeta } from './envelopeMeta';
-import { buildExportEnvelope } from '../utils/exportData';
-import { LABORATORIES } from './labPricing';
+import { ENVELOPE_META_KEY } from './envelopeMeta';
+import { resolveReportFiles } from './reportFiles';
+import { HELD_FILES_KEY, parseHeldFiles, payloadDigest } from './storage/heldFiles';
 import { MEDICATIONS_KEY, parseMedications } from './storage/medications';
 import { RESULTS_STORAGE_KEY } from './storage/resultsStorage';
 import { SHARED_META_KEY } from './sharedMeta';
@@ -14,7 +14,6 @@ import { SIDEBAR_COLLAPSED_KEY } from './storage/sidebarCollapsed';
 export type StorageReader = Pick<Storage, 'getItem' | 'key' | 'length'>;
 export type BackupInput = {
   sessions: DiagnosticReport[];
-  meta?: EnvelopeMeta;
   storage: StorageReader;
   app: { commit: string; builtAt: string };
   now?: Date;
@@ -28,6 +27,7 @@ export const CHART_PREFIX_KEYS = ['exploreSel:', 'hpgChartView:', 'hpgAutoscale:
 // The one list export, clear and import all read.
 export const USER_DATA_KEYS = [
   RESULTS_STORAGE_KEY,
+  HELD_FILES_KEY,
   ENVELOPE_META_KEY,
   MEDICATIONS_KEY,
   SCHEDULED_KEY,
@@ -80,22 +80,71 @@ function readSettings(storage: StorageReader): Record<string, unknown> {
   return settings;
 }
 
-export async function buildBackupFiles({ sessions, meta, storage, app, now = new Date() }: BackupInput): Promise<Record<string, string>> {
-  const content: Record<string, string> = {
-    'lab-reports.json': json(await buildExportEnvelope(sessions, meta)),
-    'medications.json': json(parseMedications(storage.getItem(MEDICATIONS_KEY), now.getFullYear())),
-    'scheduled-visits.json': json(parseScheduled(storage.getItem(SCHEDULED_KEY))),
-    'laboratory-prices.json': json(LABORATORIES),
-    'settings.json': json(readSettings(storage)),
-  };
-  const manifest = {
-    format: BACKUP_FORMAT,
-    version: BACKUP_VERSION,
-    exportedAt: now.toISOString(),
-    app,
-    files: Object.keys(content),
-  };
-  return { 'manifest.json': json(manifest), ...content };
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) =>
+    typeof v === 'object' && v !== null && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([x], [y]) => (x < y ? -1 : 1)))
+      : v
+  );
+}
+
+// The files kept in their own localStorage keys. `state` is a key-order-independent reading of the
+// local content (null when nothing is stored); `rebuild` is only used once that content has changed.
+const LOCAL_FILES = [
+  {
+    name: 'medications.json',
+    state: (storage: StorageReader, now: Date) => {
+      const raw = storage.getItem(MEDICATIONS_KEY);
+      return raw === null ? null : canonical(parseMedications(raw, now.getFullYear()));
+    },
+    rebuild: (storage: StorageReader, now: Date) => json(parseMedications(storage.getItem(MEDICATIONS_KEY), now.getFullYear())),
+  },
+  {
+    name: 'scheduled-visits.json',
+    state: (storage: StorageReader) => {
+      const raw = storage.getItem(SCHEDULED_KEY);
+      return raw === null ? null : canonical(parseScheduled(raw));
+    },
+    rebuild: (storage: StorageReader) => json(parseScheduled(storage.getItem(SCHEDULED_KEY))),
+  },
+  {
+    name: 'settings.json',
+    state: (storage: StorageReader) => {
+      const settings = readSettings(storage);
+      return Object.keys(settings).length === 0 ? null : canonical(settings);
+    },
+    rebuild: (storage: StorageReader) => json(readSettings(storage)),
+  },
+];
+
+export function localFileStates(storage: StorageReader, now: Date): Record<string, string | null> {
+  return Object.fromEntries(LOCAL_FILES.map((file) => [file.name, file.state(storage, now)]));
+}
+
+/** A file the import held keeps its text while the local content still matches; empty and never held is left out. */
+function localFiles(storage: StorageReader, held: ReturnType<typeof parseHeldFiles>, now: Date): Record<string, string> {
+  const files: Record<string, string> = {};
+  for (const file of LOCAL_FILES) {
+    const text = held.other[file.name];
+    const state = file.state(storage, now);
+    if (text !== undefined && held.state[file.name] === state) files[file.name] = text;
+    else if (state !== null || text !== undefined) files[file.name] = file.rebuild(storage, now);
+  }
+  return files;
+}
+
+/**
+ * Exactly the stored layout: one file per report, held texts unchanged, plus the three local files and a manifest.
+ * The held manifest is reused while the payload is unchanged, so an untouched round trip is byte-identical.
+ */
+export function buildBackupFiles({ sessions, storage, app, now = new Date() }: BackupInput): Record<string, string> {
+  const held = parseHeldFiles(storage.getItem(HELD_FILES_KEY));
+  const payload = { ...resolveReportFiles(sessions, held.reports, now).files, ...localFiles(storage, held, now) };
+  const manifest =
+    held.manifest !== undefined && held.digest === payloadDigest(payload)
+      ? held.manifest
+      : json({ format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt: now.toISOString(), app, files: Object.keys(payload) });
+  return { 'manifest.json': manifest, ...payload };
 }
 
 export function zipBackupFiles(files: Record<string, string>, fflate: { zipSync: typeof zipSync; strToU8: typeof strToU8 }): Uint8Array {

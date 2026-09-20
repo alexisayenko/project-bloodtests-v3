@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { importResults, replaceStoredSessions } from '../src/data/importResults';
+import { clearStoredResults, importResults } from '../src/data/importResults';
+import { loadHeldFiles } from '../src/data/storage/heldFiles';
 import { RESULTS_STORAGE_KEY } from '../src/data/storage/resultsStorage';
 import { UploadParseError } from '../src/data/parseUpload';
 import type { DiagnosticReport } from '../src/types';
@@ -52,14 +53,15 @@ describe('importResults', () => {
   });
 });
 
-describe('replaceStoredSessions', () => {
+describe('clearStoredResults', () => {
   beforeEach(() => {
     installMemoryStorage();
   });
 
-  it('writes an empty set when given no sessions', () => {
+  it('removes the sessions and the held files behind them', () => {
     importResults(FIRST);
-    expect(replaceStoredSessions([])).toEqual([]);
-    expect(stored()).toEqual([]);
+    clearStoredResults();
+    expect(localStorage.getItem(RESULTS_STORAGE_KEY)).toBeNull();
+    expect(loadHeldFiles().reports).toEqual({});
   });
 });

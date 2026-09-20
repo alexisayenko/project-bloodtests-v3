@@ -1,19 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { backupFilename, buildBackupFiles, zipBackupFiles, type StorageReader } from '../src/data/backupArchive';
-import { buildExportEnvelope } from '../src/utils/exportData';
-import laboratories from '../public/data/laboratories.json';
 import type { DiagnosticReport } from '../src/types';
 import { makeResult, makeSession } from './helpers/fixtures';
 
 const NOW = new Date('2026-09-10T08:30:00Z');
 const APP = { commit: 'abc1234', builtAt: '2026-09-10T08:00:00Z' };
+const REPORT = 'reports/2026-08-26__quest.json';
 const FILES = [
   'manifest.json',
-  'lab-reports.json',
+  REPORT,
   'medications.json',
   'scheduled-visits.json',
-  'laboratory-prices.json',
   'settings.json',
 ];
 
@@ -30,8 +28,8 @@ function fakeStorage(entries: Record<string, string>): StorageReader {
 
 const session = makeSession({ items: [makeResult({ loinc: '2093-3', rawName: 'Total Cholesterol', value: 186, unit: 'mg/dL', refMax: 200 })] });
 
-async function unzip(storage: StorageReader, sessions: DiagnosticReport[]) {
-  const files = await buildBackupFiles({ sessions, meta: { subject: 'Alex' }, storage, app: APP, now: NOW });
+function unzip(storage: StorageReader, sessions: DiagnosticReport[]) {
+  const files = buildBackupFiles({ sessions, storage, app: APP, now: NOW });
   const zip = zipBackupFiles(files, { zipSync, strToU8 });
   const entries = unzipSync(zip);
   return Object.fromEntries(Object.entries(entries).map(([name, bytes]) => [name, JSON.parse(strFromU8(bytes)) as unknown]));
@@ -46,7 +44,7 @@ describe('buildBackupFiles', () => {
     vi.useRealTimers();
   });
 
-  it('zips every file with its stored content', async () => {
+  it('zips every file with its stored content', () => {
     const medications = {
       years: [2025, 2026],
       rows: [{ id: 'm1', brand: 'Vitamin D', compounds: [], notes: '2000 IU', months: ['2026-01'] }],
@@ -63,7 +61,7 @@ describe('buildBackupFiles', () => {
       bloodtests_lang: 'en',
     });
 
-    const unzipped = await unzip(storage, [session]);
+    const unzipped = unzip(storage, [session]);
 
     expect(Object.keys(unzipped).sort()).toEqual([...FILES].sort());
     expect(unzipped['manifest.json']).toEqual({
@@ -73,10 +71,15 @@ describe('buildBackupFiles', () => {
       app: APP,
       files: FILES.slice(1),
     });
-    expect(unzipped['lab-reports.json']).toEqual(await buildExportEnvelope([session], { subject: 'Alex' }));
+    expect(unzipped[REPORT]).toMatchObject({
+      schema: '3.2',
+      lastUpdatedDate: NOW.toISOString(),
+      diagnosticReports: [{ lab: session.place, observations: [{ loinc: '2093-3', rawName: 'Total Cholesterol', value: 186, rawUnit: 'mg/dL' }] }],
+    });
+    expect(unzipped[REPORT]).not.toHaveProperty('generatedAt');
     expect(unzipped['medications.json']).toEqual(medications);
     expect(unzipped['scheduled-visits.json']).toEqual(scheduled);
-    expect(unzipped['laboratory-prices.json']).toEqual(laboratories);
+    expect(unzipped).not.toHaveProperty('laboratory-prices.json');
     expect(unzipped['settings.json']).toEqual({
       bloodtests_view_settings_v1: { unitSystem: 'us', sampleLimit: 'all' },
       'exploreEv:all:meds': '0',
@@ -85,14 +88,19 @@ describe('buildBackupFiles', () => {
     });
   });
 
-  it('exports an empty database', async () => {
-    const unzipped = await unzip(fakeStorage({}), []);
+  it('exports an empty database as a bare manifest', () => {
+    const unzipped = unzip(fakeStorage({}), []);
 
-    expect(Object.keys(unzipped).sort()).toEqual([...FILES].sort());
-    expect((unzipped['lab-reports.json'] as { diagnosticReports: unknown[] }).diagnosticReports).toEqual([]);
-    expect(unzipped['medications.json']).toEqual({ years: [2026], rows: [] });
-    expect(unzipped['scheduled-visits.json']).toEqual({ visits: [] });
-    expect(unzipped['settings.json']).toEqual({});
+    expect(Object.keys(unzipped)).toEqual(['manifest.json']);
+    expect((unzipped['manifest.json'] as { files: string[] }).files).toEqual([]);
+  });
+
+  it('writes the file of a session that has none once, with no unit derived from rawUnit', () => {
+    const unzipped = unzip(fakeStorage({}), [session]);
+
+    const observation = (unzipped[REPORT] as { diagnosticReports: { observations: Record<string, unknown>[] }[] }).diagnosticReports[0]!.observations[0]!;
+    expect(observation).not.toHaveProperty('unit');
+    expect(observation.rawUnit).toBe('mg/dL');
   });
 });
 

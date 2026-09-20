@@ -36,7 +36,7 @@ const routeFallback = <EmptyState style={{ minHeight: 400 }}>Loading…</EmptySt
 
 export function MedicalConditionsPage() {
   const { analysesCatalog, panels, monitoringPanels } = useData();
-  const { sessions, loadGroupItems, loadGenerated, uploadFile, updateGroup, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
+  const { sessions, loadGroupItems, loadGenerated, addUpload, restoreReportFiles, uploadFile, updateGroup, clearData, error: uploadError, sharedLinkError, sharedMeta } = useResultsContext();
 
   const validationIssues = useMemo(() => validateDiagnosticReports(sessions), [sessions]);
   const hasValidationErrors = hasErrors(validationIssues);
@@ -70,7 +70,7 @@ export function MedicalConditionsPage() {
   const onImportAll = async (backup: BackupContents) => {
     const lines = await restoreBackup(backup, {
       clearReports: clearData,
-      importReports: (text) => uploadFile(new File([text], 'lab-reports.json', { type: 'application/json' })),
+      importReports: restoreReportFiles,
     });
     reloadStoredState();
     return lines;
@@ -95,7 +95,7 @@ export function MedicalConditionsPage() {
     <DiagnosticReportsView
       sessions={sessions}
       onOpenDetail={(file) => navigate({ view: 'report', file })}
-      onAddReports={loadGenerated}
+      onAddReports={addUpload}
       onClear={clearData}
     />
   );

@@ -3,7 +3,7 @@
 export const SCHEMA_MAJOR = 3;
 
 /** What this build writes; bump the minor on every envelope change. */
-export const SCHEMA_VERSION = `${SCHEMA_MAJOR}.1`;
+export const SCHEMA_VERSION = `${SCHEMA_MAJOR}.2`;
 
 // The bare number 3 is read as `3.0`; the bare string "3" is not.
 const LEGACY_NUMERIC_VERSION = SCHEMA_MAJOR;

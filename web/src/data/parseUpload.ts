@@ -14,7 +14,7 @@ export const UNKNOWN_LAB = 'Unknown Lab';
 // older shapes go through `npm run convert:v3` first (ADR-0009). Every import
 // route passes through here, so this is the one place unit normalization runs.
 
-function slugify(text: string): string {
+export function slugify(text: string): string {
   const value = (text || 'unknown').trim().toLowerCase().replaceAll('/', ' ');
   // Split on non-alphanumeric runs and rejoin: same slug, no trailing-anchor
   // regex (which Sonar flags for super-linear backtracking).
@@ -62,7 +62,7 @@ function v3ToResult(obs: InterchangeObservation): Result {
   });
 }
 
-function v3ToGroup(report: InterchangeReport, index: number): DiagnosticReport {
+function v3ToGroup(report: InterchangeReport, index: number, sourcePath?: string): DiagnosticReport {
   if (!Array.isArray(report.observations)) {
     throw new UploadParseError(`DiagnosticReport at index ${index} is missing observations array`);
   }
@@ -87,6 +87,7 @@ function v3ToGroup(report: InterchangeReport, index: number): DiagnosticReport {
     file: `${date}__${slugify(place)}${identSuffix}`,
     items,
     itemCount: items.length,
+    ...(sourcePath !== undefined && { source: { path: sourcePath, index } }),
   };
 }
 
@@ -98,10 +99,11 @@ function isV3Envelope(x: unknown): x is InterchangeEnvelope {
 
 export class UploadParseError extends Error {}
 
-export function parseUploadedResults(data: unknown): DiagnosticReport[] {
+/** With `sourcePath`, each session records which stored file (and position in it) it was read from. */
+export function parseUploadedResults(data: unknown, sourcePath?: string): DiagnosticReport[] {
   if (!isV3Envelope(data)) {
     throw new UploadParseError(
-      'Unrecognized JSON shape. Expected a v3 interchange envelope shaped like { "schema": "3.1", "diagnosticReports": [...] } — any "3.x" version is read, as is the legacy number 3. An older file has to be converted first.'
+      'Unrecognized JSON shape. Expected a v3 interchange envelope shaped like { "schema": "3.2", "diagnosticReports": [...] } — any "3.x" version is read, as is the legacy number 3. An older file has to be converted first.'
     );
   }
 
@@ -109,7 +111,7 @@ export function parseUploadedResults(data: unknown): DiagnosticReport[] {
     if (data.diagnosticReports.length === 0) {
       throw new UploadParseError('diagnosticReports must be a non-empty array.');
     }
-    const groups = data.diagnosticReports.map((report, i) => v3ToGroup(report, i));
+    const groups = data.diagnosticReports.map((report, i) => v3ToGroup(report, i, sourcePath));
     return groups.sort((a, b) => b.date.localeCompare(a.date));
   } catch (e) {
     if (e instanceof UploadParseError) throw e;

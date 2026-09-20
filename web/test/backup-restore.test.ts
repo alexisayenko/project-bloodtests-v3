@@ -3,13 +3,14 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { buildBackupFiles, isUserDataKey, USER_DATA_KEYS, zipBackupFiles, type StorageReader } from '../src/data/backupArchive';
 import { BackupImportError, clearAllData, readBackup, restoreBackup, unzipBackup } from '../src/data/backupRestore';
 import { ENVELOPE_META_KEY, loadEnvelopeMeta } from '../src/data/envelopeMeta';
-import { importResults } from '../src/data/importResults';
+import { replaceReportFiles } from '../src/data/importResults';
 import { loadMedications, MEDICATIONS_KEY } from '../src/data/storage/medications';
 import { RESULTS_STORAGE_KEY } from '../src/data/storage/resultsStorage';
 import { IMPORTED_LINKS_KEY } from '../src/data/sharedLink';
 import { SHARED_META_KEY } from '../src/data/sharedMeta';
 import { loadScheduled, SCHEDULED_KEY } from '../src/data/storage/scheduledVisits';
 import { VIEW_SETTINGS_KEY } from '../src/data/storage/viewSettings';
+import type { DiagnosticReport } from '../src/types';
 import { makeResult, makeSession } from './helpers/fixtures';
 import { installMemoryStorage } from './helpers/storage';
 
@@ -38,7 +39,7 @@ let store: Map<string, string>;
 
 function seed() {
   store.set(RESULTS_STORAGE_KEY, JSON.stringify([session]));
-  store.set(ENVELOPE_META_KEY, JSON.stringify({ subject: 'Alex' }));
+  store.set(ENVELOPE_META_KEY, JSON.stringify({ sex: 'female' }));
   store.set(MEDICATIONS_KEY, JSON.stringify(MEDICATIONS));
   store.set(SCHEDULED_KEY, JSON.stringify(STORED_SCHEDULED));
   store.set(SHARED_META_KEY, JSON.stringify({ showPanels: ['Lipids'] }));
@@ -47,14 +48,16 @@ function seed() {
   for (const [key, value] of Object.entries(SETTINGS)) store.set(key, value);
 }
 
-async function exportZip(): Promise<Record<string, string>> {
-  const files = await buildBackupFiles({ sessions: [session], meta: { subject: 'Alex' }, storage: localStorage, app: APP, now: NOW });
+const REPORT = 'reports/2026-08-26__quest.json';
+
+function exportZip(): Record<string, string> {
+  const files = buildBackupFiles({ sessions: [session], storage: localStorage, app: APP, now: NOW });
   return unzipBackup(zipBackupFiles(files, { zipSync, strToU8 }), { unzipSync, strFromU8 });
 }
 
 const deps = {
   clearReports: () => localStorage.removeItem(RESULTS_STORAGE_KEY),
-  importReports: (text: string) => void importResults(JSON.parse(text)),
+  importReports: (files: Record<string, string>) => void replaceReportFiles(files, NOW),
 };
 
 function without(files: Record<string, string>, ...names: string[]): Record<string, string> {
@@ -79,7 +82,7 @@ afterEach(() => {
 describe('restoreBackup', () => {
   it('round-trips an export: reports, medications, schedule and settings come back, link state does not', async () => {
     seed();
-    const files = await exportZip();
+    const files = exportZip();
     store.clear();
     store.set(MEDICATIONS_KEY, JSON.stringify({ years: [2026], rows: [{ id: 'x', name: 'Other', dosage: '', months: [] }] }));
     store.set(SHARED_META_KEY, JSON.stringify({ showPanels: ['Thyroid'] }));
@@ -90,16 +93,15 @@ describe('restoreBackup', () => {
     expect(loadScheduled()).toEqual(SCHEDULED);
     for (const [key, value] of Object.entries(SETTINGS)) expect(store.get(key)).toBe(value);
     expect((JSON.parse(store.get(RESULTS_STORAGE_KEY)!) as DiagnosticReport[]).map((s) => s.date)).toEqual([session.date]);
-    expect(loadEnvelopeMeta().subject).toBe('Alex');
     expect(store.has(SHARED_META_KEY)).toBe(false);
     expect(lines).toContain('Lab reports: 1 report restored.');
     expect(lines).toContain('Scheduled visits: 1 visit with 1 observation and 1 index restored.');
-    expect(lines).toContain('Laboratory prices: not restored; the prices that ship with the app are used.');
+    expect(lines).toContain('Laboratory prices: ship with the app, nothing to restore.');
   });
 
   it('leaves a part missing from the zip empty', async () => {
     seed();
-    const files = without(await exportZip(), 'medications.json', 'settings.json');
+    const files = without(exportZip(), 'medications.json', 'settings.json');
 
     const lines = await importFiles(files);
 
@@ -112,7 +114,7 @@ describe('restoreBackup', () => {
 
   it('reports one line per part, in order, for a backup holding only its manifest', async () => {
     seed();
-    const files = without(await exportZip(), 'lab-reports.json', 'medications.json', 'scheduled-visits.json', 'settings.json', 'laboratory-prices.json');
+    const files = without(exportZip(), REPORT, 'medications.json', 'scheduled-visits.json', 'settings.json');
 
     const lines = await importFiles(files);
 
@@ -128,7 +130,7 @@ describe('restoreBackup', () => {
   });
 
   it('restores an exported empty database', async () => {
-    const files = await exportZip().then((f) => ({ ...f, 'lab-reports.json': JSON.stringify({ schema: '3.1', diagnosticReports: [] }) }));
+    const files = { ...exportZip(), [REPORT]: JSON.stringify({ schema: '3.1', diagnosticReports: [] }) };
     seed();
 
     const lines = await importFiles(files);
@@ -137,9 +139,19 @@ describe('restoreBackup', () => {
     expect(lines).toContain('Lab reports: 0 reports restored.');
   });
 
+  it('takes the printed sex from a report file, and keeps the file itself as it was', async () => {
+    seed();
+    const text = JSON.stringify({ ...JSON.parse(exportZip()[REPORT]!), sex: 'female', subject: 'p-x' }, null, 4);
+
+    await importFiles({ ...exportZip(), [REPORT]: text });
+
+    expect(loadEnvelopeMeta()).toEqual({ sex: 'female' });
+    expect(buildBackupFiles({ sessions: JSON.parse(store.get(RESULTS_STORAGE_KEY)!), storage: localStorage, app: APP, now: NOW })[REPORT]).toBe(text);
+  });
+
   it('restores a backup whose visit still carries a laboratory, and stores it without one', async () => {
     seed();
-    const files = { ...(await exportZip()), 'scheduled-visits.json': JSON.stringify(STORED_SCHEDULED) };
+    const files = { ...exportZip(), 'scheduled-visits.json': JSON.stringify(STORED_SCHEDULED) };
 
     await importFiles(files);
 
@@ -149,7 +161,7 @@ describe('restoreBackup', () => {
 
   it('restores a pre-redesign backup (one schedule, no visits list) by migrating it into a single visit', async () => {
     seed();
-    const files = { ...(await exportZip()), 'scheduled-visits.json': JSON.stringify(LEGACY_STORED_SCHEDULED) };
+    const files = { ...exportZip(), 'scheduled-visits.json': JSON.stringify(LEGACY_STORED_SCHEDULED) };
 
     await importFiles(files);
 
@@ -169,7 +181,7 @@ describe('readBackup rejects and nothing is cleared', () => {
   }
 
   it('a missing manifest', async () => {
-    await expectRejected(without(await exportZip(), 'manifest.json'));
+    await expectRejected(without(exportZip(), 'manifest.json'));
   });
 
   it.each([
@@ -177,26 +189,25 @@ describe('readBackup rejects and nothing is cleared', () => {
     ['another version', { format: 'blood-tests-backup', version: 2, files: [] }],
     ['not an object', ['blood-tests-backup']],
   ])('a manifest with %s', async (_label, manifest) => {
-    await expectRejected({ ...(await exportZip()), 'manifest.json': JSON.stringify(manifest) });
+    await expectRejected({ ...exportZip(), 'manifest.json': JSON.stringify(manifest) });
   });
 
   it.each([
     ['medications.json', '{"years": [2026], "rows": ['],
     ['scheduled-visits.json', 'not json'],
     ['settings.json', '{'],
-    ['lab-reports.json', '{"schema": "3.1", "diagnosticReports": [{}'],
-    ['laboratory-prices.json', '['],
+    [REPORT, '{"schema": "3.1", "diagnosticReports": [{}'],
   ])('malformed JSON in %s', async (name, text) => {
-    await expectRejected({ ...(await exportZip()), [name]: text });
+    await expectRejected({ ...exportZip(), [name]: text });
   });
 
   it.each([
     ['medications.json', '[]'],
     ['scheduled-visits.json', '{"loincs": []}'],
     ['settings.json', '{"bloodtests_lang": "en"}'],
-    ['lab-reports.json', '{"schema": 1, "diagnosticReports": []}'],
+    [REPORT, '{"schema": 1, "diagnosticReports": []}'],
   ])('a %s of the wrong shape', async (name, text) => {
-    await expectRejected({ ...(await exportZip()), [name]: text });
+    await expectRejected({ ...exportZip(), [name]: text });
   });
 
   it('bytes that are not a zip', () => {
@@ -231,7 +242,7 @@ describe('clearAllData', () => {
       },
     };
 
-    await buildBackupFiles({ sessions: [session], storage: recording, app: APP, now: NOW });
+    buildBackupFiles({ sessions: [session], storage: recording, app: APP, now: NOW });
 
     expect(read.size).toBeGreaterThan(0);
     for (const key of read) expect(isUserDataKey(key)).toBe(true);

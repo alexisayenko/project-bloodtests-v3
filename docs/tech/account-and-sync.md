@@ -53,8 +53,13 @@ private repo `alexisayenko/data-storage`, `paneloom/users/<email>/`:
 - `manifest.json`.
 
 `laboratory-prices.json` is never synced (the shipped registry wins, as in
-local restore). `data/reportFiles.ts` splits the local `lab-reports.json` into
-report files on push and merges them back, newest date first, on pull.
+local restore). The files are verbatim ([ADR-0028](decisions/adr-0028-verbatim-import-export.md)):
+a pull returns the folder's texts unchanged, `data/importResults.ts` holds them
+next to the parsed sessions (`data/storage/heldFiles.ts`, key
+`paneloom_held_files_v1`), and a push sends those texts back byte for byte. A
+new upload is split into per-report files by `data/reportFiles.ts` from the
+original objects; an edit re-serializes only its own file; a deleted report's
+file is removed from the next push.
 
 Guards, all client-side in `sync.ts`:
 
@@ -62,9 +67,12 @@ Guards, all client-side in `sync.ts`:
   imported, so an empty or settings-only folder cannot wipe local data.
 - A push with none of those returns `false` and sends nothing; the Worker
   rejects it too.
-- The manifest carries a timestamp, so it is resent verbatim while nothing
-  else differs from the last pull or push (a digest kept in
-  `paneloom_cloud_baseline_v1`); an unchanged push therefore makes no commit.
+- The manifest carries a timestamp, so the held one is resent verbatim while
+  the payload digest is unchanged (kept in `paneloom_held_files_v1`); a
+  pull-then-push with no edits therefore makes no commit. A cloud folder with
+  no manifest gets one on the first push.
+- Sign-out pushes the held files first, without pulling, and wipes local data
+  only when that push saved; an empty local set is never pushed over the cloud.
 
 - **Signing in** pulls and restores an existing folder through the same
   `onImportAll` Import-all-data uses (cloud wins, local discarded) or, if the
@@ -201,30 +209,34 @@ applied to new instances.
 
 ## Database details
 
-Subject / sex / birth year / notes plus a read-only `generatedAt` stamped on
-each export, persisted under `bloodtests_envelope_meta_v1` and written into
-the export envelope with empty fields omitted. Always expanded. `sex` picks a
-sex-dependent index's band ([`computed-indices.md`](computed-indices.md));
-`birthYear` is not read.
+Only `sex`, persisted under `bloodtests_envelope_meta_v1`; it picks a
+sex-dependent index's band ([`computed-indices.md`](computed-indices.md)) and
+is read from an imported file's own `sex`. Nothing here is written into an
+export: the stored files keep their own subject, birth year and notes, and the
+card no longer edits them.
 
 ## Export, import, clear
 
-- **Export all data** downloads `blood-tests-backup-<yyyymmdd>.zip` —
-  `lab-reports.json` (the Export JSON envelope,
-  [`interchange-format.md`](interchange-format.md)), `medications.json`,
-  `scheduled-visits.json`, `laboratory-prices.json`, `settings.json` (view
-  settings and per-panel chart preferences, only keys that exist) and
-  `manifest.json` — built by `data/backupArchive.ts` and zipped with `fflate`,
-  loaded by dynamic `import()` on click.
+- **Export all data** downloads `blood-tests-backup-<yyyymmdd>.zip` in exactly
+  the stored layout: `reports/YYYY-MM-DD__<lab>.json` files as held (verbatim),
+  `medications.json`, `scheduled-visits.json`, `settings.json` (held as
+  imported until changed, then rebuilt from storage) and `manifest.json`
+  (the held one while the payload is unchanged) — built by
+  `data/backupArchive.ts` and zipped with `fflate`, loaded by dynamic
+  `import()` on click. `laboratory-prices.json` is no longer written. Export
+  reads no envelope metadata from `localStorage`.
 - **Import all data** reads such a zip through `data/backupRestore.ts`: the
   manifest (`format: "blood-tests-backup"`, `version: 1`) and every present
   part are parsed and shape-checked before anything changes, so a bad file
-  changes nothing; after a confirm it runs Clear all data, then restores
-  `lab-reports.json` through the same replacing import as Import JSON
-  (Database details from its envelope) and medications, scheduled visits and
-  settings through their own modules' save functions — a part missing from
-  the zip left empty, `laboratory-prices.json` never restored — reporting per
-  part.
+  changes nothing; after a confirm it runs Clear all data, then holds the
+  report files as they are (`replaceReportFiles`) and restores medications,
+  scheduled visits and settings through their own modules' save functions — a
+  part missing from the zip left empty, a `laboratory-prices.json` accepted
+  but not restored — reporting per part. The legacy `lab-reports.json` zip
+  and single-envelope JSON uploads are still read; a single-envelope upload
+  is the one path that produces files (split per report, `lastUpdatedDate`
+  set). The held store roughly doubles the report bytes in `localStorage`
+  (about 190 KB + 97 KB for two real folders against a quota of about 5 MB).
 - **Clear all data** is a `DangerCard` gated by a press-and-hold
   (`HoldToClearButton`: mouse / touch / keyboard, a 2-second hold whose
   progress fills the button; letting go early cancels). It runs the reports'

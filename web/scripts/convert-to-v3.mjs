@@ -21,7 +21,7 @@ const isCurrentMajor = (v) => v === SCHEMA_MAJOR || (typeof v === 'string' && MI
 const isAcceptedEnvelopeVersion = (v) => v === 1 || isCurrentMajor(v);
 const COMPARATORS = new Set(['<', '<=', '>=', '>']);
 const META_KEYS = ['subject', 'sex', 'birthYear', 'notes'];
-const RESTAMPED_KEYS = new Set(['schema', 'generatedAt', 'contentHash', 'diagnosticReports']);
+const RESTAMPED_KEYS = new Set(['schema', 'contentHash', 'diagnosticReports']);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const V2_LOINC_RE = /^\d+-\d$/;
 
@@ -317,7 +317,6 @@ function contentHashOf(reports) {
 function buildEnvelope(reports, source) {
   const envelope = {
     schema: SCHEMA_VERSION,
-    generatedAt: new Date().toISOString(),
     contentHash: contentHashOf(reports),
     diagnosticReports: reports,
   };

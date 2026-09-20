@@ -74,10 +74,17 @@ export interface Result {
   canonical?: { value: number; unit: string };
 }
 
+/** Where a session's report lives in the held stored files: the file and its position in `diagnosticReports`. */
+export interface ReportSource {
+  path: string;
+  index: number;
+}
+
 export interface DiagnosticReport {
   date: string;
   place: string;
   file: string; // stable session id
   items: Result[] | null;
   itemCount: number;
+  source?: ReportSource;
 }

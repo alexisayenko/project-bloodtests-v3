@@ -9,7 +9,7 @@ import {
   stripDataParam,
 } from './sharedLink';
 import { RESULTS_STORAGE_KEY as STORAGE_KEY, parseStoredSessions } from './storage/resultsStorage';
-import { importResults } from './importResults';
+import { addResults, addSessions, clearStoredResults, editSession, importResults, replaceReportFiles, settleStoredSessions } from './importResults';
 import { applySharedMeta, clearSharedMeta, loadStoredSharedMeta, type SharedMeta } from './sharedMeta';
 
 interface ResultsContextType {
@@ -20,6 +20,8 @@ interface ResultsContextType {
   sharedLinkError: string | null;
   sharedMeta: SharedMeta | null;
   uploadFile: (file: File) => Promise<void>;
+  addUpload: (json: unknown, text?: string) => number;
+  restoreReportFiles: (files: Record<string, string>) => void;
   loadGenerated: (groups: DiagnosticReport[]) => void;
   loadGroupItems: (sessionId: string) => Promise<Result[]>;
   updateGroup: (file: string, updatedGroup: DiagnosticReport) => void;
@@ -31,7 +33,7 @@ const ResultsContext = createContext<ResultsContextType>(null!);
 export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [sessions, setSessions] = useState<DiagnosticReport[]>(() => {
     try {
-      return parseStoredSessions(localStorage.getItem(STORAGE_KEY));
+      return settleStoredSessions(parseStoredSessions(localStorage.getItem(STORAGE_KEY)));
     } catch {
       return [];
     }
@@ -40,17 +42,6 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   const [error, setError] = useState<string | null>(null);
   const [sharedLinkError, setSharedLinkError] = useState<string | null>(null);
   const [sharedMeta, setSharedMeta] = useState<SharedMeta | null>(loadStoredSharedMeta);
-
-  // An incoming session replaces an existing one with the same `file` id.
-  const mergeSessions = useCallback((incoming: DiagnosticReport[]) => {
-    setSessions((prev) => {
-      const byFile = new Map(prev.map((g) => [g.file, g]));
-      for (const g of incoming) byFile.set(g.file, g);
-      const merged = Array.from(byFile.values()).sort((a, b) => b.date.localeCompare(a.date));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      return merged;
-    });
-  }, []);
 
   // Share link: imported through the same replace path as an upload.
   useEffect(() => {
@@ -90,16 +81,17 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
   const uploadFile = useCallback(async (file: File) => {
     setError(null);
 
+    const text = await file.text();
     let json: unknown;
     try {
-      json = JSON.parse(await file.text());
+      json = JSON.parse(text);
     } catch {
       setError('That file is not valid JSON.');
       return;
     }
 
     try {
-      setSessions(importResults(json));
+      setSessions(importResults(json, text));
       // A replacing import leaves a share link's meta nothing to belong to.
       clearSharedMeta();
       setSharedMeta(null);
@@ -108,34 +100,43 @@ export function ResultsProvider({ children }: Readonly<{ children: ReactNode }>)
     }
   }, []);
 
+  // A zip or cloud folder: its report files are held as they are.
+  const restoreReportFiles = useCallback((files: Record<string, string>) => {
+    setError(null);
+    setSessions(replaceReportFiles(files));
+  }, []);
+
+  const addUpload = useCallback((json: unknown, text?: string): number => {
+    const { sessions: next, added } = addResults(sessions, json, text);
+    setError(null);
+    setSessions(next);
+    return added;
+  }, [sessions]);
+
   const loadGenerated = useCallback((groups: DiagnosticReport[]) => {
     setError(null);
-    mergeSessions(groups);
-  }, [mergeSessions]);
+    setSessions((prev) => addSessions(prev, groups));
+  }, []);
 
   const loadGroupItems = useCallback(async (sessionId: string): Promise<Result[]> => {
     return sessions.find(s => s.file === sessionId)?.items || [];
   }, [sessions]);
 
   const updateGroup = useCallback((file: string, updatedGroup: DiagnosticReport) => {
-    setSessions((prev) => {
-      const updated = prev.map((g) => (g.file === file ? updatedGroup : g));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+    setSessions((prev) => editSession(prev, file, updatedGroup));
   }, []);
 
   const clearData = useCallback(() => {
     setSessions([]);
     setError(null);
-    localStorage.removeItem(STORAGE_KEY);
+    clearStoredResults();
     clearSharedMeta();
     setSharedMeta(null);
   }, []);
 
   const value = useMemo(
-    () => ({ sessions, hasData: sessions.length > 0, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, updateGroup, clearData }),
-    [sessions, loading, error, sharedLinkError, sharedMeta, uploadFile, loadGenerated, loadGroupItems, updateGroup, clearData]
+    () => ({ sessions, hasData: sessions.length > 0, loading, error, sharedLinkError, sharedMeta, uploadFile, addUpload, restoreReportFiles, loadGenerated, loadGroupItems, updateGroup, clearData }),
+    [sessions, loading, error, sharedLinkError, sharedMeta, uploadFile, addUpload, restoreReportFiles, loadGenerated, loadGroupItems, updateGroup, clearData]
   );
 
   return (

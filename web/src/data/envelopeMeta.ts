@@ -1,11 +1,9 @@
 export const ENVELOPE_META_KEY = 'bloodtests_envelope_meta_v1';
 
+// Device-local: the sex that picks sex-specific reference ranges. Never written into an export;
+// a stored file keeps whatever subject, sex, birthYear and notes it already carries (ADR-0028).
 export type EnvelopeMeta = {
-  generatedAt?: string;
-  subject?: string;
   sex?: 'female' | 'male';
-  birthYear?: number;
-  notes?: string;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -14,13 +12,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 export function sanitizeEnvelopeMeta(raw: unknown): EnvelopeMeta {
   if (!isRecord(raw)) return {};
-  const out: EnvelopeMeta = {};
-  if (typeof raw.generatedAt === 'string') out.generatedAt = raw.generatedAt;
-  if (typeof raw.subject === 'string') out.subject = raw.subject;
-  if (raw.sex === 'female' || raw.sex === 'male') out.sex = raw.sex;
-  if (typeof raw.birthYear === 'number' && Number.isFinite(raw.birthYear)) out.birthYear = raw.birthYear;
-  if (typeof raw.notes === 'string') out.notes = raw.notes;
-  return out;
+  return raw.sex === 'female' || raw.sex === 'male' ? { sex: raw.sex } : {};
 }
 
 export function loadEnvelopeMeta(): EnvelopeMeta {

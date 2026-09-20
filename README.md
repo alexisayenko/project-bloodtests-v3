@@ -10,7 +10,7 @@ React 19 + TypeScript + Vite app in `web/`, with no database of its own (the Wor
 
 1. **Build JSON:** Generate v3-format lab data (chatbot or manual).
 2. **Upload & Edit:** Import into app; validate; refine in Diagnostic Reports view.
-3. **Export:** Download updated v3 envelope with new `contentHash`.
+3. **Export:** Download the stored per-report files as a zip, byte for byte as imported (verbatim, [ADR-0028](docs/tech/decisions/adr-0028-verbatim-import-export.md)).
 
 See [`CLAUDE.md`](CLAUDE.md) for the fast-path summary, [`docs/tech/diagnostic-reports.md`](docs/tech/diagnostic-reports.md) for the workflow's implementation, and [`docs/tech/README.md`](docs/tech/README.md) for the other subsystem pages.
 
@@ -90,8 +90,8 @@ coverage by construction.
 
 ## Key implementation details
 
-- **Upload:** v3 envelope JSON (major version 3 only — `schema` is the `"major.minor"` string, currently `"3.1"`, and any `"3.x"` is accepted, plus the legacy bare number `3` read as 3.0; see [ADR-0012](docs/tech/decisions/adr-0012-envelope-version-is-a-major-minor-string.md)) with a DiagnosticReport array, each observation's printed test name in `rawName`. Nothing else is accepted — `schema: 1`, v2 canonical-draws and two legacy array shapes were dropped in [ADR-0009](docs/tech/decisions/adr-0009-v3-only-and-rawname.md); older files are converted once with `npm run convert:v3`. Parser in `web/src/data/parseUpload.ts`.
-- **Export:** v3 envelope with `generatedAt`, `contentHash` for change detection, and optional subject/sex/birthYear/notes metadata; some fields aren't written yet — see [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md) for exactly what's implemented.
+- **Upload:** v3 envelope JSON (major version 3 only — `schema` is the `"major.minor"` string, currently `"3.2"`, and any `"3.x"` is accepted, plus the legacy bare number `3` read as 3.0; see [ADR-0012](docs/tech/decisions/adr-0012-envelope-version-is-a-major-minor-string.md)) with a DiagnosticReport array, each observation's printed test name in `rawName`. Nothing else is accepted — `schema: 1`, v2 canonical-draws and two legacy array shapes were dropped in [ADR-0009](docs/tech/decisions/adr-0009-v3-only-and-rawname.md); older files are converted once with `npm run convert:v3`. Parser in `web/src/data/parseUpload.ts`.
+- **Export:** the stored files, verbatim — one `reports/YYYY-MM-DD__<lab>.json` per report, plus medications, scheduled visits, settings and a manifest, exactly as imported or pulled; nothing is recalculated or rebuilt. A file the app itself creates or edits carries `lastUpdatedDate`; `generatedAt` is deprecated and no longer written. See [`docs/tech/interchange-format.md`](docs/tech/interchange-format.md).
 - **Schema:** the envelope's machine-readable form is published at [`paneloom.com/schema/bloodtests-3.schema.json`](https://paneloom.com/schema/bloodtests-3.schema.json) (JSON Schema draft 2020-12, source `web/public/schema/`). It describes major version 3 only — every minor within it — and so does the upload parser.
 - **Validation:** Two tiers — errors (missing name or value, or a non-LOINC-shaped code) disable Monitoring Panels, Hormonal Pathways, Lipid Transport and All Observations (redirecting to Diagnostic Reports) until fixed; warnings (empty LOINC, missing unit or reference range, a unit whose dimension contradicts the code, a unit that maps to no UCUM code) are informational. See [`docs/tech/diagnostic-reports.md`](docs/tech/diagnostic-reports.md).
 - **LOINC:** All matching/joins use LOINC only; names are provenance. A missing code is a warning (the observation just won't appear in panels), fixable by inline edit in the Diagnostic Report detail view; a "Cross-check LOINCs" pass verifies codes against the local catalog, suggests codes for codeless rows, and can optionally query the NLM online for the rest.

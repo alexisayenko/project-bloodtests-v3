@@ -1,7 +1,6 @@
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import type { DiagnosticReport } from '../../types';
 import { validateDiagnosticReports, groupHasErrors, groupHasWarnings } from '../../data/validateDiagnosticReports';
-import { parseUploadedResults } from '../../data/parseUpload';
 import { pressable } from '../primitives/styles';
 import { formatFullDate } from '../../utils/format';
 import { CHATBOT_PROMPT } from '../../data/chatbotPrompt';
@@ -93,7 +92,7 @@ export function DiagnosticReportsView({
 }: Readonly<{
   sessions: DiagnosticReport[];
   onOpenDetail: (file: string) => void;
-  onAddReports: (groups: ReturnType<typeof parseUploadedResults>) => void;
+  onAddReports: (json: unknown, text: string) => number;
   onClear: () => void;
 }>) {
   const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -121,17 +120,16 @@ export function DiagnosticReportsView({
     // Let the browser paint "Adding…" before the synchronous parse freezes the main thread.
     await new Promise((r) => setTimeout(r, 50));
     try {
+      const text = await file.text();
       let json: unknown;
       try {
-        json = JSON.parse(await file.text());
+        json = JSON.parse(text);
       } catch {
         setAddError('Not a valid JSON file.');
         return;
       }
       try {
-        const groups = parseUploadedResults(json);
-        onAddReports(groups);
-        setAddedCount(groups.length);
+        setAddedCount(onAddReports(json, text));
         setTimeout(() => setAddedCount(null), 4000);
       } catch (e) {
         setAddError(e instanceof Error ? e.message : 'Could not parse the uploaded file.');

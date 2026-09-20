@@ -1,15 +1,92 @@
 import type { DiagnosticReport } from '../types';
 import { parseUploadedResults } from './parseUpload';
+import { filesFromUpload, patchEditedFile, resolveReportFiles } from './reportFiles';
+import { loadHeldFiles, saveHeldFiles } from './storage/heldFiles';
 import { RESULTS_STORAGE_KEY } from './storage/resultsStorage';
 
-export function replaceStoredSessions(incoming: DiagnosticReport[]): DiagnosticReport[] {
-  const sessions = [...incoming].sort((a, b) => b.date.localeCompare(a.date));
-  localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(sessions));
-  return sessions;
+// The parsed sessions are the display model; the stored files behind them (held next to them, keyed by
+// each session's `source`) are what export and sync send (ADR-0028). Every change goes through `commit`.
+
+const byDateDesc = (sessions: DiagnosticReport[]) => [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+
+function commit(sessions: DiagnosticReport[], reports: Record<string, string>, now: Date): DiagnosticReport[] {
+  const resolved = resolveReportFiles(byDateDesc(sessions), reports, now);
+  saveHeldFiles({ ...loadHeldFiles(), reports: resolved.files });
+  localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(resolved.sessions));
+  return resolved.sessions;
 }
 
-// Imported JSON replaces everything stored: a throwing parse leaves the
-// previous sessions untouched, a successful one wipes them.
-export function importResults(json: unknown): DiagnosticReport[] {
-  return replaceStoredSessions(parseUploadedResults(json));
+function sessionsOfFiles(files: Record<string, string>): DiagnosticReport[] {
+  return Object.entries(files).flatMap(([path, text]) => parseUploadedResults(JSON.parse(text), path));
+}
+
+/** Stored sessions that no held file backs (older builds, generated data) get one built, once. */
+export function settleStoredSessions(sessions: DiagnosticReport[], now = new Date()): DiagnosticReport[] {
+  const held = loadHeldFiles().reports;
+  if (sessions.length === 0 && Object.keys(held).length === 0) return sessions;
+  const resolved = resolveReportFiles(sessions, held, now);
+  const changed = resolved.sessions.some((s, i) => s !== sessions[i]) || Object.keys(resolved.files).length !== Object.keys(held).length;
+  if (!changed) return sessions;
+  try {
+    return commit(resolved.sessions, resolved.files, now);
+  } catch {
+    return resolved.sessions;
+  }
+}
+
+/** Backup zip or cloud pull: the files are held exactly as they came in. Replaces everything stored. */
+export function replaceReportFiles(files: Record<string, string>, now = new Date()): DiagnosticReport[] {
+  return commit(sessionsOfFiles(files), files, now);
+}
+
+// A throwing parse leaves the previous sessions untouched, a successful one wipes them.
+export function importResults(json: unknown, text?: string, now = new Date()): DiagnosticReport[] {
+  parseUploadedResults(json);
+  return replaceReportFiles(filesFromUpload(json as Record<string, unknown>, text, new Set(), now), now);
+}
+
+/** A same-id session is replaced, so its file is freed for the new one. */
+export function addResults(
+  current: DiagnosticReport[],
+  json: unknown,
+  text?: string,
+  now = new Date()
+): { sessions: DiagnosticReport[]; added: number } {
+  const incomingIds = new Set(parseUploadedResults(json).map((s) => s.file));
+  const kept = current.filter((s) => !incomingIds.has(s.file));
+  const reports = loadHeldFiles().reports;
+  const stillUsed = new Set(kept.flatMap((s) => (s.source ? [s.source.path] : [])));
+  const taken = new Set(Object.keys(reports).filter((path) => stillUsed.has(path)));
+  const files = filesFromUpload(json as Record<string, unknown>, text, taken, now);
+  const incoming = sessionsOfFiles(files);
+  const sessions = commit([...kept, ...incoming], { ...reports, ...files }, now);
+  return { sessions, added: incoming.length };
+}
+
+/** Sessions with no stored file yet (generated test data) are merged in by id and given one. */
+export function addSessions(current: DiagnosticReport[], incoming: DiagnosticReport[], now = new Date()): DiagnosticReport[] {
+  const byFile = new Map(current.map((s) => [s.file, s]));
+  for (const s of incoming) byFile.set(s.file, s);
+  return commit([...byFile.values()], loadHeldFiles().reports, now);
+}
+
+/** Only the edited observation fields of the stored file change; the file is stamped `lastUpdatedDate`. */
+export function editSession(current: DiagnosticReport[], file: string, updated: DiagnosticReport, now = new Date()): DiagnosticReport[] {
+  const previous = current.find((s) => s.file === file);
+  const reports = { ...loadHeldFiles().reports };
+  const source = previous?.source;
+  if (previous && source && reports[source.path] !== undefined) {
+    reports[source.path] = patchEditedFile(reports[source.path], source.index, previous.items ?? [], updated.items ?? [], now);
+  }
+  const edited = { ...updated, ...(source && { source }) };
+  return commit(current.map((s) => (s.file === file ? edited : s)), reports, now);
+}
+
+export function clearStoredResults(): void {
+  try {
+    saveHeldFiles({ ...loadHeldFiles(), reports: {} });
+    localStorage.removeItem(RESULTS_STORAGE_KEY);
+  } catch {
+    // storage unavailable
+  }
 }

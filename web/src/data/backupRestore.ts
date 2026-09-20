@@ -1,26 +1,34 @@
 import type { strFromU8, unzipSync } from 'fflate';
-import { BACKUP_FORMAT, BACKUP_VERSION, USER_DATA_KEYS, isSettingsKey, isUserDataKey } from './backupArchive';
-import { sanitizeEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from './envelopeMeta';
+import { BACKUP_FORMAT, BACKUP_VERSION, USER_DATA_KEYS, isSettingsKey, isUserDataKey, localFileStates } from './backupArchive';
+import { saveEnvelopeMeta } from './envelopeMeta';
 import { isAcceptedSchemaVersion } from './envelopeSchema';
 import { isMedicationsShape, parseMedications, saveMedications, type Medications } from './storage/medications';
 import { parseUploadedResults, UploadParseError } from './parseUpload';
+import { filesFromUpload, isReportPath } from './reportFiles';
+import { loadHeldFiles, payloadDigest, saveHeldFiles } from './storage/heldFiles';
 import { clearSharedMeta } from './sharedMeta';
 import { isScheduledShape, parseScheduled, saveScheduled, type ScheduledVisits } from './storage/scheduledVisits';
 import { saveViewSettings, VIEW_SETTINGS_KEY, type ViewSettings } from './storage/viewSettings';
 
 export class BackupImportError extends Error {}
 
+const LOCAL_FILE_NAMES = ['medications.json', 'scheduled-visits.json', 'settings.json'];
+
 export type BackupContents = {
-  reports?: { text: string; count: number; meta: EnvelopeMeta };
+  // Per-report files, verbatim (a legacy lab-reports.json is split into new ones).
+  reports?: { files: Record<string, string>; count: number; sex?: 'female' | 'male' };
   medications?: Medications;
   scheduled?: ScheduledVisits;
   settings?: Record<string, unknown>;
+  // The texts of medications.json, scheduled-visits.json and settings.json as they came in.
+  other: Record<string, string>;
+  manifest?: string;
   hasLaboratoryPrices: boolean;
 };
 
 export type RestoreDeps = {
   clearReports: () => void;
-  importReports: (text: string) => Promise<void> | void;
+  importReports: (files: Record<string, string>) => Promise<void> | void;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -48,25 +56,58 @@ function parsePart(files: Record<string, string>, name: string): unknown {
   }
 }
 
-function readReports(files: Record<string, string>): BackupContents['reports'] {
-  const text = files['lab-reports.json'];
-  if (text === undefined) return undefined;
-  const envelope = parsePart(files, 'lab-reports.json');
+function isEmptyEnvelope(envelope: unknown): boolean {
   // An empty envelope is rejected by the upload parser but is a valid backup of nothing.
-  const empty =
+  return (
     isRecord(envelope) &&
     isAcceptedSchemaVersion(envelope.schema) &&
     Array.isArray(envelope.diagnosticReports) &&
-    envelope.diagnosticReports.length === 0;
-  let count = 0;
-  if (!empty) {
-    try {
-      count = parseUploadedResults(envelope).length;
-    } catch (e) {
-      throw new BackupImportError(`lab-reports.json: ${e instanceof UploadParseError ? e.message : 'could not be read.'}`);
-    }
+    envelope.diagnosticReports.length === 0
+  );
+}
+
+function countReports(envelope: unknown, name: string, sourcePath?: string): number {
+  if (isEmptyEnvelope(envelope)) return 0;
+  try {
+    return parseUploadedResults(envelope, sourcePath).length;
+  } catch (e) {
+    throw new BackupImportError(`${name}: ${e instanceof UploadParseError ? e.message : 'could not be read.'}`);
   }
-  return { text, count, meta: sanitizeEnvelopeMeta(envelope) };
+}
+
+function readStoredReports(files: Record<string, string>, paths: string[]): BackupContents['reports'] {
+  const kept: Record<string, string> = {};
+  let count = 0;
+  let sex: 'female' | 'male' | undefined;
+  for (const path of paths) {
+    const envelope = parsePart(files, path);
+    const n = countReports(envelope, path, path);
+    if (n === 0) continue;
+    kept[path] = files[path];
+    count += n;
+    const printed = (envelope as Record<string, unknown>).sex;
+    if (sex === undefined && (printed === 'female' || printed === 'male')) sex = printed;
+  }
+  return { files: kept, count, ...(sex && { sex }) };
+}
+
+function readLegacyReports(files: Record<string, string>): BackupContents['reports'] {
+  const text = files['lab-reports.json'];
+  if (text === undefined) return undefined;
+  const envelope = parsePart(files, 'lab-reports.json');
+  const count = countReports(envelope, 'lab-reports.json');
+  if (count === 0) return { files: {}, count: 0 };
+  const printed = (envelope as Record<string, unknown>).sex;
+  return {
+    files: filesFromUpload(envelope as Record<string, unknown>, text, new Set(), new Date()),
+    count,
+    ...((printed === 'female' || printed === 'male') && { sex: printed }),
+  };
+}
+
+function readReports(files: Record<string, string>): BackupContents['reports'] {
+  const paths = Object.keys(files).filter(isReportPath).sort((a, b) => (a < b ? -1 : 1));
+  return paths.length > 0 ? readStoredReports(files, paths) : readLegacyReports(files);
 }
 
 function readSettings(files: Record<string, string>): BackupContents['settings'] {
@@ -83,17 +124,28 @@ function readSettings(files: Record<string, string>): BackupContents['settings']
   return settings;
 }
 
-/** Validates every part without touching storage, so a bad file changes nothing. */
-export function readBackup(files: Record<string, string>): BackupContents {
+/**
+ * Validates every part without touching storage, so a bad file changes nothing. A cloud folder is
+ * read with `manifestOptional`: it need not carry a manifest.
+ */
+export function readBackup(files: Record<string, string>, { manifestOptional = false } = {}): BackupContents {
+  let manifest: string | undefined;
   if (files['manifest.json'] === undefined) {
-    throw new BackupImportError('The zip has no manifest.json, so it is not a blood tests backup.');
-  }
-  const manifest = parsePart(files, 'manifest.json');
-  if (!isRecord(manifest) || manifest.format !== BACKUP_FORMAT || manifest.version !== BACKUP_VERSION || !Array.isArray(manifest.files)) {
-    throw new BackupImportError(`manifest.json is not a ${BACKUP_FORMAT} version ${BACKUP_VERSION} manifest.`);
+    if (!manifestOptional) throw new BackupImportError('The zip has no manifest.json, so it is not a blood tests backup.');
+  } else {
+    const parsed = parsePart(files, 'manifest.json');
+    if (!isRecord(parsed) || parsed.format !== BACKUP_FORMAT || parsed.version !== BACKUP_VERSION || !Array.isArray(parsed.files)) {
+      throw new BackupImportError(`manifest.json is not a ${BACKUP_FORMAT} version ${BACKUP_VERSION} manifest.`);
+    }
+    manifest = files['manifest.json'];
   }
 
-  const contents: BackupContents = { hasLaboratoryPrices: false, reports: readReports(files), settings: readSettings(files) };
+  const reports = readReports(files);
+  const contents: BackupContents = { hasLaboratoryPrices: false, reports, settings: readSettings(files), other: {} };
+  // A manifest listing lab-reports.json describes a layout that is not the one held.
+  const legacy = files['lab-reports.json'] !== undefined && !Object.keys(files).some(isReportPath);
+  if (manifest !== undefined && !legacy) contents.manifest = manifest;
+  for (const name of LOCAL_FILE_NAMES) if (files[name] !== undefined) contents.other[name] = files[name];
 
   if (files['medications.json'] !== undefined) {
     if (!isMedicationsShape(parsePart(files, 'medications.json'))) {
@@ -145,8 +197,8 @@ function count(n: number, one: string, many: string): string {
 
 async function restoreReports(reports: BackupContents['reports'], importReports: RestoreDeps['importReports']): Promise<string> {
   if (!reports) return 'Lab reports: not in the backup, left empty.';
-  if (reports.count > 0) await importReports(reports.text);
-  if (Object.keys(reports.meta).length > 0) saveEnvelopeMeta(reports.meta);
+  if (reports.count > 0) await importReports(reports.files);
+  if (reports.sex) saveEnvelopeMeta({ sex: reports.sex });
   return `Lab reports: ${count(reports.count, 'report', 'reports')} restored.`;
 }
 
@@ -188,15 +240,31 @@ function laboratoryPricesLine(hasLaboratoryPrices: boolean): string {
     : 'Laboratory prices: ship with the app, nothing to restore.';
 }
 
+// The texts are what export sends back; `state` lets it tell them from a later local change.
+function holdFiles(backup: BackupContents): void {
+  const held = loadHeldFiles();
+  saveHeldFiles({
+    reports: held.reports,
+    other: backup.other,
+    state: localFileStates(localStorage, new Date()),
+    ...(backup.manifest !== undefined && {
+      manifest: backup.manifest,
+      digest: payloadDigest({ ...backup.reports?.files, ...backup.other }),
+    }),
+  });
+}
+
 /** Returns one report line per part. */
 export async function restoreBackup(backup: BackupContents, deps: RestoreDeps): Promise<string[]> {
   clearAllData(deps.clearReports);
   const reportsLine = await restoreReports(backup.reports, deps.importReports);
-  return [
+  const lines = [
     reportsLine,
     restoreMedications(backup.medications),
     restoreScheduled(backup.scheduled),
     restoreSettings(backup.settings),
     laboratoryPricesLine(backup.hasLaboratoryPrices),
   ];
+  holdFiles(backup);
+  return lines;
 }

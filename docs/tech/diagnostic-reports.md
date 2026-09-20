@@ -126,14 +126,17 @@ the user signs in, the Worker's own sign-in (`/auth/*`) and its GitHub-backed sy
 
 ## 5. Export and clear
 
-Export (`utils/exportData.ts`, from Account) writes a v3 envelope —
-`schema`, `generatedAt`, `contentHash` (sha256 of the `diagnosticReports`
-array only), subject / sex / birthYear / notes when set, and reduced reports
-— as `blood-tests-export-<yyyymmdd>.json`; each observation's unit leaves as
-the `unit` / `rawUnit` pair. A first round trip gains `rawUnit` and folds
-spellings in `unit`, so it is not byte-identical; what holds, and is tested,
-is that export → import → export is byte-identical. Which envelope fields are
-implemented: [`interchange-format.md`](interchange-format.md).
+Export is verbatim ([ADR-0028](decisions/adr-0028-verbatim-import-export.md)):
+Account's "Export all data" zip holds the stored per-report files
+(`reports/YYYY-MM-DD__<lab>.json`) exactly as imported or pulled, plus the
+three local files and a manifest. Nothing is rebuilt: `unit`, `rawUnit`,
+`interpretation`, `specimen`, `contentHash`, a legacy `generatedAt` and
+`collectedAt` with its time leave as stored, and export -> import -> export is
+byte-identical. The one place a file is produced is a new upload, split into
+one single-report envelope per report from the original objects, with
+`lastUpdatedDate` set; an edit refreshes `lastUpdatedDate` in that one file
+only. Which envelope fields are implemented:
+[`interchange-format.md`](interchange-format.md).
 
 The "Clear local DB" danger card (behind a confirm) removes the loaded
 reports from this browser; Database details, backup and restore live on

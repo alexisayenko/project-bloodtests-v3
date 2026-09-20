@@ -36,10 +36,10 @@ Three callers:
   code's accepted units — another scale of the same dimension, g/L on a g/dL
   hemoglobin code, is no warning; `checkCodeUnit` decides), and a unit that
   maps to no UCUM code at all, lower-severity.
-- `utils/exportData.ts` calls `ucumUnitFor` to write the folded spelling to
-  each observation's `unit`, with the printed string beside it in `rawUnit`.
-  A unit the tables cannot place leaves `unit` absent rather than filled with
-  the printed string. See
+- Export no longer calls `ucumUnitFor`: a stored `unit` and `rawUnit` are
+  carried verbatim (ADR-0028), so nothing is folded on the way out. Only a
+  file the app builds for a session with no stored file has `rawUnit` and no
+  `unit`. See
   [`interchange-format.md`](interchange-format.md).
 
 Only the spelling is ever normalized in a file, and only in `unit`. The

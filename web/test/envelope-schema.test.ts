@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildExportEnvelope } from '../src/utils/exportData';
+import { filesFromUpload, resolveReportFiles } from '../src/data/reportFiles';
 import { SCHEMA_VERSION, isAcceptedSchemaVersion } from '../src/data/envelopeSchema';
 import type { Result, DiagnosticReport } from '../src/types';
 import { makeResult, makeSession } from './helpers/fixtures';
@@ -37,36 +37,43 @@ describe('published JSON Schema — compiles', () => {
   });
 });
 
-describe('published JSON Schema — what the app exports', () => {
-  it('accepts an envelope built by buildExportEnvelope', async () => {
-    const envelope = await buildExportEnvelope([session({})]);
+const NOW = new Date('2026-09-01T10:00:00.000Z');
+const fileOf = (session: DiagnosticReport): unknown => {
+  const { files } = resolveReportFiles([session], {}, NOW);
+  return JSON.parse(Object.values(files)[0]!);
+};
+
+describe('published JSON Schema — what the app writes', () => {
+  it('accepts a file built for a session that has none', () => {
+    const envelope = fileOf(session({}));
+
+    expect(errorsFor(envelope)).toEqual([]);
+    expect(envelope).toMatchObject({ schema: SCHEMA_VERSION, lastUpdatedDate: NOW.toISOString() });
+    expect(envelope).not.toHaveProperty('generatedAt');
+  });
+
+  it('accepts a built file whose observation has no value and no reference range', () => {
+    const envelope = fileOf(session({ items: [result({ value: null, rawValue: 'Negative', refMin: null, refMax: null, refText: '' })] }));
 
     expect(errorsFor(envelope)).toEqual([]);
   });
 
-  it('accepts an export envelope carrying every meta field', async () => {
-    const envelope = await buildExportEnvelope(
-      [
-        session({
-          items: [
-            result({ loinc: '2093-3', rawName: 'Cholesterol', value: 180 }),
-            result({ loinc: '2571-8', rawName: 'Triglycerides', value: 150, method: '' }),
-          ],
-          itemCount: 2,
-        }),
+  it('accepts each per-report file split from an upload, meta fields carried along', () => {
+    const upload = {
+      schema: '3.1',
+      subject: 'p-7fa3',
+      sex: 'female',
+      birthYear: 1972,
+      notes: 'Rebuilt from the lab PDFs.',
+      diagnosticReports: [
+        { lab: 'Lab A', collectedAt: '2026-01-10T00:00:00Z', observations: [{ loinc: '718-7', rawName: 'Hemoglobin', value: 14.2 }] },
+        { lab: 'Lab B', collectedAt: '2026-02-10T00:00:00Z', observations: [{ loinc: '718-7', rawName: 'Hemoglobin', value: 13.9 }] },
       ],
-      { subject: 'p-7fa3', sex: 'female', birthYear: 1972, notes: 'Rebuilt from the lab PDFs.' }
-    );
+    };
+    const files = filesFromUpload(upload, undefined, new Set(), NOW);
 
-    expect(errorsFor(envelope)).toEqual([]);
-  });
-
-  it('accepts an export envelope whose observation has no value and no reference range', async () => {
-    const envelope = await buildExportEnvelope([
-      session({ items: [result({ value: null, rawValue: 'Negative', refMin: null, refMax: null, refText: '' })] }),
-    ]);
-
-    expect(errorsFor(envelope)).toEqual([]);
+    expect(Object.keys(files)).toHaveLength(2);
+    for (const text of Object.values(files)) expect(errorsFor(JSON.parse(text))).toEqual([]);
   });
 });
 
@@ -113,7 +120,7 @@ describe('published JSON Schema — v3 fixtures', () => {
     expect(
       errorsFor({
         schema: 3,
-        generatedAt: '2026-08-26T21:14:09Z',
+        lastUpdatedDate: '2026-08-26T21:14:09Z',
         contentHash: `sha256:${'a'.repeat(64)}`,
         subject: 'p-7fa3',
         sex: 'female',
@@ -150,6 +157,30 @@ describe('published JSON Schema — v3 fixtures', () => {
         ],
       })
     ).toEqual([]);
+  });
+
+  it('still accepts the deprecated generatedAt on a legacy file', () => {
+    expect(
+      errorsFor({
+        schema: '3.1',
+        generatedAt: '2026-08-26T21:14:09Z',
+        diagnosticReports: [
+          { lab: 'Lab A', collectedAt: '2026-01-10T00:00:00Z', observations: [{ loinc: '718-7', rawName: 'Hemoglobin', value: 14.2 }] },
+        ],
+      })
+    ).toEqual([]);
+  });
+
+  it('rejects a lastUpdatedDate that is not a date-time', () => {
+    expect(
+      errorsFor({
+        schema: '3.2',
+        lastUpdatedDate: 'yesterday',
+        diagnosticReports: [
+          { lab: 'Lab A', collectedAt: '2026-01-10T00:00:00Z', observations: [{ loinc: '718-7', rawName: 'Hemoglobin', value: 14.2 }] },
+        ],
+      })
+    ).toContainEqual(expect.objectContaining({ instancePath: '/lastUpdatedDate', keyword: 'format' }));
   });
 
   it('accepts an unrecognised lab identifier key — objects are open for forward compatibility', () => {
@@ -294,7 +325,7 @@ describe('published JSON Schema — the schema version field', () => {
     ],
   });
 
-  it.each([3, '3.0', '3.1', '3.9', '3.10', '3.42'])('accepts %o', (version) => {
+  it.each([3, '3.0', '3.1', '3.2', '3.9', '3.10', '3.42'])('accepts %o', (version) => {
     expect(errorsFor(withVersion(version))).toEqual([]);
   });
 

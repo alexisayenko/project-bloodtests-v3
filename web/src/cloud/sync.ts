@@ -1,14 +1,8 @@
-import { BACKUP_FORMAT, BACKUP_VERSION } from '../data/backupArchive';
 import { readBackup, type BackupContents } from '../data/backupRestore';
-import { mergeFilesToLabReports, splitReportsToFiles } from '../data/reportFiles';
+import { loadHeldFiles, payloadDigest, saveHeldFiles } from '../data/storage/heldFiles';
 
 const API_PATH = '/api/data';
-const BASELINE_KEY = 'paneloom_cloud_baseline_v1';
-const PASSTHROUGH_FILES = ['medications.json', 'scheduled-visits.json', 'settings.json'];
-const REPORTS_FILE = 'lab-reports.json';
 const MANIFEST_FILE = 'manifest.json';
-
-type Baseline = { digest: string; manifest: string };
 
 export class CloudRequestError extends Error {
   readonly status: number;
@@ -32,36 +26,6 @@ async function request(method: 'GET' | 'PUT', files?: Record<string, string>): P
   return record;
 }
 
-async function digestOf(files: Record<string, string>): Promise<string> {
-  const entries = Object.entries(files).sort(([a], [b]) => (a < b ? -1 : 1));
-  const bytes = new TextEncoder().encode(JSON.stringify(entries));
-  const hash = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function loadBaseline(): Baseline | null {
-  try {
-    const raw = localStorage.getItem(BASELINE_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : null;
-    if (typeof parsed === 'object' && parsed !== null) {
-      const { digest, manifest } = parsed as Record<string, unknown>;
-      if (typeof digest === 'string' && typeof manifest === 'string') return { digest, manifest };
-    }
-  } catch {
-    // corrupt or unavailable storage reads as no baseline
-  }
-  return null;
-}
-
-function saveBaseline(baseline: Baseline | null): void {
-  try {
-    if (baseline) localStorage.setItem(BASELINE_KEY, JSON.stringify(baseline));
-    else localStorage.removeItem(BASELINE_KEY);
-  } catch {
-    // storage unavailable
-  }
-}
-
 function rowCount(text: string | undefined, field: 'rows' | 'visits'): number {
   if (text === undefined) return 0;
   try {
@@ -81,51 +45,33 @@ function hasUserData(files: Record<string, string>): boolean {
   );
 }
 
-function derivedManifest(files: Record<string, string>): string {
-  return JSON.stringify(
-    { format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), files: Object.keys(files) },
-    null,
-    2
-  );
-}
-
-/** Null when the cloud folder holds no reports, medications or visits. */
+/** The cloud folder as stored, file for file. Null when it holds no reports, medications or visits. */
 export async function pullCloudFiles(): Promise<Record<string, string> | null> {
   const body = await request('GET');
   const cloud = (body.files ?? {}) as Record<string, string>;
-  if (!hasUserData(cloud)) {
-    saveBaseline(null);
-    return null;
+  return hasUserData(cloud) ? cloud : null;
+}
+
+// The manifest carries a timestamp: remembering it with the payload it described lets an
+// unchanged payload resend it verbatim, so a push with no edits commits nothing.
+function rememberManifest(files: Record<string, string>): void {
+  const { [MANIFEST_FILE]: manifest, ...payload } = files;
+  if (manifest === undefined) return;
+  try {
+    saveHeldFiles({ ...loadHeldFiles(), manifest, digest: payloadDigest(payload) });
+  } catch {
+    // storage full or unavailable: the next push writes a fresh manifest
   }
-
-  const content: Record<string, string> = {};
-  const reports = await mergeFilesToLabReports(cloud);
-  if (reports !== null) content[REPORTS_FILE] = reports;
-  for (const name of PASSTHROUGH_FILES) if (cloud[name] !== undefined) content[name] = cloud[name];
-
-  const { [MANIFEST_FILE]: cloudManifest, ...payload } = cloud;
-  const manifest = cloudManifest ?? derivedManifest(content);
-  saveBaseline({ digest: await digestOf(payload), manifest });
-  return { [MANIFEST_FILE]: manifest, ...content };
 }
 
 /**
- * The manifest carries a timestamp, so it is resent verbatim while nothing else
- * differs from what was last pulled or pushed; otherwise every push would commit.
+ * Sends the files exactly as built: report texts are the stored ones, never rebuilt.
  * Returns false, sending nothing, when there is no user data: the Worker rejects empty writes.
  */
 export async function pushCloudFiles(files: Record<string, string>): Promise<boolean> {
-  const payload: Record<string, string> = files[REPORTS_FILE] === undefined ? {} : await splitReportsToFiles(files[REPORTS_FILE]);
-  for (const name of PASSTHROUGH_FILES) if (files[name] !== undefined) payload[name] = files[name];
-
-  if (!hasUserData(payload)) return false;
-
-  const digest = await digestOf(payload);
-  const baseline = loadBaseline();
-  const manifest = baseline?.digest === digest ? baseline.manifest : (files[MANIFEST_FILE] ?? derivedManifest(payload));
-
-  await request('PUT', { ...payload, [MANIFEST_FILE]: manifest });
-  saveBaseline({ digest, manifest });
+  if (!hasUserData(files)) return false;
+  await request('PUT', files);
+  rememberManifest(files);
   return true;
 }
 
@@ -148,7 +94,6 @@ function isAuthFailure(error: unknown): boolean {
 export async function pushBeforeSignOut(localFiles: Record<string, string>): Promise<SignOutSave> {
   if (isEmptyBackup(readBackup(localFiles))) return 'saved';
   try {
-    await pullCloudFiles();
     return (await pushCloudFiles(localFiles)) ? 'saved' : 'failed';
   } catch (error) {
     return isAuthFailure(error) ? 'auth' : 'failed';
