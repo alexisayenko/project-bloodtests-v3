@@ -3,7 +3,7 @@ import { fmtNum } from '../../utils/format';
 import type { ValidationIssue } from '../../data/validateDiagnosticReports';
 import { latinPart, type CrossCheckResult, type CrossCheckSuggestion } from '../../data/loincCheck';
 import { selectByUnit, type NlmEntry } from '../../data/loincNlm';
-import { normalizeObservationUnit } from '../../data/unitNormalization';
+import { normalizeObservationUnit, unitForChecks } from '../../data/unitNormalization';
 import { SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from '../../data/massMolarSiblings';
 import { ALSO_REFS, ALIAS_TO_PRIMARY } from './markers';
 import { COLOR } from '../../styles/tokens';
@@ -31,7 +31,11 @@ export function pluralize(n: number): string {
 
 export function applyFieldEdit(item: Result, field: EditableField, newValue: string): Result {
   if (field === 'loinc') return { ...item, loinc: newValue };
-  if (field === 'unit') return { ...item, unit: newValue };
+  if (field === 'unit') {
+    const edited = { ...item, unit: newValue };
+    delete edited.storedUnit;
+    return edited;
+  }
   const numVal = Number.parseFloat(newValue);
   return { ...item, value: Number.isNaN(numVal) ? null : numVal, rawValue: newValue };
 }
@@ -130,7 +134,7 @@ export function getDotTitle(itemIssues: ValidationIssue[], mismatchMsg: string |
 // The repair is the code, never the printed value or unit (ADR-0003), and it is offered, never auto-applied.
 export function unitRepairFor(item: Result): UnitRepairSuggestion | undefined {
   if (!item.loinc || !item.unit) return undefined;
-  const { check } = normalizeObservationUnit({ loinc: item.loinc, unit: item.unit });
+  const { check } = normalizeObservationUnit({ loinc: item.loinc, unit: unitForChecks(item) });
   if (check.kind !== 'dimension-mismatch' || !check.suggestedLoinc) return undefined;
   const pair = SIBLING_BY_MASS_LOINC[item.loinc] ?? SIBLING_BY_MOLAR_LOINC[item.loinc];
   const side = pair && [pair.mass, pair.molar].find((s) => s.loinc === check.suggestedLoinc);

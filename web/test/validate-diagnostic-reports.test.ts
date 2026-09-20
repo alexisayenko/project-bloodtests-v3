@@ -7,6 +7,7 @@ import {
   type ValidationIssue,
 } from '../src/data/validateDiagnosticReports';
 import type { DiagnosticReport, Result } from '../src/types';
+import { parseUploadedResults } from '../src/data/parseUpload';
 import { makeResult, makeSession } from './helpers/fixtures';
 
 const createResult = (overrides?: Partial<Result>): Result =>
@@ -238,5 +239,52 @@ describe('issue predicates', () => {
     expect(groupHasWarnings('file-a', [issue('warning')])).toBe(true);
     expect(groupHasWarnings('file-a', [issue('error')])).toBe(false);
     expect(groupHasWarnings('file-a', [issue('warning', 'file-b')])).toBe(false);
+  });
+});
+
+describe('the unit checks read the stored unit, not the printed one', () => {
+  const warningsFor = (observations: unknown[]): string[] =>
+    validateDiagnosticReports(
+      parseUploadedResults({
+        schema: '3.2',
+        diagnosticReports: [{ lab: 'Lab A', collectedAt: '2026-01-10T00:00:00Z', observations }],
+      })
+    ).map((i) => i.message);
+
+  const mchc = { loinc: '786-4', rawName: 'MCHC', value: 33.4, rawValue: '33.4', referenceRanges: [{ text: '32-36' }] };
+
+  it('gives no unit warning for MCHC printed as % and stored as g/dL', () => {
+    expect(warningsFor([{ ...mchc, rawUnit: '%', unit: 'g/dL' }])).toEqual([]);
+  });
+
+  it('still warns for MCHC printed as % with no stored unit', () => {
+    expect(warningsFor([{ ...mchc, rawUnit: '%' }])).toEqual(["Unit '%' unexpected for 786-4 (expected g/dL)"]);
+    expect(warningsFor([{ ...mchc, unit: '%' }])).toEqual(["Unit '%' unexpected for 786-4 (expected g/dL)"]);
+  });
+
+  it('keeps the printed unit on the item, and the stored one beside it', () => {
+    const [group] = parseUploadedResults({
+      schema: '3.2',
+      diagnosticReports: [
+        { lab: 'Lab A', collectedAt: '2026-01-10T00:00:00Z', observations: [{ ...mchc, rawUnit: '%', unit: 'g/dL' }] },
+      ],
+    });
+    expect(group!.items![0]).toMatchObject({ unit: '%', storedUnit: 'g/dL' });
+  });
+
+  it('leaves other analytes as they were', () => {
+    const wbc = { loinc: '6690-2', rawName: 'WBC', value: 5.1, rawValue: '5.1', referenceRanges: [{ text: '4-10' }] };
+    expect(warningsFor([{ ...wbc, rawUnit: 'x10³/µL', unit: '10*3/uL' }])).toEqual([]);
+    expect(warningsFor([{ ...wbc, rawUnit: '%', unit: '10*3/uL' }])).toEqual([]);
+    expect(warningsFor([{ ...wbc, rawUnit: '%' }])).toEqual([
+      expect.stringContaining("Unit '%' unexpected for 6690-2"),
+    ]);
+    expect(warningsFor([{ ...wbc, rawUnit: 'g/dL', unit: 'g/dL' }])).toEqual([
+      expect.stringContaining("Unit 'g/dL' unexpected for 6690-2"),
+    ]);
+  });
+
+  it('falls back to the printed unit when the stored one is not in the tables', () => {
+    expect(warningsFor([{ ...mchc, rawUnit: 'g/dL', unit: 'blorp' }])).toEqual([]);
   });
 });

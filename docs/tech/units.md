@@ -36,6 +36,16 @@ Three callers:
   code's accepted units — another scale of the same dimension, g/L on a g/dL
   hemoglobin code, is no warning; `checkCodeUnit` decides), and a unit that
   maps to no UCUM code at all, lower-severity.
+- The unit checks read the stored `unit`, not the printed one. Import keeps
+  `Result.unit` as printed (`rawUnit`, else `unit`) for display and editing and
+  puts a differing stored `unit` in `Result.storedUnit`; `unitForChecks`
+  returns it when the tables can place it (a UCUM code or a printed spelling),
+  else the printed unit. `withCanonicalUnit`, `validateDiagnosticReports` and
+  `unitRepairFor` use it, so an MCHC printed `%` and stored `g/dL` (ADR-0025)
+  raises no warning, while `%` with no stored `unit` still does. LOINC
+  derivation from the printed name and unit (`loincCheck.ts`, ADR-0004),
+  `sameUnitScale`, the U/IU fold and chart unit grouping keep reading the
+  printed unit. Editing the unit in report detail drops `storedUnit`.
 - Export no longer calls `ucumUnitFor`: a stored `unit` and `rawUnit` are
   carried verbatim (ADR-0028), so nothing is folded on the way out. Only a
   file the app builds for a session with no stored file has `rawUnit` and no

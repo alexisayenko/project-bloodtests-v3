@@ -62,6 +62,12 @@ describe('applyFieldEdit', () => {
     expect(applyFieldEdit(createResult(), 'unit', 'mmol/L').unit).toBe('mmol/L');
   });
 
+  it('drops the stored unit when the unit is edited, so the edit is what gets checked', () => {
+    const edited = applyFieldEdit(createResult({ unit: '%', storedUnit: 'g/dL' }), 'unit', 'mmol/L');
+    expect(edited).toMatchObject({ unit: 'mmol/L' });
+    expect(edited.storedUnit).toBeUndefined();
+  });
+
   it('parses a numeric value, keeps the raw text, and nulls a non-numeric one', () => {
     const edited = applyFieldEdit(createResult(), 'value', '5.4');
     expect(edited.value).toBe(5.4);

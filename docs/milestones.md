@@ -45,7 +45,7 @@ events accumulate enough to warrant their own pages — see
   the printed string, which would claim a normalization that did not
   happen. Only spelling folds; no value is converted
   ([ADR-0003](tech/decisions/adr-0003-store-only-what-the-lab-printed.md)),
-  and import reads `rawUnit` back in preference to `unit`. That retires the
+  and import once read `rawUnit` back in preference to `unit` (the unit checks now read `unit`). That retires the
   byte-identical round trip a day after it was recorded: a first export
   gains `rawUnit` and a folded `unit`, so its `contentHash` moves. What
   replaces it, and what the test now holds, is that the transformation

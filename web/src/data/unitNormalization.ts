@@ -497,12 +497,29 @@ function canonicalForm(
   return target === undefined ? undefined : convertValue(observation.value, ucumUnit, target, loinc);
 }
 
+
+// A stored `unit` is already UCUM, which the printed-spelling stages do not map; a UCUM code
+// the tables can place still counts as understood.
+function isKnownUcum(unit: string): boolean {
+  const parts = splitUnit(clean(unit));
+  return parts !== undefined && parts.every((part) => UCUM_POWER_RE.test(part) || part in UCUM_KINDS);
+}
+
+/**
+ * The unit the unit-vs-LOINC checks read: the stored normalized `unit` when there is one and the
+ * tables can place it, else the printed unit. Nothing is written back (ADR-0003).
+ */
+export function unitForChecks(item: { unit: string; storedUnit?: string }): string {
+  const stored = item.storedUnit;
+  return stored && (ucumUnitFor(stored) !== undefined || isKnownUcum(stored)) ? stored : item.unit;
+}
+
 /** Stages 1–3 in one result plus the derived canonical form; never rewrites the printed pair. */
 export function normalizeObservationUnit(observation: ObservationUnit): UnitNormalization {
   const printedUnit = observation.unit ?? '';
   const loinc = observation.loinc ?? '';
   const latinUnit = toLatinUnit(printedUnit);
-  const ucumUnit = ucumUnitFor(printedUnit);
+  const ucumUnit = ucumUnitFor(printedUnit) ?? (isKnownUcum(printedUnit) ? printedUnit.trim() : undefined);
   const check = checkCodeUnit(loinc, ucumUnit ?? printedUnit);
   const canonical = canonicalForm(observation, ucumUnit, loinc, check);
   return {

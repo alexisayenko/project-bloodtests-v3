@@ -1,6 +1,6 @@
 import type { Result, DiagnosticReport } from '../types';
 import { isAcceptedSchemaVersion } from './envelopeSchema';
-import { normalizeObservationUnit } from './unitNormalization';
+import { normalizeObservationUnit, unitForChecks } from './unitNormalization';
 import type {
   InterchangeEnvelope,
   InterchangeObservation,
@@ -34,7 +34,7 @@ function withCanonicalUnit(result: Result): Result {
   if (!result.loinc || !result.unit) return result;
   const { canonical } = normalizeObservationUnit({
     loinc: result.loinc,
-    unit: result.unit,
+    unit: unitForChecks(result),
     ...(result.value !== null && { value: result.value }),
   });
   return canonical ? { ...result, canonical } : result;
@@ -49,9 +49,9 @@ function v3ToResult(obs: InterchangeObservation): Result {
     value: obs.value ?? null,
     rawValue: obs.rawValue || '',
     valueQualifier: obs.comparator || '',
-    // `rawUnit` wins: in a file this app exported, `unit` is already a UCUM
-    // code, and the printed string is what the app displays and validates.
+    // Displayed as printed; the unit checks read the stored `unit` first (unitForChecks).
     unit: obs.rawUnit || obs.unit || '',
+    ...(obs.rawUnit && obs.unit && obs.unit !== obs.rawUnit && { storedUnit: obs.unit }),
     refText:
       obs.referenceRanges?.find((r) => r.text)?.text ||
       obs.referenceRanges?.map((r) => r.label || `${r.low ?? ''}-${r.high ?? ''}`).join('; ') ||

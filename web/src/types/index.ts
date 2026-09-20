@@ -65,7 +65,10 @@ export interface Result {
   value: number | null;
   rawValue: string;
   valueQualifier: string;
+  /** As the lab printed it (`rawUnit`), or the file's `unit` when nothing was printed separately. */
   unit: string;
+  /** The file's normalized `unit` when it sits beside a different `rawUnit`; the unit checks read it before `unit`. */
+  storedUnit?: string;
   refText: string;
   refMin: number | null;
   refMax: number | null;

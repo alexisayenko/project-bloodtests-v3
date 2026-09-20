@@ -2,7 +2,7 @@
 
 The measurement scale a result is expressed in — `mmol/L`, `10^9/L`, `ng/mL` — recorded per entry in a [diagnostic report](lab-report.md), not fixed by the [observation](observation.md).
 
-> **Status: partly built.** A unit now travels as a pair: an exported file carries the canonical UCUM code in `unit` and the string the lab printed in `rawUnit`, and import reads the printed one back. Deriving the canonical form is a pure module, computing on demand, and it runs at import over every observation of every import route, attaching a derived *value* pair beside the printed one in memory — that one is never stored or exported. What the derivation cannot settle it reports as a warning, and where the warning has a repair — a mass/molar sibling code — the report detail view offers it as a chip to confirm. What is still missing is a real UCUM parser: the tables are curated, so a unit outside them resolves to nothing. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
+> **Status: partly built.** A unit now travels as a pair: an exported file carries the canonical UCUM code in `unit` and the string the lab printed in `rawUnit`, and import displays the printed one while the unit checks read the stored `unit`. Deriving the canonical form is a pure module, computing on demand, and it runs at import over every observation of every import route, attaching a derived *value* pair beside the printed one in memory — that one is never stored or exported. What the derivation cannot settle it reports as a warning, and where the warning has a repair — a mass/molar sibling code — the report detail view offers it as a chip to confirm. What is still missing is a real UCUM parser: the tables are curated, so a unit outside them resolves to nothing. The vocabulary was decided 2026-09-07 ([ADR-0007](../../tech/decisions/adr-0007-ucum-as-the-unit-vocabulary.md)).
 
 ## What a unit is today
 
@@ -61,7 +61,7 @@ A derived unit is now written down, and the two fields split the roles the inter
 | `unit` | the canonical UCUM code | what code computes on |
 | `rawUnit` | the string the lab printed | the record of what was read |
 
-The stored file carries both, and export returns them exactly as stored: the app derives neither (ADR-0028), so a `unit` corrected in the data repo survives. Import reads `rawUnit` in preference to `unit`, so the printed string is what the app goes on displaying and validating. The fields are [specified in the interchange format](../../tech/interchange-format.md#rawunit).
+The stored file carries both, and export returns them exactly as stored: the app derives neither (ADR-0028), so a `unit` corrected in the data repo survives. Import keeps the printed string for display and editing, but the unit checks (unit against the LOINC, the canonical form) read the stored `unit` whenever the file has one, so a `unit` the owner corrected is what counts; `rawUnit` is checked only when `unit` is absent. The fields are [specified in the interchange format](../../tech/interchange-format.md#rawunit).
 
 This is the format's existing pattern, twice over: `rawValue` preserves a printed `< 0.01` that `value` plus `comparator` parse lossily, and the app keeps each observation's printed name as provenance against the official LOINC name it resolves. In each pair the derived field is the one code uses, and the raw one is the receipt.
 

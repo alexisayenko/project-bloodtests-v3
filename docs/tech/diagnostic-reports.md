@@ -35,8 +35,8 @@ on merge; other envelope fields are ignored for now. Each observation's
 printed name lives in `rawName`, never `name` — the friendly name is derived
 from the LOINC at display time and never stored; `resultsStorage.ts`'s
 `parseStoredSessions` reads a session stored under the earlier `analysis`
-field into `rawName` on load. Import reads `rawUnit` in preference to
-`unit`. `parseUpload.ts` is the single place unit normalization runs on
+field into `rawName` on load. Import shows `rawUnit` (else `unit`) as the printed unit,
+and the unit checks read the stored `unit` first (`rawUnit` only when it is absent). `parseUpload.ts` is the single place unit normalization runs on
 import, attaching the derived `canonical` pair.
 
 Import routes: Get Started's "Import JSON" and share-link imports replace all

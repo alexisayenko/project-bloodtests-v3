@@ -56,6 +56,10 @@ kept there (git for the owner's files). It is a data edit, not an app rule.
 
 - An MCHC history mixing `g/dL` and `%` keeps its warning until the owner
   corrects the stored unit; nothing is hidden meanwhile.
+- Once the owner has set `unit` to `g/dL` beside the printed `rawUnit` `%`,
+  the warning is gone: the unit checks read the stored `unit`, not `rawUnit`
+  (`unitForChecks`), and `%` is still shown as printed. A `%` with no stored
+  `unit` still warns.
 - The same holds for the absolute differential counts (751-8, 731-0,
   742-7, 711-2, 704-7, `x10^3/uL`) on this lab's reports: they print no
   reference range, the "Normals (%)" column belongs to the `%` rows, and

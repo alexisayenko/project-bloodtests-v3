@@ -1,7 +1,7 @@
 import type { DiagnosticReport, Result } from '../types';
 import { LOINC_RE } from './loincCheck';
 import { DEFAULT_UNITS, ALLOWED_UNITS } from './analyteCatalog';
-import { normalizeObservationUnit, type UnitNormalization } from './unitNormalization';
+import { normalizeObservationUnit, unitForChecks, type UnitNormalization } from './unitNormalization';
 
 export interface ValidationIssue {
   groupFile: string;
@@ -48,7 +48,7 @@ function checkUnitDimension(item: Result, normalization: UnitNormalization): Iss
     // The code is wrong, not the value: never convert the printed number (ADR-0003).
     return {
       level: 'warning',
-      message: `Unit '${item.unit}' measures a different quantity than ${item.loinc} — ${check.suggestedLoinc} is the same analyte on that scale (change the code, not the value)`,
+      message: `Unit '${unitForChecks(item)}' measures a different quantity than ${item.loinc} — ${check.suggestedLoinc} is the same analyte on that scale (change the code, not the value)`,
     };
   }
 
@@ -57,7 +57,7 @@ function checkUnitDimension(item: Result, normalization: UnitNormalization): Iss
   );
   return {
     level: 'warning',
-    message: `Unit '${item.unit}' unexpected for ${item.loinc} (expected ${accepted.join(' or ')})`,
+    message: `Unit '${unitForChecks(item)}' unexpected for ${item.loinc} (expected ${accepted.join(' or ')})`,
   };
 }
 
@@ -67,7 +67,7 @@ function checkUnit(item: Result): Issue[] {
   }
 
   const issues: Issue[] = [];
-  const normalization = normalizeObservationUnit({ loinc: item.loinc, unit: item.unit });
+  const normalization = normalizeObservationUnit({ loinc: item.loinc, unit: unitForChecks(item) });
 
   const dimensionIssue = checkUnitDimension(item, normalization);
   if (dimensionIssue) issues.push(dimensionIssue);
@@ -75,7 +75,7 @@ function checkUnit(item: Result): Issue[] {
   if (normalization.ucumUnit === undefined) {
     issues.push({
       level: 'warning',
-      message: `Unit '${item.unit}' is not in the unit tables — left exactly as printed, and not comparable across units`,
+      message: `Unit '${unitForChecks(item)}' is not in the unit tables — left exactly as printed, and not comparable across units`,
     });
   }
 

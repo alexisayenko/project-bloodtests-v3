@@ -61,7 +61,9 @@ carries it imports with no error or warning and passes through verbatim.
   stored file is never rebuilt". Export previously wrote a derived `unit`;
   it writes the stored one.
 - **ADR-0025**: the owner's relabel of `unit` in the data repo now survives
-  export and push.
+  export and push, and the unit checks read that stored `unit` rather than
+  `rawUnit` (`rawUnit` only when `unit` is absent), so the relabel also clears
+  the warning.
 - **ADR-0026**: the client no longer splits and merges a `lab-reports.json`;
   it moves the per-report files as they are.
 
