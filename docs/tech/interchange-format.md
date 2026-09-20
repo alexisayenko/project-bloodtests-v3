@@ -20,7 +20,7 @@ Before ADR-0028 the exporter rebuilt every file field by field, and each of thes
 
 - **An edited file is re-serialized.** The edit patches only the touched observation fields, but the file text is rewritten with two-space JSON, so number spellings normalize (`4.50` becomes `4.5`) and a hand-formatted file gains the app's layout, in that file only.
 - **Local view files are rebuilt in the app's serialization once changed.** `medications.json`, `scheduled-visits.json` and `settings.json` are held as imported and returned unchanged while the local view matches its post-import state; after a change they are rebuilt from browser storage. A mount-time settings save can add a `settings.json` to a cloud folder that had none.
-- **Subject, birth year and notes are no longer editable in the app.** The Database details card keeps only `sex`; stored files keep their own values.
+- **Subject, birth year and notes are no longer editable in the app.** The Database details card shows them read-only from the held files (a device-local `sex` applies only when no file has one); stored files keep their own values.
 - **`laboratory-prices.json` is no longer written** (the shipped registry wins); a zip that carries one is still accepted and the file is not restored.
 - **An empty database has no report file to export.** Export sends no report file when there are no reports; an import of a legacy empty `lab-reports.json` restores no reports rather than failing.
 - **A non-ASCII lab slugs to `unknown`** in a file the app names itself, per `slugify`. Files already stored keep their own name.

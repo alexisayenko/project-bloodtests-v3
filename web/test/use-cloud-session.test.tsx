@@ -94,9 +94,15 @@ describe('useCloudSession', () => {
   it('drops the user after signing out', async () => {
     await mount();
     await settle(signedIn('u2@example.com'));
-    await act(async () => handle.signOut());
-    expect(session.signOutUser).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      const done = handle.signOut();
+      await vi.waitFor(() => expect(session.signOutUser).toHaveBeenCalledTimes(1));
+      await Promise.resolve();
+      session.resolve({ status: 'signedOut', providers: ['google', 'apple'] });
+      await done;
+    });
     expect(state().user).toBe('');
+    expect(state().providers).toBe('google,apple');
   });
 
   it('keeps the user when sign-out fails', async () => {

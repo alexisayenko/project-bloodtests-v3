@@ -20,11 +20,26 @@ function sessionsOfFiles(files: Record<string, string>): DiagnosticReport[] {
   return Object.entries(files).flatMap(([path, text]) => parseUploadedResults(JSON.parse(text), path));
 }
 
+// The stored file is the truth, the persisted session only a cache of its parse: a session saved by an
+// earlier build lacks whatever fields the parse has gained since (`storedUnit`), so it is read again.
+function rereadFromHeldFile(session: DiagnosticReport, held: Record<string, string>): DiagnosticReport {
+  const { source } = session;
+  const text = source ? held[source.path] : undefined;
+  if (!source || text === undefined) return session;
+  try {
+    const fresh = parseUploadedResults(JSON.parse(text), source.path).find((s) => s.source?.index === source.index);
+    return fresh && fresh.file === session.file && JSON.stringify(fresh) !== JSON.stringify(session) ? fresh : session;
+  } catch {
+    return session;
+  }
+}
+
 /** Stored sessions that no held file backs (older builds, generated data) get one built, once. */
 export function settleStoredSessions(sessions: DiagnosticReport[], now = new Date()): DiagnosticReport[] {
   const held = loadHeldFiles().reports;
   if (sessions.length === 0 && Object.keys(held).length === 0) return sessions;
-  const resolved = resolveReportFiles(sessions, held, now);
+  const reread = sessions.map((session) => rereadFromHeldFile(session, held));
+  const resolved = resolveReportFiles(reread, held, now);
   const changed = resolved.sessions.some((s, i) => s !== sessions[i]) || Object.keys(resolved.files).length !== Object.keys(held).length;
   if (!changed) return sessions;
   try {

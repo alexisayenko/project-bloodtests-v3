@@ -25,7 +25,8 @@ export function useCloudSession(): {
 
   const signOut = useCallback(async () => {
     await signOutUser();
-    setSession({ status: 'signedOut', providers: [] });
+    const next = await fetchSession();
+    setSession(next.status === 'signedOut' ? next : { status: 'signedOut', providers: [] });
   }, []);
 
   return {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, typ
 import type { DiagnosticReport } from '../../types';
 import { backupFilename, buildBackupFiles, zipBackupFiles } from '../../data/backupArchive';
 import { BackupImportError, readBackup, unzipBackup, type BackupContents } from '../../data/backupRestore';
-import { loadEnvelopeMeta, saveEnvelopeMeta, type EnvelopeMeta } from '../../data/envelopeMeta';
+import { loadLocalEnvelopeMeta, loadStoredFileMeta, saveEnvelopeMeta, type EnvelopeMeta } from '../../data/envelopeMeta';
 import { Database, Download, HardDriveDownload, LogIn, SlidersHorizontal, Trash2, Upload, UserCircle, type LucideIcon } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import {
@@ -149,9 +149,10 @@ function AccountAuthCard({
   );
 }
 
-/** Sex only, kept on this device: it selects the reference ranges and is never written into a stored file. */
+/** Subject, sex and birth year as the stored files carry them (read only, never written back); a sex they lack is set on this device. */
 function DatabaseDetailsCard() {
-  const [meta, setMeta] = useState<EnvelopeMeta>(() => loadEnvelopeMeta());
+  const stored = loadStoredFileMeta();
+  const [meta, setMeta] = useState<EnvelopeMeta>(() => loadLocalEnvelopeMeta());
 
   function updateMeta(patch: Partial<EnvelopeMeta>) {
     setMeta((prev) => {
@@ -166,7 +167,7 @@ function DatabaseDetailsCard() {
       <CardHeader
         icon={<IconBadge icon={Database} size={36} />}
         title="Database details"
-        description="Sex, kept on this device, selects the reference ranges. Stored files are exported exactly as they were imported."
+        description="Read from your stored files, which are exported exactly as they were imported. Sex selects the reference ranges."
       />
       <div
         style={{
@@ -176,25 +177,42 @@ function DatabaseDetailsCard() {
           display: 'grid',
           gridTemplateColumns: '90px minmax(0, 480px)',
           columnGap: 14,
+          rowGap: 12,
           alignItems: 'center',
           fontSize: 13,
         }}
       >
+        {stored.subject !== undefined && (
+          <>
+            <span style={FIELD_LABEL}>Subject</span>
+            <span>{stored.subject}</span>
+          </>
+        )}
+        {stored.birthYear !== undefined && (
+          <>
+            <span style={FIELD_LABEL}>Birth year</span>
+            <span>{stored.birthYear}</span>
+          </>
+        )}
         <span style={FIELD_LABEL}>Sex</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <select
-            value={meta.sex ?? ''}
-            onChange={(e) => {
-              const v = e.currentTarget.value;
-              updateMeta({ sex: v === 'female' || v === 'male' ? v : undefined });
-            }}
-            style={FIELD_INPUT}
-          >
-            <option value="">(not set)</option>
-            <option value="female">female</option>
-            <option value="male">male</option>
-          </select>
-        </div>
+        {stored.sex ? (
+          <span>{stored.sex}</span>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <select
+              value={meta.sex ?? ''}
+              onChange={(e) => {
+                const v = e.currentTarget.value;
+                updateMeta({ sex: v === 'female' || v === 'male' ? v : undefined });
+              }}
+              style={FIELD_INPUT}
+            >
+              <option value="">(not set)</option>
+              <option value="female">female</option>
+              <option value="male">male</option>
+            </select>
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -327,7 +345,7 @@ async function downloadBackup(sessions: DiagnosticReport[]): Promise<void> {
     import('fflate'),
     buildBackupFiles({
       sessions,
-        storage: localStorage,
+      storage: localStorage,
       app: { commit: __BUILD_COMMIT__, builtAt: __BUILD_TIME__ },
       now,
     }),

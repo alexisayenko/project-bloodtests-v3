@@ -46,7 +46,7 @@ The app writes a file in three places only:
 A deleted report has its file removed. Local view files (`medications.json`,
 `scheduled-visits.json`, `settings.json`) are held as imported and rebuilt from
 browser storage only once they change. Export never sources envelope metadata
-from `localStorage`; Database details keeps `sex` only.
+from `localStorage`; Database details reads subject, sex and birth year from the held files at display time and edits only a device-local sex fallback.
 
 **`lastUpdatedDate`** (schema `3.2`, optional, ISO 8601 UTC) is set or
 refreshed only when report data is modified in the app (a new report from an

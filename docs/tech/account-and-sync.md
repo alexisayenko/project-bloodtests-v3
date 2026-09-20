@@ -209,11 +209,13 @@ applied to new instances.
 
 ## Database details
 
-Only `sex`, persisted under `bloodtests_envelope_meta_v1`; it picks a
-sex-dependent index's band ([`computed-indices.md`](computed-indices.md)) and
-is read from an imported file's own `sex`. Nothing here is written into an
-export: the stored files keep their own subject, birth year and notes, and the
-card no longer edits them.
+Subject, sex and birth year, read at display time from the held report files
+(`loadStoredFileMeta` in `data/envelopeMeta.ts`, the first file that carries
+each). Sex also picks a sex-dependent index's band
+([`computed-indices.md`](computed-indices.md)): the files' `sex` wins, and only
+when none carries one is the dropdown offered, its value persisted on this
+device under `bloodtests_envelope_meta_v1`. Nothing here is written into a
+file or an export, and the card does not edit subject or birth year.
 
 ## Export, import, clear
 

@@ -26,7 +26,7 @@ renders as "–" rather than a confident number. A citation may carry an ISO
 
 An index carries `cut` / `hi`, or `bandsBySex` in place of them. `indexBands`
 / `indexZone` pick the band from a `SubjectProfile` whose `sex` comes from
-Database details (`bloodtests_envelope_meta_v1`); `birthYear` is not read.
+the stored files' `sex`, else the device-local one in Database details (`bloodtests_envelope_meta_v1`); `birthYear` is not read.
 With sex unset a sex-banded index has no band and so no status — a grey chip
 in the grid, an uncolored number in the tables, "depends on sex, not set" as
 the popup's Ref, and "sex not set" in the Trends tab's not-taken list. The
