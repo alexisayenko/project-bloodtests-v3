@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { splitReportsToFiles } from '../src/data/reportFiles';
-import { readBackup } from '../src/data/backupRestore';
 import { pullCloudFiles, pushBeforeSignOut, pushCloudFiles } from '../src/cloud/sync';
 
 const fetchMock = vi.fn();
@@ -187,32 +186,6 @@ describe('pushCloudFiles', () => {
     reply(200, { commit: 'a' });
     expect(await pushCloudFiles({ 'medications.json': '{"rows":[{"id":"x"}]}' })).toBe(true);
     expect(Object.keys(sentFiles()).sort()).toEqual(['manifest.json', 'medications.json']);
-  });
-
-  it('a metadata-only change re-pushes every report file carrying subject, sex and birth year', async () => {
-    const withMeta = (extra: Record<string, unknown>): Record<string, string> => {
-      const base = localFiles('T1');
-      return { ...base, 'lab-reports.json': JSON.stringify({ ...JSON.parse(base['lab-reports.json']), ...extra }) };
-    };
-    reply(200, { commit: 'a' });
-    reply(200, { commit: 'b' });
-    await pushCloudFiles(withMeta({}));
-    expect(await pushCloudFiles(withMeta({ subject: 'Alex', sex: 'male', birthYear: 1980 }))).toBe(true);
-    const reportFiles = Object.entries(sentFiles(1)).filter(([name]) => name.startsWith('reports/'));
-    expect(reportFiles).toHaveLength(2);
-    for (const [, text] of reportFiles) expect(JSON.parse(text)).toMatchObject({ subject: 'Alex', sex: 'male', birthYear: 1980 });
-    expect(Object.values(sentFiles(0)).some((text) => text.includes('birthYear'))).toBe(false);
-  });
-
-  it('a later pull hands the cloud metadata back to readBackup, which an empty local store then takes', async () => {
-    const meta = { subject: 'Alex', sex: 'male', birthYear: 1980 };
-    reply(200, { commit: 'a' });
-    const manifest = JSON.stringify({ format: 'blood-tests-backup', version: 1, exportedAt: 'T1', files: [] });
-    const reports = JSON.stringify({ ...JSON.parse(localFiles('T1')['lab-reports.json']), ...meta });
-    await pushCloudFiles({ 'manifest.json': manifest, 'lab-reports.json': reports });
-    reply(200, { files: sentFiles(0) });
-    const pulled = (await pullCloudFiles()) as Record<string, string>;
-    expect(readBackup(pulled).reports?.meta).toEqual(meta);
   });
 
   it('throws on a 409', async () => {

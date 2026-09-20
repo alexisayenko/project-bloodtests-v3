@@ -28,7 +28,7 @@ function resultToObservation(result: Result): InterchangeObservation {
   // Only the spelling is normalized, never the value (ADR-0003); an unplaceable
   // unit leaves `unit` absent rather than claim a normalization that did not happen.
   if (result.unit) {
-    const ucum = ucumUnitFor(result.unit, result.loinc);
+    const ucum = ucumUnitFor(result.unit);
     if (ucum) {
       obs.unit = ucum;
     }

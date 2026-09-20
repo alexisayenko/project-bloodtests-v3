@@ -91,19 +91,13 @@ different scales, and one analyte's `IU` never meets another's.
 ## MCHC printed in `%`
 
 Some labs print MCHC (`786-4`, `g/dL`) as `%`, meaning g per 100 mL of red
-cells, the same number. LOINC has no percent-property MCHC code to suggest, so
-the app keeps `rawUnit` `%` and the value exactly as printed and takes the
-normalized unit from the LOINC's own unit through a printed-unit alias:
-`printedUnitAliases: {"%": "g/dL"}` on `786-4` in `analyses.json`. It follows
-the `U` / `IU` fold's pattern, an identity asked of the analyte and not the
-spelling, and is data, not code
-([ADR-0028](decisions/adr-0028-mchc-printed-percent-alias.md),
-[ADR-0010](decisions/adr-0010-analyte-catalog-is-the-source-of-truth.md),
-[ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)). Stored
-data is untouched, the interchange `unit` is `g/dL` beside `rawUnit` `%`, and
-the `Unit '%' unexpected` warning is gone for this code only; `%` under any
-other code still warns, and `%` is still not in `allowedUnits`, which holds
-only same-dimension variants.
+cells, the same number. LOINC has no percent-property MCHC code to suggest, and
+`%` (ratio) is a different dimension from `g/dL`, so `Unit '%' unexpected for
+786-4 (expected g/dL)` stays and `%` is not added to `allowedUnits`, which
+holds only same-dimension scale and spelling variants. The remedy is the
+owner relabelling the stored unit to `g/dL`, value unchanged, never an app
+rule ([ADR-0025](decisions/adr-0025-mchc-percent-is-not-an-accepted-unit.md),
+[ADR-0003](decisions/adr-0003-store-only-what-the-lab-printed.md)).
 
 ## Display-time conversion
 

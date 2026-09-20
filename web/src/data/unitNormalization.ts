@@ -4,7 +4,7 @@
 // (ADR-0003); a molar unit under a mass code is a CODE problem, fixed by the
 // sibling code, never by a converted number.
 
-import { DEFAULT_UNITS, ALLOWED_UNITS, PRINTED_UNIT_ALIASES, U_IU_FOLD_REASON } from './analyteCatalog';
+import { DEFAULT_UNITS, ALLOWED_UNITS, U_IU_FOLD_REASON } from './analyteCatalog';
 import { MASS_MOLAR_SIBLINGS, SIBLING_BY_MASS_LOINC, SIBLING_BY_MOLAR_LOINC } from './massMolarSiblings';
 import type { MassMolarSibling } from './massMolarSiblings';
 
@@ -185,20 +185,9 @@ export function toUcum(latinUnit: string): string | undefined {
   return ucum.join('/');
 }
 
-// A printed unit the analyte's catalog entry declares an alias for reads as
-// that reference unit; another code with the same printed unit is untouched.
-function aliasedUnit(printedUnit: string, loinc?: string): string {
-  const aliases = loinc === undefined ? undefined : PRINTED_UNIT_ALIASES[loinc];
-  if (!aliases) return printedUnit;
+/** Stages 1–2 in one call. Spelling only — no value is converted (ADR-0003). */
+export function ucumUnitFor(printedUnit: string): string | undefined {
   const latin = toLatinUnit(printedUnit);
-  if (latin === undefined) return printedUnit;
-  const match = Object.entries(aliases).find(([printed]) => toLatinUnit(printed) === latin);
-  return match ? match[1] : printedUnit;
-}
-
-/** Stages 1–2 in one call. Spelling only — no value is converted (ADR-0003). `loinc` applies the analyte's printed-unit aliases. */
-export function ucumUnitFor(printedUnit: string, loinc?: string): string | undefined {
-  const latin = toLatinUnit(aliasedUnit(printedUnit, loinc));
   return latin === undefined ? undefined : toUcum(latin);
 }
 
@@ -512,8 +501,8 @@ function canonicalForm(
 export function normalizeObservationUnit(observation: ObservationUnit): UnitNormalization {
   const printedUnit = observation.unit ?? '';
   const loinc = observation.loinc ?? '';
-  const latinUnit = toLatinUnit(aliasedUnit(printedUnit, loinc));
-  const ucumUnit = ucumUnitFor(printedUnit, loinc);
+  const latinUnit = toLatinUnit(printedUnit);
+  const ucumUnit = ucumUnitFor(printedUnit);
   const check = checkCodeUnit(loinc, ucumUnit ?? printedUnit);
   const canonical = canonicalForm(observation, ucumUnit, loinc, check);
   return {

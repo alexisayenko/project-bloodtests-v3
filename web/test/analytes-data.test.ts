@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ANALYSES, MONITORING_PANELS, PANELS } from './dataFiles';
-import { ALIAS_TO_PRIMARY, ALLOWED_UNITS, ANALYTE_BY_LOINC, DEFAULT_UNITS, PRINTED_UNIT_ALIASES, SHORT_NAMES, SPECIMENS } from '../src/data/analyteCatalog';
+import { ALIAS_TO_PRIMARY, ANALYTE_BY_LOINC, DEFAULT_UNITS, SHORT_NAMES, SPECIMENS } from '../src/data/analyteCatalog';
 import { dimensionOf } from '../src/data/unitNormalization';
 import { compileSchema, schemaErrors } from './helpers/schema';
 
@@ -31,16 +31,6 @@ describe('reference data conforms to analytes-1.schema.json', () => {
     expect(validate({ ...base, loinc: '900101' })).toBe(false);
     expect(validate({ ...base, aliasOf: '2-6' })).toBe(false);
   });
-
-  it('accepts printedUnitAliases only as a non-empty string map on an entry with a unit', () => {
-    const validate = subschema('#/$defs/analyte');
-    const base = { loinc: '1-8', longCommonName: 'x', friendlyName: 'x', lang: { 'ru-RU': 'x' }, unit: 'g/dL' };
-    expect(validate({ ...base, printedUnitAliases: { '%': 'g/dL' } })).toBe(true);
-    expect(validate({ ...base, printedUnitAliases: {} })).toBe(false);
-    expect(validate({ ...base, printedUnitAliases: { '%': 1 } })).toBe(false);
-    const noUnit = { loinc: '1-8', longCommonName: 'x', friendlyName: 'x', lang: { 'ru-RU': 'x' } };
-    expect(validate({ ...noUnit, printedUnitAliases: { '%': 'g/dL' } })).toBe(false);
-  });
 });
 
 describe('reference data is internally consistent', () => {
@@ -60,19 +50,6 @@ describe('reference data is internally consistent', () => {
     for (const loinc of Object.keys(SHORT_NAMES)) {
       expect(DEFAULT_UNITS[loinc], `${loinc} has a short name but no unit`).toBeTruthy();
     }
-  });
-
-  it('every printed-unit alias names a unit its own code accepts', () => {
-    for (const [loinc, aliases] of Object.entries(PRINTED_UNIT_ALIASES)) {
-      const accepted = [DEFAULT_UNITS[loinc], ...(ALLOWED_UNITS[loinc] ?? [])];
-      for (const [printed, target] of Object.entries(aliases)) {
-        expect(accepted, `${loinc}: "${printed}" aliases ${target}`).toContain(target);
-      }
-    }
-  });
-
-  it('MCHC (786-4) carries the % alias for g/dL', () => {
-    expect(PRINTED_UNIT_ALIASES['786-4']).toEqual({ '%': 'g/dL' });
   });
 
   it('every entry carries a LOINC long common name', () => {

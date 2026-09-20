@@ -28,7 +28,6 @@
       "dependentRequired": {
         "shortName": ["unit"],
         "allowedUnits": ["unit"],
-        "printedUnitAliases": ["unit"],
         "aliasOf": ["aliasLabel", "unit"],
         "aliasLabel": ["aliasOf"]
       },
@@ -63,14 +62,6 @@
           "items": { "type": "string", "minLength": 1 },
           "description": "Optional. Further units accepted for this code beyond `unit` — LOINC's own example units for 1848-1 (DHT) list both ng/dL and pg/mL. The validation warning fires only for a unit whose dimension matches neither `unit` nor any unit in this set; another scale of the same quantity raises nothing.",
           "$comment": "Was ALLOWED_UNITS in loincCheck.ts."
-        },
-        "printedUnitAliases": {
-          "type": "object",
-          "minProperties": 1,
-          "propertyNames": { "minLength": 1 },
-          "additionalProperties": { "type": "string", "minLength": 1 },
-          "description": "Optional. Printed units a lab uses for this analyte that denote the same unit as another spelling, as {printed: reference}: MCHC (786-4) is g/dL, and some labs print it as \"%\" with the identical number. The printed unit and value are stored and shown as printed; only the normalized (UCUM) unit is read through the alias, so the code/unit check passes. Each value must be a unit this code accepts (`unit` or one of `allowedUnits`). Scoped to this code: the same printed unit on another analyte is unaffected.",
-          "$comment": "Data, not code (ADR-0010); the analyte-scoped fold, alongside the U/IU fold (ADR-0013)."
         },
         "aliasOf": {
           "$ref": "#/$defs/loinc",

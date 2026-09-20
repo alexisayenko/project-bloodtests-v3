@@ -40,10 +40,9 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0022](adr-0022-illustrative-artwork-and-data-drawn-glyphs-coexist.md) | Illustrative artwork and data-drawn glyphs coexist | accepted · 2026-09-16 |
 | [ADR-0023](adr-0023-product-purpose-and-clinical-boundary.md) | Product purpose, audience, and clinical boundary | accepted · 2026-09-18 |
 | [ADR-0024](adr-0024-panel-date-range-is-header-scoped-and-explicitly-applied.md) | The panel date-range control is header-scoped and changes data only through an explicit binding | accepted · 2026-09-18 |
-| [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md) | MCHC printed in `%` is flagged, not accepted; the fix is the owner's data edit | accepted · 2026-09-19 · MCHC policy superseded by 0028 |
+| [ADR-0025](adr-0025-mchc-percent-is-not-an-accepted-unit.md) | MCHC printed in `%` is flagged, not accepted; the fix is the owner's data edit | accepted · 2026-09-19 |
 | [ADR-0026](adr-0026-github-backed-cloud-storage.md) | Cloud data lives in a private GitHub repo behind a Worker | accepted · 2026-09-19 · supersedes 0019 (data store only) · identity amended by 0027 |
 | [ADR-0027](adr-0027-worker-owned-oauth.md) | The Worker owns Google / Apple sign-in; Supabase Auth is retired | accepted · 2026-09-19 · supersedes 0019 (auth) · amends 0026 |
-| [ADR-0028](adr-0028-mchc-printed-percent-alias.md) | MCHC printed in `%` takes the LOINC's own unit through an analyte-scoped alias in `analyses.json` | accepted · 2026-09-20 · supersedes 0025 (MCHC policy) |
 
 ## Where each one bites
 
@@ -147,11 +146,9 @@ Each record opens with `# ADR-NNNN: <title>` and a
   `web/src/components/conditions/scheduled.ts` and rendered as one
   Scheduled column per visit in the results tables and one stacked section
   per visit on `#plan` (`PlanVisitView.tsx`).
-- **MCHC in `%`** — 0028 (supersedes 0025's policy): a lab's `%` on `786-4`
-  is a legacy label for g/dL; `rawUnit` stays `%`, the normalized unit is
-  `g/dL` through `printedUnitAliases` on that code, and no warning is
-  raised. Absolute differential counts printed without a range still warn
-  (0025). See
+- **MCHC in `%`** — 0025: a lab's `%` on `786-4` is a legacy label for g/dL,
+  and the app still flags it instead of adding `%` to `allowedUnits`; the
+  same goes for absolute differential counts printed without a range. See
   [`../units.md`](../units.md#mchc-printed-in-).
 - **Product purpose and clinical boundary** — 0023: the three pillars
   (reduce complexity, show the whole picture, build understanding), the

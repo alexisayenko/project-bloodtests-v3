@@ -40,7 +40,7 @@ notAllowed, providers, signOut}` from that `/auth/me` call; `AccountView.tsx` an
 (`ProfileView.tsx`) read it, swapping the local-only copy and "100% private"
 pillar for "Synced to your account" while signed in.
 
-## Sync: two cutover moments, one exception
+## Sync: two cutover moments, no ongoing sync
 
 `web/src/cloud/sync.ts`'s `pullCloudFiles()` / `pushCloudFiles(files)` call
 the Worker's `GET` / `PUT /api/data` with the session cookie (same-origin
@@ -88,14 +88,7 @@ Guards, all client-side in `sync.ts`:
   clear; it shows "Could not back up to the cloud" so the user can retry.
   Local data is never wiped unless it was saved.
 
-**The one exception: Database details.** While signed in, editing the Database
-details (subject, sex, birth year, notes) pushes the local data to the cloud
-after 1.5 s of quiet (debounced; a pending push is flushed when leaving the
-page), because those fields are written into every per-report file. A push
-with no reports, medications or visits sends nothing. Failures are silent; the
-next cutover push or the sign-out push carries the data.
-
-Apart from that, signing in and out is the whole interface.
+Signing in and out is the whole interface.
 
 ### The Worker
 
@@ -212,9 +205,7 @@ Subject / sex / birth year / notes plus a read-only `generatedAt` stamped on
 each export, persisted under `bloodtests_envelope_meta_v1` and written into
 the export envelope with empty fields omitted. Always expanded. `sex` picks a
 sex-dependent index's band ([`computed-indices.md`](computed-indices.md));
-`birthYear` is not read. Signed in, an edit re-pushes the data after 1.5 s of
-quiet (the one exception in [Sync](#sync-two-cutover-moments-one-exception)),
-since every per-report file in the cloud carries these fields.
+`birthYear` is not read.
 
 ## Export, import, clear
 

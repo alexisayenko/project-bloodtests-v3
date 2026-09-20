@@ -2817,7 +2817,6 @@
     "friendlyName": "MCHC",
     "shortName": "MCHC",
     "unit": "g/dL",
-    "printedUnitAliases": { "%": "g/dL" },
     "lang": {
       "ru-RU": "Средняя концентрация гемоглобина (MCHC)",
       "uk-UA": "Середня концентрація гемоглобіну (MCHC)"

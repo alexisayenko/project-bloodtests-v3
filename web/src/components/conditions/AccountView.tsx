@@ -149,38 +149,9 @@ function AccountAuthCard({
   );
 }
 
-const META_PUSH_DELAY_MS = 1500;
-
-/**
- * Subject/sex/birth-year/notes written into every export. Signed in, an edit is also pushed to the cloud
- * (debounced, flushed on leaving the page) because these fields live in every per-report file there.
- */
-function DatabaseDetailsCard({ sessions }: Readonly<{ sessions: DiagnosticReport[] }>) {
-  const { user } = useCloudSession();
+/** Subject/sex/birth-year/notes written into every export. */
+function DatabaseDetailsCard() {
   const [meta, setMeta] = useState<EnvelopeMeta>(() => loadEnvelopeMeta());
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sessionsRef = useRef(sessions);
-
-  useEffect(() => {
-    sessionsRef.current = sessions;
-  }, [sessions]);
-
-  useEffect(
-    () => () => {
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current);
-        pushMeta();
-      }
-    },
-    []
-  );
-
-  function pushMeta() {
-    timerRef.current = null;
-    currentLocalFiles(sessionsRef.current)
-      .then(pushCloudFiles)
-      .catch(() => {});
-  }
 
   function updateMeta(patch: Partial<EnvelopeMeta>) {
     setMeta((prev) => {
@@ -188,9 +159,6 @@ function DatabaseDetailsCard({ sessions }: Readonly<{ sessions: DiagnosticReport
       saveEnvelopeMeta(next);
       return next;
     });
-    if (!user) return;
-    if (timerRef.current !== null) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(pushMeta, META_PUSH_DELAY_MS);
   }
 
   return (
@@ -476,7 +444,7 @@ export function AccountView({
         ]}
       />
       <AccountAuthCard sessions={sessions} onImportAll={onImportAll} onClearAll={onClearAll} />
-      <DatabaseDetailsCard sessions={sessions} />
+      <DatabaseDetailsCard />
       <div style={ACTION_GRID}>
         <Card style={ACTION_CARD}>
           <ActionCardBody

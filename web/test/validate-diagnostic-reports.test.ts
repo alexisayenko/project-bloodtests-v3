@@ -63,16 +63,6 @@ describe('validateDiagnosticReports', () => {
     expect(issues.map((i) => i.message)).toEqual([`Unit '%' unexpected for 718-7 (expected g/dL)`]);
   });
 
-  it('does not warn on MCHC printed in %, but still warns for the same unit on another code', () => {
-    const mchc = createGroup({ items: [createResult({ loinc: '786-4', rawName: 'MCHC', value: 33.4, unit: '%', refText: '31-36' })] });
-    expect(validateDiagnosticReports([mchc])).toHaveLength(0);
-
-    const other = createGroup({ items: [createResult({ loinc: '2093-3', rawName: 'Cholesterol', unit: '%', refText: '1-2' })] });
-    expect(validateDiagnosticReports([other]).map((i) => i.message)).toEqual([
-      `Unit '%' unexpected for 2093-3 (expected mg/dL)`,
-    ]);
-  });
-
   it('accepts every allowed unit for a code with a unit set (DHT ng/dL and pg/mL)', () => {
     const groups = [
       createGroup({ items: [createResult({ loinc: '1848-1', rawName: 'DHT', unit: 'ng/dL', refText: '1-2' })] }),

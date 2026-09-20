@@ -98,13 +98,11 @@ Monetization: undecided (`docs/business/README.md`).
 - UCUM is the unit vocabulary; a molar unit under a mass code is a code
   error, fixed by the sibling code, not a conversion — ADR-0007, ADR-0003.
 - `U` and `IU` fold only where the LOINC property says which one the
-  analyte is measured in — ADR-0013; a legacy printed unit (MCHC `%`) maps
-  to the code's own unit through a data alias, `rawUnit` kept — ADR-0028.
+  analyte is measured in — ADR-0013.
 - The envelope's `schema` is a `"major.minor"` string; any `"3.x"` is read,
   nothing else — ADR-0009, ADR-0012.
 - No login stays local; signing in switches storage mode with two cutover
-  moments and no ongoing sync, except a debounced push on Database details
-  edits — ADR-0018, ADR-0019; the cloud store is a
+  moments and no ongoing sync — ADR-0018, ADR-0019; the cloud store is a
   private GitHub repo behind the Worker, never a browser-held token —
   ADR-0026; identity is Google / Apple through the Worker's own OAuth, no
   auth service — ADR-0027.

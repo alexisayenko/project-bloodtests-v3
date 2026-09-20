@@ -139,7 +139,7 @@ export interface InterchangeObservation {
    */
   rawValue?: string;
   /**
-   * Optional. The unit in canonical UCUM form — the normalized half of the pair, with the string the lab printed kept beside it in `rawUnit`. Normalization is of the SPELLING only: `ммоль/л`, `mmol/l` and `mmol/L` all read as `mmol/L`, plus the LOINC's own unit for an analyte whose printed unit is numerically identical to it (MCHC printed `%` reads as `g/dL`), and no value is ever converted, so the number this labels is still the number the lab printed. A writer that cannot place a printed unit in UCUM leaves this field ABSENT rather than filling it with the printed string, which would claim a normalization that did not happen — `rawUnit` alone then carries the unit. When absent, a reader must not assume a unit, and must not compare the number to a range in a different one.
+   * Optional. The unit in canonical UCUM form — the normalized half of the pair, with the string the lab printed kept beside it in `rawUnit`. Normalization is of the SPELLING only: `ммоль/л`, `mmol/l` and `mmol/L` all read as `mmol/L`, and no value is ever converted, so the number this labels is still the number the lab printed. A writer that cannot place a printed unit in UCUM leaves this field ABSENT rather than filling it with the printed string, which would claim a normalization that did not happen — `rawUnit` alone then carries the unit. When absent, a reader must not assume a unit, and must not compare the number to a range in a different one.
    */
   unit?: string;
   /**
