@@ -222,3 +222,4 @@ not-yet-decided question in those repos.
   untouched — no longer referenced by `AccountView`, `TopBar` or
   `ProfileView`, but not deleted. See "What would force revisiting" above
   for its open removal question.
+- 2026-09-20: One narrow exception to "no ongoing sync": while signed in, editing the Database details (subject, sex, birth year, notes) pushes the local data to the cloud after 1.5 s of quiet (a pending push is flushed on leaving the page), because those fields are written into every per-report file. A push with no reports, medications or visits sends nothing; failures are silent and the next cutover or sign-out push carries the data. Sync is otherwise still cutover-only.
