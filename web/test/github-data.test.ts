@@ -218,6 +218,16 @@ describe('PUT CSRF guards', () => {
     expect(res.status).toBe(502);
     expect(calls.length).toBeGreaterThan(0);
   });
+  it('re-issues the session cookie on a GET once it is a day old, not before', async () => {
+    const handlers = [(c: Call) => (c.url === 'https://api.github.com/graphql' ? jsonRes({ data: { repository: { reports: null, f0: null, f1: null, f2: null, f3: null } } }) : undefined)];
+    const cookie = await session();
+    const fresh = await handleDataRequest(req('GET', cookie), env, { fetch: stubFetch(handlers).fn, now: () => NOW + 3600_000 });
+    expect(fresh.headers.get('set-cookie')).toBeNull();
+    const aged = await handleDataRequest(req('GET', cookie), env, { fetch: stubFetch(handlers).fn, now: () => NOW + 2 * 24 * 3600_000 });
+    expect(aged.status).toBe(200);
+    expect(aged.headers.get('set-cookie')).toContain(`${SESSION_COOKIE}=`);
+  });
+
   it('401 (not 403) for an unauthenticated PUT', async () => {
     const { fn } = stubFetch([]);
     const res = await handleDataRequest(req('PUT', undefined, body), env, deps(fn));
@@ -403,6 +413,34 @@ describe('PUT', () => {
     expect(res.status).toBe(200);
     const tree = calls.find((c) => c.url === '/git/trees' && c.method === 'POST')!.body!.tree;
     expect(tree).toEqual([{ path: `${FOLDER}/reports/constructor.json`, mode: '100644', type: 'blob', sha: null }]);
+  });
+
+  it('re-issues the session cookie on a successful PUT once the session is a day old', async () => {
+    const { fn } = stubFetch([...writeHandlers(), ...(await repoHandlers({}))]);
+    const res = await handleDataRequest(req('PUT', await session(), { files: { 'medications.json': '[]' } }), env, {
+      fetch: fn,
+      now: () => NOW + 2 * 24 * 3600_000,
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('set-cookie')).toContain(`${SESSION_COOKIE}=`);
+  });
+
+  it('carries no Set-Cookie on an error response, even for an aged session', async () => {
+    const aged = { fetch: undefined as unknown as FetchFn, now: () => NOW + 2 * 24 * 3600_000 };
+    const conflict = stubFetch([...writeHandlers(409), ...(await repoHandlers({}))]);
+    const res409 = await handleDataRequest(req('PUT', await session(), { files: { 'medications.json': '[]' } }), env, {
+      ...aged,
+      fetch: conflict.fn,
+    });
+    expect(res409.status).toBe(409);
+    expect(res409.headers.get('set-cookie')).toBeNull();
+    const upstream = stubFetch([]);
+    const res502 = await handleDataRequest(req('PUT', await session(), { files: { 'medications.json': '[]' } }), env, {
+      ...aged,
+      fetch: upstream.fn,
+    });
+    expect(res502.status).toBe(502);
+    expect(res502.headers.get('set-cookie')).toBeNull();
   });
 
   it('maps ref-update conflicts to 409', async () => {

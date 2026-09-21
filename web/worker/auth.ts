@@ -24,17 +24,22 @@ export interface Session {
   provider: Provider
   iat: number
   exp: number
+  oiat?: number
 }
 
 export const SESSION_COOKIE = 'paneloom_session'
 export const OAUTH_COOKIE = 'paneloom_oauth'
 export const CSRF_HEADER = 'x-paneloom'
 export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60
+export const SESSION_REFRESH_SECONDS = 24 * 60 * 60
+export const SESSION_MAX_SECONDS = 180 * 24 * 60 * 60
 export const OAUTH_TTL_SECONDS = 10 * 60
 export const MIN_SESSION_SECRET_LENGTH = 32
 
 const ACCOUNT_ROUTE = '/#account'
 const APPLE_AUDIENCE = 'https://appleid.apple.com'
+const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs'
+const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -119,10 +124,13 @@ export async function signSession(
   env: AuthEnv,
   identity: { email: string; provider: Provider },
   nowMs: number,
+  originSeconds?: number,
 ): Promise<string> {
   if (!hasValidSecret(env)) throw new Error('SESSION_SECRET missing or too short')
   const iat = Math.floor(nowMs / 1000)
-  const session: Session = { ...identity, iat, exp: iat + SESSION_TTL_SECONDS }
+  const oiat = originSeconds ?? iat
+  const exp = Math.min(iat + SESSION_TTL_SECONDS, oiat + SESSION_MAX_SECONDS)
+  const session: Session = { ...identity, iat, exp, oiat }
   return signPayload(env.SESSION_SECRET, session)
 }
 
@@ -135,8 +143,24 @@ export async function readSession(request: Request, env: AuthEnv, nowMs: number)
   if (typeof payload.email !== 'string' || payload.email === '') return null
   if (payload.provider !== 'google' && payload.provider !== 'apple') return null
   if (typeof payload.iat !== 'number' || typeof payload.exp !== 'number') return null
+  if (payload.oiat !== undefined && typeof payload.oiat !== 'number') return null
   if (payload.exp * 1000 <= nowMs) return null
+  if (((payload.oiat ?? payload.iat) + SESSION_MAX_SECONDS) * 1000 <= nowMs) return null
   return payload as Session
+}
+
+export async function refreshedSessionCookie(
+  request: Request,
+  env: AuthEnv,
+  nowMs: number,
+  known?: Session | null,
+): Promise<string | null> {
+  const session = known === undefined ? await readSession(request, env, nowMs) : known
+  if (!session || nowMs / 1000 - session.iat <= SESSION_REFRESH_SECONDS) return null
+  const value = await signSession(env, session, nowMs, session.oiat ?? session.iat)
+  const exp = Math.min(Math.floor(nowMs / 1000) + SESSION_TTL_SECONDS, (session.oiat ?? session.iat) + SESSION_MAX_SECONDS)
+  if (exp <= session.exp) return null
+  return sessionCookie(value, exp - Math.floor(nowMs / 1000))
 }
 
 function sessionCookie(value: string, maxAge: number): string {
@@ -168,6 +192,7 @@ interface ProviderConfig {
   authorizeUrl: string
   tokenUrl: string
   issuers: string[]
+  jwksUrl: string
   clientSecret: (nowMs: number) => Promise<string>
 }
 
@@ -205,6 +230,7 @@ function providerConfig(provider: string, env: AuthEnv): ProviderConfig | null {
       authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
       tokenUrl: 'https://oauth2.googleapis.com/token',
       issuers: ['https://accounts.google.com', 'accounts.google.com'],
+      jwksUrl: GOOGLE_JWKS_URL,
       clientSecret: async () => secret,
     }
   }
@@ -216,6 +242,7 @@ function providerConfig(provider: string, env: AuthEnv): ProviderConfig | null {
       authorizeUrl: 'https://appleid.apple.com/auth/authorize',
       tokenUrl: 'https://appleid.apple.com/auth/token',
       issuers: [APPLE_AUDIENCE],
+      jwksUrl: APPLE_JWKS_URL,
       clientSecret: (nowMs) => buildAppleClientSecret(env, nowMs),
     }
   }
@@ -290,6 +317,79 @@ function decodeIdToken(idToken: string): IdClaims {
   return JSON.parse(decoder.decode(base64UrlToBytes(parts[1]))) as IdClaims
 }
 
+interface Jwk {
+  kid?: string
+  kty?: string
+  alg?: string
+  n?: string
+  e?: string
+}
+
+const JWKS_TTL_MS = 60 * 60 * 1000
+const JWKS_TIMEOUT_MS = 5000
+
+const jwksCache = new Map<string, { keys: Jwk[]; at: number }>()
+
+export function resetJwksCache(): void {
+  jwksCache.clear()
+}
+
+async function fetchJwks(url: string, doFetch: FetchFn, nowMs: number): Promise<Jwk[]> {
+  const response = await doFetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(JWKS_TIMEOUT_MS) })
+  if (!response.ok) throw new Error('jwks')
+  const raw = ((await response.json()) as { keys?: unknown }).keys
+  if (!Array.isArray(raw)) throw new Error('jwks')
+  const keys = raw.filter((key): key is Jwk => typeof key === 'object' && key !== null)
+  jwksCache.set(url, { keys, at: nowMs })
+  return keys
+}
+
+async function findSigningKey(
+  url: string,
+  kid: string,
+  doFetch: FetchFn,
+  nowMs: number,
+  forceFetch = false,
+): Promise<{ jwk: Jwk; cached: boolean }> {
+  const entry = jwksCache.get(url)
+  if (!forceFetch && entry && nowMs - entry.at < JWKS_TTL_MS) {
+    const cached = entry.keys.find((key) => key.kid === kid)
+    if (cached) return { jwk: cached, cached: true }
+  }
+  const fresh = (await fetchJwks(url, doFetch, nowMs)).find((key) => key.kid === kid)
+  if (!fresh) throw new Error('kid')
+  return { jwk: fresh, cached: false }
+}
+
+async function verifyWithKey(jwk: Jwk, parts: string[]): Promise<boolean> {
+  if (jwk.kty !== 'RSA' || (jwk.alg !== undefined && jwk.alg !== 'RS256')) throw new Error('kty')
+  const key = await crypto.subtle.importKey(
+    'jwk',
+    { kty: 'RSA', n: jwk.n, e: jwk.e, alg: 'RS256', ext: true },
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  )
+  return crypto.subtle.verify(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    base64UrlToBytes(parts[2]),
+    encoder.encode(`${parts[0]}.${parts[1]}`),
+  )
+}
+
+async function verifySignature(idToken: string, config: ProviderConfig, doFetch: FetchFn, nowMs: number): Promise<void> {
+  const parts = idToken.split('.')
+  if (parts.length !== 3) throw new Error('malformed id_token')
+  const header = JSON.parse(decoder.decode(base64UrlToBytes(parts[0]))) as { alg?: unknown; kid?: unknown }
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string') throw new Error('alg')
+  const { jwk, cached } = await findSigningKey(config.jwksUrl, header.kid, doFetch, nowMs)
+  if (await verifyWithKey(jwk, parts)) return
+  if (!cached) throw new Error('signature')
+  const retry = await findSigningKey(config.jwksUrl, header.kid, doFetch, nowMs, true)
+  if (!(await verifyWithKey(retry.jwk, parts))) throw new Error('signature')
+}
+
 function validateClaims(claims: IdClaims, config: ProviderConfig, nonce: string, nowMs: number): string {
   if (typeof claims.iss !== 'string' || !config.issuers.includes(claims.iss)) throw new Error('iss')
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud]
@@ -352,6 +452,7 @@ async function callback(request: Request, env: AuthEnv, deps: AuthDeps, provider
     if (!response.ok) return fail(502, 'The provider rejected the sign-in.')
     const idToken = ((await response.json()) as { id_token?: unknown }).id_token
     if (typeof idToken !== 'string') return fail(502, 'The provider returned no identity.')
+    await verifySignature(idToken, config, deps.fetch, nowMs)
     email = validateClaims(decodeIdToken(idToken), config, flow.nonce, nowMs)
   } catch {
     return fail(502, 'The provider response could not be verified.')
@@ -377,7 +478,8 @@ export async function handleAuthRequest(request: Request, env: AuthEnv, deps: Au
     const session = await readSession(request, env, nowMs)
     if (!session) return jsonResponse(401, { providers: configuredProviders(env) })
     if (!isAllowed(session.email, env.ALLOWED_EMAILS)) return jsonResponse(403, {})
-    return jsonResponse(200, { email: session.email, provider: session.provider })
+    const refreshed = await refreshedSessionCookie(request, env, nowMs, session)
+    return jsonResponse(200, { email: session.email, provider: session.provider }, refreshed ? { 'set-cookie': refreshed } : {})
   }
 
   if (path === '/auth/logout') {

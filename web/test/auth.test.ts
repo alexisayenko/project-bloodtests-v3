@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   OAUTH_COOKIE,
   SESSION_COOKIE,
@@ -7,6 +7,8 @@ import {
   bytesToBase64Url,
   handleAuthRequest,
   readSession,
+  refreshedSessionCookie,
+  resetJwksCache,
   signSession,
   type AuthDeps,
   type AuthEnv,
@@ -19,6 +21,12 @@ const decoder = new TextDecoder();
 
 const LONG_SECRET = 's'.repeat(40);
 let publicKey: CryptoKey;
+let rsaPrivate: CryptoKey;
+let otherRsaPrivate: CryptoKey;
+let jwk: JsonWebKey;
+const KID = 'test-kid';
+const GOOGLE_JWKS = 'https://www.googleapis.com/oauth2/v3/certs';
+const APPLE_JWKS = 'https://appleid.apple.com/auth/keys';
 let baseEnv: AuthEnv;
 
 function toPem(der: ArrayBuffer): string {
@@ -29,6 +37,11 @@ function toPem(der: ArrayBuffer): string {
 beforeAll(async () => {
   const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
   publicKey = pair.publicKey;
+  const rsaParams = { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' };
+  const rsa = await crypto.subtle.generateKey(rsaParams, true, ['sign', 'verify']);
+  rsaPrivate = rsa.privateKey;
+  jwk = { ...(await crypto.subtle.exportKey('jwk', rsa.publicKey)), kid: KID, alg: 'RS256', use: 'sig' };
+  otherRsaPrivate = (await crypto.subtle.generateKey(rsaParams, true, ['sign', 'verify'])).privateKey;
   baseEnv = {
     SESSION_SECRET: LONG_SECRET,
     ALLOWED_EMAILS: 'alex.isayenko@gmail.com',
@@ -45,8 +58,10 @@ function b64json(value: object): string {
   return bytesToBase64Url(encoder.encode(JSON.stringify(value)));
 }
 
-function idToken(claims: object): string {
-  return `${b64json({ alg: 'RS256' })}.${b64json(claims)}.sig`;
+async function idToken(claims: object, opts: { key?: CryptoKey; kid?: string } = {}): Promise<string> {
+  const input = `${b64json({ alg: 'RS256', kid: opts.kid ?? KID })}.${b64json(claims)}`;
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', opts.key ?? rsaPrivate, encoder.encode(input));
+  return `${input}.${bytesToBase64Url(new Uint8Array(sig))}`;
 }
 
 interface TokenCall {
@@ -54,15 +69,30 @@ interface TokenCall {
   body: URLSearchParams;
 }
 
-function tokenFetch(claims: object | null, status = 200) {
+interface TokenOpts {
+  status?: number;
+  key?: CryptoKey;
+  kid?: string;
+  jwks?: () => object[];
+}
+
+function tokenFetch(claims: object | null, opts: TokenOpts = {}) {
+  const status = opts.status ?? 200;
   const calls: TokenCall[] = [];
+  const jwksCalls: string[] = [];
   const fn = async (input: string, init: RequestInit = {}) => {
+    if (input === GOOGLE_JWKS || input === APPLE_JWKS) {
+      jwksCalls.push(input);
+      return new Response(JSON.stringify({ keys: (opts.jwks ?? (() => [jwk]))() }));
+    }
     calls.push({ url: input, body: new URLSearchParams(init.body as string) });
     if (status !== 200) return new Response('provider-secret-detail', { status });
-    return new Response(JSON.stringify(claims ? { id_token: idToken(claims) } : {}), { status });
+    return new Response(JSON.stringify(claims ? { id_token: await idToken(claims, opts) } : {}), { status });
   };
-  return { fn, calls };
+  return { fn, calls, jwksCalls };
 }
+
+beforeEach(() => resetJwksCache());
 
 const deps = (fn: AuthDeps['fetch']): AuthDeps => ({ fetch: fn, now: () => NOW });
 const never = deps(async () => {
@@ -101,15 +131,18 @@ function goodClaims(overrides: object = {}) {
 
 async function googleCallback(
   claims: object | null,
-  opts: { env?: AuthEnv; state?: string; cookie?: string; query?: string; status?: number } = {},
+  opts: { env?: AuthEnv; state?: string; cookie?: string; query?: string; status?: number; token?: TokenOpts } = {},
 ) {
   const { location, oauth } = await startLogin('google', opts.env);
-  const { fn, calls } = tokenFetch(claims === null ? null : { nonce: location.searchParams.get('nonce'), ...claims }, opts.status);
+  const { fn, calls, jwksCalls } = tokenFetch(claims === null ? null : { nonce: location.searchParams.get('nonce'), ...claims }, {
+    ...opts.token,
+    status: opts.status,
+  });
   const state = opts.state ?? location.searchParams.get('state');
   const url = `${ORIGIN}/auth/callback/google?${opts.query ?? `code=abc&state=${state}`}`;
   const request = new Request(url, { headers: { cookie: `${OAUTH_COOKIE}=${opts.cookie ?? oauth}` } });
   const res = await handleAuthRequest(request, opts.env ?? baseEnv, deps(fn));
-  return { res, calls, oauth, location };
+  return { res, calls, jwksCalls, oauth, location };
 }
 
 describe('login', () => {
@@ -306,16 +339,16 @@ describe('Google callback', () => {
 });
 
 describe('Apple callback', () => {
-  async function appleCallback(claims: object, form?: Record<string, string>) {
+  async function appleCallback(claims: object, form?: Record<string, string>, token: TokenOpts = {}) {
     const { location, oauth } = await startLogin('apple');
-    const { fn, calls } = tokenFetch({ nonce: location.searchParams.get('nonce'), ...claims });
+    const { fn, calls, jwksCalls } = tokenFetch({ nonce: location.searchParams.get('nonce'), ...claims }, token);
     const body = new URLSearchParams({ code: 'apple-code', state: location.searchParams.get('state')!, ...form });
     const request = new Request(`${ORIGIN}/auth/callback/apple`, {
       method: 'POST',
       headers: { cookie: `${OAUTH_COOKIE}=${oauth}`, 'content-type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     });
-    return { res: await handleAuthRequest(request, baseEnv, deps(fn)), calls };
+    return { res: await handleAuthRequest(request, baseEnv, deps(fn)), calls, jwksCalls };
   }
 
   const appleClaims = (overrides: object = {}) => ({
@@ -393,9 +426,171 @@ describe('Apple callback', () => {
     expect(calls).toHaveLength(0);
   });
 
+  it('verifies the signature against Apple\'s keys and rejects a bad one', async () => {
+    const good = await appleCallback(appleClaims());
+    expect(good.res.status).toBe(303);
+    expect(good.jwksCalls).toEqual([APPLE_JWKS]);
+    resetJwksCache();
+    const bad = await appleCallback(appleClaims(), undefined, { key: otherRsaPrivate });
+    expect(bad.res.status).toBe(502);
+    expect(cookieValue(bad.res, SESSION_COOKIE)).toBeUndefined();
+  });
+
   it('405 for GET on the Apple callback', async () => {
     const res = await handleAuthRequest(new Request(`${ORIGIN}/auth/callback/apple`), baseEnv, never);
     expect(res.status).toBe(405);
+  });
+});
+
+describe('ID token signature (JWKS)', () => {
+  it('fetches Google\'s keys once and verifies a good signature, then serves the next sign-in from cache', async () => {
+    const first = await googleCallback(goodClaims());
+    expect(first.res.status).toBe(303);
+    expect(first.jwksCalls).toEqual([GOOGLE_JWKS]);
+    const second = await googleCallback(goodClaims());
+    expect(second.res.status).toBe(303);
+    expect(second.jwksCalls).toEqual([]);
+  });
+
+  it('rejects a token signed by another key under a known kid, without a session', async () => {
+    const { res } = await googleCallback(goodClaims(), { token: { key: otherRsaPrivate } });
+    expect(res.status).toBe(502);
+    expect(cookieValue(res, SESSION_COOKIE)).toBeUndefined();
+  });
+
+  it('rejects a token whose payload was altered after signing', async () => {
+    const { location, oauth } = await startLogin('google');
+    const good = await idToken({ nonce: location.searchParams.get('nonce'), ...goodClaims({ email: 'stranger@example.com' }) });
+    const [head, , sig] = good.split('.');
+    const forged = `${head}.${b64json({ nonce: location.searchParams.get('nonce'), ...goodClaims() })}.${sig}`;
+    const fn = async (input: string) =>
+      input === GOOGLE_JWKS
+        ? new Response(JSON.stringify({ keys: [jwk] }))
+        : new Response(JSON.stringify({ id_token: forged }));
+    const res = await handleAuthRequest(
+      new Request(`${ORIGIN}/auth/callback/google?code=abc&state=${location.searchParams.get('state')}`, {
+        headers: { cookie: `${OAUTH_COOKIE}=${oauth}` },
+      }),
+      baseEnv,
+      deps(fn),
+    );
+    expect(res.status).toBe(502);
+  });
+
+  it('refetches once on an unknown kid and accepts the rotated key', async () => {
+    expect((await googleCallback(goodClaims())).res.status).toBe(303);
+    const rotated = await googleCallback(goodClaims(), {
+      token: { kid: 'rotated', jwks: () => [jwk, { ...jwk, kid: 'rotated' }] },
+    });
+    expect(rotated.res.status).toBe(303);
+    expect(rotated.jwksCalls).toEqual([GOOGLE_JWKS]);
+  });
+
+  it('rejects a kid still unknown after the refetch, with a single refetch', async () => {
+    const { res, jwksCalls } = await googleCallback(goodClaims(), { token: { kid: 'nobody' } });
+    expect(res.status).toBe(502);
+    expect(jwksCalls).toHaveLength(1);
+  });
+
+  it('rejects a valid signature with the wrong audience', async () => {
+    const { res } = await googleCallback(goodClaims({ aud: 'someone-else' }));
+    expect(res.status).toBe(502);
+  });
+
+  it('502 when the JWKS endpoint fails', async () => {
+    const { location, oauth } = await startLogin('google');
+    const token = await idToken({ nonce: location.searchParams.get('nonce'), ...goodClaims() });
+    const fn = async (input: string) =>
+      input === GOOGLE_JWKS ? new Response('down', { status: 500 }) : new Response(JSON.stringify({ id_token: token }));
+    const res = await handleAuthRequest(
+      new Request(`${ORIGIN}/auth/callback/google?code=abc&state=${location.searchParams.get('state')}`, {
+        headers: { cookie: `${OAUTH_COOKIE}=${oauth}` },
+      }),
+      baseEnv,
+      deps(fn),
+    );
+    expect(res.status).toBe(502);
+  });
+
+  it('rejects a JWK whose kty is not RSA', async () => {
+    const { res } = await googleCallback(goodClaims(), { token: { jwks: () => [{ ...jwk, kty: 'EC' }] } });
+    expect(res.status).toBe(502);
+    expect(cookieValue(res, SESSION_COOKIE)).toBeUndefined();
+  });
+
+  it('rejects a JWK whose alg is not RS256', async () => {
+    const { res } = await googleCallback(goodClaims(), { token: { jwks: () => [{ ...jwk, alg: 'RS512' }] } });
+    expect(res.status).toBe(502);
+    expect(cookieValue(res, SESSION_COOKIE)).toBeUndefined();
+  });
+
+  it('refetches once the cached keys are older than an hour', async () => {
+    let fetches = 0;
+    const signIn = async (now: number) => {
+      const clock = { fetch: (async () => new Response('{}')) as AuthDeps['fetch'], now: () => now };
+      const login = await handleAuthRequest(new Request(`${ORIGIN}/auth/login/google`), baseEnv, clock);
+      const location = new URL(login.headers.get('location') ?? 'https://none.invalid/');
+      const token = await idToken({
+        nonce: location.searchParams.get('nonce'),
+        ...goodClaims({ exp: now / 1000 + 300 }),
+      });
+      const fn = async (input: string) => {
+        if (input === GOOGLE_JWKS) {
+          fetches++;
+          return new Response(JSON.stringify({ keys: [jwk] }));
+        }
+        return new Response(JSON.stringify({ id_token: token }));
+      };
+      const res = await handleAuthRequest(
+        new Request(`${ORIGIN}/auth/callback/google?code=abc&state=${location.searchParams.get('state')}`, {
+          headers: { cookie: `${OAUTH_COOKIE}=${cookieValue(login, OAUTH_COOKIE)}` },
+        }),
+        baseEnv,
+        { fetch: fn, now: () => now },
+      );
+      return res.status;
+    };
+    expect(await signIn(NOW)).toBe(303);
+    expect(await signIn(NOW + 59 * 60_000)).toBe(303);
+    expect(fetches).toBe(1);
+    expect(await signIn(NOW + 61 * 60_000)).toBe(303);
+    expect(fetches).toBe(2);
+  });
+
+  it('refetches and retries when a cached key fails the signature, accepting a rotated key under the same kid', async () => {
+    expect((await googleCallback(goodClaims(), { token: { jwks: () => [{ ...jwk, n: 'AQAB' }] } })).res.status).toBe(502);
+    const stale = await googleCallback(goodClaims());
+    expect(stale.res.status).toBe(303);
+    expect(stale.jwksCalls).toEqual([GOOGLE_JWKS]);
+  });
+
+  it('does not refetch a second time when a freshly fetched key fails the signature', async () => {
+    const { res, jwksCalls } = await googleCallback(goodClaims(), { token: { key: otherRsaPrivate } });
+    expect(res.status).toBe(502);
+    expect(jwksCalls).toHaveLength(1);
+  });
+
+  it('drops a malformed JWKS entry instead of poisoning the cache', async () => {
+    const first = await googleCallback(goodClaims(), { token: { jwks: () => [null, 'x', jwk] } });
+    expect(first.res.status).toBe(303);
+    const second = await googleCallback(goodClaims());
+    expect(second.res.status).toBe(303);
+    expect(second.jwksCalls).toEqual([]);
+  });
+
+  it('rejects an algorithm other than RS256', async () => {
+    const { location, oauth } = await startLogin('google');
+    const forged = `${b64json({ alg: 'none', kid: KID })}.${b64json({ nonce: location.searchParams.get('nonce'), ...goodClaims() })}.`;
+    const fn = async (input: string) =>
+      input === GOOGLE_JWKS ? new Response(JSON.stringify({ keys: [jwk] })) : new Response(JSON.stringify({ id_token: forged }));
+    const res = await handleAuthRequest(
+      new Request(`${ORIGIN}/auth/callback/google?code=abc&state=${location.searchParams.get('state')}`, {
+        headers: { cookie: `${OAUTH_COOKIE}=${oauth}` },
+      }),
+      baseEnv,
+      deps(fn),
+    );
+    expect(res.status).toBe(502);
   });
 });
 
@@ -410,6 +605,7 @@ describe('session', () => {
       provider: 'apple',
       iat: NOW / 1000,
       exp: NOW / 1000 + 30 * 24 * 3600,
+      oiat: NOW / 1000,
     });
   });
 
@@ -433,6 +629,80 @@ describe('session', () => {
   it('authenticates nothing without SESSION_SECRET', async () => {
     const value = await signSession(baseEnv, { email: 'a@b.co', provider: 'google' }, NOW);
     expect(await readSession(cookieReq(value), { ...baseEnv, SESSION_SECRET: undefined }, NOW)).toBeNull();
+  });
+});
+
+describe('session lifetime', () => {
+  const DAY = 24 * 3600 * 1000;
+  const cookieReq = (value: string) =>
+    new Request(`${ORIGIN}/auth/me`, { headers: { cookie: `${SESSION_COOKIE}=${value}` } });
+  const identity = { email: 'alex.isayenko@gmail.com', provider: 'google' } as const;
+
+  async function legacyCookie(iat: number, exp: number): Promise<string> {
+    const body = b64json({ ...identity, iat, exp });
+    const key = await crypto.subtle.importKey('raw', encoder.encode(LONG_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = bytesToBase64Url(new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(body))));
+    return `${body}.${sig}`;
+  }
+
+  async function me(value: string, now: number) {
+    return handleAuthRequest(cookieReq(value), baseEnv, { fetch: async () => new Response(), now: () => now });
+  }
+
+  it('records the first issue time as oiat', async () => {
+    const value = await signSession(baseEnv, identity, NOW);
+    expect(await readSession(cookieReq(value), baseEnv, NOW)).toMatchObject({ iat: NOW / 1000, oiat: NOW / 1000 });
+  });
+
+  it('does not re-issue within a day', async () => {
+    const value = await signSession(baseEnv, identity, NOW);
+    const res = await me(value, NOW + DAY - 1000);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('set-cookie')).toBeNull();
+  });
+
+  it('re-issues on /auth/me after a day with a fresh exp and the original oiat', async () => {
+    const value = await signSession(baseEnv, identity, NOW);
+    const later = NOW + 2 * DAY;
+    const res = await me(value, later);
+    const line = cookieLine(res, SESSION_COOKIE);
+    expect(line).toContain('Max-Age=2592000');
+    expect(line).toContain('SameSite=Lax');
+    const renewed = await readSession(cookieReq(cookieValue(res, SESSION_COOKIE)!), baseEnv, later);
+    expect(renewed).toMatchObject({ iat: later / 1000, exp: later / 1000 + 30 * 24 * 3600, oiat: NOW / 1000 });
+  });
+
+  it('keeps a session alive past 30 days as long as it is used, then stops at 180 days from the first issue', async () => {
+    let value = await signSession(baseEnv, identity, NOW);
+    for (let day = 20; day <= 170; day += 20) {
+      const res = await me(value, NOW + day * DAY);
+      expect(res.status).toBe(200);
+      value = cookieValue(res, SESSION_COOKIE) ?? value;
+    }
+    const cap = NOW + 180 * DAY;
+    expect((await readSession(cookieReq(value), baseEnv, NOW + 171 * DAY))!.exp * 1000).toBe(cap);
+    expect((await me(value, NOW + 172 * DAY)).headers.get('set-cookie')).toBeNull();
+    expect(await readSession(cookieReq(value), baseEnv, cap - 1000)).not.toBeNull();
+    expect(await readSession(cookieReq(value), baseEnv, cap)).toBeNull();
+    expect((await me(value, cap)).status).toBe(401);
+  });
+
+  it('accepts an old cookie without oiat, treating iat as the origin', async () => {
+    const legacy = await legacyCookie(NOW / 1000, NOW / 1000 + 30 * 24 * 3600);
+    const later = NOW + 2 * DAY;
+    expect(await readSession(cookieReq(legacy), baseEnv, later)).toMatchObject({ iat: NOW / 1000 });
+    const res = await me(legacy, later);
+    const renewed = await readSession(cookieReq(cookieValue(res, SESSION_COOKIE)!), baseEnv, later);
+    expect(renewed?.oiat).toBe(NOW / 1000);
+  });
+
+  it('applies the 180-day cap to an old cookie without oiat', async () => {
+    const legacy = await legacyCookie(NOW / 1000 - 181 * 24 * 3600, NOW / 1000 + 3600);
+    expect(await readSession(cookieReq(legacy), baseEnv, NOW)).toBeNull();
+  });
+
+  it('never re-issues without a valid session', async () => {
+    expect(await refreshedSessionCookie(new Request(ORIGIN), baseEnv, NOW)).toBeNull();
   });
 });
 

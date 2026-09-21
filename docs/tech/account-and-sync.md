@@ -127,16 +127,18 @@ config is missing.
 
 - `GET /auth/login/google|apple` sets the cookie `paneloom_oauth` (random
   `state`, `nonce` and PKCE verifier, HMAC-signed with `SESSION_SECRET`,
-  HttpOnly, Secure, ten minutes, `SameSite=None` for Apple, whose callback is a
-  cross-site POST, `Lax` for Google) and redirects to the provider: Google with a PKCE (S256)
+  HttpOnly, Secure, ten minutes, `SameSite=Lax` for Google, `SameSite=None`
+  for Apple only, whose callback is a cross-site POST) and redirects to the provider: Google with a PKCE (S256)
   code flow, Apple with `response_mode=form_post`, `scope=email` and a
   `nonce`. An unknown or unconfigured provider is a `404` JSON error.
 - `GET /auth/callback/google` and `POST /auth/callback/apple` check `state`
   against the cookie in constant time, exchange the code at the provider's
-  token endpoint, and read `id_token` from that direct response (no signature
-  check needed there, OIDC Core 3.1.3.7). They verify `iss`, `aud` (the
+  token endpoint, and verify the returned `id_token`: its signature against
+  the provider's published JWKS (Google `googleapis.com/oauth2/v3/certs`,
+  Apple `appleid.apple.com/auth/keys`; RS256, key chosen by `kid`, kept in
+  memory and refetched once on an unknown `kid`), then `iss`, `aud` (the
   client / Service ID), `exp`, `nonce`, and that `email` is present and
-  verified. The lowercased email must be in `ALLOWED_EMAILS`. Success clears
+  verified. A JWKS fetch failure fails the sign-in (`502`). The lowercased email must be in `ALLOWED_EMAILS`. Success clears
   `paneloom_oauth`, sets the session and redirects (`303`) to `/#account`;
   any failure is a small plain HTML page with a back link, never an echoed
   provider error.
@@ -148,9 +150,13 @@ empty when `SESSION_SECRET` is missing or short), or
   `POST /auth/logout` (needs `X-Paneloom: 1`) expires the cookie, `204`.
 
 **Session.** `paneloom_session`: `HttpOnly; Secure; SameSite=Lax; Path=/`,
-30 days, `base64url({email, provider, iat, exp}).base64url(HMAC-SHA256)` keyed
-with `SESSION_SECRET`. No refresh token: after 30 days the user signs in
-again. Without a `SESSION_SECRET` of at least 32 characters nothing
+30 days per cookie, `base64url({email, provider, iat, exp, oiat}).base64url(HMAC-SHA256)`
+keyed with `SESSION_SECRET`. `oiat` is the first-issue time and never changes.
+The session slides: an authenticated `/auth/me` or `/api/data` response for a
+cookie older than one day re-issues it with a fresh `iat` and `exp`, and `exp`
+never passes `oiat` plus 180 days, after which the user signs in again. A
+cookie without `oiat` is still accepted, its `iat` taken as the origin. No
+refresh token. Without a `SESSION_SECRET` of at least 32 characters nothing
 authenticates (sessions never verify) and the login routes are `404`.
 
 **`/api/data`.**

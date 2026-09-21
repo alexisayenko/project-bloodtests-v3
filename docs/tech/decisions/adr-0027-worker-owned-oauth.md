@@ -1,6 +1,6 @@
 # ADR-0027: The Worker owns Google / Apple sign-in; Supabase Auth is retired
 
-Status: accepted · 2026-09-19 · supersedes the auth half of
+Status: accepted · 2026-09-19 (amended 2026-09-21, see below) · supersedes the auth half of
 [ADR-0019](adr-0019-self-hosted-supabase-replaces-firebase.md) and amends
 [ADR-0026](adr-0026-github-backed-cloud-storage.md) (the identity provider
 only; its GitHub-backed data store stands)
@@ -13,6 +13,14 @@ clears; no ongoing two-way sync. What changes is who signs the user in. The
 self-hosted Supabase Auth instance on perkunas (`api.paneloom.com`) is gone;
 the app's own Cloudflare Worker performs Google and Apple OAuth itself and
 issues a signed session cookie.
+
+**Amendment, 2026-09-21.** Aligned with moodtracker's
+[ADR-0001](../../../../project-moodtracker/docs/tech/decisions/adr-0001-worker-owned-oauth.md)
+on four points: the ID token's signature is verified against the provider's
+JWKS; the session slides, capped at 180 days from first issue; the flow
+cookie is `SameSite=Lax` for Google and `None` for Apple only; and the earlier
+"signature verification is not required" reasoning is withdrawn. The bullets
+below describe the amended behaviour.
 
 ## Context
 
@@ -39,19 +47,24 @@ cookie.**
 - **The flow.** Google: code flow with PKCE (S256). Apple: code flow,
   `response_mode=form_post`, `scope=email`, a `nonce`. A random `state`,
   `nonce` and PKCE verifier live in a ten-minute HttpOnly cookie
-  `paneloom_oauth`, HMAC-signed with `SESSION_SECRET` and `SameSite=None;
-  Secure`, because Apple's callback is a cross-site POST that a `Lax` cookie
-  would not survive.
-- **The ID token** is read from the direct TLS response of the token
-  endpoint, where signature verification is not required (OIDC Core
-  3.1.3.7). The Worker still checks `iss`, `aud`, `exp`, that `nonce` matches
-  the cookie, and that `email` is present and `email_verified`. The email,
+  `paneloom_oauth`, HMAC-signed with `SESSION_SECRET`, `SameSite=Lax` for Google and
+  `SameSite=None; Secure` for Apple only, because Apple's callback is a
+  cross-site POST that a `Lax` cookie would not survive.
+- **The ID token** is read from the token endpoint's response and its
+  signature is verified against the provider's published JWKS (RS256, key
+  chosen by `kid`, cached in memory, refetched once on an unknown `kid`; Google
+  `googleapis.com/oauth2/v3/certs`, Apple `appleid.apple.com/auth/keys`). The
+  Worker also checks `iss`, `aud`, `exp`, that `nonce` matches the cookie, and
+  that `email` is present and `email_verified`. The email,
   lowercased, must be in `ALLOWED_EMAILS` (unset denies everyone).
 - **Apple's client secret** is an ES256 JWT built per login with WebCrypto
   from the `.p8` key, the Key ID, the Team ID and the Service ID.
 - **The session** is the cookie `paneloom_session`: `HttpOnly; Secure;
-  SameSite=Lax; Path=/`, 30 days, holding `{email, provider, iat, exp}` and
-  an HMAC-SHA256 over it. `/api/data` verifies it on every request and
+  SameSite=Lax; Path=/`, 30 days per cookie, holding `{email, provider, iat,
+  exp, oiat}` and an HMAC-SHA256 over it. It slides: an authenticated response
+  for a cookie older than one day re-issues it with a fresh `exp`, capped at
+  `oiat` (first issue) plus 180 days. A cookie without `oiat` is still
+  accepted, its `iat` taken as the origin. `/api/data` verifies it on every request and
   re-checks the allowlist, so a removed email is cut off at once. `PUT` also
   needs the header `X-Paneloom: 1` and, when an `Origin` is present, the
   request's own origin; `POST /auth/logout` needs the header too.
@@ -75,9 +88,24 @@ cookie.**
   something this small.
 - **Google only.** Drops the Apple setup and its paid account, but Apple
   sign-in is already in the product.
-- **Verify the ID token's signature against the provider's JWKS.** Not needed
-  here: the token comes straight from the provider's token endpoint over TLS,
-  which OIDC Core allows; a JWKS fetch would add a moving part for no gain.
+- **Skip the ID token signature check (OIDC Core 3.1.3.7).** Was the
+  original choice; superseded. Verifying is cheap with WebCrypto, costs one
+  JWKS fetch at sign-in only, and stops relying on where the token came from.
+  The price is that a JWKS fetch failure blocks sign-in, acceptable for a
+  personal app.
+- **A fixed 30-day session.** Was the original choice; superseded. Every
+  sign-in triggers the pull-or-push cutover (ADR-0018, ADR-0019, ADR-0028), so
+  fewer forced re-logins means fewer cutovers; the 180-day cap bounds a
+  stolen cookie.
+- **`SameSite=None` on the flow cookie for both providers.** Was the original
+  choice; superseded. Widen only where Apple's cross-site POST requires it.
+- **Adopt moodtracker's HMAC-derived `uid` folder (`UID_SECRET`) and
+  `MAX_USERS`.** Not adopted, a deliberate difference: Paneloom names the
+  per-user folder with the normalised email itself (ADR-0026). The repo is
+  private and only the Worker reads it, so the folder name is not a secret;
+  the readable name helps when browsing the data repo; and a `uid` scheme would
+  orphan the existing files and add a secret that can never be rotated. No
+  `MAX_USERS`: `ALLOWED_EMAILS` is already the cap.
 
 ## Consequences
 
@@ -91,8 +119,8 @@ cookie.**
   email, `email` is a relay address that is not their own; that address, not
   the real one, must be on `ALLOWED_EMAILS`, and it becomes the folder name
   in the data repo.
-- **No refresh tokens.** The session is a fixed 30 days from sign-in; after
-  that the user signs in again. There is no server-side revocation short of
+- **No refresh tokens.** The session slides while it is used, up to 180 days
+  from sign-in; after that the user signs in again. There is no server-side revocation short of
   rotating `SESSION_SECRET` (which signs everyone out) or removing the email
   from `ALLOWED_EMAILS`.
 - **Stateless sessions cannot be revoked individually.** Rotate
@@ -100,6 +128,9 @@ cookie.**
   `ALLOWED_EMAILS` blocks that account at once (`/auth/me` and `/api/data`
   answer `403`). `SESSION_SECRET` must be at least 32 characters, or the
   Worker treats it as unset.
+- **A stolen cookie stays valid up to 180 days.** Sessions are stateless; the
+  only revocation is removing the email from `ALLOWED_EMAILS` or rotating
+  `SESSION_SECRET`.
 - **Sign-in needs the Worker.** The Vite dev server has none; sign-in and
   sync need `wrangler dev` (or a proxy of `/auth` and `/api` to it), and the
   Account page shows "sign-in unavailable" when `/auth/me` is not the Worker or lists no configured provider (its `401` body is `{providers}`).
@@ -112,4 +143,4 @@ cookie.**
   isolation would need a store, which is a database again (see ADR-0026's
   revisit list).
 - A sign-in provider the Worker cannot serve with a plain code flow.
-- A need for sessions longer than 30 days or revocable one at a time.
+- A need for sessions longer than 180 days or revocable one at a time.

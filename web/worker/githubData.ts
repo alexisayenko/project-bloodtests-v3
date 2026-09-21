@@ -1,4 +1,4 @@
-import { CSRF_HEADER, isAllowed, readSession } from './auth'
+import { CSRF_HEADER, isAllowed, readSession, refreshedSessionCookie, type Session } from './auth'
 
 export interface DataEnv {
   GITHUB_REPO?: string
@@ -46,8 +46,8 @@ export function userFolder(email: string): string {
   return [...ROOT_SEGMENTS, normalized].join('/')
 }
 
-export async function authenticate(request: Request, env: DataEnv, nowMs: number): Promise<string> {
-  const session = await readSession(request, env, nowMs)
+export async function authenticate(request: Request, env: DataEnv, nowMs: number, known?: Session | null): Promise<string> {
+  const session = known === undefined ? await readSession(request, env, nowMs) : known
   if (!session) throw new HttpError(401, 'Not signed in')
   if (!isAllowed(session.email, env.ALLOWED_EMAILS)) throw new HttpError(403, 'Forbidden')
   return session.email.trim().toLowerCase()
@@ -273,9 +273,16 @@ export async function handleDataRequest(request: Request, env: DataEnv, deps: Da
         headers: { 'content-type': 'application/json; charset=utf-8', allow: 'GET, PUT' },
       })
     }
-    const email = await authenticate(request, env, (deps.now ?? Date.now)())
+    const nowMs = (deps.now ?? Date.now)()
+    const session = await readSession(request, env, nowMs)
+    const email = await authenticate(request, env, nowMs, session)
+    const withSession = async (response: Response): Promise<Response> => {
+      const refreshed = await refreshedSessionCookie(request, env, nowMs, session)
+      if (refreshed) response.headers.append('set-cookie', refreshed)
+      return response
+    }
     if (request.method === 'GET') {
-      return json(200, { files: await readFiles(env, deps.fetch, email) })
+      return withSession(json(200, { files: await readFiles(env, deps.fetch, email) }))
     }
     assertSameOriginWrite(request)
     let body: unknown
@@ -284,7 +291,7 @@ export async function handleDataRequest(request: Request, env: DataEnv, deps: Da
     } catch {
       throw new HttpError(400, 'Body must be JSON')
     }
-    return json(200, await writeFiles(env, deps.fetch, email, parseFilesBody(body)))
+    return withSession(json(200, await writeFiles(env, deps.fetch, email, parseFilesBody(body))))
   } catch (error) {
     if (error instanceof HttpError) return json(error.status, { error: error.message })
     return json(502, { error: 'Upstream request failed' })
