@@ -80,7 +80,7 @@ jobs:
       # without coverage.
       - name: SonarCloud scan
         if: env.SONAR_TOKEN != ''
-        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4
 
   # ---------------------------------------------------------------------------
   # KNOWN AND ACCEPTED: this deploy publishes NO share-link payloads.
