@@ -12,6 +12,7 @@ import { getPanelMeta } from './panelMeta';
 import { PageHeader } from './PageHeader';
 import { StatusChip, SwitchToggle, type StatusTone } from '../primitives';
 import { StatusFilterBar } from './StatusFilterBar';
+import { NewcomerPromptCard } from './NewcomerPromptCard';
 import { ALL_TONES, countTones, filterByTone, isToneFilterActive, markerCountLabel, type Toned } from './statusFilter';
 
 export type Condition = { name: string; tests: Observation[] };
@@ -51,6 +52,7 @@ export function PanelsGridView({
   onOpenDetail,
   onOpenPopup,
   onOpenIndexPopup,
+  newcomer = false,
 }: Readonly<{
   conditions: Condition[];
   latestByLoinc: LatestByLoinc;
@@ -60,6 +62,7 @@ export function PanelsGridView({
   onOpenDetail: (name: string) => void;
   onOpenPopup: (test: Observation, e: { currentTarget: HTMLElement }) => void;
   onOpenIndexPopup: (def: IndexDef, e: { currentTarget: HTMLElement }) => void;
+  newcomer?: boolean;
 }>) {
   const [search, setSearch] = useState('');
   const sex = loadEnvelopeMeta().sex;
@@ -113,6 +116,8 @@ export function PanelsGridView({
           { icon: Calculator, line1: 'Focus on trends,', line2: 'not PDFs' },
         ]}
       />
+
+      {newcomer && <NewcomerPromptCard style={{ marginBottom: 20 }} />}
 
       <div className="mc-panels-toolbar">
         <StatusFilterBar active={activeTones} counts={toneCounts} onChange={setActiveTones} />

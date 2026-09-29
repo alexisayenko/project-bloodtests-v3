@@ -5,8 +5,14 @@
 The app ships as a Cloudflare Worker (`web/wrangler.jsonc`: worker
 `paneloom`, `main` `./worker/index.ts`, `assets.directory` `./dist`, custom
 domain `paneloom.com`). The Worker script (`web/worker/index.ts`) routes
-`/auth/*` to the Google / Apple sign-in and `/api/data` to the GitHub-backed
-sync proxy, and lets everything else fall through to `env.ASSETS.fetch()` unchanged. `paneloom.com` is the production
+`/auth/*` to the Google / Apple sign-in, `/api/data` to the GitHub-backed
+sync proxy and `/prompt` (also `/prompt/`, `/prompt.md`) to the chatbot-facing
+site guide, and lets everything else fall through to `env.ASSETS.fetch()` unchanged.
+The guide (`web/worker/siteGuide.ts`) is Markdown served as `text/plain` so a
+chatbot fetching the URL reads text, not the SPA shell; it embeds
+`chatbotPrompt.ts` verbatim and the panel names from `monitoring-panels.json`,
+and `web/test/site-guide.test.ts` fails when a nav section, panel or quoted
+button label drifts out of it. `paneloom.com` is the production
 URL; the old `blood.isayenko.net` domain is retired and no longer served.
 
 Deploys run from CI: the `deploy` job in

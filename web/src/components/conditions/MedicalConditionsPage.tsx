@@ -85,6 +85,7 @@ export function MedicalConditionsPage() {
       onOpenDetail={(name) => navigate({ view: 'panel', name })}
       onOpenPopup={popup.openPopup}
       onOpenIndexPopup={popup.openIndexPopup}
+      newcomer={sessions.length === 0}
     />
   );
 

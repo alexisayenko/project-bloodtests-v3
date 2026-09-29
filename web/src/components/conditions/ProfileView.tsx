@@ -5,6 +5,7 @@ import { PageHeader } from './PageHeader';
 import { Button, FileButton } from '../primitives';
 import { COLOR } from '../../styles/tokens';
 import { useCloudSession } from '../../hooks/useCloudSession';
+import { NewcomerPromptCard } from './NewcomerPromptCard';
 
 const SECTION_DIVIDER = {
   borderTop: `1px solid ${COLOR.borderSubtle}`,
@@ -56,6 +57,8 @@ export function ProfileView({
           { icon: Sparkles, line1: 'Evidence-graded', line2: 'clinical indices' },
         ]}
       />
+
+      <NewcomerPromptCard style={{ marginBottom: 24 }} />
 
       <div>
         <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Want a demo first?</h2>

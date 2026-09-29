@@ -47,7 +47,7 @@ export default defineConfig({
   base: './',
   server: {
     // Sign-in and sync need the Worker: run `npx wrangler dev` (port 8787) beside `npm run dev`.
-    proxy: { '/auth': 'http://localhost:8787', '/api': 'http://localhost:8787' },
+    proxy: { '/auth': 'http://localhost:8787', '/api': 'http://localhost:8787', '/prompt': 'http://localhost:8787' },
   },
   define: {
     __BUILD_COMMIT__: JSON.stringify(buildCommit()),

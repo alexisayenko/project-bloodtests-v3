@@ -33,7 +33,10 @@ through Clear all data and the backup's `settings.json`. Per-view filters are
 | `#account` | Account | [`account-and-sync.md`](account-and-sync.md) |
 
 **Get Started** (`ProfileView.tsx`): app description, data-privacy statement
-and evidence-grading note, "Import JSON" (replaces all stored sessions, as a
+and evidence-grading note, the "New here? Ask your chatbot" card
+(`NewcomerPromptCard.tsx`: a one-line prompt from `data/sitePrompt.ts` sending
+a chatbot to the `/prompt` guide, with "Copy prompt"; the Monitoring Panels
+grid shows the same card while no report is loaded), "Import JSON" (replaces all stored sessions, as a
 share-link import does), a "Go to Diagnostic Reports" pill, and a showcase
 test dataset generator (`data/generateTestData.ts`: demo reports under their
 own ids, medications, and one sample scheduled visit only when no visit
