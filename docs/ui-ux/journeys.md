@@ -73,7 +73,10 @@ Get lab results into the app — real or synthetic.
   Generate Test Data — merges, then lands on All Observations' "What's
   in range" tab, `#all/in-range`) → Monitoring Panels / All
   Observations; or Get Started → Diagnostic Reports ("Add a report":
-  copy the chatbot prompt, build a JSON with a chatbot, Add — merges)
+  copy the chatbot prompt, build a JSON with a chatbot, Add — merges);
+  or, from the "New here? Ask your chatbot" card on Get Started or the
+  empty Monitoring Panels grid, copy the one-line prompt into a chatbot,
+  which reads `/prompt` and guides the user through either path
 - **Branches:** invalid JSON shows an inline parse error; Clear (with
   confirm, on Diagnostic Reports' "Clear local DB" danger card, beside
   "Back up your database") wipes all sessions

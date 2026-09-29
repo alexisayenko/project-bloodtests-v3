@@ -76,7 +76,8 @@ Sections and views:
 Infrastructure:
 
 - [`share-links-and-deploy.md`](share-links-and-deploy.md) — the Cloudflare
-  Worker, the CI deploy and Lighthouse jobs, share links and their meta, and
+  Worker and its routes (including the public `/prompt` chatbot guide,
+  [ADR-0029](decisions/adr-0029-public-chatbot-guide-at-prompt.md)), the CI deploy and Lighthouse jobs, share links and their meta, and
   why a CI deploy publishes no share links.
 - [`testing.md`](testing.md) — the Vitest suites, what is untested, and the
   CI jobs.

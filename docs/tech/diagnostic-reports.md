@@ -19,7 +19,12 @@ string), skip pending results with a notice, normalize decimal commas,
 preserve special-character units (μ, ×10⁹/L), silently self-check
 observation counts, list every draw date + lab for the user to confirm, and
 deliver a downloadable UTF-8 `.json` file (a fenced code block only as
-fallback).
+fallback). The same text is embedded verbatim as the last section of the
+public `/prompt` guide (`web/worker/siteGuide.ts`,
+[ADR-0029](decisions/adr-0029-public-chatbot-guide-at-prompt.md)), so a
+chatbot sent there by the newcomer card can do the extraction itself; an
+edit to `chatbotPrompt.ts` reaches both, and `site-guide.test.ts` checks the
+guide still carries it.
 
 ## 2. Upload
 

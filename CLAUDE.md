@@ -50,6 +50,8 @@ Monetization: undecided (`docs/business/README.md`).
   `web/public/data/`; uploads are parsed client-side into `localStorage`.
 - Deployed as a Cloudflare Worker serving static assets at `paneloom.com`
   (`web/wrangler.jsonc`, `web/worker/index.ts`), published by CI on every push to `main`.
+  Beside `/auth/*` and `/api/data` it serves `/prompt`, a public plain-text
+  guide for a newcomer's chatbot (`web/worker/siteGuide.ts`) — ADR-0029.
 - Opt-in cloud sync: identity is Google or Apple sign-in performed by the
   Worker itself (`/auth/*`, `web/worker/auth.ts`, authorization-code flow, a
   signed session cookie, no auth service and no database — ADR-0027; client in
@@ -80,6 +82,7 @@ Monetization: undecided (`docs/business/README.md`).
 | `web/src/hooks/useAllResults.ts` | flattens sessions into `allResults` / `latestByLoinc` / `resultsByDate`, loading a session's items on demand |
 | `web/src/components/conditions/PopupContext.tsx`, `SchedulingContext.tsx` | popup and scheduling state shared by `PanelDetailView`, `ResultTables`, `Popup`, `PlanVisitView` |
 | `web/src/cloud/`, `web/src/data/reportFiles.ts`, `web/worker/auth.ts`, `web/worker/githubData.ts` | auth and sync client; per-report files, split only for a new upload; the Worker's `/auth/*` sign-in and `/api/data` |
+| `web/worker/siteGuide.ts`, `web/src/data/sitePrompt.ts`, `web/src/components/conditions/NewcomerPromptCard.tsx` | the `/prompt` chatbot guide (embeds `chatbotPrompt.ts`, reads panel names from `monitoring-panels.json`), the one-line newcomer prompt, and the card that copies it |
 | `web/src/components/conditions/MedicalConditionsPage.tsx` | the app shell: route, results, shared settings, popups; every section a `React.lazy` sibling view |
 | `web/src/components/conditions/*View.tsx`, `ReferenceBookPage.tsx` | the views (grid, panel detail, all observations, reports, report detail, profile, plan, medications, pathways, lipids, account, reference) |
 | `web/src/components/conditions/{markers,routing,resultCells,popupGeometry,scheduling,resultsLookup,statusFilter,reportDetailHelpers,pathwayShared}.ts` | pure helpers and view contracts |
@@ -125,6 +128,9 @@ Monetization: undecided (`docs/business/README.md`).
 - Each observation's printed name lives in `rawName`; the friendly name is
   derived from the LOINC at display time and never stored — ADR-0009.
 - A scheduled visit is one of a list of independent visits — ADR-0016.
+- The `/prompt` guide is built from the app's sources, never a hand copy of
+  them; a renamed label, section or panel is edited there too, and
+  `site-guide.test.ts` fails otherwise — ADR-0029.
 
 Every name the app uses is defined once, in the "Names" glossary of
 `docs/product/concepts/observation.md`.
@@ -172,8 +178,8 @@ What each suite covers, and what is deliberately untested:
   Score, why LP-IR is imported as reported, never derived locally
 - [interchange-format.md](docs/tech/interchange-format.md) — the envelope,
   its schema and round-trip gaps
-- [diagnostic-reports.md](docs/tech/diagnostic-reports.md) — chatbot prompt,
-  upload, validation tiers, LOINC cross-check, NLM lookup, export
+- [diagnostic-reports.md](docs/tech/diagnostic-reports.md) — chatbot prompt
+  (also embedded in `/prompt`), upload, validation tiers, LOINC cross-check, NLM lookup, export
 - [navigation-and-shell.md](docs/tech/navigation-and-shell.md) — routes,
   blocking, AppShell / SideNav / NavBar, PageHeader, tokens, archive
 - [monitoring-panels.md](docs/tech/monitoring-panels.md) — grid, filters,
@@ -190,8 +196,8 @@ What each suite covers, and what is deliberately untested:
   pages
 - [account-and-sync.md](docs/tech/account-and-sync.md) — auth card, Worker
   sign-in and GitHub sync, setup, Database details, export / import / clear
-- [share-links-and-deploy.md](docs/tech/share-links-and-deploy.md) — Worker,
-  CI deploy, Lighthouse, share links and their meta
+- [share-links-and-deploy.md](docs/tech/share-links-and-deploy.md) — Worker
+  and its routes (`/prompt` guide), CI deploy, Lighthouse, share links and their meta
 - [testing.md](docs/tech/testing.md) — suites and CI jobs
 - [docs/tech/decisions/README.md](docs/tech/decisions/README.md) — the ADR
   index

@@ -44,6 +44,7 @@ Each record opens with `# ADR-NNNN: <title>` and a
 | [ADR-0026](adr-0026-github-backed-cloud-storage.md) | Cloud data lives in a private GitHub repo behind a Worker | accepted · 2026-09-19 · supersedes 0019 (data store only) · identity amended by 0027 · client split / merge amended by 0028 |
 | [ADR-0027](adr-0027-worker-owned-oauth.md) | The Worker owns Google / Apple sign-in; Supabase Auth is retired | accepted · 2026-09-19 · supersedes 0019 (auth) · amends 0026 |
 | [ADR-0028](adr-0028-verbatim-import-export.md) | Import and export carry the stored files verbatim | accepted · 2026-09-20 · amends 0003 (export wording), 0025 (unit checks read the stored `unit`) and 0026 (client split / merge, push as a merge over the cloud) |
+| [ADR-0029](adr-0029-public-chatbot-guide-at-prompt.md) | A public, Worker-served chatbot guide at `/prompt`, generated from the app's sources | accepted · 2026-09-29 |
 
 ## Where each one bites
 
@@ -169,6 +170,14 @@ Each record opens with `# ADR-NNNN: <title>` and a
   horizontally scrollable timeline with dual handles and report counts per
   calendar year. Presentational/locally interactive first, prior to explicit
   atomic data binding. Cross-linked from [task-0027](../../tasks/task-0027.md).
+- **Onboarding through the user's chatbot** — 0029: the Worker serves a
+  public, plain-text Markdown guide at `/prompt` (`web/worker/siteGuide.ts`),
+  built from `chatbotPrompt.ts`, `monitoring-panels.json` and the envelope
+  version, and the "New here? Ask your chatbot" card hands the user a
+  one-line prompt pointing at it. No user data is involved. See
+  [`../share-links-and-deploy.md`](../share-links-and-deploy.md#deploy),
+  [`../navigation-and-shell.md`](../navigation-and-shell.md) and
+  [task-0065](../../tasks/task-0065.md).
 
 ## Adding one
 

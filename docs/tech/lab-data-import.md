@@ -17,7 +17,7 @@ the same `parseUpload` path. The envelope is already FHIR-shaped
 [ADR-0008](decisions/adr-0008-fhir-shaped-envelope-not-fhir.md)), so the
 mapping is a flattening, not a redesign; the boundary in
 [ADR-0023](decisions/adr-0023-product-purpose-and-clinical-boundary.md) does
-not move — the app records and compares, and owns no database (its one Worker route is the sync proxy of ADR-0026).
+not move — the app records and compares, and owns no database (its Worker only signs in, proxies sync — ADR-0026, ADR-0027 — and serves the public `/prompt` guide, ADR-0029).
 
 ## Legal basis by region
 

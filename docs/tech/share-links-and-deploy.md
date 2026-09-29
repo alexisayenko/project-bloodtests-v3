@@ -12,8 +12,11 @@ The guide (`web/worker/siteGuide.ts`) is Markdown served as `text/plain` so a
 chatbot fetching the URL reads text, not the SPA shell; it embeds
 `chatbotPrompt.ts` verbatim and the panel names from `monitoring-panels.json`,
 and `web/test/site-guide.test.ts` fails when a nav section, panel or quoted
-button label drifts out of it. `paneloom.com` is the production
-URL; the old `blood.isayenko.net` domain is retired and no longer served.
+button label drifts out of it. It is public (no cookie, CORS open), `GET` /
+`HEAD` only, cached for an hour, and needs `wrangler dev` locally — Vite
+proxies `/prompt` to it like `/auth` and `/api`
+([ADR-0029](decisions/adr-0029-public-chatbot-guide-at-prompt.md)).
+`paneloom.com` is the production URL; the old `blood.isayenko.net` domain is retired and no longer served.
 
 Deploys run from CI: the `deploy` job in
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs on every

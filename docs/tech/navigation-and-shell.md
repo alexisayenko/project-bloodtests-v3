@@ -35,9 +35,11 @@ through Clear all data and the backup's `settings.json`. Per-view filters are
 **Get Started** (`ProfileView.tsx`): app description, data-privacy statement
 and evidence-grading note, the "New here? Ask your chatbot" card
 (`NewcomerPromptCard.tsx`: a one-line prompt from `data/sitePrompt.ts` sending
-a chatbot to the `/prompt` guide, with "Copy prompt"; the Monitoring Panels
-grid shows the same card while no report is loaded), "Import JSON" (replaces all stored sessions, as a
-share-link import does), a "Go to Diagnostic Reports" pill, and a showcase
+a chatbot to the `/prompt` guide, with "Copy prompt" and a "Read the guide
+yourself" link; the Monitoring Panels grid shows the same card while no
+report is loaded —
+[ADR-0029](decisions/adr-0029-public-chatbot-guide-at-prompt.md)), "Import
+JSON" (replaces all stored sessions, as a share-link import does), a "Go to Diagnostic Reports" pill, and a showcase
 test dataset generator (`data/generateTestData.ts`: demo reports under their
 own ids, medications, and one sample scheduled visit only when no visit
 exists yet; opens the All Observations pseudo-panel's Trends tab when

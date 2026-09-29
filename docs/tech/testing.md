@@ -55,6 +55,14 @@ the suites that validate it; fixtures under `web/test/fixtures/`.
   SI/US switch, testosterone shares and the molar-mass select, the LDL-C
   badge's Martin-Hopkins fallback, a badge's reference range and Escape) and
   `pathwayShared.ts`'s pure helpers (`pathway-shared.test.ts`).
+- **Site guide and newcomer card** — `site-guide.test.ts`: the newcomer
+  prompt points at `/prompt`; the guide names every nav section with its
+  hash, every monitoring panel and the button labels it quotes, and embeds
+  the extraction prompt, schema version and schema URL; the route matches
+  `/prompt`, `/prompt/` and `/prompt.md` only, serves UTF-8 plain text,
+  answers `HEAD` without a body, rejects other methods, and is routed ahead
+  of the static assets. `newcomer-prompt-card.test.tsx`: the card shows the
+  prompt and guide link, and "Copy prompt" writes it to the clipboard.
 
 Not tested: anything needing real layout measurement — the pathway arrow and
 association geometry (`HormonalPathways.geometry.ts`,
